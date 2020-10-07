@@ -1,6 +1,7 @@
 from tflite.ActivationFunctionType import ActivationFunctionType
 from tflite.BuiltinOperator import BuiltinOperator
 from tflite.BuiltinOptions import BuiltinOptions
+from tflite.FullyConnectedOptionsWeightsFormat import FullyConnectedOptionsWeightsFormat
 from tflite.Model import Model
 from tflite.Padding import Padding
 
@@ -15,6 +16,26 @@ def class_code_to_name(cls, code):
         if value == code:
             return name
     return None
+
+
+def process_io_lengths(op):
+    return (op.InputsLength(), op.OutputsLength())
+
+
+def process_io(op):
+    (input, output) = process_io_lengths(op)
+    inputs = []
+    outputs = []
+    for i in range(input):
+        inputs.append(op.Inputs(i))
+    for i in range(output):
+        outputs.append(op.Outputs(i))
+
+    return (inputs, outputs)
+
+
+def process_io_numpy(op):
+    return (op.InputsAsNumpy(), op.OutputsAsNumpy())
 
 
 # Functions to process each operation take the form of "process_" + the builtin opcode name that can
@@ -56,12 +77,13 @@ def process_MAX_POOL_2D(op, options):
     activation_func = class_code_to_name(ActivationFunctionType, opt.FusedActivationFunction())
 
     print("Pad: {}, Stride: [{},{}], Filter: [{},{}], Activ: {}".format(padding, stride_w, stride_h, filter_w,
-                                                                          filter_h, activation_func))
+                                                                        filter_h, activation_func))
+
 
 def process_RESHAPE(op, options):
     from tflite import ReshapeOptions as ropt
 
-    #TODO why is this sometimes NONE?
+    # TODO why is this sometimes NONE?
     if op.BuiltinOptionsType() == BuiltinOptions.ReshapeOptions:
 
         opt = ropt.ReshapeOptions()
@@ -73,19 +95,40 @@ def process_RESHAPE(op, options):
 
 
 def process_FULLY_CONNECTED(op, options):
-    pass
+    from tflite import FullyConnectedOptions as fcopt
+
+    assert (op.BuiltinOptionsType() == BuiltinOptions.FullyConnectedOptions)
+
+    opt = fcopt.FullyConnectedOptions()
+    opt.Init(options.Bytes, options.Pos)
+
+    activation_func = class_code_to_name(ActivationFunctionType, opt.FusedActivationFunction())
+    weights_format = class_code_to_name(FullyConnectedOptionsWeightsFormat, opt.WeightsFormat())
+    keep_num_dim = opt.KeepNumDims()
 
 
 def process_SOFTMAX(op, options):
-    pass
+    from tflite import SoftmaxOptions as smopt
+
+    assert (op.BuiltinOptionsType() == BuiltinOptions.SoftmaxOptions)
+
+    opt = smopt.SoftmaxOptions()
+    opt.Init(options.Bytes, options.Pos)
+
+    beta = opt.Beta()
 
 
 def process_operation(model, op):
     opcode_builtin = model.OperatorCodes(op.OpcodeIndex()).BuiltinCode()
     op_name = class_code_to_name(BuiltinOperator, opcode_builtin)
     op_opts = op.BuiltinOptions()
+    io_lengths = process_io_lengths(op)
+    io = process_io(op)
 
-    print("Processing {}, OP code: {}, option:{}".format(op_name, opcode_builtin, class_code_to_name(BuiltinOptions, op.BuiltinOptionsType())))
+    print("Processing {}, OP code: {}, options: {}".format(op_name, opcode_builtin,
+                                            class_code_to_name(BuiltinOptions, op.BuiltinOptionsType())))
+    print("Input len: {}, output len: {}".format(io_lengths[0], io_lengths[1]))
+    print("Input: {}, output: {}".format(io[0], io[1]))
 
     eval("process_" + op_name)(op, op_opts)
 
