@@ -36,18 +36,21 @@ def process_io_numpy(op):
 
 def process_options(op, options):
     op_type = class_code_to_name(sys.modules['tflite'].BuiltinOptions.BuiltinOptions, op.BuiltinOptionsType())
-    opt = eval("sys.modules['tflite'].{}.{}()".format(op_type, op_type))
-    opt.Init(options.Bytes, options.Pos)
+    if op_type is not "NONE":
+        opt = eval("sys.modules['tflite'].{}.{}()".format(op_type, op_type))
+        opt.Init(options.Bytes, options.Pos)
 
-    methods = [func for func in dir(opt) if
-               callable(getattr(opt, func)) and re.search(r'^((?!Init)(?!__)(?!{}).)*$'.format(op_type), func)]
+        methods = [func for func in dir(opt) if
+                   callable(getattr(opt, func)) and re.search(r'^((?!Init)(?!__)(?!{}).)*$'.format(op_type), func)]
 
-    # Store options in locals
-    for method in methods:
-        locals()[method] = eval("opt.{}()".format(method))
-        # exec("{} = opt.{}()".format(method, method))
+        opts = {}
+        # Store options in locals
+        for method in methods:
+            opts[method] = eval("opt.{}()".format(method))
+            # exec("{} = opt.{}()".format(method, method))
 
-    return locals()
+        return opts
+    return None
 
 
 # Functions to process each operation take the form of "process_" + the builtin opcode name that can
@@ -55,25 +58,33 @@ def process_options(op, options):
 # the resolved builtin operator name.
 
 def process_CONV_2D(op, options, io):
-    conv_options = process_options(op, options)
+    opts = process_options(op, options)
 
     print("Done")
 
 
 def process_MAX_POOL_2D(op, options, io):
-    pass
+    opts = process_options(op, options)
+
+    print("Done")
 
 
 def process_RESHAPE(op, options, io):
-    pass
+    opts = process_options(op, options)
+
+    print("Done")
 
 
 def process_FULLY_CONNECTED(op, options, io):
-    pass
+    opts = process_options(op, options)
+
+    print("Done")
 
 
 def process_SOFTMAX(op, options, io):
-    pass
+    opts = process_options(op, options)
+
+    print("Done")
 
 
 def process_operation(model, graph, op):
