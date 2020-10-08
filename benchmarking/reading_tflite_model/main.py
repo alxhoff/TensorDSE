@@ -1,10 +1,5 @@
-from tflite.ActivationFunctionType import ActivationFunctionType
-from tflite.BuiltinOperator import BuiltinOperator
-from tflite.BuiltinOptions import BuiltinOptions
-from tflite.FullyConnectedOptionsWeightsFormat import FullyConnectedOptionsWeightsFormat
-from tflite.Model import Model
-from tflite.Padding import Padding
-from tflite.TensorType import TensorType
+import re
+import tflite
 
 # tflite folder generated using tflite schema and the flattbuffer compiler
 # See  https://google.github.io/flatbuffers/flatbuffers_guide_tutorial.html
@@ -39,90 +34,51 @@ def process_io_numpy(op):
     return (op.InputsAsNumpy(), op.OutputsAsNumpy())
 
 
+def process_options(op, options):
+    op_type = class_code_to_name(sys.modules['tflite'].BuiltinOptions.BuiltinOptions, op.BuiltinOptionsType())
+    opt = eval("sys.modules['tflite'].{}.{}()".format(op_type, op_type))
+    opt.Init(options.Bytes, options.Pos)
+
+    methods = [func for func in dir(opt) if
+               callable(getattr(opt, func)) and re.search(r'^((?!Init)(?!__)(?!Conv2D).)*$', func)]
+
+    # Store options in locals
+    for method in methods:
+        locals()[method] = eval("opt.{}()".format(method))
+        # exec("{} = opt.{}()".format(method, method))
+
+    return locals()
+
+
 # Functions to process each operation take the form of "process_" + the builtin opcode name that can
 # be found in the TFLite schema under `BuiltinOperator`. This way the functions can be resolved using `eval` and
 # the resolved builtin operator name.
 
 def process_CONV_2D(op, options, io):
-    from tflite import Conv2DOptions as c2opt
+    conv_options = process_options(op, options)
 
-    assert (op.BuiltinOptionsType() == BuiltinOptions.Conv2DOptions)
+    print("Done")
 
-    opt = c2opt.Conv2DOptions()
-    opt.Init(options.Bytes, options.Pos)
-
-    padding = class_code_to_name(Padding, opt.Padding())
-    stride_w = opt.StrideW()
-    stride_h = opt.StrideH()
-    dilation_w = opt.DilationWFactor()
-    dilation_h = opt.DilationHFactor()
-    activation_func = class_code_to_name(ActivationFunctionType, opt.FusedActivationFunction())
-
-    print("Pad: {}, Stride: [{},{}], Dilation: [{},{}], Activ: {}".format(padding, stride_w, stride_h, dilation_w,
-                                                                          dilation_h, activation_func))
-
-
-    ## We know options so we could go and create out single layer network for benchmarking here and save it
 
 def process_MAX_POOL_2D(op, options, io):
-    from tflite import Pool2DOptions as p2opt
+    pass
 
-    assert (op.BuiltinOptionsType() == BuiltinOptions.Pool2DOptions)
-
-    opt = p2opt.Pool2DOptions()
-    opt.Init(options.Bytes, options.Pos)
-
-    padding = class_code_to_name(Padding, opt.Padding())
-    stride_w = opt.StrideW()
-    stride_h = opt.StrideH()
-    filter_w = opt.FilterWidth()
-    filter_h = opt.FilterHeight()
-    activation_func = class_code_to_name(ActivationFunctionType, opt.FusedActivationFunction())
-
-    print("Pad: {}, Stride: [{},{}], Filter: [{},{}], Activ: {}".format(padding, stride_w, stride_h, filter_w,
-                                                                        filter_h, activation_func))
 
 def process_RESHAPE(op, options, io):
-    from tflite import ReshapeOptions as ropt
-
-    # TODO why is this sometimes NONE?
-    if op.BuiltinOptionsType() == BuiltinOptions.ReshapeOptions:
-
-        opt = ropt.ReshapeOptions()
-        opt.Init(options.Bytes, options.Pos)
-
-        new_shape = opt.NewShape()
-
-        print("New shape: {}".format(new_shape))
+    pass
 
 
 def process_FULLY_CONNECTED(op, options, io):
-    from tflite import FullyConnectedOptions as fcopt
-
-    assert (op.BuiltinOptionsType() == BuiltinOptions.FullyConnectedOptions)
-
-    opt = fcopt.FullyConnectedOptions()
-    opt.Init(options.Bytes, options.Pos)
-
-    activation_func = class_code_to_name(ActivationFunctionType, opt.FusedActivationFunction())
-    weights_format = class_code_to_name(FullyConnectedOptionsWeightsFormat, opt.WeightsFormat())
-    keep_num_dim = opt.KeepNumDims()
+    pass
 
 
 def process_SOFTMAX(op, options, io):
-    from tflite import SoftmaxOptions as smopt
-
-    assert (op.BuiltinOptionsType() == BuiltinOptions.SoftmaxOptions)
-
-    opt = smopt.SoftmaxOptions()
-    opt.Init(options.Bytes, options.Pos)
-
-    beta = opt.Beta()
+    pass
 
 
 def process_operation(model, graph, op):
     opcode_builtin = model.OperatorCodes(op.OpcodeIndex()).BuiltinCode()
-    op_name = class_code_to_name(BuiltinOperator, opcode_builtin)
+    op_name = class_code_to_name(sys.modules["tflite"].BuiltinOperator.BuiltinOperator, opcode_builtin)
     op_opts = op.BuiltinOptions()
     io_lengths = process_io_lengths(op)
     io = process_io(op)
@@ -130,14 +86,18 @@ def process_operation(model, graph, op):
     input_tensors = []
     for i, index in enumerate(io[0]):
         tensor = graph.Tensors(index)
-        input_tensors.append((tensor.ShapeAsNumpy(), class_code_to_name(TensorType, tensor.Type())))
+        input_tensors.append(
+            (tensor.ShapeAsNumpy(), class_code_to_name(sys.modules["tflite"].TensorType.TensorType, tensor.Type())))
     output_tensors = []
     for i, index in enumerate(io[1]):
         tensor = graph.Tensors(index)
-        output_tensors.append((tensor.ShapeAsNumpy(), class_code_to_name(TensorType, tensor.Type())))
+        output_tensors.append(
+            (tensor.ShapeAsNumpy(), class_code_to_name(sys.modules["tflite"].TensorType.TensorType, tensor.Type())))
 
     print("Processing {}, OP code: {}, options: {}".format(op_name, opcode_builtin,
-                                            class_code_to_name(BuiltinOptions, op.BuiltinOptionsType())))
+                                                           class_code_to_name(
+                                                               sys.modules["tflite"].BuiltinOptions.BuiltinOptions,
+                                                               op.BuiltinOptionsType())))
     print("Input tensors: {}, output tensors: {}".format(io_lengths[0], io_lengths[1]))
     print("Input: {}, output: {}".format(input_tensors, output_tensors))
 
@@ -146,7 +106,8 @@ def process_operation(model, graph, op):
 
 def main():
     with open(model_filename, "rb") as f:
-        model = Model.GetRootAsModel(f.read(), 0)
+        model = sys.modules["tflite"].Model.Model.GetRootAsModel(f.read(), 0)
+
         graph = model.Subgraphs(0)
 
         for i in range(graph.OperatorsLength()):
@@ -154,4 +115,15 @@ def main():
 
 
 if __name__ == '__main__':
+    import os, sys
+
+    path = os.path.join(os.path.dirname(__file__), "tflite")
+
+    for py in [f[:-3] for f in os.listdir(path) if f.endswith('.py') and f != '__init__.py']:
+        mod_name = '.'.join(["tflite", py])
+        mod = __import__(mod_name, fromlist=[py])
+        classes = [getattr(mod, x) for x in dir(mod) if isinstance(getattr(mod, x), type)]
+        for cls in classes:
+            setattr(sys.modules[__name__], cls.__name__, cls)
+
     main()
