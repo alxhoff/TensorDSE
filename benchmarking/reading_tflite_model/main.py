@@ -58,39 +58,29 @@ def process_options(op, options):
 # the resolved builtin operator name.
 
 def process_CONV_2D(op, options, io):
-    opts = process_options(op, options)
-
-    print("Done")
+    pass
 
 
 def process_MAX_POOL_2D(op, options, io):
-    opts = process_options(op, options)
-
-    print("Done")
+    pass
 
 
 def process_RESHAPE(op, options, io):
-    opts = process_options(op, options)
-
-    print("Done")
+    pass
 
 
 def process_FULLY_CONNECTED(op, options, io):
-    opts = process_options(op, options)
-
-    print("Done")
+    pass
 
 
 def process_SOFTMAX(op, options, io):
-    opts = process_options(op, options)
-
-    print("Done")
+    pass
 
 
 def process_operation(model, graph, op):
     opcode_builtin = model.OperatorCodes(op.OpcodeIndex()).BuiltinCode()
     op_name = class_code_to_name(sys.modules["tflite"].BuiltinOperator.BuiltinOperator, opcode_builtin)
-    op_opts = op.BuiltinOptions()
+    op_opts = process_options(op, op.BuiltinOptions())
     io_lengths = process_io_lengths(op)
     io = process_io(op)
 
