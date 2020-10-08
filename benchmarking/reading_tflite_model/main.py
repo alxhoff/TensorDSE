@@ -54,24 +54,65 @@ def process_options(op, options):
         return opts
     return None
 
+def get_strides(options):
+    return [1, options['StrideH'], options['StrideW'], 1]
+
+def get_padding(options):
+    return class_code_to_name(sys.modules['tflite'].Padding.Padding, options['Padding'])
+
+# Pool size
+def get_filter(options):
+    return [options['StrideH'], options['StrideW']]
+
+def get_input_tensor_shape(io):
+    return io[0][0][0]
+
+def get_output_tensor_shape(io):
+    return io[1][0]
+
+def get_activation_function(options):
+    return class_code_to_name(sys.modules['tflite'].ActivationFunctionType.ActivationFunctionType, options['FusedActivationFunction'])
+
+def get_num_dims(options):
+    return options['KeepNumDims']
+
+def get_weights_format(options):
+    return options['WeightsFormat']
 
 # Functions to process each operation take the form of "process_" + the builtin opcode name that can
 # be found in the TFLite schema under `BuiltinOperator`. This way the functions can be resolved using `eval` and
 # the resolved builtin operator name.
 
 def process_CONV_2D(options, io):
+    """ Conv2D layers have three inputs: input, weights and bias. Weights are the filters, eg. 28 3x3 filters would
+    give the weights input a shape of [28, 3, 3, 1]"""
+    input_shape = get_input_tensor_shape(io)
+    kernel_shape = io[0][1][0][1:]
+    padding = get_padding(options)
+    strides = get_strides(options)
+    activ_func = get_activation_function(options)
+    #TODO dillation?
     pass
 
 
 def process_MAX_POOL_2D(options, io):
+    pool_size = get_filter(options)
+    padding = get_padding(options)
+    strides = get_strides(options)
+    activ_func = get_activation_function(options)
     pass
 
 
 def process_RESHAPE(options, io):
+    output_shape = get_output_tensor_shape(io)
     pass
 
 
 def process_FULLY_CONNECTED(options, io):
+    activ_func = get_activation_function(options)
+    keep_num_dim = get_num_dims(options)
+    weights_format = get_weights_format(options)
+    output_shape = get_output_tensor_shape(io)
     pass
 
 
