@@ -40,7 +40,7 @@ def process_options(op, options):
     opt.Init(options.Bytes, options.Pos)
 
     methods = [func for func in dir(opt) if
-               callable(getattr(opt, func)) and re.search(r'^((?!Init)(?!__)(?!Conv2D).)*$', func)]
+               callable(getattr(opt, func)) and re.search(r'^((?!Init)(?!__)(?!{}).)*$'.format(op_type), func)]
 
     # Store options in locals
     for method in methods:
