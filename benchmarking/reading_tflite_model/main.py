@@ -1,6 +1,3 @@
-import re
-import tflite
-
 # tflite folder generated using tflite schema and the flattbuffer compiler
 # See  https://google.github.io/flatbuffers/flatbuffers_guide_tutorial.html
 
@@ -33,10 +30,17 @@ def process_io(op):
 def process_io_numpy(op):
     return (op.InputsAsNumpy(), op.OutputsAsNumpy())
 
+def print_options(options):
+    if options:
+        for key, item in options.items():
+            print("{} -> {}".format(key, item))
+
 
 def process_options(op, options):
     op_type = class_code_to_name(sys.modules['tflite'].BuiltinOptions.BuiltinOptions, op.BuiltinOptionsType())
     if op_type is not "NONE":
+        import re
+
         opt = eval("sys.modules['tflite'].{}.{}()".format(op_type, op_type))
         opt.Init(options.Bytes, options.Pos)
 
@@ -44,10 +48,8 @@ def process_options(op, options):
                    callable(getattr(opt, func)) and re.search(r'^((?!Init)(?!__)(?!{}).)*$'.format(op_type), func)]
 
         opts = {}
-        # Store options in locals
         for method in methods:
             opts[method] = eval("opt.{}()".format(method))
-            # exec("{} = opt.{}()".format(method, method))
 
         return opts
     return None
@@ -57,23 +59,23 @@ def process_options(op, options):
 # be found in the TFLite schema under `BuiltinOperator`. This way the functions can be resolved using `eval` and
 # the resolved builtin operator name.
 
-def process_CONV_2D(op, options, io):
+def process_CONV_2D(options, io):
     pass
 
 
-def process_MAX_POOL_2D(op, options, io):
+def process_MAX_POOL_2D(options, io):
     pass
 
 
-def process_RESHAPE(op, options, io):
+def process_RESHAPE(options, io):
     pass
 
 
-def process_FULLY_CONNECTED(op, options, io):
+def process_FULLY_CONNECTED(options, io):
     pass
 
 
-def process_SOFTMAX(op, options, io):
+def process_SOFTMAX(options, io):
     pass
 
 
@@ -101,8 +103,9 @@ def process_operation(model, graph, op):
                                                                op.BuiltinOptionsType())))
     print("Input tensors: {}, output tensors: {}".format(io_lengths[0], io_lengths[1]))
     print("Input: {}, output: {}".format(input_tensors, output_tensors))
+    print_options(op_opts)
 
-    eval("process_" + op_name)(op, op_opts, (input_tensors, output_tensors))
+    eval("process_" + op_name)(op_opts, (input_tensors, output_tensors))
 
 
 def main():
