@@ -21,18 +21,21 @@ def import_data():
 
     return data_test
 
-def save_graph(graph=None, name=None, dir=None):
+def save_graph(graph=None, dir=None):
   import os
 
   if graph != None:
     graph = tf.compat.v1.get_default_graph()
 
-  name = "graph_i"
+  name = "graph_saved"
   graph_file_name = name + '.pb'
 
   tf.io.write_graph(graph, dir, graph_file_name, as_text=False)
-  
-  return dir + "/" + graph_file_name
+
+def save_ckpt(sess=None, dir=None):
+
+  saver = tf.compat.v1.train.Saver()
+  saver.save(sess, dir + 'graph.ckpt')
 
 def reset():
 

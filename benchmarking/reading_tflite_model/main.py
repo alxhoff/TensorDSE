@@ -124,27 +124,16 @@ def process_CONV_2D(options, io):
         init = tf.compat.v1.global_variables_initializer() #Initialize global variables
         sess.run(init) #Runs Sessions initialization
 
-        output_place = tf.identity(conv_2d,name="CONV2D_output") 
-        output_place = sess.run(conv_2d, feed_dict={input_place:reshaped_data_test}) #Defining/Obtaining Output Tensors
+        output_place = tf.identity(conv_2d,name="CONV2D_output") #Naming Output
+        output_place = sess.run(conv_2d, feed_dict={input_place:reshaped_data_test}) #Running Session and obtaining Output Tensors
 
-        tf.io.write_graph(conv_graph, conv_dir, "graph_saved.pb", as_text=False)
-        saver=tf.compat.v1.train.Saver()
-        saver.save(sess,conv_ckpt)
+        save_graph(conv_graph, conv_dir)
+        save_ckpt(sess, conv_dir)
+        #saver=tf.compat.v1.train.Saver()
+        #saver.save(sess,conv_ckpt)
 
         #tflite_class = tf.function(func=tf.compat.v1.lite.TFLiteConverter.from_session(sess,input_place,output_place)) #Converting to tflite model from session
 
-        #freeze_graph.freeze_graph(conv_saved_pb,
-        #                          "",
-        #                          True,
-        #                          conv_ckpt,
-        #                          "OUTPUT_nodes",
-        #                          "",
-        #                          "",
-        #                          conv_frozen_pb,
-        #                          True,
-        #                          None)
-
-        #tflite_class = tf.compat.v1.lite.TFLiteConverter.from_frozen_graph(conv_pb,input_place,output_place,input_shape) #Converting to tflite from frozen graph
 
 
 def process_MAX_POOL_2D(options, io):
@@ -201,7 +190,6 @@ def process_operation(model, graph, op):
 def main():
     with open(model_filename, "rb") as f:
         model = sys.modules["tflite"].Model.Model.GetRootAsModel(f.read(), 0) #Gets Model
-
         graph = model.Subgraphs(0) #Retrieves Subgraphs
 
         for i in range(graph.OperatorsLength()): #Loops over Operations/Nodes?
