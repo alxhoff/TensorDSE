@@ -2,91 +2,16 @@
 # See  https://google.github.io/flatbuffers/flatbuffers_guide_tutorial.html
 
 from utils import *
+from process import *
 
 model_filename = "MNIST_model.tflite"
 models_folder = "models/"
 
-def class_code_to_name(cls, code):
-    for name, value in cls.__dict__.items():
-        if value == code:
-            return name
-    return None
-
-
-def process_io_lengths(op):
-    return (op.InputsLength(), op.OutputsLength())
-
-
-def process_io(op):
-    (input, output) = process_io_lengths(op)
-    inputs = []
-    outputs = []
-    for i in range(input):
-        inputs.append(op.Inputs(i))
-    for i in range(output):
-        outputs.append(op.Outputs(i))
-
-    return (inputs, outputs)
-
-
-def process_io_numpy(op):
-    return (op.InputsAsNumpy(), op.OutputsAsNumpy())
-
-def print_options(options):
-    if options:
-        for key, item in options.items():
-            print("{} -> {}".format(key, item))
-
-
-def process_options(op, options):
-    op_type = class_code_to_name(sys.modules['tflite'].BuiltinOptions.BuiltinOptions, op.BuiltinOptionsType())
-    if op_type != "NONE":
-        import re
-
-        opt = eval("sys.modules['tflite'].{}.{}()".format(op_type, op_type))
-        opt.Init(options.Bytes, options.Pos)
-
-        methods = [func for func in dir(opt) if
-                   callable(getattr(opt, func)) and re.search(r'^((?!Init)(?!__)(?!{}).)*$'.format(op_type), func)]
-
-        opts = {}
-        for method in methods:
-            opts[method] = eval("opt.{}()".format(method))
-
-        return opts
-    return None
-
-def get_strides(options):
-    return [1, options['StrideH'], options['StrideW'], 1]
-
-def get_padding(options):
-    return class_code_to_name(sys.modules['tflite'].Padding.Padding, options['Padding'])
-
-# Pool size
-def get_filter(options):
-    return [options['StrideH'], options['StrideW']]
-
-def get_input_tensor_shape(io):
-    return io[0][0][0]
-
-def get_kernel_shape(io):
-    return io[0][1][0][1:]
-
-def get_output_tensor_shape(io):
-    return io[1][0]
-
-def get_activation_function(options):
-    return class_code_to_name(sys.modules['tflite'].ActivationFunctionType.ActivationFunctionType, options['FusedActivationFunction'])
-
-def get_num_dims(options):
-    return options['KeepNumDims']
-
-def get_weights_format(options):
-    return options['WeightsFormat']
-
 # Functions to process each operation take the form of "process_" + the builtin opcode name that can
 # be found in the TFLite schema under `BuiltinOperator`. This way the functions can be resolved using `eval` and
 # the resolved builtin operator name.
+
+OP_ARRAY = []
 
 def process_CONV_2D(options, io):
 
@@ -107,8 +32,6 @@ def process_CONV_2D(options, io):
     input_shape = get_input_tensor_shape(io) #Gets inputs shape
     kernel_shape = get_kernel_shape(io) #Gets kernel shape
 
-    reshaped_data_test = np.reshape(data_test[0], input_shape)
-
     padding = get_padding(options) #Gets Padding
     strides = get_strides(options) #Gets Strides
     activ_func = get_activation_function(options) #Gets Activation Function
@@ -124,8 +47,10 @@ def process_CONV_2D(options, io):
         init = tf.compat.v1.global_variables_initializer() #Initialize global variables
         sess.run(init) #Runs Sessions initialization
 
+        test_data = np.random.rand(input_shape[0],input_shape[1],input_shape[2],input_shape[3])
+
         output_place = tf.identity(conv_2d,name="CONV2D_output") #Naming Output
-        output_place = sess.run(conv_2d, feed_dict={input_place:reshaped_data_test}) #Running Session and obtaining Output Tensors
+        output_place = sess.run(conv_2d, feed_dict={input_place:test_data}) #Running Session and obtaining Output Tensors
 
         save_graph(conv_graph, conv_dir)
         save_ckpt(sess, conv_dir)
@@ -137,16 +62,54 @@ def process_CONV_2D(options, io):
 
 
 def process_MAX_POOL_2D(options, io):
+
+    pool_dir = models_folder + "POOL/"
+
+    batch_size=1
+
     pool_size = get_filter(options)
     padding = get_padding(options)
     strides = get_strides(options)
     activ_func = get_activation_function(options)
-    pass
 
+    input_shape = get_input_tensor_shape(io) #Gets inputs shape
+    pool2d_graph = tf.Graph()
 
-def process_RESHAPE(options, io):
+    with pool2d_graph.as_default(), tf.compat.v1.Session() as sess:
+        input_place = tf.raw_ops.Placeholder(dtype=tf.float32, shape=input_shape, name="POOL2D_input") #Defining input
+        pool_2d = tf.compat.v1.layers.max_pooling2d(input_place,
+                                                    pool_size, 
+                                                    tuple((strides[1], strides[2])), 
+                                                    padding, 
+                                                    data_format='channels_last',
+                                                    name=None)
+
+        test_data = np.random.rand(input_shape[0],input_shape[1],input_shape[2],input_shape[3])
+
+        init = tf.compat.v1.global_variables_initializer() #Initialize global variables
+        sess.run(init) #Runs Sessions initialization
+
+        output_place = tf.identity(pool_2d ,name="POOL2D_output") #Naming Output
+        output_place = sess.run(pool_2d, feed_dict={input_place:test_data}) #Running Session and obtaining Output Tensors
+
+        save_graph(pool2d_graph, pool_dir)
+        #save_ckpt(sess, pool_dir) NO VARIABLES TO SAVE
+
+         
+
+def process_RESHAPE(options, io): #FLATTEN
     output_shape = get_output_tensor_shape(io)
-    pass
+    reshape_graph=tf.Graph() #Creating Flatten/Reshape Graph
+
+    with reshape_graph.as_default(), tf.compat.v1.Session() as sess:
+        sess.run(tf.compat.v1.global_variables_initializer())
+
+        #test_data = np.random.rand(output_shape)
+        #flattened = tf.reshape(test_data, output_shape)
+
+        #sess.run(flattened)
+        pass
+
 
 
 def process_FULLY_CONNECTED(options, io):
@@ -154,7 +117,8 @@ def process_FULLY_CONNECTED(options, io):
     keep_num_dim = get_num_dims(options)
     weights_format = get_weights_format(options)
     output_shape = get_output_tensor_shape(io)
-    pass
+
+    
 
 
 def process_SOFTMAX(options, io):
@@ -184,6 +148,7 @@ def process_operation(model, graph, op):
             (tensor.ShapeAsNumpy(), class_code_to_name(sys.modules["tflite"].TensorType.TensorType, tensor.Type())))
 
 
+    OP_ARRAY.append(op_name)
     eval("process_" + op_name)(op_opts, (input_tensors, output_tensors)) #Calls the respective operation
 
 
@@ -195,6 +160,8 @@ def main():
         for i in range(graph.OperatorsLength()): #Loops over Operations/Nodes?
             process_operation(model, graph, graph.Operators(i))
 
+        for OP in OP_ARRAY:
+            print(OP)
 
 if __name__ == '__main__':
     import os, sys
@@ -202,8 +169,6 @@ if __name__ == '__main__':
     from tensorflow.python.tools import freeze_graph
 
     path = os.path.join(os.path.dirname(__file__), "tflite")
-
-    data_test = import_data()
 
     for py in [f[:-3] for f in os.listdir(path) if f.endswith('.py') and f != '__init__.py']:
         mod_name = '.'.join(["tflite", py])
