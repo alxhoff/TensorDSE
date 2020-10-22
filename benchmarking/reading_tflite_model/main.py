@@ -118,7 +118,11 @@ def process_CONV_2D(options, io):
 
     :param options: The dictionary containing the option values obtained by calling the appropriate flattbuffer compiler
     generated get functions
-    :param io: A tuple storing the input and output tensor shapes as well as their types
+    :param io: A tuple storing the input and output tensor shapes as well as their types. Eg. io[0] is a tupple storing
+    the input tensor's shape as a NumPy array, a human-readable string of its type and the type's schema ID value.
+    Eg. ([1,1,8], "UINT8", 3). See TensorType.py for type values and names. Thus the input shape, needed for tensorflow
+    layer creation calls would need the input shape that can be accessed using `io[0][0]`. Similarly the output tensor's
+    shape could be accessed using `io[1][0]`, or the human readable type string by `io[1][1]`.
     :return: None
     """
     input_shape = get_input_tensor_shape(io)
