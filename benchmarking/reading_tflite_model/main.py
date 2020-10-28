@@ -60,7 +60,7 @@ def process_options(op, options):
     :return: Dictionary containing all of the operator's options and their values
     """
     op_type = class_code_to_name(sys.modules['tflite'].BuiltinOptions.BuiltinOptions, op.BuiltinOptionsType())
-    if op_type is not "NONE":
+    if op_type != "NONE":
         import re
 
         opt = eval("sys.modules['tflite'].{}.{}()".format(op_type, op_type))
