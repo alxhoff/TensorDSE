@@ -21,6 +21,11 @@ def import_data():
 
     return data_test
 
+@tf.function
+def convert_tflite(sess, input_place, output_place):
+    tf.compat.v1.lite.TFLiteConverter.from_session(sess, input_place, output_place)
+    return
+
 def save_graph(graph=None, dir=None):
   import os
 
@@ -31,11 +36,6 @@ def save_graph(graph=None, dir=None):
   graph_file_name = name + '.pb'
 
   tf.io.write_graph(graph, dir, graph_file_name, as_text=False)
-
-def save_ckpt(sess=None, dir=None):
-
-  saver = tf.compat.v1.train.Saver()
-  saver.save(sess, dir + 'graph.ckpt')
 
 def reset():
 

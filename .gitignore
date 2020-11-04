@@ -2,7 +2,6 @@ venv
 venv/*
 ./venv
 ./venv/*
-
 tags
 *.tags
 *.tags/

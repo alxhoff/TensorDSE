@@ -2,7 +2,7 @@
 # See  https://google.github.io/flatbuffers/flatbuffers_guide_tutorial.html
 
 from utils import *
-from process import *
+from gets import *
 
 model_filename = "MNIST_model.tflite"
 models_folder = "models/"
@@ -22,6 +22,8 @@ def process_CONV_2D(options, io):
         Bias
     """
     conv_dir = models_folder + "CONV_2D/"
+    #ckpt_dir = conv_dir + 'graph.ckpt.data-00000-of-00001'
+    ckpt_dir = conv_dir + 'checkpoint'
     conv_ckpt = conv_dir + 'graph.ckpt'
     conv_saved_pb = conv_dir + 'graph_saved.pb'
     conv_frozen_pb = conv_dir + 'graph_frozen.pb'
@@ -45,6 +47,8 @@ def process_CONV_2D(options, io):
         conv_2d = tf.nn.conv2d(input_place, filters=kernel_place, strides=strides, padding=padding, name="CONV2D_op") #Model Creation
 
         init = tf.compat.v1.global_variables_initializer() #Initialize global variables
+        saver = tf.compat.v1.train.Saver()
+
         sess.run(init) #Runs Sessions initialization
 
         test_data = np.random.rand(input_shape[0],input_shape[1],input_shape[2],input_shape[3])
@@ -53,7 +57,38 @@ def process_CONV_2D(options, io):
         output_place = sess.run(conv_2d, feed_dict={input_place:test_data}) #Running Session and obtaining Output Tensors
 
         save_graph(conv_graph, conv_dir)
-        save_ckpt(sess, conv_dir)
+        ckpt=saver.save(sess, conv_ckpt)
+        #freeze_graph.freeze_graph_with_def_protos(conv_saved_pb,
+        #                                          "",
+        #                                          True,
+        #                                          ckpt,
+        #                                          "Output_Nodes",
+        #                                          None,
+        #                                          None,
+        #                                          conv_frozen_pb,
+        #                                          True,
+        #                                          None,
+        #                                          False,
+        #                                          init
+        #                                          )
+
+        #reeze_graph.freeze_graph(conv_saved_pb,
+        #                          "",
+        #                          True,
+        #                          conv_ckpt,
+        #                          "Output_Nodes", #Output Nodes
+        #                          None,
+        #                          None,
+        #                          conv_frozen_pb,
+        #                          True,
+        #                          None,
+        #                          "",
+        #                          "",
+        #                          None,
+        #                          None
+        #                        )
+
+
         #saver=tf.compat.v1.train.Saver()
         #saver.save(sess,conv_ckpt)
 
@@ -64,7 +99,9 @@ def process_CONV_2D(options, io):
 def process_MAX_POOL_2D(options, io):
 
     pool_dir = models_folder + "POOL/"
-
+    pool_ckpt = pool_dir + 'graph.ckpt'
+    pool_saved_pb = pool_dir + 'graph_saved.pb'
+    pool_frozen_pb = pool_dir + 'graph_frozen.pb'
     batch_size=1
 
     pool_size = get_filter(options)
@@ -73,17 +110,21 @@ def process_MAX_POOL_2D(options, io):
     activ_func = get_activation_function(options)
 
     input_shape = get_input_tensor_shape(io) #Gets inputs shape
-    pool2d_graph = tf.Graph()
 
-    with pool2d_graph.as_default(), tf.compat.v1.Session() as sess:
+    tf.compat.v1.enable_eager_execution()
+    tf.executing_eagerly()
+
+    with tf.compat.v1.Session() as sess:
+
         input_place = tf.raw_ops.Placeholder(dtype=tf.float32, shape=input_shape, name="POOL2D_input") #Defining input
-        pool_2d = tf.compat.v1.layers.max_pooling2d(input_place,
-                                                    pool_size, 
-                                                    tuple((strides[1], strides[2])), 
-                                                    padding, 
-                                                    data_format='channels_last',
-                                                    name=None)
-
+        pool_2d = tf.nn.max_pool2d(input_place,
+                                   2,
+                                   strides,
+                                   padding,
+                                   data_format='NHWC',
+                                   name=None)
+                                    
+    
         test_data = np.random.rand(input_shape[0],input_shape[1],input_shape[2],input_shape[3])
 
         init = tf.compat.v1.global_variables_initializer() #Initialize global variables
@@ -92,8 +133,12 @@ def process_MAX_POOL_2D(options, io):
         output_place = tf.identity(pool_2d ,name="POOL2D_output") #Naming Output
         output_place = sess.run(pool_2d, feed_dict={input_place:test_data}) #Running Session and obtaining Output Tensors
 
-        save_graph(pool2d_graph, pool_dir)
-        #save_ckpt(sess, pool_dir) NO VARIABLES TO SAVE
+    tf.compat.v1.lite.TFLiteConverter.from_session(sess, input_place, output_place)
+        #convert_tflite(sess, input_place, output_place)
+
+        #save_graph(pool2d_graph, pool_dir)
+        #saver.save(sess, pool_ckpt)
+        #freeze_graph.freeze_graph(pool2d_graph,
 
          
 
@@ -163,10 +208,12 @@ def main():
         for OP in OP_ARRAY:
             print(OP)
 
+
 if __name__ == '__main__':
     import os, sys
     import tensorflow as tf
     from tensorflow.python.tools import freeze_graph
+    from tensorflow.compat.v1.train import Saver as saver
 
     path = os.path.join(os.path.dirname(__file__), "tflite")
 

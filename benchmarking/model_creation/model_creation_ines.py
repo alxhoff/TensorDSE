@@ -106,7 +106,13 @@ def conv_models(models_folder,target_shape, input_type):
         saver.save(sess, models_folder + '/' + save_model_to + '/' + 'graph' + convx.name[:-2] +'.ckpt')
         tf.train.write_graph(sess.graph.as_graph_def(), models_folder + '/' + save_model_to + "/", "graph" + convx.name[:-2] + ".pb", False)
 
-    freeze_graph.freeze_graph(models_folder + '/' + save_model_to + "/" + "graph" + convx.name[:-2] + ".pb", "", True, models_folder + '/' + save_model_to + "/" + 'graph' + convx.name[:-2]+'.ckpt' , "output_1", "", "", models_folder + '/' + save_model_to+ "/" + "graph" + convx.name[:-2] + "_f.pb", True, None )
+    freeze_graph.freeze_graph(models_folder + '/' + save_model_to + "/" + "graph" + convx.name[:-2] + ".pb", 
+                              "", 
+                              True, 
+                              models_folder + '/' + save_model_to + "/" + 'graph' + convx.name[:-2]+'.ckpt' , 
+                              "output_1", "", "", models_folder + '/' + save_model_to+ "/" + "graph" + convx.name[:-2] + "_f.pb", 
+                              True, 
+                              None )
     
     '''
     cmd_toco = "toco --graph_def_file="  + "graph" + convx.name + "_f.pb" + " --output_file=" + "/" + models_folder + '/' + save_model_to + '/'+ "graph" + convx.name + ".tflite" + " --input_format=TENSORFLOW_GRAPHDEF --output_format=TFLITE --inference_type=QUANTIZED_UINT8 --input_shape=" + "1,224,224,1" + " --input_array=input_1 --output_array=output_1 --std_dev_values=127 --mean_values=127 --default_ranges_min=0 --default_ranges_max=100" 
