@@ -25,8 +25,8 @@ model = keras.models.Sequential([
 ])
 
 
-model.compile(loss="sparse_categorical_crossentropy",
-              optimizer="adam",
+model.compile(optimizer="adam",
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=["accuracy"])
 
 history = model.fit(train_images, train_labels, epochs=5,
