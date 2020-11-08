@@ -4,6 +4,7 @@ logging.getLogger("tensorflow").setLevel(logging.DEBUG)
 import tensorflow as tf
 import numpy as np
 from tensorflow import keras
+#from keras.layers import LeakyReLU
 
 
 mnist = keras.datasets.mnist
@@ -14,12 +15,14 @@ train_images = train_images.astype(np.float32) / 255.0
 test_images = test_images.astype(np.float32) / 255.0
 
 
+from tensorflow.keras.layers import LeakyReLU
 
 model = keras.models.Sequential([
     keras.layers.InputLayer(input_shape=(28, 28)),
     keras.layers.Reshape(target_shape=(28,28,1)),
     keras.layers.Conv2D(filters=12, kernel_size=(3, 3), activation='relu'),
     keras.layers.MaxPooling2D(pool_size=(2, 2)),
+    keras.layers.Conv2D(filters=12,kernel_size=(3, 3), activation=LeakyReLU()),
     keras.layers.Flatten(),
     keras.layers.Dense(10)
 ])
