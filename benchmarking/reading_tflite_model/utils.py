@@ -21,29 +21,9 @@ def import_data():
 
     return data_test
 
+#@tf.numpy_function
 @tf.function
 def convert_tflite(sess, input_place, output_place):
     tf.compat.v1.lite.TFLiteConverter.from_session(sess, input_place, output_place)
     return
-
-def save_graph(graph=None, dir=None):
-  import os
-
-  if graph != None:
-    graph = tf.compat.v1.get_default_graph()
-
-  name = "graph_saved"
-  graph_file_name = name + '.pb'
-
-  tf.io.write_graph(graph, dir, graph_file_name, as_text=False)
-
-def reset():
-
-  #Clear prev tensorboard logs
-  if tf.io.gfile.exists(logdir):
-    tf.compat.v1.gfile.DeleteRecursively(logdir) 
-
-  #Set and clear default graph
-  tf.compat.v1.get_default_graph()
-  tf.compat.v1.reset_default_graph()
 

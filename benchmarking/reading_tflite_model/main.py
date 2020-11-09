@@ -22,12 +22,12 @@ def process_CONV_2D(options, io):
         Bias
     """
     conv_dir = models_folder + "CONV_2D/"
-    #ckpt_dir = conv_dir + 'graph.ckpt.data-00000-of-00001'
-    ckpt_dir = conv_dir + 'checkpoint'
     conv_ckpt = conv_dir + 'graph.ckpt'
+    conv_ckpt_lgr = conv_ckpt + '.data-00000-of-00001'
     conv_saved_pb = conv_dir + 'graph_saved.pb'
-    conv_frozen_pb = conv_dir + 'graph_frozen.pb'
-    
+    conv_saved_pbtxt = conv_dir + 'graph_saved.pbtxt'
+    conv_frozen_pb = conv_dir + 'frozen_graph.pb'
+
     batch_size = 1
     filter_count = 32
 
@@ -38,61 +38,56 @@ def process_CONV_2D(options, io):
     strides = get_strides(options) #Gets Strides
     activ_func = get_activation_function(options) #Gets Activation Function
 
-    conv_graph = tf.Graph() #Initializes Graph
+    conv_graph = tf.Graph()
 
     with conv_graph.as_default(), tf.compat.v1.Session() as sess:
 
+        test_input = np.random.rand(input_shape[0],input_shape[1],input_shape[2],input_shape[3]) #Defining test data
+
         kernel_place = tf.Variable(tf.random.normal([3,3,1,filter_count], dtype="float32"), dtype=tf.float32) #Defining Kernel
         input_place = tf.raw_ops.Placeholder(dtype=tf.float32, shape=input_shape, name="CONV2D_input") #Defining input
-        conv_2d = tf.nn.conv2d(input_place, filters=kernel_place, strides=strides, padding=padding, name="CONV2D_op") #Model Creation
-
-        init = tf.compat.v1.global_variables_initializer() #Initialize global variables
         saver = tf.compat.v1.train.Saver()
 
-        sess.run(init) #Runs Sessions initialization
+        init = tf.compat.v1.global_variables_initializer() #Initialize global variables
+        conv_2d = tf.nn.conv2d(input_place, filters=kernel_place, strides=strides, padding=padding, name="CONV2D_op") #Model Creation
 
-        test_data = np.random.rand(input_shape[0],input_shape[1],input_shape[2],input_shape[3])
+        sess.run(init) #Runs Sessions initialization
+        saver.save(sess, conv_ckpt) #Saving Checkpoints
 
         output_place = tf.identity(conv_2d,name="CONV2D_output") #Naming Output
-        output_place = sess.run(conv_2d, feed_dict={input_place:test_data}) #Running Session and obtaining Output Tensors
-
-        save_graph(conv_graph, conv_dir)
-        ckpt=saver.save(sess, conv_ckpt)
-        #freeze_graph.freeze_graph_with_def_protos(conv_saved_pb,
-        #                                          "",
-        #                                          True,
-        #                                          ckpt,
-        #                                          "Output_Nodes",
-        #                                          None,
-        #                                          None,
-        #                                          conv_frozen_pb,
-        #                                          True,
-        #                                          None,
-        #                                          False,
-        #                                          init
-        #                                          )
-
-        #reeze_graph.freeze_graph(conv_saved_pb,
-        #                          "",
-        #                          True,
-        #                          conv_ckpt,
-        #                          "Output_Nodes", #Output Nodes
-        #                          None,
-        #                          None,
-        #                          conv_frozen_pb,
-        #                          True,
-        #                          None,
-        #                          "",
-        #                          "",
-        #                          None,
-        #                          None
-        #                        )
+        output_place = sess.run(conv_2d, feed_dict={input_place:test_input}) #Running Session with input and obtaining Output Tensors
 
 
-        #saver=tf.compat.v1.train.Saver()
-        #saver.save(sess,conv_ckpt)
+        tf.compat.v1.train.write_graph(sess.graph_def, conv_dir,'graph_saved.pb', as_text=False) #Saving graph / Basically wrapper arounf tf.io.write_graph
+        tf.compat.v1.train.write_graph(sess.graph_def, conv_dir,'graph_saved.pbtxt', as_text=True) #Same / but in pbtxt format
 
-        #tflite_class = tf.function(func=tf.compat.v1.lite.TFLiteConverter.from_session(sess,input_place,output_place)) #Converting to tflite model from session
+        #convert_tflite(sess, input_place, output_place)
+        #tf.compat.v1.lite.TFLiteConverter.from_session(sess, input_place, output_place)
+
+        #tf.compat.v1.saved_model.simple_save(sess, conv_dir, input_place, output_place)
+        #tf.lite.TFLiteConverter.from_saved_model(conv_dir, 
+        #                                         signature_keys=None, 
+        #                                         tags=None)
+
+    #freeze_graph.freeze_graph(conv_saved_pb,    #Input Graph -- A GraphDef File to load
+    #                          "",               #Input Saver -- A Tensor Flow Saver File
+    #                          True,             #Input Binary -- Bool -> True means input graph is .pb
+    #                          conv_ckpt,        #Input_Checkpoint -- Result of Saver.save
+    #                          "CONV2D_output",  #Output Nodes Names
+    #                          None,             #UNUSED - Restore op name
+    #                          None,             #UNUSED - Filename Tensor Name
+    #                          conv_frozen_pb,   #The output file to be frozen as / output_graph
+    #                          True,             #Clear_Devices -- Bool -> Whether to remove device specifications
+    #                          ""                #Initializer Nodes - Comma separated list of initializer Nodes
+    #                        )                   #Variables_names_whitelist
+    #                                            #Variables_names_blacklist
+    #                                            #Input_meta_graph=None
+    #                                            #input_saved_model_dir=None
+    #                                            #saved_model_tags=tag_constants.SERVING
+    #                                            #checkpoint_version=saver_pb2.SaverDef.V2)
+
+
+    #tflite_class = tf.function(func=tf.compat.v1.lite.TFLiteConverter.from_session(sess,input_place,output_place)) #Converting to tflite model from session
 
 
 
@@ -114,7 +109,9 @@ def process_MAX_POOL_2D(options, io):
     tf.compat.v1.enable_eager_execution()
     tf.executing_eagerly()
 
-    with tf.compat.v1.Session() as sess:
+    pool_2d = tf.Graph() #Initializes Graph
+
+    with pool_2d.as_default(), tf.compat.v1.Session() as sess:
 
         input_place = tf.raw_ops.Placeholder(dtype=tf.float32, shape=input_shape, name="POOL2D_input") #Defining input
         pool_2d = tf.nn.max_pool2d(input_place,
@@ -125,20 +122,39 @@ def process_MAX_POOL_2D(options, io):
                                    name=None)
                                     
     
-        test_data = np.random.rand(input_shape[0],input_shape[1],input_shape[2],input_shape[3])
+        test_input = np.random.rand(input_shape[0],input_shape[1],input_shape[2],input_shape[3])
 
         init = tf.compat.v1.global_variables_initializer() #Initialize global variables
+        #saver = tf.compat.v1.train.Saver()
+
         sess.run(init) #Runs Sessions initialization
 
         output_place = tf.identity(pool_2d ,name="POOL2D_output") #Naming Output
-        output_place = sess.run(pool_2d, feed_dict={input_place:test_data}) #Running Session and obtaining Output Tensors
+        output_place = sess.run(pool_2d, feed_dict={input_place:test_input}) #Running Session and obtaining Output Tensors
 
-    tf.compat.v1.lite.TFLiteConverter.from_session(sess, input_place, output_place)
+        tf.compat.v1.train.write_graph(sess.graph_def, pool_dir,'graph_saved.pb', as_text=False) #Saving graph / Basically wrapper arounf tf.io.write_graph
+        tf.compat.v1.train.write_graph(sess.graph_def, pool_dir,'graph_saved.pbtxt', as_text=True) #Same / but in pbtxt format
+        #saver.save(sess, pool_ckpt) #Saving Checkpoints
+
         #convert_tflite(sess, input_place, output_place)
+        #tf.compat.v1.lite.TFLiteConverter.from_session(sess, input_place, output_place)
 
-        #save_graph(pool2d_graph, pool_dir)
-        #saver.save(sess, pool_ckpt)
-        #freeze_graph.freeze_graph(pool2d_graph,
+    #freeze_graph.freeze_graph(pool_saved_pb,    #Input Graph -- A GraphDef File to load
+    #                          "",               #Input Saver -- A Tensor Flow Saver File
+    #                          True,             #Input Binary -- Bool -> True means input graph is .pb
+    #                          None,             #Input_Checkpoint -- Result of Saver.save
+    #                          "POOL2D_output",  #Output Nodes Names
+    #                          None,             #UNUSED - Restore op name
+    #                          None,             #UNUSED - Filename Tensor Name
+    #                          pool_frozen_pb,   #The output file to be frozen as / output_graph
+    #                          True,             #Clear_Devices -- Bool -> Whether to remove device specifications
+    #                          ""                #Initializer Nodes - Comma separated list of initializer Nodes
+    #                        )                   #Variables_names_whitelist
+    #                                            #Variables_names_blacklist
+    #                                            #Input_meta_graph=None
+    #                                            #input_saved_model_dir=None
+    #                                            #saved_model_tags=tag_constants.SERVING
+    #                                            #checkpoint_version=saver_pb2.SaverDef.V2)
 
          
 
