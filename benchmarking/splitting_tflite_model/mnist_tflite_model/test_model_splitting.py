@@ -1,11 +1,9 @@
-from typing import Tuple, Union
-import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
+import os
 import logging
 from pathlib import Path
 import subprocess
 import json
-import urllib.request
 
 
 
@@ -13,9 +11,12 @@ import urllib.request
 def split_edgetpu_model(log: logging.Logger, name: str):
 
     fn = "%s.tflite" % name
-    
     log.info("Patching the model in JSON")
     fn_json = str(Path(fn).with_suffix(".json"))
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    fn_json = os.path.join(dir_path, fn_json)
+
     with open(fn_json) as fin:
         model = json.load(fin)
 
@@ -28,6 +29,7 @@ def split_edgetpu_model(log: logging.Logger, name: str):
             conv_opcode = i
     #assert conv_opcode >= 0
     model["operator_codes"] = new_opcodes
+    print(new_opcodes)
 
     # Fix the tensor dtypes which are int8 instead of uint8.
     # Also remove the multi-channel quantization which is not supported on Edge TPU.
@@ -40,9 +42,9 @@ def split_edgetpu_model(log: logging.Logger, name: str):
         if t["type"] == "INT8":
             t["type"] = "UINT8"
             t["quantization"]["zero_point"][0] = 0
-        t["quantization"]["scale"] = [t["quantization"]["scale"][0]]
-        t["quantization"]["zero_point"] = [t["quantization"]["zero_point"][0]]
-        t["quantization"]["quantized_dimension"] = 0
+        #t["quantization"]["scale"] = [t["quantization"]["scale"][0]]
+        #t["quantization"]["zero_point"] = [t["quantization"]["zero_point"][0]]
+        #t["quantization"]["quantized_dimension"] = 0
         index_map[i] = len(new_tensors)
         new_tensors.append(t)
     graph["tensors"] = new_tensors
@@ -56,6 +58,8 @@ def split_edgetpu_model(log: logging.Logger, name: str):
         op["inputs"] = [index_map[i] for i in op["inputs"]]
         new_ops.append(op)
     graph["operators"] = new_ops
+
+    
     
     # Update the global input and output tensor indexes.
     graph["inputs"][0] = new_ops[0]["inputs"][0]
@@ -65,8 +69,8 @@ def split_edgetpu_model(log: logging.Logger, name: str):
     with open(fn_json, "w") as fout:
         json.dump(model, fout, indent=4)
     
-    log.info("Generating the binary flatbuffers model from JSON")
-    echo_run("flatc", "-b", "schema.fbs", fn_json)
+    #log.info("Generating the binary flatbuffers model from JSON")
+    #echo_run("flatc", "-b", "schema.fbs", fn_json)
     
 
 def echo_run(*cmd):
