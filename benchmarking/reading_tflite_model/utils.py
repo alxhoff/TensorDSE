@@ -1,8 +1,10 @@
-import tensorflow as tf
-import numpy as np
 
 def import_data():
-    (data_train, labels_train), (data_test, labels_test) = tf.keras.datasets.mnist.load_data() #Data Retrieval
+    import tensorflow as tf
+    import numpy as np
+
+    #Data Retrieval
+    (data_train, labels_train), (data_test, labels_test) = tf.keras.datasets.mnist.load_data()
 
     #Reshaping Data
     data_train = data_train.reshape(data_train.shape[0], data_train.shape[1], data_train.shape[2], 1)
@@ -20,3 +22,15 @@ def import_data():
     data_test /= 255
 
     return data_test
+
+def clear_op_dir(op_name, path_to_dir):
+    import os
+
+    if (os.path.exists(path_to_dir)):
+        rm_cmd = "rm -r " + path_to_dir + "*"
+        os.system(rm_cmd)
+    else:
+        #TODO Hardcoded to 'Nix Systems
+        raise NotImplentedError
+        
+    return

@@ -6,6 +6,8 @@ from gets import *
 
 model_filename = "MNIST_model.tflite"
 models_folder = "models/"
+saved_models_folder = "SavedModelDir/"
+tflite_models_folder = "TfliteModel/"
 
 # Functions to process each operation take the form of "process_" + the builtin opcode name that can
 # be found in the TFLite schema under `BuiltinOperator`. This way the functions can be resolved using `eval` and
@@ -23,120 +25,115 @@ def process_CONV_2D(options, io):
     """
 
     conv_dir = models_folder + "CONV_2D/"
-    model_saved_dir = conv_dir + 'SavedModelDir/'
-    model_filename = conv_dir + "TfliteModel/CONV2D_model.tflite"
-
     conv_ckpt = conv_dir + 'graph.ckpt'
+    model_saved_dir = conv_dir + saved_models_folder
+    op_model_filename = conv_dir + tflite_models_folder + "CONV2D_model.tflite"
 
+    #Constants
     batch_size = 1
     filter_count = 32
 
-    input_shape = get_input_tensor_shape(io) #Gets inputs shape
-    kernel_shape = get_kernel_shape(io) #Gets kernel shape
+    input_shape = get_input_tensor_shape(io)        #Gets inputs shape
+    kernel_shape = get_kernel_shape(io)             #Gets kernel shape
 
-    padding = get_padding(options) #Gets Padding
-    strides = get_strides(options) #Gets Strides
-    activ_func = get_activation_function(options) #Gets Activation Function
+    padding = get_padding(options)                  #Gets Padding
+    strides = get_strides(options)                  #Gets Strides
+    activ_func = get_activation_function(options)   #Gets Activation Function
 
     conv_graph = tf.Graph()
 
     with conv_graph.as_default(), tf.compat.v1.Session() as sess:
 
+        #Defining test data
+        test_input = np.random.rand(input_shape[0],input_shape[1],
+                                    input_shape[2],input_shape[3])
+        #Defining Kernel
+        kernel_place = tf.Variable(tf.random.normal([3,3,1,filter_count], 
+                                   dtype="float32"), 
+                                   dtype=tf.float32) 
 
-        test_input = np.random.rand(input_shape[0],input_shape[1],input_shape[2],input_shape[3]) #Defining test data
+        #Defining input
+        input_place = tf.raw_ops.Placeholder(dtype=tf.float32, 
+                                             shape=input_shape, 
+                                             name="CONV2D_input") 
+        #Model Creation/Instantiation
+        conv_2d = tf.nn.conv2d(input_place, filters=kernel_place,               
+                               strides=strides, padding=padding, 
+                               name="CONV2D_op")
 
-        kernel_place = tf.Variable(tf.random.normal([3,3,1,filter_count], dtype="float32"), dtype=tf.float32) #Defining Kernel
-        input_place = tf.raw_ops.Placeholder(dtype=tf.float32, shape=input_shape, name="CONV2D_input") #Defining input
+        init = tf.compat.v1.global_variables_initializer()                          #Initialize global variables
+        sess.run(init)                                                              #Runs Sessions initialization
 
-        saver = tf.compat.v1.train.Saver()
+        saver = tf.compat.v1.train.Saver()                                          #Declaring Saver Object
+        saver.save(sess, conv_ckpt)                                                 #Saving Checkpoints
 
-        conv_2d = tf.nn.conv2d(input_place, filters=kernel_place, strides=strides, padding=padding, name="CONV2D_op") #Model Creation
+        output_place = tf.identity(conv_2d,name="CONV2D_output")                    #Naming Output
+        output_place = sess.run(conv_2d, feed_dict={input_place:test_input})        #Running Session with input and obtaining Output Tensors
 
-        init = tf.compat.v1.global_variables_initializer() #Initialize global variables
-        sess.run(init) #Runs Sessions initialization
-
-        saver.save(sess, conv_ckpt) #Saving Checkpoints
-
-        output_place = tf.identity(conv_2d,name="CONV2D_output") #Naming Output
-        output_place = sess.run(conv_2d, feed_dict={input_place:test_input}) #Running Session with input and obtaining Output Tensors
-
-        tf.compat.v1.saved_model.simple_save(sess, 
-                                             model_saved_dir, 
-                                             inputs={"CONV2D_input":input_place}, 
-                                             outputs={"CONV2D_op":conv_2d})
-
-        converter=tf.lite.TFLiteConverter.from_saved_model(model_saved_dir)
-        tflite_model=converter.convert()
-
-        open(model_filename, "wb").write(tflite_model)
+        clear_op_dir("CONV2D", model_saved_dir)                                     #Clears SavedModelDir -- Necessary
+        tf.compat.v1.saved_model.simple_save(sess,                                  #Saving Model into SavedModelDir
+                                             model_saved_dir,                                          
+                                             inputs={"CONV2D_input":input_place},                      
+                                             outputs={"CONV2D_op":conv_2d})                            
+                                                                                                       
+        converter=tf.lite.TFLiteConverter.from_saved_model(model_saved_dir)         #Creates Converter Object
+        tflite_model=converter.convert()                                            #Performs tflite conversion with it
+        open(op_model_filename, "wb").write(tflite_model)                           #Writes Conversion to pre-defined tflite folder
 
 
 def process_MAX_POOL_2D(options, io):
 
-    pool_dir = models_folder + "POOL/"
+    pool_dir = models_folder + "POOL2D/"
     pool_ckpt = pool_dir + 'graph.ckpt'
-    pool_saved_pb = pool_dir + 'graph_saved.pb'
-    pool_frozen_pb = pool_dir + 'graph_frozen.pb'
+    model_saved_dir = pool_dir + saved_models_folder
+    op_model_filename = pool_dir + tflite_models_folder + "POOL2D_model.tflite"
+
     batch_size=1
 
-    pool_size = get_filter(options)
-    padding = get_padding(options)
-    strides = get_strides(options)
-    activ_func = get_activation_function(options)
+    pool_size = get_filter(options)                 #Gets pool size
+    padding = get_padding(options)                  #Gets Padding
+    strides = get_strides(options)                  #Gets Strides
+    activ_func = get_activation_function(options)   #Gets Activation Function
 
-    input_shape = get_input_tensor_shape(io) #Gets inputs shape
+    input_shape = get_input_tensor_shape(io)        #Gets inputs shape
 
-    tf.compat.v1.enable_eager_execution()
-    tf.executing_eagerly()
-
-    pool_2d = tf.Graph() #Initializes Graph
+    pool_2d = tf.Graph()                            #Initializes Graph
 
     with pool_2d.as_default(), tf.compat.v1.Session() as sess:
 
-        input_place = tf.raw_ops.Placeholder(dtype=tf.float32, shape=input_shape, name="POOL2D_input") #Defining input
-        pool_2d = tf.nn.max_pool2d(input_place,
-                                   2,
-                                   strides,
-                                   padding,
-                                   data_format='NHWC',
-                                   name=None)
-                                    
-    
-        test_input = np.random.rand(input_shape[0],input_shape[1],input_shape[2],input_shape[3])
+        #Defining test data
+        test_input = np.random.rand(input_shape[0],input_shape[1],
+                                    input_shape[2],input_shape[3])
 
-        init = tf.compat.v1.global_variables_initializer() #Initialize global variables
+        #Defining input
+        input_place = tf.raw_ops.Placeholder(dtype=tf.float32, 
+                                             shape=input_shape, 
+                                             name="POOL2D_input")
+
+        #Model Creation/Instantiation
+        pool_2d = tf.nn.max_pool2d(input_place, 2,
+                                   strides, padding,
+                                   data_format='NHWC', name=None)
+                                    
+
+        init = tf.compat.v1.global_variables_initializer()                          #Initialize global variables
         #saver = tf.compat.v1.train.Saver()
 
-        sess.run(init) #Runs Sessions initialization
+        sess.run(init)                                                              #Runs Sessions initialization
 
-        output_place = tf.identity(pool_2d ,name="POOL2D_output") #Naming Output
-        output_place = sess.run(pool_2d, feed_dict={input_place:test_input}) #Running Session and obtaining Output Tensors
+        output_place = tf.identity(pool_2d ,name="POOL2D_output")                   #Naming Output
+        output_place = sess.run(pool_2d, feed_dict={input_place:test_input})        #Running Session and obtaining Output Tensors
 
-        tf.compat.v1.train.write_graph(sess.graph_def, pool_dir,'graph_saved.pb', as_text=False) #Saving graph / Basically wrapper arounf tf.io.write_graph
-        tf.compat.v1.train.write_graph(sess.graph_def, pool_dir,'graph_saved.pbtxt', as_text=True) #Same / but in pbtxt format
-        #saver.save(sess, pool_ckpt) #Saving Checkpoints
+        clear_op_dir("POOL2D", model_saved_dir)                                     #Clears SavedModelDir -- Necessary
+        tf.compat.v1.saved_model.simple_save(sess,                                  #Saving Model into SavedModelDir
+                                             model_saved_dir, 
+                                             inputs={"POOL2D_input":input_place}, 
+                                             outputs={"POOL2D_op":pool_2d})
 
-        #convert_tflite(sess, input_place, output_place)
-        #tf.compat.v1.lite.TFLiteConverter.from_session(sess, input_place, output_place)
+        converter=tf.lite.TFLiteConverter.from_saved_model(model_saved_dir)         #Creates Converter Object
+        tflite_model=converter.convert()                                            #Performs tflite conversion with it
+        open(op_model_filename, "wb").write(tflite_model)                           #Writes Conversion
 
-    #freeze_graph.freeze_graph(pool_saved_pb,    #Input Graph -- A GraphDef File to load
-    #                          "",               #Input Saver -- A Tensor Flow Saver File
-    #                          True,             #Input Binary -- Bool -> True means input graph is .pb
-    #                          None,             #Input_Checkpoint -- Result of Saver.save
-    #                          "POOL2D_output",  #Output Nodes Names
-    #                          None,             #UNUSED - Restore op name
-    #                          None,             #UNUSED - Filename Tensor Name
-    #                          pool_frozen_pb,   #The output file to be frozen as / output_graph
-    #                          True,             #Clear_Devices -- Bool -> Whether to remove device specifications
-    #                          ""                #Initializer Nodes - Comma separated list of initializer Nodes
-    #                        )                   #Variables_names_whitelist
-    #                                            #Variables_names_blacklist
-    #                                            #Input_meta_graph=None
-    #                                            #input_saved_model_dir=None
-    #                                            #saved_model_tags=tag_constants.SERVING
-    #                                            #checkpoint_version=saver_pb2.SaverDef.V2)
-
-         
 
 def process_RESHAPE(options, io): #FLATTEN
     output_shape = get_output_tensor_shape(io)
@@ -210,6 +207,7 @@ if __name__ == '__main__':
     import tensorflow as tf
     from tensorflow.python.tools import freeze_graph
     from tensorflow.compat.v1.train import Saver as saver
+    import numpy as np
 
     path = os.path.join(os.path.dirname(__file__), "tflite")
 
