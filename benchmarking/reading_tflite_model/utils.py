@@ -20,10 +20,3 @@ def import_data():
     data_test /= 255
 
     return data_test
-
-#@tf.numpy_function
-@tf.function
-def convert_tflite(sess, input_place, output_place):
-    tf.compat.v1.lite.TFLiteConverter.from_session(sess, input_place, output_place)
-    return
-
