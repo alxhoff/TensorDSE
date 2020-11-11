@@ -135,29 +135,80 @@ def process_MAX_POOL_2D(options, io):
         open(op_model_filename, "wb").write(tflite_model)                           #Writes Conversion
 
 
-def process_RESHAPE(options, io): #FLATTEN
+def process_RESHAPE(options, io):                   #FLATTEN
+
+    reshape_dir = models_folder + "RESHAPE/"
+    model_saved_dir = reshape_dir + saved_models_folder
+    op_model_filename = reshape_dir + tflite_models_folder + "RESHAPE_model.tflite"
+
+    input_shape = get_input_tensor_shape(io)
     output_shape = get_output_tensor_shape(io)
-    reshape_graph=tf.Graph() #Creating Flatten/Reshape Graph
+
+    reshape_graph=tf.Graph()                        #Creating Flatten/Reshape Graph
 
     with reshape_graph.as_default(), tf.compat.v1.Session() as sess:
+
+        test_input = np.random.rand(input_shape[0],input_shape[1],
+                                    input_shape[2],input_shape[3])
+
+
+        input_place = tf.raw_ops.Placeholder(dtype=tf.int32, 
+                                             shape=input_shape, 
+                                             name="RESHAPE_input")
+
         sess.run(tf.compat.v1.global_variables_initializer())
 
-        #test_data = np.random.rand(output_shape)
-        #flattened = tf.reshape(test_data, output_shape)
+        flattened_op = tf.reshape(input_place, 
+                                 (output_shape[0][0], output_shape[0][1]), 
+                                 name="RESHAPE_op")
 
-        #sess.run(flattened)
-        pass
+        sess.run(flattened_op, feed_dict={input_place:test_input})
+
+        clear_op_dir("POOL2D", model_saved_dir)                                     #Clears SavedModelDir -- Necessary
+        tf.compat.v1.saved_model.simple_save(sess,                                  #Saving Model into SavedModelDir
+                                             model_saved_dir, 
+                                             inputs={"RESHAPE_input":input_place}, 
+                                             outputs={"RESHAPE_op":flattened_op})
+
+        converter=tf.lite.TFLiteConverter.from_saved_model(model_saved_dir)         #Creates Converter Object
+        tflite_model=converter.convert()                                            #Performs tflite conversion with it
+        open(op_model_filename, "wb").write(tflite_model)                           #Writes Conversion
 
 
 
 def process_FULLY_CONNECTED(options, io):
-    activ_func = get_activation_function(options)
-    keep_num_dim = get_num_dims(options)
-    weights_format = get_weights_format(options)
+
+    input_shape = get_input_tensor_shape(io)
     output_shape = get_output_tensor_shape(io)
 
-    
+    weights_format = get_weights_format(options)
+    activ_func = get_activation_function(options)
 
+    keep_num_dim = get_num_dims(options)
+
+    fully_connected_graph=tf.Graph()                        #Creating FCC Graph
+
+    with fully_connected_graph.as_default(), tf.compat.v1.Session() as sess:
+    
+        pass
+        #test_input = np.random.rand(input_shape[0],input_shape[1],
+        #                            input_shape[2],input_shape[3])
+
+        ##Defining input
+        #input_place = tf.raw_ops.Placeholder(dtype=tf.float32, 
+        #                                     shape=input_shape, 
+        #                                     name="FCC_input")
+
+        ##Model Creation/Instantiation
+        #FCC = tf.add(tf.matmul(input_place, weights_format['wd1']), biases['bd1'])                               
+
+        #init = tf.compat.v1.global_variables_initializer()                          #Initialize global variables
+        ##saver = tf.compat.v1.train.Saver()
+
+        #sess.run(init)                                                              #Runs Sessions initialization
+
+        #output_place = tf.identity(pool_2d ,name="POOL2D_output")                   #Naming Output
+        #output_place = sess.run(pool_2d, feed_dict={input_place:test_input})        #Running Session and obtaining Output Tensors
 
 def process_SOFTMAX(options, io):
     pass
