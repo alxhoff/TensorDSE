@@ -4,7 +4,7 @@ logging.getLogger("tensorflow").setLevel(logging.DEBUG)
 import tensorflow as tf
 import numpy as np
 from tensorflow import keras
-#from keras.layers import LeakyReLU
+from tensorflow.keras.layers import LeakyReLU
 
 
 mnist = keras.datasets.mnist
@@ -15,7 +15,6 @@ train_images = train_images.astype(np.float32) / 255.0
 test_images = test_images.astype(np.float32) / 255.0
 
 
-from tensorflow.keras.layers import LeakyReLU
 
 model = keras.models.Sequential([
     keras.layers.InputLayer(input_shape=(28, 28)),
