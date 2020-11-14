@@ -22,8 +22,20 @@ def import_data():
     data_test /= 255
 
     return data_test
+    
+def activation_id(activ_func):
 
-def prep_op_dir(path_to_dir):
+    options_dict = {
+        "RELU" : "relu",
+        "SOFTMAX" : "softmax",
+        "DROPOUT" : None
+    }
+
+    default=None
+    return options_dict.get(activ_func, default)
+
+def prep_op_dir(path_to_dir, op_name):
+    #TODO Hardcoded for 'Nix Systems
     import os
 
     if (os.path.exists(path_to_dir)): 
@@ -37,12 +49,13 @@ def prep_op_dir(path_to_dir):
             os.system(rm_cmd)
             os.system(mkdir_cmd)
     else:
-        #TODO Hardcoded for 'Nix Systems
-        raise NotImplentedError
+        mkdir_cmd="mkdir " + path_to_dir + "op_name"
+        os.system(mkdir_cmd)
 
     return path_to_dir+"tmp/"
 
 def clean_op_dir(path_to_dir):
+    #TODO Hardcoded for 'Nix Systems
     import os
 
     if (os.path.exists(path_to_dir)): 
@@ -50,14 +63,13 @@ def clean_op_dir(path_to_dir):
             rm_cmd = "rm -r " + path_to_dir
             os.system(rm_cmd)
     else:
-        #TODO Hardcoded for 'Nix Systems
         raise NotImplentedError
 
 def tflite_conversion(session, operation_name, operation, op_dir, input_place):
     import tensorflow as tf
     tf_model_filename = op_dir + operation_name + ".tflite"
 
-    tmp_model_saved_dir=prep_op_dir(op_dir)                            #Clears SavedModelDir -- Necessary
+    tmp_model_saved_dir=prep_op_dir(op_dir, operation_name)                            #Clears SavedModelDir -- Necessary
 
     tf.compat.v1.saved_model.simple_save(session,                               #Saving Model into SavedModelDir
                                          tmp_model_saved_dir,                                          

@@ -25,7 +25,6 @@ def process_CONV_2D(options, io):
     conv_dir = models_folder + op_name + "/"
 
     #Retrieving operation relevant variables.
-    batch_size = 1
     filter_count = 32
 
     input_shape = get_input_tensor_shape(io) 
@@ -47,16 +46,16 @@ def process_CONV_2D(options, io):
         
         input_place = tf.raw_ops.Placeholder(dtype=tf.float32,                  #Defining input
                                              shape=input_shape, 
-                                             name="CONV2D_input") 
+                                             name=op_name+"_input") 
         
         conv_2d = tf.nn.conv2d(input_place, filters=kernel_place,               #Model Creation/Instantiation               
                                strides=strides, padding=padding, 
-                               name="CONV2D_op")
+                               name=op_name+"_op")
 
         init = tf.compat.v1.global_variables_initializer()                      #Initialize global variables
         sess.run(init)                                                          #Runs Sessions initialization
 
-        output_place = tf.identity(conv_2d,name="CONV2D_output")                #Naming Output
+        output_place = tf.identity(conv_2d,name=op_name+"_output")                #Naming Output
         output_place = sess.run(conv_2d, feed_dict={input_place:test_input})    #Running Session with input and obtaining Output Tensors
 
         tflite_conversion(sess, op_name, conv_2d, conv_dir, input_place)
@@ -64,7 +63,7 @@ def process_CONV_2D(options, io):
 
 def process_MAX_POOL_2D(options, io):
 
-    op_name="POOL_2D"
+    op_name="MAX_POOL_2D"
     pool_dir = models_folder + op_name + "/"
 
     pool_size = get_filter(options)                 
@@ -81,17 +80,18 @@ def process_MAX_POOL_2D(options, io):
         
         input_place = tf.raw_ops.Placeholder(dtype=tf.float32,                  #Defining input
                                              shape=input_shape, 
-                                             name="POOL_2D_input")
+                                             name=op_name+"_input")
 
         pool_2d = tf.nn.max_pool2d(input_place, 2,                              #Model Creation/Instantiation
                                    strides, padding,
-                                   data_format='NHWC', name=None)
+                                   data_format='NHWC', 
+                                   name=op_name+"_op")
                                     
 
         init = tf.compat.v1.global_variables_initializer()                      #Initialize global variables
         sess.run(init)                                                          #Runs Sessions initialization
 
-        output_place = tf.identity(pool_2d ,name="POOL_2D_output")              #Naming Output
+        output_place = tf.identity(pool_2d ,name=op_name+"_output")              #Naming Output
         output_place = sess.run(pool_2d, feed_dict={input_place:test_input})    #Running Session and obtaining Output Tensors
 
         tflite_conversion(sess, op_name, pool_2d, pool_dir, input_place)
@@ -114,16 +114,16 @@ def process_RESHAPE(options, io):
 
         input_place = tf.raw_ops.Placeholder(dtype=tf.int32, 
                                              shape=input_shape, 
-                                             name="RESHAPE_input")
+                                             name=op_name+"_input")
 
         init = tf.compat.v1.global_variables_initializer()
         sess.run(init)
 
         flattened = tf.reshape(input_place, 
                               (output_shape[0][0], output_shape[0][1]), 
-                              name="RESHAPE_op")
+                              name=op_name+"_op")
 
-        output_place = tf.identity(flattened ,name="RESHAPE_output")
+        output_place = tf.identity(flattened ,name=op_name+"_output")
         output_place = sess.run(flattened, feed_dict={input_place:test_input})
 
         tflite_conversion(sess, op_name, flattened, reshape_dir, input_place)
@@ -133,39 +133,70 @@ def process_RESHAPE(options, io):
 def process_FULLY_CONNECTED(options, io):
 
     op_name="FULLY_CONNECTED"
-    reshape_dir = models_folder + op_name + "/"
+    fcl_dir = models_folder + op_name + "/"
 
     input_shape = get_input_tensor_shape(io)
     test_input = np.random.rand(input_shape[0],input_shape[1])
-        
 
     output_shape = get_output_tensor_shape(io)
+    units=output_shape[0][1]                                                    #Not sure about this
 
     weights_format = get_weights_format(options)
-    activ_func = get_activation_function(options)
 
-    keep_num_dim = get_num_dims(options)
+    activ_func = get_activation_function(options)
+    activ_func = activation_id(activ_func)
+
+    keep_num_dim = get_num_dims(options)                                        # Is this bias?
 
     fully_connected_graph=tf.Graph()
     with fully_connected_graph.as_default(), tf.compat.v1.Session() as sess:
         
         input_place = tf.raw_ops.Placeholder(dtype=tf.float32, 
                                              shape=input_shape, 
-                                             name="FCL_input")
+                                             name=op_name+"_input")
         
-        FCL = tf.add(tf.matmul(input_place, weights_format['wd1']), biases['bd1'])                               
-        FCL = tf.nn.relu(FCL)
+        #FCL = tf.add(tf.matmul(input_place, weights_format['wd1']), biases['bd1'])                               
+        #FCL = tf.nn.relu(FCL)
+        FCL = tf.compat.v1.layers.dense(input_place,
+                                        units,
+                                        activ_func,
+                                        use_bias=keep_num_dim,
+                                        name=op_name+"_op")
 
         init = tf.compat.v1.global_variables_initializer()                          
         sess.run(init)                                                              
 
-        output_place = tf.identity(FCL ,name="FCL_output")                          
+        output_place = tf.identity(FCL ,name=op_name+"_output")                          
         output_place = sess.run(FCL, feed_dict={input_place:test_input})            
 
-        tflite_conversion(sess, op_name, FCL, reshape_dir, input_place)
+        tflite_conversion(sess, op_name, FCL, fcl_dir, input_place)
 
 def process_SOFTMAX(options, io):
-    pass
+    op_name="SOFTMAX"
+    softmx_dir = models_folder + op_name + "/"
+
+    input_shape = get_input_tensor_shape(io)
+    test_input = np.random.rand(input_shape[0],input_shape[1])
+
+    output_shape = get_output_tensor_shape(io)
+    units = output_shape[0][1]
+
+    softmx_graph=tf.Graph()
+    with softmx_graph.as_default(), tf.compat.v1.Session() as sess:
+        
+        input_place = tf.raw_ops.Placeholder(dtype=tf.float32, 
+                                             shape=input_shape, 
+                                             name=op_name+"_input")
+
+        Soft = tf.nn.softmax(input_place,None, op_name+"_op")
+
+        init = tf.compat.v1.global_variables_initializer()                          
+        sess.run(init)                                                              
+
+        output_place = tf.identity(Soft ,name=op_name+"_output")                          
+        output_place = sess.run(Soft, feed_dict={input_place:test_input})            
+
+        tflite_conversion(sess, op_name, Soft,softmx_dir, input_place)
 
 
 def process_operation(model, graph, op):
@@ -191,7 +222,6 @@ def process_operation(model, graph, op):
             (tensor.ShapeAsNumpy(), class_code_to_name(sys.modules["tflite"].TensorType.TensorType, tensor.Type())))
 
     eval("process_" + op_name)(op_opts, (input_tensors, output_tensors)) #Calls the respective operation
-
 
 def main():
     with open(model_filename, "rb") as f:
