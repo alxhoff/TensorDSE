@@ -1,6 +1,7 @@
 # tflite folder generated using tflite schema and the flattbuffer compiler
 # See  https://google.github.io/flatbuffers/flatbuffers_guide_tutorial.html
 
+from deploy import *
 from utils import *
 from gets import *
 
@@ -223,7 +224,7 @@ def process_operation(model, graph, op):
 
     eval("process_" + op_name)(op_opts, (input_tensors, output_tensors)) #Calls the respective operation
 
-def main():
+def tflite_conversion():
     with open(model_filename, "rb") as f:
         model = sys.modules["tflite"].Model.Model.GetRootAsModel(f.read(), 0) #Gets Model
         graph = model.Subgraphs(0) #Retrieves Subgraphs
@@ -248,4 +249,6 @@ if __name__ == '__main__':
         for cls in classes:
             setattr(sys.modules[__name__], cls.__name__, cls)
 
-    main()
+    tflite_conversion()
+    #tflite_compilation()
+    #tflite_deployment()
