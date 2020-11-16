@@ -224,7 +224,7 @@ def process_operation(model, graph, op):
 
     eval("process_" + op_name)(op_opts, (input_tensors, output_tensors)) #Calls the respective operation
 
-def tflite_conversion():
+def source_tflite_conversion():
     with open(model_filename, "rb") as f:
         model = sys.modules["tflite"].Model.Model.GetRootAsModel(f.read(), 0) #Gets Model
         graph = model.Subgraphs(0) #Retrieves Subgraphs
@@ -249,6 +249,7 @@ if __name__ == '__main__':
         for cls in classes:
             setattr(sys.modules[__name__], cls.__name__, cls)
 
-    tflite_conversion()
+    source_tflite_conversion()
     #tflite_compilation()
-    #tflite_deployment()
+    example="source_models/efficientnet-edgetpu-S_quant_edgetpu.tflite"
+    tflite_deployment(example)

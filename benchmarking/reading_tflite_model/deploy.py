@@ -12,9 +12,11 @@ def make_interpreter(model_file):
 
     device = {'device': device[0]} if device else {}
     shared_library = EDGETPU_SHARED_LIB
-    experimental_delegates = tflite.load_delegate(shared_library, device)       #Returns loaded Delegate object
+    experimental_delegates = [ tflite.load_delegate(shared_library, device) ]       #Returns loaded Delegate object
 
-    return tflite.Interpreter(model_file, experimental_delegates)
+    return tflite.Interpreter(model_path=model_file, 
+                              model_content=None, 
+                              experimental_delegates=experimental_delegates)
 
 def tflite_deployment(model_file):
     import time
@@ -27,8 +29,6 @@ def tflite_deployment(model_file):
     order to be run correctly.
     """
     print('----INFERENCE TIME----')
-    print('Note: The first inference on Edge TPU is slow because it includes',
-            'loading the model into Edge TPU memory.')
     start = time.perf_counter()
     interpreter.invoke()                                                        #Runs the interpreter/inference, be sure
                                                                                 #to have set the input sizes and allocate 
