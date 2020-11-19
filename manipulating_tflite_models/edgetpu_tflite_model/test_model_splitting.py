@@ -43,8 +43,6 @@ class EdgeTPUBuiltinOperator(Enum):
 
 edgetpu_opcodes = [BuiltinOperator.value for BuiltinOperator in EdgeTPUBuiltinOperator]
 
-def split_graph() :
-
 def optimize_edgetpu_model(log: logging.Logger, name: str):
 
     fn = "%s.tflite" % name
@@ -61,7 +59,7 @@ def optimize_edgetpu_model(log: logging.Logger, name: str):
     # Check for unsupported operations.
     supported_opcodes = []
     unsupported_opcodes = []
-    splitting_flag = False
+    #splitting_flag = False
     for i, c in enumerate(model["operator_codes"]):
         # Variable that saves the index of an operation in the operator_codes list
         # along with its deprecated_builtin_code
@@ -72,16 +70,13 @@ def optimize_edgetpu_model(log: logging.Logger, name: str):
         else :
             op_tuple = [i,c["deprecated_builtin_code"]]
             unsupported_opcodes.append(op_tuple)
-            splitting_flag = True
+            #splitting_flag = True
 
     graph = model["subgraphs"][0]
 
-    #while splitting_flag :
-    for op in graph["operators"]:
-        if op["opcode_index"] != :
-
-
-
+    for i,op in enumerate(graph["operators"]):
+        if op["opcode_index"] == unsupported_opcodes[0][0] :
+            
 
 
 
@@ -153,7 +148,7 @@ def echo_run(*cmd):
         print(output)
     p.check_returncode()
 
-name = 'test_model_quant'
+name = 'test_model_quant_edgetpu'
 log = logging.getLogger(name)
 log.setLevel(logging.INFO)
 
