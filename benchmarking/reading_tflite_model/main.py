@@ -253,5 +253,6 @@ if __name__ == '__main__':
 
     source_tflite_conversion()
     #edge_tflite_compilation()
-    #gpu_group_deployment()
-    cpu_group_deployment(models_folder, op_array)
+    #edge_group_tflite_deployment()
+    #gpu_group_tflite_deployment()
+    cpu_group_tflite_deployment(models_folder, op_array)

@@ -45,7 +45,7 @@ def edge_tflite_deployment(model_name, model_file, count):
     print('%.1fms' % (inference_time * 1000))
     pass
 
-def cpu_group_deployment(models_folder, operations):
+def cpu_group_tflite_deployment(models_folder, operations):
     for op in operations:
         op_path = models_folder + op + "/"
         tflite_model = fetch_file(op_path, ".tflite")
@@ -90,6 +90,9 @@ def cpu_tflite_deployment(model_file, model_name, count):
         CPU_RESULTS.append([i, inference_time])
 
     create_csv_file(cpu_folder, model_name, CPU_RESULTS)
+
+def gpu_group_tflite_deployment(models_folder, operations):
+    pass
 
 def gpu_tflite_deployment(model_name, model_file, count):
     pass
