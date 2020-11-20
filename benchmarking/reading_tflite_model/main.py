@@ -6,7 +6,10 @@ from utils import *
 from gets import *
 
 model_filename = "source_models/MNIST_model.tflite"
+model_example="source_models/efficientnet-edgetpu-S_quant_edgetpu.tflite"
 models_folder = "single_layer_models/"
+
+op_array=[]
 
 # Functions to process each operation take the form of "process_" + the builtin opcode name that can
 # be found in the TFLite schema under `BuiltinOperator`. This way the functions can be resolved using `eval` and
@@ -156,8 +159,6 @@ def process_FULLY_CONNECTED(options, io):
                                              shape=input_shape, 
                                              name=op_name+"_input")
         
-        #FCL = tf.add(tf.matmul(input_place, weights_format['wd1']), biases['bd1'])                               
-        #FCL = tf.nn.relu(FCL)
         FCL = tf.compat.v1.layers.dense(input_place,
                                         units,
                                         activ_func,
@@ -204,6 +205,7 @@ def process_operation(model, graph, op):
 
     opcode_builtin = model.OperatorCodes(op.OpcodeIndex()).BuiltinCode() #Necessary OP Code Intex to retrieve OP_NAME
     op_name = class_code_to_name(sys.modules["tflite"].BuiltinOperator.BuiltinOperator, opcode_builtin) #Operation Name
+    op_array.append(op_name)
     op_opts = process_options(op, op.BuiltinOptions()) #Operaton Options
     op_opts_name = class_code_to_name(sys.modules["tflite"].BuiltinOptions.BuiltinOptions,op.BuiltinOptionsType()) #Name of Operation Options
 
@@ -250,6 +252,6 @@ if __name__ == '__main__':
             setattr(sys.modules[__name__], cls.__name__, cls)
 
     source_tflite_conversion()
-    #tflite_compilation()
-    example="source_models/efficientnet-edgetpu-S_quant_edgetpu.tflite"
-    tflite_deployment(example)
+    #edge_tflite_compilation()
+    #gpu_group_deployment()
+    cpu_group_deployment(models_folder, op_array)
