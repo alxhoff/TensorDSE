@@ -23,6 +23,9 @@ def make_interpreter(model_file):
                               model_content=None, 
                               experimental_delegates=experimental_delegates)
 
+def edge_group_tflite_deployment(models_folder, operations):
+    pass
+
 def edge_tflite_deployment(model_name, model_file, count):
     import time
 

@@ -59,10 +59,12 @@ def process_CONV_2D(options, io):
         init = tf.compat.v1.global_variables_initializer()                      #Initialize global variables
         sess.run(init)                                                          #Runs Sessions initialization
 
-        output_place = tf.identity(conv_2d,name=op_name+"_output")                #Naming Output
+        output_place = tf.identity(conv_2d,name=op_name+"_output")              #Naming Output
         output_place = sess.run(conv_2d, feed_dict={input_place:test_input})    #Running Session with input and obtaining Output Tensors
+        
+        tmp_model_saved_dir=save_session(sess, op_name, conv_2d, conv_dir, input_place)
 
-        tflite_conversion(sess, op_name, conv_2d, conv_dir, input_place)
+    tflite_conversion(conv_dir, tmp_model_saved_dir, op_name, conv_2d, input_place)
 
 
 def process_MAX_POOL_2D(options, io):
@@ -98,7 +100,9 @@ def process_MAX_POOL_2D(options, io):
         output_place = tf.identity(pool_2d ,name=op_name+"_output")              #Naming Output
         output_place = sess.run(pool_2d, feed_dict={input_place:test_input})    #Running Session and obtaining Output Tensors
 
-        tflite_conversion(sess, op_name, pool_2d, pool_dir, input_place)
+        tmp_model_saved_dir=save_session(sess, op_name, pool_2d, pool_dir, input_place)
+
+    tflite_conversion(pool_dir, tmp_model_saved_dir, op_name, pool_2d, input_place)
 
 
 def process_RESHAPE(options, io):
@@ -123,14 +127,16 @@ def process_RESHAPE(options, io):
         init = tf.compat.v1.global_variables_initializer()
         sess.run(init)
 
-        flattened = tf.reshape(input_place, 
+        reshape = tf.reshape(input_place, 
                               (output_shape[0][0], output_shape[0][1]), 
                               name=op_name+"_op")
 
-        output_place = tf.identity(flattened ,name=op_name+"_output")
-        output_place = sess.run(flattened, feed_dict={input_place:test_input})
+        output_place = tf.identity(reshape ,name=op_name+"_output")
+        output_place = sess.run(reshape, feed_dict={input_place:test_input})
 
-        tflite_conversion(sess, op_name, flattened, reshape_dir, input_place)
+        tmp_model_saved_dir=save_session(sess, op_name, reshape, reshape_dir, input_place)
+
+    tflite_conversion(reshape_dir, tmp_model_saved_dir, op_name, reshape, input_place)
 
 
 
@@ -171,7 +177,9 @@ def process_FULLY_CONNECTED(options, io):
         output_place = tf.identity(FCL ,name=op_name+"_output")                          
         output_place = sess.run(FCL, feed_dict={input_place:test_input})            
 
-        tflite_conversion(sess, op_name, FCL, fcl_dir, input_place)
+        tmp_model_saved_dir=save_session(sess, op_name, FCL, fcl_dir, input_place)
+
+    tflite_conversion(fcl_dir, tmp_model_saved_dir, op_name, FCL, input_place)
 
 def process_SOFTMAX(options, io):
     op_name="SOFTMAX"
@@ -198,7 +206,9 @@ def process_SOFTMAX(options, io):
         output_place = tf.identity(Soft ,name=op_name+"_output")                          
         output_place = sess.run(Soft, feed_dict={input_place:test_input})            
 
-        tflite_conversion(sess, op_name, Soft,softmx_dir, input_place)
+        tmp_model_saved_dir=save_session(sess, op_name, Soft, softmx_dir, input_place)
+
+    tflite_conversion(softmx_dir, tmp_model_saved_dir, op_name, Soft, input_place)
 
 
 def process_operation(model, graph, op):
@@ -255,4 +265,4 @@ if __name__ == '__main__':
     #edge_tflite_compilation()
     #edge_group_tflite_deployment()
     #gpu_group_tflite_deployment()
-    cpu_group_tflite_deployment(models_folder, op_array)
+    #cpu_group_tflite_deployment(models_folder, op_array)
