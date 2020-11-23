@@ -1,84 +1,70 @@
---ARCH--INSTALL
-#INSTALLATION
+-- INSTALLATION --
 sudo pacman -S docker
 sudo systemctl enable docker.service
 sudo systemctl start docker.service --now
 
-#BASIC COMMANDS
+#DOCKER GROUP -- to eliminate need of sudo in docker commands
+usermod -aG docker <user>
 
+-- BASIC COMMANDS --
 sudo docker info
-
-#PULL DEBIAN IMAGE
-sudo docker pull debian
-
 sudo docker images
-
-#INIT/RUN DOCKER
-sudo docker create --name debian-docker debian
-sudo docker --name debian-docker -it -d debian
-
-#SHOWS DOCKER STATUS
 sudo docker ps -a
 
-#STARTS IT - need to be done to be able to attach it
-sudo docker start <insert its name>
+-- DOCKER SETUP --
+sudo docker pull debian
+sudo docker --name debian-docker -it -d debian
+sudo docker run --name <docker_name> --privileged -v /dev/bus/usb:/dev/bus/usb -it -d debian
 
-#ATTACH DOCKER/"LOGS INTO DOCKER"
-sudo docker attach debian-docker
-exit (to leave docker)
+-- DOCKER START --
+sudo docker start <docker_name>
+sudo docker attach <docker_name>
 
-#REMOVE DOCKER
-sudo docker rm debian-docker
+-- REMOVE DOCKER --
+sudo docker rm <docker_name>
+sudo docker rm im <docker_img>
 
----DEBIAN DOCKER---
-
+--- IN-DOCKER SETUP ---
 apt-get update
-apt-get install vim (YES)
-adduser deb
-<create password>
-apt-get install sudo
+apt-get install vim sudo
 
-apt-get install gnupg curl git
-apt-get install python3 python3-pip
+adduser deb
+    <create password>
+
+passwd root
+    <create password>
+
+login deb
+    <insert password>
+
+sudo apt-get install gnupg curl git python3 python3-pip
+
 echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 
 sudo apt-get update
-
 sudo apt-get install libedgetpu1-std edgetpu-compiler
 
---EDGETPU_STD---EDGETPU RUNTIME
+-- EDGETPU ---
 mkdir coral && cd coral
 git clone https://github.com/google-coral/tflite.git
 cd tflite/python/examples/classification
 bash install_requirements.sh
 
-pip3 install Pillow
-pip3 install tensorflow
-
+sudo pip3 install Pillow
+sudo pip3 install tensorflow
 sudo pip3 install https://dl.google.com/coral/python/tflite_runtime-2.1.0.post1-cp37-cp37m-linux_x86_64.whl
 
-<EXAMPLE MODEL>
+-- EXAMPLE MODEL RUN EDGETPU --
 python3 classify_image.py \
 --model models/mobilenet_v2_1.0_224_inat_bird_quant_edgetpu.tflite \
 --labels models/inat_bird_labels.txt \
 --input images/parrot.jpg
 
-IF ERRORS THROWN - CHECK WHICH VERSION OF PYTHON YOU ARE ON - MUST BE > 3.7
-<<<
-i)
-<GO TO $HOME DIR>
-<OPEN .BASHRC WITH YOUR FAVORITE EDITOR (VIM)>
-<APPEND THIS>
-alias python='/usr/bin/python3.7'
 
-or
-
-ii)
-<GO TO $HOME DIR>
-echo "alias python='/usr/bin/python3.7'" >> .bashrc
->>>
-
----EDGETPU_COMPILER---
+--- EDGETPU_COMPILER ---
 edgetpu_compiler [options] model...
 edgetpu_compiler --help
+
+Ex:
+    edgetpu_compiler -s path/to/model
