@@ -11,8 +11,18 @@ EDGETPU_SHARED_LIB = {
   'Windows': 'edgetpu.dll'
 }[platform.system()]
 
+
+def deduce_operation(compiled_file):
+    f = compiled_file
+    op = f.split("edge_")[1]
+    op = op.split("_edgetpu.tflite")[0]
+
+    return op
+
 def make_interpreter(model_file):
+
     import tflite_runtime.interpreter as tflite
+
     model_file, *device = model_file.split('@')
 
     device = {'device': device[0]} if device else {}
@@ -24,6 +34,7 @@ def make_interpreter(model_file):
                               experimental_delegates=experimental_delegates)
 
 def edge_group_tflite_deployment(models_folder):
+
     import os
     from os import listdir
     from os.path import isfile, join
@@ -35,13 +46,15 @@ def edge_group_tflite_deployment(models_folder):
         tflite_model = edge_file
 
         if(tflite_model):
-            op = deduce_op(tflite_model)
+            op = deduce_operation(tflite_model)
             tflite_model = op_path + "/" + tflite_model
             edge_tflite_deployment(tflite_model, op, 1000)
 
 
 def edge_tflite_deployment(model_file, model_name, count):
+
     import time
+    import numpy as np
 
     interpreter = make_interpreter(model_file)                                  #Creates Interpreter Object
     interpreter.allocate_tensors()                                              #Allocates its tensors

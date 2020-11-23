@@ -7,8 +7,9 @@ from gets import *
 
 model_filename = "source_models/MNIST_model.tflite"
 model_example="source_models/efficientnet-edgetpu-S_quant_edgetpu.tflite"
+
 models_folder = "single_layer_models/"
-compiled_models_folder = "compiled_edge"
+compiled_models_folder = "tpu_compiled_models"
 
 op_array=[]
 
@@ -137,7 +138,7 @@ def process_RESHAPE(options, io):
 
         tmp_model_saved_dir=save_session(sess, op_name, reshape, reshape_dir, input_place)
 
-    #tflite_conversion(reshape_dir, tmp_model_saved_dir, op_name, reshape, input_place)
+    tflite_conversion(reshape_dir, tmp_model_saved_dir, op_name, reshape, input_place)
 
 
 
@@ -155,7 +156,7 @@ def process_FULLY_CONNECTED(options, io):
     weights_format = get_weights_format(options)
 
     activ_func = get_activation_function(options)
-    activ_func = activation_id(activ_func)
+    activ_func = get_activation_id(activ_func)
 
     keep_num_dim = get_num_dims(options)                                        # Is this bias?
 
@@ -180,7 +181,7 @@ def process_FULLY_CONNECTED(options, io):
 
         tmp_model_saved_dir=save_session(sess, op_name, FCL, fcl_dir, input_place)
 
-    #tflite_conversion(fcl_dir, tmp_model_saved_dir, op_name, FCL, input_place)
+    tflite_conversion(fcl_dir, tmp_model_saved_dir, op_name, FCL, input_place)
 
 def process_SOFTMAX(options, io):
     op_name="SOFTMAX"
