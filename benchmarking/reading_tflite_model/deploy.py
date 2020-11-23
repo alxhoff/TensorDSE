@@ -23,10 +23,24 @@ def make_interpreter(model_file):
                               model_content=None, 
                               experimental_delegates=experimental_delegates)
 
-def edge_group_tflite_deployment(models_folder, operations):
-    pass
+def edge_group_tflite_deployment(models_folder):
+    import os
+    from os import listdir
+    from os.path import isfile, join
 
-def edge_tflite_deployment(model_name, model_file, count):
+    tflite_model=None
+    op_path = models_folder
+
+    for edge_file in listdir(models_folder):
+        tflite_model = edge_file
+
+        if(tflite_model):
+            op = deduce_op(tflite_model)
+            tflite_model = op_path + "/" + tflite_model
+            edge_tflite_deployment(tflite_model, op, 1000)
+
+
+def edge_tflite_deployment(model_file, model_name, count):
     import time
 
     interpreter = make_interpreter(model_file)                                  #Creates Interpreter Object
@@ -36,17 +50,32 @@ def edge_tflite_deployment(model_name, model_file, count):
     This is where model specific inputs/labels are fed to the model in
     order to be run correctly.
     """
-    print('----INFERENCE TIME----')
-    start = time.perf_counter()
-    interpreter.invoke()                                                        #Runs the interpreter/inference, be sure
+
+    input_details = interpreter.get_input_details()                             #Get input and output tensors
+    output_details = interpreter.get_output_details()
+
+    input_shape = input_details[0]['shape']                                     #Test the model on randon input data
+    input_dtype = input_details[0]['dtype']                                     #Test the model on randon input data
+
+    input_data = np.array(np.random.random_sample(input_shape),dtype=input_dtype)
+    interpreter.set_tensor(input_details[0]['index'], input_data)
+
+    for i in range(count):
+
+        print('----INFERENCE TIME----')
+        start = time.perf_counter()
+        interpreter.invoke()                                                    #Runs the interpreter/inference, be sure
                                                                                 #to have set the input sizes and allocate 
                                                                                 #tensors.
-    """ This is where we should 
-        retrieve the ouput
-    """
-    inference_time = time.perf_counter() - start
-    print('%.1fms' % (inference_time * 1000))
-    pass
+        """ This is where we should 
+            retrieve the ouput
+        """
+        inference_time = time.perf_counter() - start
+        output_data = interpreter.get_tensor(output_details[0]['index'])
+
+        EDGE_RESULTS.append([i, inference_time])
+
+    create_csv_file(edge_folder, model_name, EDGE_RESULTS)
 
 def cpu_group_tflite_deployment(models_folder, operations):
     for op in operations:
@@ -54,7 +83,7 @@ def cpu_group_tflite_deployment(models_folder, operations):
         tflite_model = fetch_file(op_path, ".tflite")
         tflite_model = op_path + tflite_model
 
-        cpu_tflite_deployment(tflite_model, op, 10)
+        cpu_tflite_deployment(tflite_model, op, 1000)
 
 
 def cpu_tflite_deployment(model_file, model_name, count):

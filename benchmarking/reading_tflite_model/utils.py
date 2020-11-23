@@ -1,7 +1,13 @@
-OP_DICT = {
-  'CONV_2D': 'libedgetpu.so.1',
-  'OTHER': 'libedgetpu.1.dylib',
-}
+GEN_OP_NAME=""
+GEN_OP_IN_SHAPE=[]
+GEN_OP_IN_TYPE="float32"
+
+def deduce_op(compiled_file):
+    f = compiled_file
+    op = f.split("edge_")[1]
+    op = op.split("_edgetpu.tflite")[0]
+
+    return op
 
 def fetch_file(directory, ending):
     import os
@@ -12,6 +18,8 @@ def fetch_file(directory, ending):
         if (isfile(join(directory, f)) and f.endswith(ending)):
             return f
     
+    return None
+
 def create_csv_file(path_file, folder_name, results):
     import os
     import csv
@@ -109,6 +117,18 @@ def save_session(session, operation_name, operation, op_dir, input_place):
                                          outputs={operation_name+"_op":operation})                            
     return tmp_model_saved_dir
                                                                                                    
+def prep_generator(op_name, input_place):
+    import random
+
+    global GEN_OP_NAME
+    global GEN_OP_IN_SHAPE
+    global GEN_OP_IN_TYPE
+
+    GEN_OP_NAME=op_name
+    GEN_OP_IN_TYPE=input_place.dtype
+    
+    for i in range(len(input_place.shape)):
+        GEN_OP_IN_SHAPE.append(input_place.shape[i])
 
 def generator():
     import numpy as np
@@ -116,12 +136,10 @@ def generator():
 
     (data_train, labels_train), (data_test, labels_test) = tf.keras.datasets.mnist.load_data()
     data_train = data_train.reshape(data_train.shape[0], data_train.shape[1], data_train.shape[2], 1)
-    data_train = data_train.astype('float32')
+    data_train = data_train.astype("float32")
     data_train /= 255
-    #data_train = np.random.rand(1,26,26,28)
-    #data_train = tf.convert_to_tensor(np.array(data_train, dtype='int8'))
 
-    for input_value in tf.data.Dataset.from_tensor_slices(data_train).batch(1).take(100):
+    for input_value in tf.data.Dataset.from_tensor_slices(data_train).batch(1).take(1000):
         yield [input_value]
 
 def tflite_quantization(converter):
@@ -141,6 +159,7 @@ def tflite_quantization(converter):
 def tflite_conversion(op_dir, model_saved_dir, operation_name, operation, input_place):
     import tensorflow as tf
 
+    prep_generator(operation_name, input_place)
     edge_dir=prep_edge_dir(op_dir, operation_name)
 
     edge_tf_model_filename = edge_dir + "edge_"+ operation_name + ".tflite"

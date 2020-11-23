@@ -8,6 +8,7 @@ from gets import *
 model_filename = "source_models/MNIST_model.tflite"
 model_example="source_models/efficientnet-edgetpu-S_quant_edgetpu.tflite"
 models_folder = "single_layer_models/"
+compiled_models_folder = "compiled_edge"
 
 op_array=[]
 
@@ -128,15 +129,15 @@ def process_RESHAPE(options, io):
         sess.run(init)
 
         reshape = tf.reshape(input_place, 
-                              (output_shape[0][0], output_shape[0][1]), 
-                              name=op_name+"_op")
+                            (output_shape[0][0], output_shape[0][1]), 
+                            name=op_name+"_op")
 
         output_place = tf.identity(reshape ,name=op_name+"_output")
         output_place = sess.run(reshape, feed_dict={input_place:test_input})
 
         tmp_model_saved_dir=save_session(sess, op_name, reshape, reshape_dir, input_place)
 
-    tflite_conversion(reshape_dir, tmp_model_saved_dir, op_name, reshape, input_place)
+    #tflite_conversion(reshape_dir, tmp_model_saved_dir, op_name, reshape, input_place)
 
 
 
@@ -179,7 +180,7 @@ def process_FULLY_CONNECTED(options, io):
 
         tmp_model_saved_dir=save_session(sess, op_name, FCL, fcl_dir, input_place)
 
-    tflite_conversion(fcl_dir, tmp_model_saved_dir, op_name, FCL, input_place)
+    #tflite_conversion(fcl_dir, tmp_model_saved_dir, op_name, FCL, input_place)
 
 def process_SOFTMAX(options, io):
     op_name="SOFTMAX"
@@ -262,7 +263,9 @@ if __name__ == '__main__':
             setattr(sys.modules[__name__], cls.__name__, cls)
 
     source_tflite_conversion()
+
     #edge_tflite_compilation()
-    #edge_group_tflite_deployment()
+
+    edge_group_tflite_deployment(compiled_models_folder)
     #gpu_group_tflite_deployment()
     #cpu_group_tflite_deployment(models_folder, op_array)
