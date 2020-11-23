@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 import subprocess
 import json
+import urllib.request
 from enum import Enum
 
 class EdgeTPUBuiltinOperator(Enum):
@@ -43,9 +44,24 @@ class EdgeTPUBuiltinOperator(Enum):
 
 edgetpu_opcodes = [BuiltinOperator.value for BuiltinOperator in EdgeTPUBuiltinOperator]
 
-def optimize_edgetpu_model(log: logging.Logger, name: str):
+mapping = [[0,-1],[1,0],[2,2],[3,2]]
+
+#Converts a tflite model to JSON format and loads it
+def load_tflite_as_json(log: logging.Logger, name: str):
 
     fn = "%s.tflite" % name
+
+    if not Path("schema.fbs").exists():
+        log.info("schema.fbs was not found, downloading")
+        urllib.request.urlretrieve(
+            "https://github.com/tensorflow/tensorflow/raw/master/tensorflow/lite/schema/schema.fbs",
+            "schema.fbs")
+        log.info("Downloaded schema.fbs")
+ 
+    
+    """log.info("Converting the model from binary flatbuffers to JSON")
+    echo_run("flatc", "-t", "--strict-json", "--defaults-json", "schema.fbs", "--", fn)"""
+
     log.info("Patching the model in JSON")
     fn_json = str(Path(fn).with_suffix(".json"))
 
@@ -54,12 +70,15 @@ def optimize_edgetpu_model(log: logging.Logger, name: str):
 
     with open(fn_json) as fin:
         model = json.load(fin)
-
     
-    # Check for unsupported operations.
+    return model
+
+#Classifies the operations in the model and returns an array of supported and unsupported ops
+def classify_ops(model: dict):
+    
     supported_opcodes = []
     unsupported_opcodes = []
-    #splitting_flag = False
+
     for i, c in enumerate(model["operator_codes"]):
         # Variable that saves the index of an operation in the operator_codes list
         # along with its deprecated_builtin_code
@@ -70,9 +89,32 @@ def optimize_edgetpu_model(log: logging.Logger, name: str):
         else :
             op_tuple = [i,c["deprecated_builtin_code"]]
             unsupported_opcodes.append(op_tuple)
-            #splitting_flag = True
+    
+    result = [supported_opcodes,unsupported_opcodes]
+    return result
 
-    graph = model["subgraphs"][0]
+def merge_ops(model: dict, mapping: list):
+    sequential_ops = 0
+    merge_flag = False
+    for ops in mapping:
+        if ops[1] == 2:
+            sequential_ops += 1
+            merge_flag = True
+    
+    #if merge_flag :
+        
+
+
+def optimize_edgetpu_model(log: logging.Logger, name: str):
+    
+    model = load_tflite_as_json(log,name)
+    supported_opcodes,unsupported_opcodes = classify_ops(model)
+
+    print(supported_opcodes)
+    print(unsupported_opcodes)
+
+    merge_ops(model, mapping)
+    """graph = model["subgraphs"][0]
 
     for i,op in enumerate(graph["operators"]):
         if op["opcode_index"] == unsupported_opcodes[0][0] :
@@ -84,7 +126,7 @@ def optimize_edgetpu_model(log: logging.Logger, name: str):
             
             
     # Erase all opcodes except the ones after Leaky Relu.
-    """
+    
     conv_opcode = -1
     new_opcodes = []
     for i, c in enumerate(model["operator_codes"]):
