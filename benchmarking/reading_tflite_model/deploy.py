@@ -56,6 +56,8 @@ def edge_tflite_deployment(model_file, model_name, count):
     import time
     import numpy as np
 
+    EDGE_RESULTS = []
+
     interpreter = make_interpreter(model_file)                                  #Creates Interpreter Object
     interpreter.allocate_tensors()                                              #Allocates its tensors
 

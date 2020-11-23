@@ -267,6 +267,6 @@ if __name__ == '__main__':
 
     #edge_tflite_compilation()
 
-    edge_group_tflite_deployment(compiled_models_folder)
+    #edge_group_tflite_deployment(compiled_models_folder)
     #gpu_group_tflite_deployment()
     #cpu_group_tflite_deployment(models_folder, op_array)
