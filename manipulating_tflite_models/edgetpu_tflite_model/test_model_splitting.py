@@ -44,7 +44,7 @@ class EdgeTPUBuiltinOperator(Enum):
 
 edgetpu_opcodes = [BuiltinOperator.value for BuiltinOperator in EdgeTPUBuiltinOperator]
 
-mapping = [[0,-1],[1,0],[2,2],[3,2]]
+mapping = [[0,-1],[1,0],[2,2],[3,2],[4,0],[5,2]]
 
 #Converts a tflite model to JSON format and loads it
 def load_tflite_as_json(log: logging.Logger, name: str):
@@ -62,7 +62,7 @@ def load_tflite_as_json(log: logging.Logger, name: str):
     """log.info("Converting the model from binary flatbuffers to JSON")
     echo_run("flatc", "-t", "--strict-json", "--defaults-json", "schema.fbs", "--", fn)"""
 
-    log.info("Patching the model in JSON")
+    #log.info("Patching the model in JSON")
     fn_json = str(Path(fn).with_suffix(".json"))
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -129,13 +129,24 @@ def info_mapping(mapping: list):
                 continue
     return sequential_ops
 
-def merge_ops(log: logging.Logger, model: dict, info: list):
-
-    supported_opcodes,unsupported_opcodes = classify_ops(log, model)
-    
-    graph = model["subgraphs"][0]
+def seperate_ops(model: dict, info: list):
+    """graph = model["subgraphs"][0]
     for i,op in enumerate(graph["operators"]):
-        if op["opcode_index"] == unsupported_opcodes[0][0]:
+        if op["opcode_index"] == unsupported_opcodes[0][0]:"""
+            
+
+def merge_ops(log: logging.Logger, model: dict, info: list, name: str):
+    supported_opcodes,unsupported_opcodes = classify_ops(log, model)
+    print(supported_opcodes)
+    print(unsupported_opcodes)
+    print(info)
+    
+    tmp_model = load_tflite_as_json(log, name)
+
+    for opcode in tmp_model["operator_codes"]:
+        print(opcode)
+
+    seperate_ops(tmp_model,info)
 
     info.pop(0)
     return info,model
@@ -144,12 +155,13 @@ def merge_ops(log: logging.Logger, model: dict, info: list):
 def optimize_edgetpu_model(log: logging.Logger, name: str):
     
     model = load_tflite_as_json(log, name)
+    #supported_opcodes,unsupported_opcodes = classify_ops(log, model)
     info = info_mapping(mapping)    
     
     if len(info) != 0:
         merge_flag = True
     while merge_flag:
-        info,model = merge_ops(log, model, info)
+        info,model = merge_ops(log, model, info, name)
         if len(info) == 0:
             merge_flag = False
             break
@@ -210,8 +222,6 @@ def optimize_edgetpu_model(log: logging.Logger, name: str):
     
     #log.info("Generating the binary flatbuffers model from JSON")
     #echo_run("flatc", "-b", "schema.fbs", fn_json) """
-    
-
 def echo_run(*cmd):
     #Execute an arbitrary command and echo its output.
     p = subprocess.run(list(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -223,7 +233,6 @@ def echo_run(*cmd):
 name = 'test_model_quant_edgetpu'
 log = logging.getLogger(name)
 logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
-#log.setLevel(logging.INFO)
 
 fn = "%s.tflite" % name
 optimize_edgetpu_model(log, name)
