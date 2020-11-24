@@ -93,17 +93,45 @@ def classify_ops(model: dict):
     result = [supported_opcodes,unsupported_opcodes]
     return result
 
-def merge_ops(model: dict, mapping: list):
-    sequential_ops = 0
-    merge_flag = False
+def info_mapping(mapping: list):
+    sequential_ops = []
+    sequence = False
+    start = 0
+    seq_len = 0
     for ops in mapping:
         if ops[1] == 2:
-            sequential_ops += 1
-            merge_flag = True
-    
-    #if merge_flag :
-        
+            if sequence == False:
+                start = ops[0]
+                seq_len += 1
+                sequence = True
+                if ops[0] == len(mapping)-1:
+                    info = [start,seq_len]
+                    sequential_ops.append(info)
+                    start = 0
+                    seq_len = 0
+                    sequence = False
+            elif sequence == True:
+                seq_len += 1
+                if ops[0] == len(mapping)-1:
+                    info = [start,seq_len]
+                    sequential_ops.append(info)
+                    start = 0
+                    seq_len = 0
+                    sequence = False
+        elif ops[1] != 2:
+            if sequence == True:
+                info = [start,seq_len]
+                sequential_ops.append(info)
+                start = 0
+                seq_len = 0
+                sequence = False
+            else:
+                continue
+    return sequential_ops
 
+def merge_ops(model: dict, mapping: list):
+    info = info_mapping(mapping)    
+    print(info)
 
 def optimize_edgetpu_model(log: logging.Logger, name: str):
     
@@ -192,7 +220,8 @@ def echo_run(*cmd):
 
 name = 'test_model_quant_edgetpu'
 log = logging.getLogger(name)
-log.setLevel(logging.INFO)
+logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+#log.setLevel(logging.INFO)
 
 fn = "%s.tflite" % name
 optimize_edgetpu_model(log, name)
