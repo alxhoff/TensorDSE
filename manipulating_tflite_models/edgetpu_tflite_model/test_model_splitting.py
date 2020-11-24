@@ -74,7 +74,7 @@ def load_tflite_as_json(log: logging.Logger, name: str):
     return model
 
 #Classifies the operations in the model and returns an array of supported and unsupported ops
-def classify_ops(model: dict):
+def classify_ops(log: logging.Logger, model: dict):
     
     supported_opcodes = []
     unsupported_opcodes = []
@@ -129,33 +129,35 @@ def info_mapping(mapping: list):
                 continue
     return sequential_ops
 
-def merge_ops(model: dict, mapping: list):
-    info = info_mapping(mapping)    
-    print(info)
+def merge_ops(log: logging.Logger, model: dict, info: list):
+
+    supported_opcodes,unsupported_opcodes = classify_ops(log, model)
+    
+    graph = model["subgraphs"][0]
+    for i,op in enumerate(graph["operators"]):
+        if op["opcode_index"] == unsupported_opcodes[0][0]:
+
+    info.pop(0)
+    return info,model
+
 
 def optimize_edgetpu_model(log: logging.Logger, name: str):
     
-    model = load_tflite_as_json(log,name)
-    supported_opcodes,unsupported_opcodes = classify_ops(model)
-
-    print(supported_opcodes)
-    print(unsupported_opcodes)
-
-    merge_ops(model, mapping)
-    """graph = model["subgraphs"][0]
-
-    for i,op in enumerate(graph["operators"]):
-        if op["opcode_index"] == unsupported_opcodes[0][0] :
-            
+    model = load_tflite_as_json(log, name)
+    info = info_mapping(mapping)    
+    
+    if len(info) != 0:
+        merge_flag = True
+    while merge_flag:
+        info,model = merge_ops(log, model, info)
+        if len(info) == 0:
+            merge_flag = False
+            break
 
 
-
-        
-            
-            
     # Erase all opcodes except the ones after Leaky Relu.
     
-    conv_opcode = -1
+    """conv_opcode = -1
     new_opcodes = []
     for i, c in enumerate(model["operator_codes"]):
         if c["deprecated_builtin_code"] == 4:
