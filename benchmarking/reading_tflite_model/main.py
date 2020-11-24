@@ -31,11 +31,10 @@ def process_CONV_2D(options, io):
     conv_dir = models_folder + op_name + "/"
 
     #Retrieving operation relevant variables.
-    filter_count = 32
+    filter_count = 28
 
     input_shape = get_input_tensor_shape(io) 
-    test_input = np.random.rand(input_shape[0],input_shape[1],                  #Defining test data
-                                input_shape[2],input_shape[3])
+    test_input = np.array(np.random.random_sample(input_shape))                 #Defining test data
 
     kernel_shape = get_kernel_shape(io) 
 
@@ -80,8 +79,7 @@ def process_MAX_POOL_2D(options, io):
     activ_func = get_activation_function(options)   
 
     input_shape = get_input_tensor_shape(io)        
-    test_input = np.random.rand(input_shape[0],input_shape[1],                  #Defining test data
-                                input_shape[2],input_shape[3])
+    test_input = np.array(np.random.random_sample(input_shape))                 #Defining test data
 
     pool_2d = tf.Graph()                            
     with pool_2d.as_default(), tf.compat.v1.Session() as sess:
@@ -113,8 +111,7 @@ def process_RESHAPE(options, io):
     reshape_dir = models_folder + op_name + "/"
 
     input_shape = get_input_tensor_shape(io)
-    test_input = np.random.rand(input_shape[0],input_shape[1],
-                                input_shape[2],input_shape[3])
+    test_input = np.array(np.random.random_sample(input_shape), dtype=np.int32)                 #Defining test data
 
     output_shape = get_output_tensor_shape(io)
 
@@ -148,7 +145,7 @@ def process_FULLY_CONNECTED(options, io):
     fcl_dir = models_folder + op_name + "/"
 
     input_shape = get_input_tensor_shape(io)
-    test_input = np.random.rand(input_shape[0],input_shape[1])
+    test_input = np.array(np.random.random_sample(input_shape))                 #Defining test data
 
     output_shape = get_output_tensor_shape(io)
     units=output_shape[0][1]                                                    #Not sure about this
@@ -188,7 +185,7 @@ def process_SOFTMAX(options, io):
     softmx_dir = models_folder + op_name + "/"
 
     input_shape = get_input_tensor_shape(io)
-    test_input = np.random.rand(input_shape[0],input_shape[1])
+    test_input = np.array(np.random.random_sample(input_shape))                 #Defining test data
 
     output_shape = get_output_tensor_shape(io)
     units = output_shape[0][1]
@@ -264,9 +261,8 @@ if __name__ == '__main__':
             setattr(sys.modules[__name__], cls.__name__, cls)
 
     source_tflite_conversion()
-
     #edge_tflite_compilation()
-
     #edge_group_tflite_deployment(compiled_models_folder)
-    #gpu_group_tflite_deployment()
+    #gpu_group_tflite_deployment(models_folder, op_array)
     #cpu_group_tflite_deployment(models_folder, op_array)
+    pass

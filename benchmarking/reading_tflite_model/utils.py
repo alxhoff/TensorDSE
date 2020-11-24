@@ -1,4 +1,3 @@
-import numpy as np
 
 GEN_OP_NAME=""
 GEN_OP_IN_SHAPE=[]
@@ -16,6 +15,7 @@ def fetch_file(directory, ending):
     return None
     
 def get_numpy_type(tensor_type):
+    import numpy as np
 
     TF_TYPE_DICT = {
       'float32': np.float32,
@@ -108,10 +108,12 @@ def prep_dataset_generator(op_name, input_place):
     GEN_OP_IN_SHAPE = tuple(GEN_OP_IN_SHAPE)
 
 def generator():
+    import tensorflow as tf
     import numpy as np
 
     for _ in range(100):
         input_data = np.array(np.random.random_sample(GEN_OP_IN_SHAPE),dtype=GEN_OP_IN_TYPE)
+        input_data = tf.convert_to_tensor(input_data)
         yield [input_data]
 
 def tflite_quantization(converter):
@@ -148,10 +150,12 @@ def tflite_conversion(op_dir, model_saved_dir, operation_name, operation, input_
     edge_tf_model_filename = edge_dir + "edge_"+ operation_name + ".tflite"
 
     converter=tf.lite.TFLiteConverter.from_saved_model(model_saved_dir)         #Creates Converter Object
-    edge_converter=tflite_quantization(converter)                               #Quanitzation of tflite model, necessary for edge
+
+    edge_converter=tf.lite.TFLiteConverter.from_saved_model(model_saved_dir)    #Creates Converter Object
+    edge_converter=tflite_quantization(edge_converter)                          #Quanitzation of tflite model, necessary for edge
 
     tflite_model=converter.convert()                                            #Performs tflite conversion with it
-    edge_tflite_model=edge_converter.convert()                                  #Performs qunatized tflite conversion with it
+    edge_tflite_model=edge_converter.convert()                                  #Performs quantized tflite conversion with it
 
     open(tf_model_filename, "wb").write(tflite_model)                           #Writes Conversion to pre-defined tflite folder
     open(edge_tf_model_filename, "wb").write(edge_tflite_model)                 #Writes Conversion to pre-defined tflite folder
