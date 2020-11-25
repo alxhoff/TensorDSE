@@ -75,7 +75,8 @@ def extend_directory(path_to_dir, extended_dir, parent_dir):
             os.system(rm_cmd)
             os.system(mkdir_cmd)
     else:
-        mkdir_cmd="mkdir " + path_to_dir + parent_dir
+        ext_dir=path_to_dir + extended_dir
+        mkdir_cmd="mkdir -p" + ext_dir
         os.system(mkdir_cmd)
 
     return ext_dir + "/"
@@ -146,8 +147,8 @@ def tflite_conversion(op_dir, model_saved_dir, operation_name, operation, input_
     tf_model_filename = op_dir + operation_name + ".tflite"
     prep_dataset_generator(operation_name, input_place)
 
-    edge_dir=extend_directory(op_dir,"edge", operation_name)
-    edge_tf_model_filename = edge_dir + "edge_"+ operation_name + ".tflite"
+    edge_dir=extend_directory(op_dir,"quant", operation_name)
+    edge_tf_model_filename = edge_dir + "quant_"+ operation_name + ".tflite"
 
     converter=tf.lite.TFLiteConverter.from_saved_model(model_saved_dir)         #Creates Converter Object
 

@@ -14,7 +14,7 @@ EDGETPU_SHARED_LIB = {
 
 def deduce_operation(compiled_file):
     f = compiled_file
-    op = f.split("edge_")[1]
+    op = f.split("quant_")[1]
     op = op.split("_edgetpu.tflite")[0]
 
     return op

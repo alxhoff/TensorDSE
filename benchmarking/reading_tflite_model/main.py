@@ -141,8 +141,16 @@ def process_RESHAPE(options, io):
 
 def process_FULLY_CONNECTED(options, io):
 
-    op_name="FULLY_CONNECTED"
-    fcl_dir = models_folder + op_name + "/"
+    activ_func = get_activation_function(options)
+    activ_func = get_activation_id(activ_func)
+
+    if(activ_func):
+        op_name="FULLY_CONNECTED_" + activ_func
+        fcl_dir = models_folder + op_name + "/"
+    else:
+        op_name="FULLY_CONNECTED"
+        fcl_dir = models_folder + op_name + "/"
+
 
     input_shape = get_input_tensor_shape(io)
     test_input = np.array(np.random.random_sample(input_shape))                 #Defining test data
@@ -151,9 +159,6 @@ def process_FULLY_CONNECTED(options, io):
     units=output_shape[0][1]                                                    #Not sure about this
 
     weights_format = get_weights_format(options)
-
-    activ_func = get_activation_function(options)
-    activ_func = get_activation_id(activ_func)
 
     keep_num_dim = get_num_dims(options)                                        # Is this bias?
 
