@@ -77,7 +77,8 @@ def edge_tflite_deployment(model_file, model_name, count):
 
     for i in range(count):
 
-        print('----INFERENCE TIME----')
+        """ INFERENCE TIME
+        """
         start = time.perf_counter()
         interpreter.invoke()                                                    #Runs the interpreter/inference, be sure
                                                                                 #to have set the input sizes and allocate 
@@ -137,12 +138,6 @@ def cpu_tflite_deployment(model_file, model_name, count):
         CPU_RESULTS.append([i, inference_time])
 
     create_csv_file(cpu_folder, model_name, CPU_RESULTS)
-
-def gpu_group_tflite_deployment(models_folder, operations):
-    pass
-
-def gpu_tflite_deployment(model_name, model_file, count):
-    pass
 
 if __name__ == '__main__':
     import argparse

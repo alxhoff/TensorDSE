@@ -5,11 +5,9 @@ from deploy import *
 from utils import *
 from gets import *
 
-model_filename = "source_models/MNIST_model.tflite"
-model_example="source_models/efficientnet-edgetpu-S_quant_edgetpu.tflite"
-
-models_folder = "single_layer_models/"
-compiled_models_folder = "tpu_compiled_models"
+source_model_filename = "models/source_models/MNIST_model.tflite"
+compiled_models_folder = "models/tpu_compiled_models"
+models_folder = "models/single_layer_models/"
 
 op_array=[]
 
@@ -241,7 +239,7 @@ def process_operation(model, graph, op):
     eval("process_" + op_name)(op_opts, (input_tensors, output_tensors)) #Calls the respective operation
 
 def source_tflite_conversion():
-    with open(model_filename, "rb") as f:
+    with open(source_model_filename, "rb") as f:
         model = sys.modules["tflite"].Model.Model.GetRootAsModel(f.read(), 0) #Gets Model
         graph = model.Subgraphs(0) #Retrieves Subgraphs
 
@@ -266,8 +264,9 @@ if __name__ == '__main__':
             setattr(sys.modules[__name__], cls.__name__, cls)
 
     source_tflite_conversion()
+
     #edge_tflite_compilation()
     #edge_group_tflite_deployment(compiled_models_folder)
-    #gpu_group_tflite_deployment(models_folder, op_array)
+
     #cpu_group_tflite_deployment(models_folder, op_array)
     pass
