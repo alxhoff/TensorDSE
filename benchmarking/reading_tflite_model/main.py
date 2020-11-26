@@ -6,7 +6,7 @@ from utils import *
 from gets import *
 
 source_model_filename = "models/source_models/MNIST_model.tflite"
-compiled_models_folder = "models/tpu_compiled_models"
+compiled_models_folder = "models/tpu_compiled_models/"
 models_folder = "models/single_layer_models/"
 
 op_array=[]
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     source_tflite_conversion()
 
     #edge_tflite_compilation()
-    #edge_group_tflite_deployment(compiled_models_folder)
 
-    #cpu_group_tflite_deployment(models_folder, op_array)
+    #edge_group_tflite_deployment(compiled_models_folder, 1000)
+    #cpu_group_tflite_deployment(models_folder, 1000)
     pass

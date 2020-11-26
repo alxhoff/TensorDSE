@@ -12,12 +12,47 @@ EDGETPU_SHARED_LIB = {
 }[platform.system()]
 
 
-def deduce_operation(compiled_file):
-    f = compiled_file
-    op = f.split("quant_")[1]
-    op = op.split("_edgetpu.tflite")[0]
+def deduce_operation_from_file(tflite_file, beginning=None, ending=None):
+    f = tflite_file
+    op=""
+
+    if(beginning and not ending):
+        if beginning in tflite_file:
+            op = f.split(beginning)[1]
+
+    elif(beginning and ending):
+        if beginning in tflite_file and ending in tflite_file:
+            op = f.split(beginning)[1]
+            op = op.split(ending)[0]
+
+    elif(ending and not beginning):
+        if ending in tflite_file:
+            op = f.split(ending)[0]
 
     return op
+
+def deduce_operations_from_folder(models_folder, beginning=None, ending=None):
+    import os
+    from os import listdir
+    from os.path import isfile,isdir,join
+
+    tflite_models_info = [] 
+
+    for F_1 in listdir(models_folder):
+        F_1_PATH = models_folder + F_1
+        if isdir(F_1_PATH):
+            for F_2 in listdir(F_1_PATH):
+                F_2_PATH = F_1_PATH + "/" +  F_2
+                if (isfile(F_2_PATH) and F_2.endswith(".tflite")):
+                    OP = deduce_operation_from_file(F_2, beginning=beginning, ending=ending)
+                    tflite_models_info.append([F_2_PATH, OP])
+
+        elif isfile(F_1_PATH):
+            if (isfile(F_1_PATH) and F_1.endswith(".tflite")):
+                OP = deduce_operation_from_file(F_1, beginning=beginning, ending=ending)
+                tflite_models_info.append([F_1_PATH, OP])
+
+    return tflite_models_info
 
 def make_interpreter(model_file):
 
@@ -33,23 +68,11 @@ def make_interpreter(model_file):
                               model_content=None, 
                               experimental_delegates=experimental_delegates)
 
-def edge_group_tflite_deployment(models_folder):
+def edge_group_tflite_deployment(models_folder, count=5):
 
-    import os
-    from os import listdir
-    from os.path import isfile, join
-
-    tflite_model=None
-    op_path = models_folder
-
-    for edge_file in listdir(models_folder):
-        tflite_model = edge_file
-
-        if(tflite_model):
-            op = deduce_operation(tflite_model)
-            tflite_model = op_path + "/" + tflite_model
-            edge_tflite_deployment(tflite_model, op, 1000)
-
+    for model_info in deduce_operations_from_folder(models_folder, beginning="quant_", ending="_edgetpu.tflite"):
+        pass
+        #edge_tflite_deployment(model_info[0], model_info[1], count)
 
 def edge_tflite_deployment(model_file, model_name, count):
 
@@ -83,8 +106,7 @@ def edge_tflite_deployment(model_file, model_name, count):
         interpreter.invoke()                                                    #Runs the interpreter/inference, be sure
                                                                                 #to have set the input sizes and allocate 
                                                                                 #tensors.
-        """ This is where we should 
-            retrieve the ouput
+        """ END
         """
         inference_time = time.perf_counter() - start
         output_data = interpreter.get_tensor(output_details[0]['index'])
@@ -93,13 +115,10 @@ def edge_tflite_deployment(model_file, model_name, count):
 
     create_csv_file(edge_folder, model_name, EDGE_RESULTS)
 
-def cpu_group_tflite_deployment(models_folder, operations):
-    for op in operations:
-        op_path = models_folder + op + "/"
-        tflite_model = fetch_file(op_path, ".tflite")
-        tflite_model = op_path + tflite_model
+def cpu_group_tflite_deployment(models_folder, count=5):
 
-        cpu_tflite_deployment(tflite_model, op, 1000)
+    for model_info in deduce_operations_from_folder(models_folder, beginning=None, ending=".tflite"):
+        cpu_tflite_deployment(model_info[0], model_info[1], count)
 
 
 def cpu_tflite_deployment(model_file, model_name, count):
@@ -118,7 +137,6 @@ def cpu_tflite_deployment(model_file, model_name, count):
     input_shape = input_details[0]['shape']                                     #Test the model on randon input data
     input_dtype = input_details[0]['dtype']                                     #Test the model on randon input data
 
-    #input_data = np.array(np.random.random_sample(input_shape),dtype=np.float32)
     input_data = np.array(np.random.random_sample(input_shape),dtype=input_dtype)
     interpreter.set_tensor(input_details[0]['index'], input_data)
 
@@ -144,19 +162,26 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-m', '--model', required=True, help='File path to the .tflite file.')
     parser.add_argument('-d', '--delegate', required=True, help='cpu, gpu or edge_tpu.')
-    parser.add_argument('-n', '--name', required=True, help='Name of Model/Operation, needed to create corresponding folder name.')
+    parser.add_argument('-m', '--model', help='File path to the .tflite file.')
+    parser.add_argument('-n', '--name',  help='Name of Model/Operation, needed to create corresponding folder name.')
     parser.add_argument('-c', '--count', type=int, default=5,help='Number of times to run inference.')
+    parser.add_argument('-g', '--group', type=bool, default=False,help='Flag to determine if its a group deployment or single model deplyment.')
+    parser.add_argument('-f', '--group_folder', default="",help='Path to folder where the group of models is located. Only accepted in group mode.')
 
     args = parser.parse_args()
 
     if ("cpu" in args.delegate):
-        cpu_tflite_deployment(args.model, args.name, args.count)
-    elif ("gpu" in args.delegate):
-        gpu_tflite_deployment(args.model, args.name, args.count)
+        if (args.group):
+            cpu_group_tflite_deployment(args.group_folder, count=args.count)
+        else:
+            cpu_tflite_deployment(args.model, args.name, args.count)
+
     elif ("edge_tpu" in args.delegate):
-        edge_tflite_deployment(args.model, args.name, args.count)
+        if (args.group):
+            edge_group_tflite_deployment(args.group_folder, args.count)
+        else:
+            edge_tflite_deployment(args.model, args.name, args.count)
     else:
         print("INVALID delegate input.")
 
