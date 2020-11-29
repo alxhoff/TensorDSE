@@ -44,7 +44,7 @@ class EdgeTPUBuiltinOperator(Enum):
 
 edgetpu_opcodes = [BuiltinOperator.value for BuiltinOperator in EdgeTPUBuiltinOperator]
 
-mapping = [[0,-1],[1,0],[2,2],[3,2],[4,0],[5,2]]
+mapping = [[0,-1],[1,0],[2,2],[3,2]]
 
 #Converts a tflite model to JSON format and loads it
 def load_tflite_as_json(log: logging.Logger, name: str):
@@ -94,59 +94,63 @@ def classify_ops(log: logging.Logger, model: dict):
     return result
 
 def info_mapping(mapping: list):
+
     sequential_ops = []
-    sequence = False
-    start = 0
-    seq_len = 0
+    sequence = []
+    sequence_flag = False
+
     for ops in mapping:
         if ops[1] == 2:
-            if sequence == False:
-                start = ops[0]
-                seq_len += 1
-                sequence = True
+            if sequence_flag == False:
+                sequence.append(ops[0])
+                sequence_flag = True
                 if ops[0] == len(mapping)-1:
-                    info = [start,seq_len]
-                    sequential_ops.append(info)
-                    start = 0
-                    seq_len = 0
-                    sequence = False
-            elif sequence == True:
-                seq_len += 1
+                    sequential_ops.append(sequence)
+
+            elif sequence_flag == True:
+                sequence.append(ops[0])
                 if ops[0] == len(mapping)-1:
-                    info = [start,seq_len]
-                    sequential_ops.append(info)
-                    start = 0
-                    seq_len = 0
-                    sequence = False
+                    sequential_ops.append(sequence)
         elif ops[1] != 2:
-            if sequence == True:
-                info = [start,seq_len]
-                sequential_ops.append(info)
-                start = 0
-                seq_len = 0
-                sequence = False
+            if sequence_flag == True:
+                sequential_ops.append(sequence)
+                sequence = []
+                sequence_flag = False
             else:
                 continue
+    
     return sequential_ops
 
-def seperate_ops(model: dict, info: list):
-    """graph = model["subgraphs"][0]
-    for i,op in enumerate(graph["operators"]):
-        if op["opcode_index"] == unsupported_opcodes[0][0]:"""
+
+def merge_op(model: dict, info: list):
+    """new_opcodes = []
+    for i, c in enumerate(model["operator_codes"]):
+        if c["deprecated_builtin_code"] == 4:
+            new_opcodes.append(c)
+            conv_opcode = i
+    assert conv_opcode >= 0
+    model["operator_codes"] = new_opcodes """
+    
+    graph = model["subgraphs"][0]
+    new_ops = []
+    for op_index,op in enumerate(graph["operators"]):
+        for info_op_index in info[0]:
+            if info_op_index == op_index:
+                print(op["builtin_options_type"])
             
 
 def merge_ops(log: logging.Logger, model: dict, info: list, name: str):
     supported_opcodes,unsupported_opcodes = classify_ops(log, model)
-    print(supported_opcodes)
-    print(unsupported_opcodes)
+    #print(supported_opcodes)
+    #print(unsupported_opcodes)
     print(info)
     
     tmp_model = load_tflite_as_json(log, name)
 
-    for opcode in tmp_model["operator_codes"]:
-        print(opcode)
+    #for opcode in tmp_model["operator_codes"]:
+    #    print(opcode)
 
-    seperate_ops(tmp_model,info)
+    merge_op(tmp_model,info)
 
     info.pop(0)
     return info,model
@@ -222,6 +226,7 @@ def optimize_edgetpu_model(log: logging.Logger, name: str):
     
     #log.info("Generating the binary flatbuffers model from JSON")
     #echo_run("flatc", "-b", "schema.fbs", fn_json) """
+
 def echo_run(*cmd):
     #Execute an arbitrary command and echo its output.
     p = subprocess.run(list(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
