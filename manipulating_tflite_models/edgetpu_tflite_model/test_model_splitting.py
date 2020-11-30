@@ -74,7 +74,7 @@ def load_tflite_as_json(log: logging.Logger, name: str):
     return model
 
 #Classifies the operations in the model and returns an array of supported and unsupported ops
-def classify_ops(log: logging.Logger, model: dict):
+def classify_ops(model: dict):
     
     supported_opcodes = []
     unsupported_opcodes = []
@@ -121,36 +121,44 @@ def info_mapping(mapping: list):
     
     return sequential_ops
 
+def merge(model: dict, info: list):
 
-def merge_op(model: dict, info: list):
-    """new_opcodes = []
-    for i, c in enumerate(model["operator_codes"]):
-        if c["deprecated_builtin_code"] == 4:
-            new_opcodes.append(c)
-            conv_opcode = i
-    assert conv_opcode >= 0
-    model["operator_codes"] = new_opcodes """
-    
     graph = model["subgraphs"][0]
+
     new_ops = []
-    for op_index,op in enumerate(graph["operators"]):
-        for info_op_index in info[0]:
-            if info_op_index == op_index:
-                print(op["builtin_options_type"])
-            
+    for i,op in enumerate(graph["operators"]):
+        for info_op in info[0]:
+            if info_op == i:
+                new_ops.append(op)
+
+    new_opcodes = []
+    for i, op_code in enumerate(model["operator_codes"]):
+        for new_op in new_ops:
+            if i == new_op["opcode_index"]:
+                new_opcodes.append(op_code)
+                new_op["opcode_index"] = len(new_opcodes) - 1
+
+    new_tensors = []
+    for new_op in new_ops:
+        for op_input in new_op["inputs"]:
+            if graph["tensors"][op_input] in new_tensors:
+                continue
+            else:
+                new_tensors.append(graph["tensors"][op_input])
+                op_input = len(new_tensors) - 1
+        for op_output in new_op["outputs"]:
+            if graph["tensors"][op_output] in new_tensors:
+                continue
+            else:
+                new_tensors.append(graph["tensors"][op_output])
+                op_output = len(new_tensors) - 1 
+
 
 def merge_ops(log: logging.Logger, model: dict, info: list, name: str):
-    supported_opcodes,unsupported_opcodes = classify_ops(log, model)
-    #print(supported_opcodes)
-    #print(unsupported_opcodes)
-    print(info)
     
     tmp_model = load_tflite_as_json(log, name)
 
-    #for opcode in tmp_model["operator_codes"]:
-    #    print(opcode)
-
-    merge_op(tmp_model,info)
+    merge(tmp_model,info)
 
     info.pop(0)
     return info,model
@@ -241,7 +249,3 @@ logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
 
 fn = "%s.tflite" % name
 optimize_edgetpu_model(log, name)
-
-
-
-
