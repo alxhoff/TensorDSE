@@ -121,7 +121,7 @@ def info_mapping(mapping: list):
     
     return sequential_ops
 
-def merge(model: dict, info: list):
+def seperate_ops(model: dict, info: list):
 
     graph = model["subgraphs"][0]
 
@@ -139,26 +139,46 @@ def merge(model: dict, info: list):
                 new_op["opcode_index"] = len(new_opcodes) - 1
 
     new_tensors = []
+    tensor_indexes = []
     for new_op in new_ops:
-        for op_input in new_op["inputs"]:
-            if graph["tensors"][op_input] in new_tensors:
+        for i,op_input in enumerate(new_op["inputs"]):
+            if op_input in tensor_indexes:
                 continue
             else:
+                tensor_indexes.append(op_input)
                 new_tensors.append(graph["tensors"][op_input])
-                op_input = len(new_tensors) - 1
-        for op_output in new_op["outputs"]:
-            if graph["tensors"][op_output] in new_tensors:
+                new_op["inputs"][i] = len(new_tensors) - 1
+        for j, op_output in enumerate(new_op["outputs"]):
+            if op_output in tensor_indexes:
                 continue
             else:
+                tensor_indexes.append(op_output)
                 new_tensors.append(graph["tensors"][op_output])
-                op_output = len(new_tensors) - 1 
+                new_op["outputs"][j] = len(new_tensors) - 1
+    
+    new_inputs = []
+    new_outputs = []
+    new_inputs.append(new_ops[0]["inputs"][0])
+    new_outputs.append(new_ops[len(new_ops) - 1]["outputs"][0])
+
+    new_buffers = []
+    buffer_indexes = []
+    for new_tensor in new_tensors:
+        index = new_tensor["buffer"]
+        if index in buffer_indexes:
+            continue
+        else:
+            buffer_indexes.append(index)
+            new_buffers.append(model["buffers"][index])
+            new_tensor["buffer"] = len(new_buffers) - 1
+    
 
 
 def merge_ops(log: logging.Logger, model: dict, info: list, name: str):
     
     tmp_model = load_tflite_as_json(log, name)
 
-    merge(tmp_model,info)
+    seperate_ops(tmp_model,info)
 
     info.pop(0)
     return info,model
