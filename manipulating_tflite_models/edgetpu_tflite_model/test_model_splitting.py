@@ -172,22 +172,22 @@ def seperate_ops(model: dict, info: list):
             new_buffers.append(model["buffers"][index])
             new_tensor["buffer"] = len(new_buffers) - 1
     
-
-
 def merge_ops(log: logging.Logger, model: dict, info: list, name: str):
     
-    tmp_model = load_tflite_as_json(log, name)
+    #echo_run("flatc", "-b", "schema.fbs", fn_json)
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    print(dir_path)
 
+    tmp_model = load_tflite_as_json(log, name)
     seperate_ops(tmp_model,info)
 
     info.pop(0)
     return info,model
 
-
 def optimize_edgetpu_model(log: logging.Logger, name: str):
     
     model = load_tflite_as_json(log, name)
-    #supported_opcodes,unsupported_opcodes = classify_ops(log, model)
+
     info = info_mapping(mapping)    
     
     if len(info) != 0:
@@ -198,60 +198,6 @@ def optimize_edgetpu_model(log: logging.Logger, name: str):
             merge_flag = False
             break
 
-
-    # Erase all opcodes except the ones after Leaky Relu.
-    
-    """conv_opcode = -1
-    new_opcodes = []
-    for i, c in enumerate(model["operator_codes"]):
-        if c["deprecated_builtin_code"] == 4:
-            new_opcodes.append(c)
-            conv_opcode = i
-    assert conv_opcode >= 0
-    model["operator_codes"] = new_opcodes
-    print(new_opcodes)
-    print('\n')
-
-    # Fix the tensor dtypes which are int8 instead of uint8.
-
-    graph = model["subgraphs"][0]
-    new_tensors = []
-    index_map = {}
-    for i, t in enumerate(graph["tensors"]):
-        if t["type"] == "FLOAT32":
-            continue
-        if t["type"] == "INT8":
-            t["type"] = "UINT8"
-            t["quantization"]["zero_point"][0] = 0
-
-        index_map[i] = len(new_tensors)
-        new_tensors.append(t)
-        print(t)
-        print('\n')
-    graph["tensors"] = new_tensors
-    
-
-    # Update the tensor indexes in the ops.
-    new_ops = []
-    for op in graph["operators"]:
-        if op["opcode_index"] != conv_opcode:
-            continue
-        op["outputs"] = [index_map[i] for i in op["outputs"]]
-        op["inputs"] = [index_map[i] for i in op["inputs"]]
-        new_ops.append(op)
-    graph["operators"] = new_ops
-
-
-    
-    
-    # Update the global input and output tensor indexes.
-    graph["inputs"][0] = new_ops[0]["inputs"][0]
-    graph["outputs"][0] = new_ops[0]["outputs"][0]
-    model["subgraphs"][0] = graph
-
-    #with open(fn_json, "w") as fout:
-        #json.dump(model, fout, indent=4)
-    
     #log.info("Generating the binary flatbuffers model from JSON")
     #echo_run("flatc", "-b", "schema.fbs", fn_json) """
 
