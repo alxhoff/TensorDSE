@@ -2,5 +2,4 @@ testenv
 testenv/*
 ./testenv
 ./testenv/*
-.vscode/
-.vscode/*
+**/.vscode/
