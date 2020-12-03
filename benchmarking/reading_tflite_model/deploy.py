@@ -159,12 +159,20 @@ def cpu_tflite_deployment(model_file, model_name, count):
 
 def full_tflite_deployment():
     import os
-    from utils import *
-    from compile import *
+    import utils
+    import compile
+    from compile import TO_DOCKER, FROM_DOCKER
+    
+    path_to_TensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
+    path_to_Results = "results/"
 
-    path_to_TensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
-    docker_copy(path_to_TensorDSE, TO_DOCKER)
-    docker_exec("python")
+    compile.docker_copy(path_to_TensorDSE, TO_DOCKER)
+
+    compile.docker_exec("edge_python_deploy")
+    compile.docker_copy("home/deb/TensorDSE/benchmarking/reading_tflite_model/results/edge/", FROM_DOCKER, path_to_Results)
+
+    compile.docker_exec("cpu_python_deploy")
+    compile.docker_copy("/home/deb/TensorDSE/benchmarking/reading_tflite_model/results/cpu/", FROM_DOCKER, path_to_Results)
 
 if __name__ == '__main__':
     import argparse

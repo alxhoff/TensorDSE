@@ -263,8 +263,8 @@ if __name__ == '__main__':
         for cls in classes:
             setattr(sys.modules[__name__], cls.__name__, cls)
 
-    source_tflite_conversion()
-    edge_tflite_compilation()
+    #source_tflite_conversion()
+    #edge_tflite_compilation()
     full_tflite_deployment()
 
     #edge_group_tflite_deployment(compiled_models_folder, 1000)

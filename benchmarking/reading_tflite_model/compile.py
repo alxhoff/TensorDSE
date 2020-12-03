@@ -1,11 +1,14 @@
 converted_models_dir = "models/single_layer_models"
+cd_deploy_dir = "cd /home/deb/TensorDSE/benchmarking/reading_tflite_model/"
+edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c 1000"
+cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c 1000"
 
 TO_DOCKER = 1
 FROM_DOCKER = 0
 
 DOCKER = "exp-docker"
 LOCATION = "quant"
-HOME = "deb"
+HOME = "/home/deb/"
 
 
 OPS = []
@@ -27,17 +30,19 @@ def concat_args(ARGS):
 
 def docker_start():
     import os
-   
+
     docker_start_cmd = "docker start " + DOCKER
     os.system(docker_start_cmd)
 
-def docker_exec(CMD_TYPE, OBJECT=None):
+def docker_exec(CMD_TYPE, OBJECT=""):
     import os
 
     DOCKER_EXEC_DICT = {
-        "mkdir"             : ["-ti ", DOCKER + " ", "sh -c ", place_within_quotes("[ -d " + HOME + OBJECT + " ] || " + CMD_TYPE + " " + HOME + OBJECT)],
-        "edgetpu_compiler"  : ["-ti ", DOCKER + " ", "sh -c ", place_within_quotes(CMD_TYPE + " -s " + OBJECT + " -o " + HOME + "comp/")],
-        "python_deploy"      : [
+        "mkdir"                 : ["-ti ", DOCKER + " ", "sh -c ", place_within_quotes("[ -d " + HOME + OBJECT + " ] || " + CMD_TYPE + " " + HOME + OBJECT)],
+        "edgetpu_compiler"      : ["-ti ", DOCKER + " ", "sh -c ", place_within_quotes(CMD_TYPE + " -s " + OBJECT + " -o " + HOME + "comp/")],
+        "edge_python_deploy"    : ["-ti ", DOCKER + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + edge_deploy)],
+        "cpu_python_deploy"    : ["-ti ", DOCKER + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + cpu_deploy)],
+        ""                      : None
     }
 
     default = None
@@ -47,7 +52,7 @@ def docker_exec(CMD_TYPE, OBJECT=None):
         docker_exec_cmd = "docker exec " + concat_args(ARGS)
         os.system(docker_exec_cmd)
 
-def docker_copy(File, DIRECTION_FLAG, Location = None):
+def docker_copy(File, DIRECTION_FLAG, Location = ""):
     import os
    
     if(DIRECTION_FLAG):
