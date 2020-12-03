@@ -1,0 +1,5 @@
+testenv
+testenv/*
+./testenv
+./testenv/*
+.vscode
