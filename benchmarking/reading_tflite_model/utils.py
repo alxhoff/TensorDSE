@@ -3,6 +3,9 @@ GEN_OP_NAME=""
 GEN_OP_IN_SHAPE=[]
 GEN_OP_IN_TYPE="float32"
 
+def retrieve_folder_path(path, folder):
+    return path.split(folder + "/")[0] + folder + "/"
+
 def fetch_file(directory, ending):
     import os
     from os import listdir

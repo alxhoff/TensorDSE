@@ -71,8 +71,7 @@ def make_interpreter(model_file):
 def edge_group_tflite_deployment(models_folder, count=5):
 
     for model_info in deduce_operations_from_folder(models_folder, beginning="quant_", ending="_edgetpu.tflite"):
-        pass
-        #edge_tflite_deployment(model_info[0], model_info[1], count)
+        edge_tflite_deployment(model_info[0], model_info[1], count)
 
 def edge_tflite_deployment(model_file, model_name, count):
 
@@ -157,6 +156,16 @@ def cpu_tflite_deployment(model_file, model_name, count):
 
     create_csv_file(cpu_folder, model_name, CPU_RESULTS)
 
+
+def full_tflite_deployment():
+    import os
+    from utils import *
+    from compile import *
+
+    path_to_TensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
+    docker_copy(path_to_TensorDSE, TO_DOCKER)
+    docker_exec("python")
+
 if __name__ == '__main__':
     import argparse
 
@@ -179,7 +188,7 @@ if __name__ == '__main__':
 
     elif ("edge_tpu" in args.delegate):
         if (args.group):
-            edge_group_tflite_deployment(args.group_folder, args.count)
+            edge_group_tflite_deployment(args.group_folder, count=args.count)
         else:
             edge_tflite_deployment(args.model, args.name, args.count)
     else:
