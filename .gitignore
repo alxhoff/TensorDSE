@@ -9,3 +9,5 @@ tags
 single_layer_models/**
 single_layer_models/*
 
+__pycache__
+
