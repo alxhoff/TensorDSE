@@ -1,6 +1,7 @@
 # tflite folder generated using tflite schema and the flattbuffer compiler
 # See  https://google.github.io/flatbuffers/flatbuffers_guide_tutorial.html
 
+from analyze import *
 from deploy import *
 from compile import *
 from utils import *
@@ -267,6 +268,7 @@ if __name__ == '__main__':
     source_tflite_conversion()
     edge_tflite_compilation()
     full_tflite_deployment()
+    full_tflite_analysis()
 
     #edge_group_tflite_deployment(compiled_models_folder, 1000)
     #cpu_group_tflite_deployment(models_folder, 1000)
