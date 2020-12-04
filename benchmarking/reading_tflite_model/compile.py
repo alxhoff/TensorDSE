@@ -1,8 +1,3 @@
-converted_models_dir = "models/single_layer_models"
-cd_deploy_dir = "cd /home/deb/TensorDSE/benchmarking/reading_tflite_model/"
-edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c 1000"
-cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c 1000"
-
 TO_DOCKER = 1
 FROM_DOCKER = 0
 
@@ -10,12 +5,25 @@ DOCKER = "exp-docker"
 LOCATION = "quant"
 HOME = "/home/deb/"
 
-
 OPS = []
 PATH_OPS = []
 QUANTIZED_TARGETS = []
 QUANTIZED_SOURCES = []
 COMPILED_SOURCES = []
+
+COUNT = 1000
+
+converted_models_dir = "models/single_layer_models"
+
+cd_deploy_dir = "cd " + HOME + "TensorDSE/benchmarking/reading_tflite_model/"
+edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(COUNT)
+cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(COUNT)
+
+
+def set_count(count):
+    global COUNT
+
+    COUNT = count
 
 def place_within_quotes(string):
     from shlex import quote

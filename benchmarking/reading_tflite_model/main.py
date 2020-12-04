@@ -2,6 +2,7 @@
 # See  https://google.github.io/flatbuffers/flatbuffers_guide_tutorial.html
 
 from deploy import *
+from compile import *
 from utils import *
 from gets import *
 
@@ -263,10 +264,9 @@ if __name__ == '__main__':
         for cls in classes:
             setattr(sys.modules[__name__], cls.__name__, cls)
 
-    #source_tflite_conversion()
-    #edge_tflite_compilation()
+    source_tflite_conversion()
+    edge_tflite_compilation()
     full_tflite_deployment()
 
     #edge_group_tflite_deployment(compiled_models_folder, 1000)
     #cpu_group_tflite_deployment(models_folder, 1000)
-    pass
