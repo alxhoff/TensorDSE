@@ -3,3 +3,4 @@ testenv/*
 ./testenv
 ./testenv/*
 **/.vscode/
+**/__pycache__
