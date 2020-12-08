@@ -17,6 +17,7 @@ converted_models_dir = "models/single_layer_models"
 
 cd_deploy_dir = "cd " + home + "TensorDSE/benchmarking/reading_tflite_model/"
 edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
+shark_edge_deploy = "sudo python3 deploy.py -g True -l True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
 cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
 
 
@@ -28,6 +29,7 @@ def set_globals(cnt):
     count = cnt
     edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
     cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
+    shark_edge_deploy = "sudo python3 deploy.py -g True -l True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
 
 def place_within_quotes(string):
     from shlex import quote
@@ -49,11 +51,12 @@ def docker_exec(cmd_type, objct=""):
     import os
 
     docker_exec_dict = {
-        "mkdir"                 : ["-ti ", docker + " ", "sh -c ", place_within_quotes("[ -d " + home + objct + " ] || " + cmd_type + " " + home + objct)],
-        "edgetpu_compiler"      : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cmd_type + " -s " + objct + " -o " + home + "comp/")],
-        "edge_python_deploy"    : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + edge_deploy)],
-        "cpu_python_deploy"    : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + cpu_deploy)],
-        ""                      : None
+        "mkdir"                     : ["-ti ", docker + " ", "sh -c ", place_within_quotes("[ -d " + home + objct + " ] || " + cmd_type + " " + home + objct)],
+        "edgetpu_compiler"          : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cmd_type + " -s " + objct + " -o " + home + "comp/")],
+        "edge_python_deploy"        : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + edge_deploy)],
+        "shark_edge_python_deploy"  : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + shark_edge_deploy)],
+        "cpu_python_deploy"         : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + cpu_deploy)],
+        ""                          : None
     }
 
     default = None

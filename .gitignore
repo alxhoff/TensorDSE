@@ -9,6 +9,8 @@ tags
 single_layer_models/**
 single_layer_models/*
 results/*
+benchmarking/reading_tflite_model/results/*
+shark/*.pcapng
 
 __pycache__
 

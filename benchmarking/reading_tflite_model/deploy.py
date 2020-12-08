@@ -67,93 +67,94 @@ def make_interpreter(model_file):
                               model_content=None, 
                               experimental_delegates=experimental_delegates)
 
-def edge_group_tflite_deployment(models_folder, count=5):
+def edge_group_tflite_deployment(models_folder, count=5, log_performance=True):
 
     for model_info in deduce_operations_from_folder(models_folder, beginning="quant_", ending="_edgetpu.tflite"):
-        edge_tflite_deployment(model_info[0], model_info[1], count)
+        edge_tflite_deployment(model_info[0], model_info[1], count, log_performance)
 
-def edge_tflite_deployment(model_file, model_name, count):
+def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
 
     import time
     import numpy as np
 
     edge_results = []
 
-    interpreter = make_interpreter(model_file)                                  #Creates Interpreter Object
-    interpreter.allocate_tensors()                                              #Allocates its tensors
+    # Creates Interpreter Object.
+    interpreter = make_interpreter(model_file)
+    interpreter.allocate_tensors()
 
-    """
-    This is where model specific inputs/labels are fed to the model in
-    order to be run correctly.
-    """
+    # This is where model specific inputs/labels are fed to the model in
+    # order to be run correctly.
 
-    input_details = interpreter.get_input_details()                             #Get input and output tensors
+    input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
-    input_shape = input_details[0]['shape']                                     #Test the model on randon input data
-    input_dtype = input_details[0]['dtype']                                     #Test the model on randon input data
+    input_shape = input_details[0]['shape']
+    input_dtype = input_details[0]['dtype']
 
     input_data = np.array(np.random.random_sample(input_shape),dtype=input_dtype)
     interpreter.set_tensor(input_details[0]['index'], input_data)
 
     for i in range(count):
 
-        """ INFERENCE TIME
-        """
+        # INFERENCE TIME
+
         start = time.perf_counter()
-        interpreter.invoke()                                                    #Runs the interpreter/inference, be sure
-                                                                                #to have set the input sizes and allocate 
-                                                                                #tensors.
-        """ END
-        """
+        interpreter.invoke()  # Runs the interpreter/inference.
+
+
+        # END
+
         inference_time = time.perf_counter() - start
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
         edge_results.append([i, inference_time])
 
-    create_csv_file(EDGE_FOLDER, model_name, edge_results)
+    if (log_performance == True):
+        create_csv_file(EDGE_FOLDER, model_name, edge_results)
 
-def cpu_group_tflite_deployment(models_folder, count=5):
+def cpu_group_tflite_deployment(models_folder, count=5, log_performance=True):
 
     for model_info in deduce_operations_from_folder(models_folder, beginning=None, ending=".tflite"):
         cpu_tflite_deployment(model_info[0], model_info[1], count)
 
 
-def cpu_tflite_deployment(model_file, model_name, count):
+def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
     import time
     import tensorflow as tf
     import numpy as np
 
-    CPU_RESULTS = []
+    cpu_results = []
 
-    interpreter = tf.lite.Interpreter(model_path=model_file)                    #Creates Interpreter Object
-    interpreter.allocate_tensors()                                              #Allocates its tensors
+    # Creates Interpreter Object.
+    interpreter = tf.lite.Interpreter(model_path=model_file)
+    interpreter.allocate_tensors()
 
-    input_details = interpreter.get_input_details()                             #Get input and output tensors
+    input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
-    input_shape = input_details[0]['shape']                                     #Test the model on randon input data
-    input_dtype = input_details[0]['dtype']                                     #Test the model on randon input data
+    input_shape = input_details[0]['shape']
+    input_dtype = input_details[0]['dtype']
 
     input_data = np.array(np.random.random_sample(input_shape),dtype=input_dtype)
     interpreter.set_tensor(input_details[0]['index'], input_data)
 
     for i in range(count):
 
-        """ INFERENCE TIME
-        """
+        # INFERENCE TIME
+
         start = time.perf_counter()
-        interpreter.invoke()                                                    #Runs the interpreter/inference, be sure
-                                                                                #to have set the input sizes and allocate 
+        interpreter.invoke()  # Runs the interpreter/inference.
 
         inference_time = time.perf_counter() - start
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
-        """ END
-        """
-        CPU_RESULTS.append([i, inference_time])
+        # END
 
-    create_csv_file(CPU_FOLDER, model_name, CPU_RESULTS)
+        cpu_results.append([i, inference_time])
+
+    if (log_performance == True):
+        create_csv_file(CPU_FOLDER, model_name, cpu_results)
 
 
 def full_tflite_deployment(count=1000):
@@ -196,6 +197,9 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--group', type=bool, default=False,
                         help='Flag to determine if its a group deployment or single model deplyment.')
 
+    parser.add_argument('-l', '--log', type=bool, default=False,
+                        help='Flag to know if the user wishes to log the performance or not.')
+
     parser.add_argument('-f', '--group_folder', default="",
                         help='Path to folder where the group of models is located. Only accepted in group mode.')
 
@@ -203,13 +207,13 @@ if __name__ == '__main__':
 
     if ("cpu" in args.delegate):
         if (args.group):
-            cpu_group_tflite_deployment(args.group_folder, count=args.count)
+            cpu_group_tflite_deployment(args.group_folder, count=args.count, log_performance=args.log)
         else:
             cpu_tflite_deployment(args.model, args.name, args.count)
 
     elif ("edge_tpu" in args.delegate):
         if (args.group):
-            edge_group_tflite_deployment(args.group_folder, count=args.count)
+            edge_group_tflite_deployment(args.group_folder, count=args.count, log_performance=args.log)
         else:
             edge_tflite_deployment(args.model, args.name, args.count)
     else:
