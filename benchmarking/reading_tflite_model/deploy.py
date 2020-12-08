@@ -1,9 +1,8 @@
 import platform
 from utils import *
 
-edge_folder="results/edge/"
-cpu_folder="results/cpu/"
-gpu_folder="results/gpu/"
+EDGE_FOLDER="results/edge/"
+CPU_FOLDER="results/cpu/"
 
 EDGETPU_SHARED_LIB = {
   'Linux': 'libedgetpu.so.1',
@@ -112,7 +111,7 @@ def edge_tflite_deployment(model_file, model_name, count):
 
         edge_results.append([i, inference_time])
 
-    create_csv_file(edge_folder, model_name, edge_results)
+    create_csv_file(EDGE_FOLDER, model_name, edge_results)
 
 def cpu_group_tflite_deployment(models_folder, count=5):
 
@@ -154,7 +153,7 @@ def cpu_tflite_deployment(model_file, model_name, count):
         """
         CPU_RESULTS.append([i, inference_time])
 
-    create_csv_file(cpu_folder, model_name, CPU_RESULTS)
+    create_csv_file(CPU_FOLDER, model_name, CPU_RESULTS)
 
 
 def full_tflite_deployment(count=1000):
@@ -163,19 +162,19 @@ def full_tflite_deployment(count=1000):
     import compile
     from compile import TO_DOCKER, FROM_DOCKER, home
     
-    path_to_TensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
-    path_to_docker_Results =  home + "TensorDSE/benchmarking/reading_tflite_model/results/"
-    path_to_Results = "results/"
+    path_to_tensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
+    path_to_docker_results =  home + "TensorDSE/benchmarking/reading_tflite_model/results/"
+    path_to_results = "results/"
 
-    compile.set_count(count)
+    compile.set_globals(count)
 
-    compile.docker_copy(path_to_TensorDSE, TO_DOCKER)
+    compile.docker_copy(path_to_tensorDSE, TO_DOCKER)
 
     compile.docker_exec("edge_python_deploy")
-    compile.docker_copy(path_to_docker_Results + "edge/", FROM_DOCKER, path_to_Results)
+    compile.docker_copy(path_to_docker_results + "edge/", FROM_DOCKER, path_to_results)
 
     compile.docker_exec("cpu_python_deploy")
-    compile.docker_copy(path_to_docker_Results + "cpu/", FROM_DOCKER, path_to_Results)
+    compile.docker_copy(path_to_docker_results + "cpu/", FROM_DOCKER, path_to_results)
 
 if __name__ == '__main__':
     import argparse
@@ -183,7 +182,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('-d', '--delegate', 
-                        required=True, help='cpu, gpu or edge_tpu.')
+                        required=True, help='cpu or edge_tpu.')
 
     parser.add_argument('-m', '--model', 
                         help='File path to the .tflite file.')

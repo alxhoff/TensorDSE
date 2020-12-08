@@ -20,18 +20,21 @@ edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d 
 cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
 
 
-def set_count(cnt):
+def set_globals(cnt):
+    global cpu_deploy
+    global edge_deploy
     global count
 
     count = cnt
+    edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
+    cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
 
 def place_within_quotes(string):
     from shlex import quote
-
     return "".join(quote(string))
 
 def concat_args(args):
-    SUMMED_ARGS = ""
+    summed_args = ""
     for arg in range(len(args)):
         summed_args += args[arg]
     return summed_args
@@ -45,7 +48,7 @@ def docker_start():
 def docker_exec(cmd_type, objct=""):
     import os
 
-    DOCKER_EXEC_DICT = {
+    docker_exec_dict = {
         "mkdir"                 : ["-ti ", docker + " ", "sh -c ", place_within_quotes("[ -d " + home + objct + " ] || " + cmd_type + " " + home + objct)],
         "edgetpu_compiler"      : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cmd_type + " -s " + objct + " -o " + home + "comp/")],
         "edge_python_deploy"    : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + edge_deploy)],
@@ -54,7 +57,7 @@ def docker_exec(cmd_type, objct=""):
     }
 
     default = None
-    args = DOCKER_EXEC_DICT.get(cmd_type, default)
+    args = docker_exec_dict.get(cmd_type, default)
 
     if(args):
         docker_exec_cmd = "docker exec " + concat_args(args)

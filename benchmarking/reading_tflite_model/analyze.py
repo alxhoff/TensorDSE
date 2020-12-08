@@ -142,8 +142,8 @@ class Operation:
     pdf = None
 
 
-def log_pdfs(OP_CLASSES):
-    for op in OP_CLASSES:
+def log_pdfs(op_classes):
+    for op in op_classes:
         file = op.path + "/" + op.op_name + "_info.txt"
         with open(file, 'w') as f:
             f.write("Operation: " + op.op_name +  "\n")
@@ -154,8 +154,8 @@ def log_pdfs(OP_CLASSES):
             f.write("Distribution Name: " + str(op.dist_name) +  "\n")
             f.write("PDF: " + str(op.pdf) +  "\n")
 
-def retreive_stat_info_op(OP_CLASSES):
-    for op in OP_CLASSES:
+def retreive_stat_info_op(op_classes):
+    for op in op_classes:
         op.get_basic_info()
         op.best_fit_distribution()
         op.make_pdf()
@@ -178,13 +178,13 @@ def parse_csv(file):
     return samples
 
 
-def store_op_info(OP_CLASSES):
-    for op in OP_CLASSES:
+def store_op_info(op_classes):
+    for op in op_classes:
         results_csv = op.path + "/Results.csv"
         op.samples = parse_csv(results_csv)
 
 
-def init_op_classes(models_folder, OP_CLASSES):
+def init_op_classes(models_folder, op_classes):
     import os
     from os import listdir
     from os.path import isfile,isdir,join
@@ -193,19 +193,20 @@ def init_op_classes(models_folder, OP_CLASSES):
         f_path = models_folder + f
         if isdir(f_path):
             op_tmp = Operation(f_path, f)
-            OP_CLASSES.append(op_tmp)
+            op_classes.append(op_tmp)
 
 
 def full_tflite_analysis():
+    global results_folder
     global cpu_op_classes
     global edge_op_classes
 
-    init_op_classes(args.folder + "cpu/", cpu_op_classes)
+    init_op_classes(results_folder + "cpu/", cpu_op_classes)
     store_op_info(cpu_op_classes)
     retreive_stat_info_op(cpu_op_classes)
     log_pdfs(cpu_op_classes)
 
-    init_op_classes(args.folder + "edge/", edge_op_classes)
+    init_op_classes(results_folder + "edge/", edge_op_classes)
     store_op_info(edge_op_classes)
     retreive_stat_info_op(edge_op_classes)
     log_pdfs(edge_op_classes)

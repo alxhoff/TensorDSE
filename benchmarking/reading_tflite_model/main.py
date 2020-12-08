@@ -7,9 +7,10 @@ from compile import *
 from utils import *
 from gets import *
 
+COMPILED_MODELS_FOLDER = "models/tpu_compiled_models/"
+MODELS_FOLDER = "models/single_layer_models/"
+
 source_model_filename = ""
-compiled_models_folder = "models/tpu_compiled_models/"
-models_folder = "models/single_layer_models/"
 
 op_array=[]
 
@@ -26,7 +27,7 @@ def process_CONV_2D(options, io):
     #TODO DILLATION
 
     op_name="CONV_2D"
-    conv_dir = models_folder + op_name + "/"
+    conv_dir = MODELS_FOLDER + op_name + "/"
 
     # Retrieving operation relevant variables.
     filter_count = 28
@@ -69,7 +70,7 @@ def process_CONV_2D(options, io):
 def process_MAX_POOL_2D(options, io):
 
     op_name="MAX_POOL_2D"
-    pool_dir = models_folder + op_name + "/"
+    pool_dir = MODELS_FOLDER + op_name + "/"
 
     pool_size = get_filter(options)                 
     padding = get_padding(options)                  
@@ -106,7 +107,7 @@ def process_MAX_POOL_2D(options, io):
 def process_RESHAPE(options, io):
 
     op_name="RESHAPE"
-    reshape_dir = models_folder + op_name + "/"
+    reshape_dir = MODELS_FOLDER + op_name + "/"
 
     input_shape = get_input_tensor_shape(io)
     test_input = np.array(np.random.random_sample(input_shape), dtype=np.int32)
@@ -144,10 +145,10 @@ def process_FULLY_CONNECTED(options, io):
 
     if(activ_func):
         op_name="FULLY_CONNECTED_" + activ_func
-        fcl_dir = models_folder + op_name + "/"
+        fcl_dir = MODELS_FOLDER + op_name + "/"
     else:
         op_name="FULLY_CONNECTED"
-        fcl_dir = models_folder + op_name + "/"
+        fcl_dir = MODELS_FOLDER + op_name + "/"
 
 
     input_shape = get_input_tensor_shape(io)
@@ -186,7 +187,7 @@ def process_FULLY_CONNECTED(options, io):
 def process_SOFTMAX(options, io):
 
     op_name="SOFTMAX"
-    softmx_dir = models_folder + op_name + "/"
+    softmx_dir = MODELS_FOLDER + op_name + "/"
 
     input_shape = get_input_tensor_shape(io)
     test_input = np.array(np.random.random_sample(input_shape))
@@ -258,14 +259,21 @@ def source_tflite_conversion():
 if __name__ == '__main__':
     import os
     import sys
+    import argparse
     import numpy as np
     import tensorflow as tf
     from tensorflow.python.tools import freeze_graph
     from tensorflow.compat.v1.train import Saver as saver
 
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
     parser.add_argument('-m', '--model', 
                         default = "models/source_models/MNIST_model.tflite", 
-                        help = 'File path to the source .tflite file.')
+                        help = 'File path to the SOURCE .tflite file.')
+
+    parser.add_argument('-c', '--count', 
+                        type=int, default=1000,
+                        help='Number of times to run inference.')
 
     args = parser.parse_args()
     source_model_filename = args.model
@@ -281,7 +289,7 @@ if __name__ == '__main__':
 
     source_tflite_conversion()
     edge_tflite_compilation()
-    full_tflite_deployment()
+    full_tflite_deployment(count=args.count)
     full_tflite_analysis()
 
     #edge_group_tflite_deployment(compiled_models_folder, 1000)
