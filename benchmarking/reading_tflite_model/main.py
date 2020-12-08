@@ -7,7 +7,7 @@ from compile import *
 from utils import *
 from gets import *
 
-source_model_filename = "models/source_models/MNIST_model.tflite"
+source_model_filename = ""
 compiled_models_folder = "models/tpu_compiled_models/"
 models_folder = "models/single_layer_models/"
 
@@ -18,23 +18,21 @@ op_array=[]
 # the resolved builtin operator name.
 
 def process_CONV_2D(options, io):
-
-    #TODO DILLATION
     """ Conv2D layers have three inputs: 
         Input
         Weights
         Bias
     """
+    #TODO DILLATION
 
-    #Relevant Folder Names
     op_name="CONV_2D"
     conv_dir = models_folder + op_name + "/"
 
-    #Retrieving operation relevant variables.
+    # Retrieving operation relevant variables.
     filter_count = 28
 
     input_shape = get_input_tensor_shape(io) 
-    test_input = np.array(np.random.random_sample(input_shape))                 #Defining test data
+    test_input = np.array(np.random.random_sample(input_shape))
 
     kernel_shape = get_kernel_shape(io) 
 
@@ -45,23 +43,23 @@ def process_CONV_2D(options, io):
     conv_graph=tf.Graph() 
     with conv_graph.as_default(), tf.compat.v1.Session() as sess:
         
-        kernel_place = tf.Variable(tf.random.normal([3,3,1,filter_count],       #Defining Kernel
+        kernel_place = tf.Variable(tf.random.normal([3,3,1,filter_count],
                                    dtype="float32"), 
                                    dtype=tf.float32) 
         
-        input_place = tf.raw_ops.Placeholder(dtype=tf.float32,                  #Defining input
+        input_place = tf.raw_ops.Placeholder(dtype=tf.float32,
                                              shape=input_shape, 
                                              name=op_name+"_input") 
         
-        conv_2d = tf.nn.conv2d(input_place, filters=kernel_place,               #Model Creation/Instantiation               
+        conv_2d = tf.nn.conv2d(input_place, filters=kernel_place,
                                strides=strides, padding=padding, 
                                name=op_name+"_op")
 
-        init = tf.compat.v1.global_variables_initializer()                      #Initialize global variables
-        sess.run(init)                                                          #Runs Sessions initialization
+        init = tf.compat.v1.global_variables_initializer()
+        sess.run(init)
 
-        output_place = tf.identity(conv_2d,name=op_name+"_output")              #Naming Output
-        output_place = sess.run(conv_2d, feed_dict={input_place:test_input})    #Running Session with input and obtaining Output Tensors
+        output_place = tf.identity(conv_2d,name=op_name+"_output")
+        output_place = sess.run(conv_2d, feed_dict={input_place:test_input})
         
         tmp_model_saved_dir=save_session(sess, op_name, conv_2d, conv_dir, input_place)
 
@@ -79,26 +77,26 @@ def process_MAX_POOL_2D(options, io):
     activ_func = get_activation_function(options)   
 
     input_shape = get_input_tensor_shape(io)        
-    test_input = np.array(np.random.random_sample(input_shape))                 #Defining test data
+    test_input = np.array(np.random.random_sample(input_shape))
 
     pool_2d = tf.Graph()                            
     with pool_2d.as_default(), tf.compat.v1.Session() as sess:
         
-        input_place = tf.raw_ops.Placeholder(dtype=tf.float32,                  #Defining input
+        input_place = tf.raw_ops.Placeholder(dtype=tf.float32,
                                              shape=input_shape, 
                                              name=op_name+"_input")
 
-        pool_2d = tf.nn.max_pool2d(input_place, 2,                              #Model Creation/Instantiation
+        pool_2d = tf.nn.max_pool2d(input_place, 2,
                                    strides, padding,
                                    data_format='NHWC', 
                                    name=op_name+"_op")
                                     
 
-        init = tf.compat.v1.global_variables_initializer()                      #Initialize global variables
-        sess.run(init)                                                          #Runs Sessions initialization
+        init = tf.compat.v1.global_variables_initializer()
+        sess.run(init)
 
-        output_place = tf.identity(pool_2d ,name=op_name+"_output")              #Naming Output
-        output_place = sess.run(pool_2d, feed_dict={input_place:test_input})    #Running Session and obtaining Output Tensors
+        output_place = tf.identity(pool_2d ,name=op_name+"_output")
+        output_place = sess.run(pool_2d, feed_dict={input_place:test_input})
 
         tmp_model_saved_dir=save_session(sess, op_name, pool_2d, pool_dir, input_place)
 
@@ -111,7 +109,7 @@ def process_RESHAPE(options, io):
     reshape_dir = models_folder + op_name + "/"
 
     input_shape = get_input_tensor_shape(io)
-    test_input = np.array(np.random.random_sample(input_shape), dtype=np.int32)                 #Defining test data
+    test_input = np.array(np.random.random_sample(input_shape), dtype=np.int32)
 
     output_shape = get_output_tensor_shape(io)
 
@@ -153,14 +151,14 @@ def process_FULLY_CONNECTED(options, io):
 
 
     input_shape = get_input_tensor_shape(io)
-    test_input = np.array(np.random.random_sample(input_shape))                 #Defining test data
+    test_input = np.array(np.random.random_sample(input_shape))
 
     output_shape = get_output_tensor_shape(io)
-    units=output_shape[0][1]                                                    #Not sure about this
+    units=output_shape[0][1]
 
     weights_format = get_weights_format(options)
 
-    keep_num_dim = get_num_dims(options)                                        # Is this bias?
+    keep_num_dim = get_num_dims(options)
 
     fully_connected_graph=tf.Graph()
     with fully_connected_graph.as_default(), tf.compat.v1.Session() as sess:
@@ -186,11 +184,12 @@ def process_FULLY_CONNECTED(options, io):
     tflite_conversion(fcl_dir, tmp_model_saved_dir, op_name, FCL, input_place)
 
 def process_SOFTMAX(options, io):
+
     op_name="SOFTMAX"
     softmx_dir = models_folder + op_name + "/"
 
     input_shape = get_input_tensor_shape(io)
-    test_input = np.array(np.random.random_sample(input_shape))                 #Defining test data
+    test_input = np.array(np.random.random_sample(input_shape))
 
     output_shape = get_output_tensor_shape(io)
     units = output_shape[0][1]
@@ -217,44 +216,58 @@ def process_SOFTMAX(options, io):
 
 def process_operation(model, graph, op):
 
-    opcode_builtin = model.OperatorCodes(op.OpcodeIndex()).BuiltinCode() #Necessary OP Code Intex to retrieve OP_NAME
-    op_name = class_code_to_name(sys.modules["tflite"].BuiltinOperator.BuiltinOperator, opcode_builtin) #Operation Name
-    op_array.append(op_name)
-    op_opts = process_options(op, op.BuiltinOptions()) #Operaton Options
-    op_opts_name = class_code_to_name(sys.modules["tflite"].BuiltinOptions.BuiltinOptions,op.BuiltinOptionsType()) #Name of Operation Options
+    opcode_builtin = model.OperatorCodes(op.OpcodeIndex()).BuiltinCode()
 
-    io_lengths = process_io_lengths(op) #io_lengths [0]/[1] - Number of Input/Output Tensors
-    io = process_io(op) #io indexes needed to retrieve the actual i/o tensors
+    op_name = class_code_to_name(sys.modules["tflite"].BuiltinOperator.BuiltinOperator, 
+                                 opcode_builtin)
+    op_array.append(op_name)
+    op_opts = process_options(op, op.BuiltinOptions())
+
+    op_opts_name = class_code_to_name(sys.modules["tflite"].BuiltinOptions.BuiltinOptions,
+                                      op.BuiltinOptionsType())
+
+    io_lengths = process_io_lengths(op)
+    io = process_io(op)  # IO indexes are retreived.
 
     input_tensors = []
-    for i, index in enumerate(io[0]): #Looping through input tensor range
+    for i, index in enumerate(io[0]):
         tensor = graph.Tensors(index)
         input_tensors.append(
-            (tensor.ShapeAsNumpy(), class_code_to_name(sys.modules["tflite"].TensorType.TensorType, tensor.Type())))
+            (tensor.ShapeAsNumpy(), class_code_to_name(sys.modules["tflite"].TensorType.TensorType, 
+                                                       tensor.Type())))
 
     output_tensors = []
-    for i, index in enumerate(io[1]): #Looping through output tensor range
+    for i, index in enumerate(io[1]):
         tensor = graph.Tensors(index)
         output_tensors.append(
-            (tensor.ShapeAsNumpy(), class_code_to_name(sys.modules["tflite"].TensorType.TensorType, tensor.Type())))
+            (tensor.ShapeAsNumpy(), class_code_to_name(sys.modules["tflite"].TensorType.TensorType, 
+                                                       tensor.Type())))
 
-    eval("process_" + op_name)(op_opts, (input_tensors, output_tensors)) #Calls the respective operation
+    # Calls respective operation function.
+    eval("process_" + op_name)(op_opts, (input_tensors, output_tensors))
 
 def source_tflite_conversion():
     with open(source_model_filename, "rb") as f:
-        model = sys.modules["tflite"].Model.Model.GetRootAsModel(f.read(), 0) #Gets Model
-        graph = model.Subgraphs(0) #Retrieves Subgraphs
+        model = sys.modules["tflite"].Model.Model.GetRootAsModel(f.read(), 0)
+        graph = model.Subgraphs(0)
 
-        for i in range(graph.OperatorsLength()): #Loops over Operations/Nodes?
+        for i in range(graph.OperatorsLength()):
             process_operation(model, graph, graph.Operators(i))
 
 
 if __name__ == '__main__':
-    import os, sys
+    import os
+    import sys
+    import numpy as np
     import tensorflow as tf
     from tensorflow.python.tools import freeze_graph
     from tensorflow.compat.v1.train import Saver as saver
-    import numpy as np
+
+    parser.add_argument('-m', '--model', 
+                        default = "models/source_models/MNIST_model.tflite", 
+                        help = 'File path to the source .tflite file.')
+
+    args = parser.parse_args()
 
     path = os.path.join(os.path.dirname(__file__), "tflite")
 

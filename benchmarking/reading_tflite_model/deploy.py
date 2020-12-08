@@ -38,19 +38,19 @@ def deduce_operations_from_folder(models_folder, beginning=None, ending=None):
 
     tflite_models_info = [] 
 
-    for F_1 in listdir(models_folder):
-        F_1_PATH = models_folder + F_1
-        if isdir(F_1_PATH):
-            for F_2 in listdir(F_1_PATH):
-                F_2_PATH = F_1_PATH + "/" +  F_2
-                if (isfile(F_2_PATH) and F_2.endswith(".tflite")):
-                    OP = deduce_operation_from_file(F_2, beginning=beginning, ending=ending)
-                    tflite_models_info.append([F_2_PATH, OP])
+    for f_1 in listdir(models_folder):
+        f_1_path = models_folder + f_1
+        if isdir(f_1_path):
+            for f_2 in listdir(f_1_path):
+                f_2_path = f_1_path + "/" +  f_2
+                if (isfile(f_2_path) and f_2.endswith(".tflite")):
+                    op = deduce_operation_from_file(f_2, beginning=beginning, ending=ending)
+                    tflite_models_info.append([f_2_path, op])
 
-        elif isfile(F_1_PATH):
-            if (isfile(F_1_PATH) and F_1.endswith(".tflite")):
-                OP = deduce_operation_from_file(F_1, beginning=beginning, ending=ending)
-                tflite_models_info.append([F_1_PATH, OP])
+        elif isfile(f_1_path):
+            if (isfile(f_1_path) and f_1.endswith(".tflite")):
+                op = deduce_operation_from_file(f_1, beginning=beginning, ending=ending)
+                tflite_models_info.append([f_1_path, op])
 
     return tflite_models_info
 
@@ -78,7 +78,7 @@ def edge_tflite_deployment(model_file, model_name, count):
     import time
     import numpy as np
 
-    EDGE_RESULTS = []
+    edge_results = []
 
     interpreter = make_interpreter(model_file)                                  #Creates Interpreter Object
     interpreter.allocate_tensors()                                              #Allocates its tensors
@@ -110,9 +110,9 @@ def edge_tflite_deployment(model_file, model_name, count):
         inference_time = time.perf_counter() - start
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
-        EDGE_RESULTS.append([i, inference_time])
+        edge_results.append([i, inference_time])
 
-    create_csv_file(edge_folder, model_name, EDGE_RESULTS)
+    create_csv_file(edge_folder, model_name, edge_results)
 
 def cpu_group_tflite_deployment(models_folder, count=5):
 
@@ -161,10 +161,10 @@ def full_tflite_deployment(count=1000):
     import os
     import utils
     import compile
-    from compile import TO_DOCKER, FROM_DOCKER, HOME
+    from compile import TO_DOCKER, FROM_DOCKER, home
     
     path_to_TensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
-    path_to_docker_Results =  HOME + "TensorDSE/benchmarking/reading_tflite_model/results/"
+    path_to_docker_Results =  home + "TensorDSE/benchmarking/reading_tflite_model/results/"
     path_to_Results = "results/"
 
     compile.set_count(count)
@@ -182,12 +182,23 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-d', '--delegate', required=True, help='cpu, gpu or edge_tpu.')
-    parser.add_argument('-m', '--model', help='File path to the .tflite file.')
-    parser.add_argument('-n', '--name',  help='Name of Model/Operation, needed to create corresponding folder name.')
-    parser.add_argument('-c', '--count', type=int, default=5,help='Number of times to run inference.')
-    parser.add_argument('-g', '--group', type=bool, default=False,help='Flag to determine if its a group deployment or single model deplyment.')
-    parser.add_argument('-f', '--group_folder', default="",help='Path to folder where the group of models is located. Only accepted in group mode.')
+    parser.add_argument('-d', '--delegate', 
+                        required=True, help='cpu, gpu or edge_tpu.')
+
+    parser.add_argument('-m', '--model', 
+                        help='File path to the .tflite file.')
+
+    parser.add_argument('-n', '--name',  
+                        help='Name of Model/Operation, needed to create corresponding folder name.')
+
+    parser.add_argument('-c', '--count', type=int, default=5,
+                        help='Number of times to run inference.')
+
+    parser.add_argument('-g', '--group', type=bool, default=False,
+                        help='Flag to determine if its a group deployment or single model deplyment.')
+
+    parser.add_argument('-f', '--group_folder', default="",
+                        help='Path to folder where the group of models is located. Only accepted in group mode.')
 
     args = parser.parse_args()
 

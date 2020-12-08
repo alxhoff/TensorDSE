@@ -34,7 +34,9 @@ def print_options(options):
 
 
 def process_options(op, options):
-    op_type = class_code_to_name(sys.modules['tflite'].BuiltinOptions.BuiltinOptions, op.BuiltinOptionsType())
+    op_type = class_code_to_name(sys.modules['tflite'].BuiltinOptions.BuiltinOptions, 
+                                 op.BuiltinOptionsType())
+
     if op_type != "NONE":
         import re
 
@@ -71,7 +73,8 @@ def get_output_tensor_shape(io):
     return io[1][0]
 
 def get_activation_function(options):
-    return class_code_to_name(sys.modules['tflite'].ActivationFunctionType.ActivationFunctionType, options['FusedActivationFunction'])
+    return class_code_to_name(sys.modules['tflite'].ActivationFunctionType.ActivationFunctionType, 
+                              options['FusedActivationFunction'])
 
 def get_num_dims(options):
     return options['KeepNumDims']

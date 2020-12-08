@@ -6,13 +6,13 @@ import pandas as pd
 matplotlib.rcParams['figure.figsize'] = (16.0, 12.0)
 matplotlib.style.use('ggplot')
 
-EDGE_OP_CLASSES = []
-CPU_OP_CLASSES = []
-GEN_OP_CLASSES = []
+edge_op_classes = []
+cpu_op_classes = []
+gen_op_classes = []
 
-DELEGATE = ""
-RESULTS_FOLDER = "results/"
-DELEGATE_FOLDER = RESULTS_FOLDER + DELEGATE
+delegate = ""
+results_folder = "results/"
+delegate_folder = results_folder + delegate
 
 class Operation:
     def __init__(self, path, op_name):
@@ -33,7 +33,6 @@ class Operation:
         self.std_dev = np.std(data, dtype = np.float64)
         self.mean = np.mean(data, dtype = np.float64)
         self.median = np.median(data)
-
 
     def best_fit_distribution(self, bins=1000, ax=None):
         """Model data by finding best fit distribution to data"""
@@ -128,8 +127,6 @@ class Operation:
         
         self.pdf = pdf
 
-
-
     def plot_all(self, bins=1000):
         import pandas as pd
         import numpy as np
@@ -143,6 +140,7 @@ class Operation:
     best_dist = None
     best_params = None
     pdf = None
+
 
 def log_pdfs(OP_CLASSES):
     for op in OP_CLASSES:
@@ -185,6 +183,7 @@ def store_op_info(OP_CLASSES):
         results_csv = op.path + "/Results.csv"
         op.samples = parse_csv(results_csv)
 
+
 def init_op_classes(models_folder, OP_CLASSES):
     import os
     from os import listdir
@@ -196,49 +195,56 @@ def init_op_classes(models_folder, OP_CLASSES):
             op_tmp = Operation(f_path, f)
             OP_CLASSES.append(op_tmp)
 
+
 def full_tflite_analysis():
-    global CPU_OP_CLASSES
-    global EDGE_OP_CLASSES
+    global cpu_op_classes
+    global edge_op_classes
 
-    init_op_classes(args.folder + "cpu/", CPU_OP_CLASSES)
-    store_op_info(CPU_OP_CLASSES)
-    retreive_stat_info_op(CPU_OP_CLASSES)
-    log_pdfs(CPU_OP_CLASSES)
+    init_op_classes(args.folder + "cpu/", cpu_op_classes)
+    store_op_info(cpu_op_classes)
+    retreive_stat_info_op(cpu_op_classes)
+    log_pdfs(cpu_op_classes)
 
-    init_op_classes(args.folder + "edge/", EDGE_OP_CLASSES)
-    store_op_info(EDGE_OP_CLASSES)
-    retreive_stat_info_op(EDGE_OP_CLASSES)
-    log_pdfs(EDGE_OP_CLASSES)
+    init_op_classes(args.folder + "edge/", edge_op_classes)
+    store_op_info(edge_op_classes)
+    retreive_stat_info_op(edge_op_classes)
+    log_pdfs(edge_op_classes)
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-d', '--delegate', required=False, default="cpu", help='Delegates: cpu or edge_tpu.')
-    parser.add_argument('-f', '--folder', required=False, default="results/", help='Folder containing results.')
-    parser.add_argument('-a', '--all', required=False, default=True, help='Plot all hardware analysis.')
+    parser.add_argument('-d', '--delegate', required=False, 
+                        default="cpu", 
+                        help='Delegates: cpu or edge_tpu.')
+
+    parser.add_argument('-f', '--folder', required=False, 
+                        default="results/", 
+                        help='Folder containing results.')
+
+    parser.add_argument('-a', '--all', required=False, 
+                        default=True, 
+                        help='Plot all hardware analysis.')
 
     args = parser.parse_args()
 
-    DELEGATE = args.delegate + "/"
-    RESULTS_FOLDER = args.folder
-    RESULTS_FOLDER += DELEGATE
+    delegate = args.delegate + "/"
+    results_folder = args.folder
+    results_folder += delegate
 
     if (not args.all):
-        init_op_classes(RESULTS_FOLDER, GEN_OP_CLASSES)
-        store_op_info(GEN_OP_CLASSES)
-        retreive_stat_info_op(GEN_OP_CLASSES)
+        init_op_classes(results_folder, gen_op_classes)
+        store_op_info(gen_op_classes)
+        retreive_stat_info_op(gen_op_classes)
     else:
-        init_op_classes(args.folder + "cpu/", CPU_OP_CLASSES)
-        store_op_info(CPU_OP_CLASSES)
-        retreive_stat_info_op(CPU_OP_CLASSES)
-        log_pdfs(CPU_OP_CLASSES)
+        init_op_classes(args.folder + "cpu/", cpu_op_classes)
+        store_op_info(cpu_op_classes)
+        retreive_stat_info_op(cpu_op_classes)
+        log_pdfs(cpu_op_classes)
 
-        init_op_classes(args.folder + "edge/", EDGE_OP_CLASSES)
-        store_op_info(EDGE_OP_CLASSES)
-        retreive_stat_info_op(EDGE_OP_CLASSES)
-        log_pdfs(EDGE_OP_CLASSES)
-
-    pass
+        init_op_classes(args.folder + "edge/", edge_op_classes)
+        store_op_info(edge_op_classes)
+        retreive_stat_info_op(edge_op_classes)
+        log_pdfs(edge_op_classes)
 
