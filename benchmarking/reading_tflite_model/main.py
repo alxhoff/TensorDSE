@@ -268,6 +268,7 @@ if __name__ == '__main__':
                         help = 'File path to the source .tflite file.')
 
     args = parser.parse_args()
+    source_model_filename = args.model
 
     path = os.path.join(os.path.dirname(__file__), "tflite")
 

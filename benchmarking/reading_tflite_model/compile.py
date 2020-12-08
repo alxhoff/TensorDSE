@@ -20,10 +20,10 @@ edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d 
 cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
 
 
-def set_count(count):
+def set_count(cnt):
     global count
 
-    count = count
+    count = cnt
 
 def place_within_quotes(string):
     from shlex import quote
