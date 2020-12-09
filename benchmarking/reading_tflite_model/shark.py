@@ -23,7 +23,7 @@ def shark_capture_init():
     import asyncio
     import pyshark
 
-    out_file = "/home/duclos/Downloads/capture.cap"
+    out_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.cap"
     capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file)
     capture.set_debug()  # Comment this to turn off Debug mode of TShark.
 
@@ -38,9 +38,12 @@ def shark_capture_init():
 
 def shark_read_capture():
     import pyshark
-    cap = pyshark.FileCapture('/home/duclos/Downloads/capture.cap')
+    in_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.cap"
+    cap = pyshark.FileCapture(in_file)
 
-    print(cap[0])
+    print(cap[0]['USB'])
+    #print(cap[0]['USB'].src)
+    #print(dir(cap[0]['USB'])
     cap.close()
 
 
@@ -87,5 +90,6 @@ if __name__ == '__main__':
 
     elif (args.mode == "Read"):
         shark_read_capture()
+
     else:
         shark_manager(args.count)
