@@ -17,7 +17,7 @@ converted_models_dir = "models/single_layer_models"
 
 cd_deploy_dir = "cd " + home + "TensorDSE/benchmarking/reading_tflite_model/"
 edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
-shark_edge_deploy = "sudo python3 deploy.py -g True -l True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
+shark_edge_deploy = "sudo python3 deploy.py -g True -l False -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
 cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
 
 
