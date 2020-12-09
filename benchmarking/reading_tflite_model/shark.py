@@ -38,12 +38,20 @@ def shark_capture_init():
 
 def shark_read_capture():
     import pyshark
+    from pprint import pprint
+
     in_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.cap"
+    out_file = "/home/duclos/Documents/work/TensorDSE/shark/attributes.txt"
+
     cap = pyshark.FileCapture(in_file)
 
     print(cap[0]['USB'])
     #print(cap[0]['USB'].src)
     #print(dir(cap[0]['USB'])
+
+    with open(out_file, 'wt') as out:
+        pprint(dir(cap[0]['USB']), stream=out)
+
     cap.close()
 
 
