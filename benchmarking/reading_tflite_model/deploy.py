@@ -197,7 +197,7 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--group', type=bool, default=False,
                         help='Flag to determine if its a group deployment or single model deplyment.')
 
-    parser.add_argument('-l', '--log', type=bool, default=False,
+    parser.add_argument('-l', '--log', type=bool, default=True,
                         help='Flag to know if the user wishes to log the performance or not.')
 
     parser.add_argument('-f', '--group_folder', default="",
