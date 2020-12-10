@@ -1,9 +1,11 @@
+CONVERTED_MODELS_DIR = "models/single_layer_models"
 TO_DOCKER = 1
 FROM_DOCKER = 0
 
+home = "/home/deb/"
+count = 1000
 docker = "exp-docker"
 location = "quant"
-home = "/home/deb/"
 
 ops = []
 path_ops = []
@@ -11,30 +13,15 @@ quant_targets = []
 quant_sources = []
 compiled_sources = []
 
-count = 1000
-
-converted_models_dir = "models/single_layer_models"
-
-cd_deploy_dir = "cd " + home + "TensorDSE/benchmarking/reading_tflite_model/"
-edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
-shark_edge_deploy = "sudo python3 deploy.py -g True -l False -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
-cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
-
-
 def set_globals(cnt):
-    global cpu_deploy
-    global edge_deploy
-    global shark_edge_deploy
     global count
-
     count = cnt
-    edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
-    cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
-    shark_edge_deploy = "sudo python3 deploy.py -g True -l False -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
+
 
 def place_within_quotes(string):
     from shlex import quote
     return "".join(quote(string))
+
 
 def concat_args(args):
     summed_args = ""
@@ -42,21 +29,32 @@ def concat_args(args):
         summed_args += args[arg]
     return summed_args
 
+
 def docker_start():
     import os
 
     docker_start_cmd = "docker start " + docker
     os.system(docker_start_cmd)
 
+
 def docker_exec(cmd_type, objct=""):
     import os
 
+    mkdir_prefix = "[ -d " + home + objct + " ] || "
+    docker_exec_prefix = "docker exec -ti " + docker + " sh -c "
+    edge_compiler_suffix = objct + " -o" + home + "/comp"
+
+    cd_deploy_dir = "cd " + home + "TensorDSE/benchmarking/reading_tflite_model/"
+    edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
+    shark_edge_deploy = "sudo python3 deploy.py -g True -l False -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
+    cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
+
     docker_exec_dict = {
-        "mkdir"                     : ["-ti ", docker + " ", "sh -c ", place_within_quotes("[ -d " + home + objct + " ] || " + cmd_type + " " + home + objct)],
-        "edgetpu_compiler"          : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cmd_type + " -s " + objct + " -o " + home + "comp/")],
-        "edge_python_deploy"        : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + edge_deploy)],
-        "shark_edge_python_deploy"  : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + shark_edge_deploy)],
-        "cpu_python_deploy"         : ["-ti ", docker + " ", "sh -c ", place_within_quotes(cd_deploy_dir + " && " + cpu_deploy)],
+        "mkdir"                     : [docker_exec_prefix, place_within_quotes(mkdir_prefix + "mkdir " + home + objct)],
+        "edgetpu_compiler"          : [docker_exec_prefix, place_within_quotes("edgetpu_compiler -s " + edge_compiler_suffix)],
+        "edge_python_deploy"        : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + edge_deploy)],
+        "shark_edge_python_deploy"  : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + shark_edge_deploy)],
+        "cpu_python_deploy"         : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + cpu_deploy)],
         ""                          : None
     }
 
@@ -64,7 +62,7 @@ def docker_exec(cmd_type, objct=""):
     args = docker_exec_dict.get(cmd_type, default)
 
     if(args):
-        docker_exec_cmd = "docker exec " + concat_args(args)
+        docker_exec_cmd = concat_args(args)
         os.system(docker_exec_cmd)
 
 def docker_copy(File, DIRECTION_FLAG, Location = ""):
@@ -124,9 +122,9 @@ def retrieve_converted_operations():
     from os import listdir
     from os.path import isfile, isdir, join, exists
 
-    for d in listdir(converted_models_dir): 
-        if (isdir(join(converted_models_dir, d))):
-            path_to_dir = join(converted_models_dir, d)
+    for d in listdir(CONVERTED_MODELS_DIR): 
+        if (isdir(join(CONVERTED_MODELS_DIR, d))):
+            path_to_dir = join(CONVERTED_MODELS_DIR, d)
             path_ops.append(path_to_dir)
             ops.append(d)
 
@@ -160,9 +158,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    home = "home/" + args.user + "/"
     docker = args.docker
     location = args.location
-    home = "home/" + args.user + "/"
 
     retrieve_converted_operations()
     retrieve_quantized_tflites()

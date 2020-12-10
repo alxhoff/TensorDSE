@@ -5,9 +5,9 @@ EDGE_FOLDER="results/edge/"
 CPU_FOLDER="results/cpu/"
 
 EDGETPU_SHARED_LIB = {
-  'Linux': 'libedgetpu.so.1',
-  'Darwin': 'libedgetpu.1.dylib',
-  'Windows': 'edgetpu.dll'
+  'Linux'   :   'libedgetpu.so.1',
+  'Darwin'  :   'libedgetpu.1.dylib',
+  'Windows' :   'edgetpu.dll'
 }[platform.system()]
 
 
@@ -29,6 +29,7 @@ def deduce_operation_from_file(tflite_file, beginning=None, ending=None):
             op = f.split(ending)[0]
 
     return op
+
 
 def deduce_operations_from_folder(models_folder, beginning=None, ending=None):
     import os
@@ -53,6 +54,7 @@ def deduce_operations_from_folder(models_folder, beginning=None, ending=None):
 
     return tflite_models_info
 
+
 def make_interpreter(model_file):
 
     import tflite_runtime.interpreter as tflite
@@ -67,10 +69,12 @@ def make_interpreter(model_file):
                               model_content=None, 
                               experimental_delegates=experimental_delegates)
 
+
 def edge_group_tflite_deployment(models_folder, count=5, log_performance=True):
 
     for model_info in deduce_operations_from_folder(models_folder, beginning="quant_", ending="_edgetpu.tflite"):
         edge_tflite_deployment(model_info[0], model_info[1], count, log_performance)
+
 
 def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
 
@@ -112,6 +116,7 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
 
     if (log_performance == True):
         create_csv_file(EDGE_FOLDER, model_name, edge_results)
+
 
 def cpu_group_tflite_deployment(models_folder, count=5, log_performance=True):
 
@@ -160,22 +165,22 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
 def full_tflite_deployment(count=1000):
     import os
     import utils
-    import compile
-    from compile import TO_DOCKER, FROM_DOCKER, home
+    import docker
+    from docker import TO_DOCKER, FROM_DOCKER, home
     
     path_to_tensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
     path_to_docker_results =  home + "TensorDSE/benchmarking/reading_tflite_model/results/"
     path_to_results = "results/"
 
-    compile.set_globals(count)
+    docker.set_globals(count)
 
-    compile.docker_copy(path_to_tensorDSE, TO_DOCKER)
+    docker.docker_copy(path_to_tensorDSE, TO_DOCKER)
 
-    compile.docker_exec("edge_python_deploy")
-    compile.docker_copy(path_to_docker_results + "edge/", FROM_DOCKER, path_to_results)
+    docker.docker_exec("edge_python_deploy")
+    docker.docker_copy(path_to_docker_results + "edge/", FROM_DOCKER, path_to_results)
 
-    compile.docker_exec("cpu_python_deploy")
-    compile.docker_copy(path_to_docker_results + "cpu/", FROM_DOCKER, path_to_results)
+    docker.docker_exec("cpu_python_deploy")
+    docker.docker_copy(path_to_docker_results + "cpu/", FROM_DOCKER, path_to_results)
 
 if __name__ == '__main__':
     import argparse

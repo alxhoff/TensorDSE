@@ -1,16 +1,62 @@
+class UsbTimer:
+    def __init__(self):
+        pass
+
+    initial_time = 0
+    final_time = 0
+
+    ts_host_first = None
+    ts_host_last = None
+
+    ts_edge_first = None
+    ts_edge_last = None
+
+    def obtain_first_host_pkt(self, cap):
+        for c in cap:
+            if (c['USB'].src == "host"):
+                self.ts_host_first = c['USB'].urb_ts_sec
+                break
+
+    def obtain_last_host_pkt(self, cap):
+        for c in reversed(cap):
+            if (c['USB'].src == "host"):
+                self.ts_host_first = c['USB'].urb_ts_sec
+                break
+
+    def obtain_first_edge_pkt(self, cap):
+        for c in cap:
+            if (not c['USB'].src == "host"):
+                self.ts_edge_first = c['USB'].urb_ts_sec
+                break
+
+    def obtain_last_edge_pkt(self, cap):
+        for c in reversed(cap):
+            if (not c['USB'].src == "host"):
+                self.ts_edge_last = c['USB'].urb_ts_sec
+                break
+
+    def obtain_total_time_elapsed(self, cap):
+        lgth = len(cap)
+        self.initial_time = cap[0]['USB'].urb_ts_sec
+        self.final_time = cap[lgth - 1]['USB'].urb_ts_sec
+
+def prep_capture_file():
+    import os
+    cap_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.cap"
+    os.system("[ -f " + cap_file + " ] || touch " + cap_file)
 
 def shark_deploy_edge(count):
     import os
     import utils
-    import compile
-    from compile import TO_DOCKER, FROM_DOCKER, home
+    import docker
+    from docker import TO_DOCKER, FROM_DOCKER, home
     
     path_to_tensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
     path_to_docker_results =  home + "TensorDSE/benchmarking/reading_tflite_model/results/"
 
-    compile.set_globals(count)
-    compile.docker_copy(path_to_tensorDSE, TO_DOCKER)
-    compile.docker_exec("shark_edge_python_deploy")
+    docker.set_globals(count)
+    docker.docker_copy(path_to_tensorDSE, TO_DOCKER)
+    docker.docker_exec("shark_edge_python_deploy")
 
 
 def shark_usbmon_init():
@@ -23,6 +69,7 @@ def shark_capture_init():
     import asyncio
     import pyshark
 
+    prep_capture_file()
     out_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.cap"
     capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file)
     capture.set_debug()  # Comment this to turn off Debug mode of TShark.
@@ -45,14 +92,19 @@ def shark_read_capture():
 
     cap = pyshark.FileCapture(in_file)
 
-    print(cap[0]['USB'])
-    #print(cap[0]['USB'].src)
-    #print(dir(cap[0]['USB'])
+    usb_timer = UsbTimer() 
 
-    with open(out_file, 'wt') as out:
-        pprint(dir(cap[0]['USB']), stream=out)
+    usb_timer.obtain_total_time_elapsed(cap)
+
+    usb_timer.obtain_first_host_pkt(cap)
+    usb_timer.obtain_last_host_pkt(cap)
+
+    usb_timer.obtain_first_edge_pkt(cap)
+    usb_timer.obtain_last_edge_pkt(cap)
 
     cap.close()
+
+    export_analysis(usb_timer)
 
 
 def shark_manager(count):
@@ -72,6 +124,10 @@ def shark_manager(count):
     t2.join()
 
     shark_read_capture()
+
+
+def export_analysis():
+    pass
 
 
 if __name__ == '__main__':

@@ -2,8 +2,8 @@
 # See  https://google.github.io/flatbuffers/flatbuffers_guide_tutorial.html
 
 from analyze import *
+from docker import *
 from deploy import *
-from compile import *
 from utils import *
 from gets import *
 
