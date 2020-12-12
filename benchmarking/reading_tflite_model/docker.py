@@ -47,6 +47,7 @@ def docker_exec(cmd_type, objct=""):
     cd_deploy_dir = "cd " + home + "TensorDSE/benchmarking/reading_tflite_model/"
     edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
     shark_edge_deploy = "sudo python3 deploy.py -g True -l False -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
+    shark_single_edge_deploy = "sudo python3 deploy.py -l False -d edge_tpu -c 1 -m " + objct
     cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
 
     docker_exec_dict = {
@@ -54,6 +55,7 @@ def docker_exec(cmd_type, objct=""):
         "edgetpu_compiler"          : [docker_exec_prefix, place_within_quotes("edgetpu_compiler -s " + edge_compiler_suffix)],
         "edge_python_deploy"        : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + edge_deploy)],
         "shark_edge_python_deploy"  : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + shark_edge_deploy)],
+        "shark_single_edge_deploy"  : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + shark_single_edge_deploy)],
         "cpu_python_deploy"         : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + cpu_deploy)],
         ""                          : None
     }

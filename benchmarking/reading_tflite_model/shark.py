@@ -2,6 +2,7 @@ class UsbTimer:
     def __init__(self):
         pass
 
+    time_elapsed = 0
     initial_time = 0
     final_time = 0
 
@@ -39,23 +40,23 @@ class UsbTimer:
         lgth = len(cap)
         self.initial_time = cap[0]['USB'].urb_ts_sec
         self.final_time = cap[lgth - 1]['USB'].urb_ts_sec
+        self.time_elapsed = self.final_time - self.initial_time
 
 def prep_capture_file():
     import os
     cap_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.cap"
     os.system("[ -f " + cap_file + " ] || touch " + cap_file)
 
-def shark_deploy_edge(count):
+def shark_deploy_edge(count, objct):
     import os
     import utils
     import docker
     from docker import TO_DOCKER, FROM_DOCKER, home
     
     path_to_tensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
-    path_to_docker_results =  home + "TensorDSE/benchmarking/reading_tflite_model/results/"
+    docker.docker_copy(path_to_tensorDSE, TO_DOCKER)
 
     docker.set_globals(count)
-    docker.docker_copy(path_to_tensorDSE, TO_DOCKER)
     docker.docker_exec("shark_edge_python_deploy")
 
 
@@ -65,72 +66,111 @@ def shark_usbmon_init():
     os.system(usbmon_cmd)
 
 
-def shark_capture_init():
+def shark_capture_init(timeout, op_name):
     import asyncio
     import pyshark
 
     prep_capture_file()
-    out_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.cap"
-    capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file)
-    capture.set_debug()  # Comment this to turn off Debug mode of TShark.
+    out_file = "shark/" + op_name + "capture.cap"
 
-    try:
-        capture.sniff(timeout=100)
+    capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file,
+                                  include_raw=True, use_json=True)
 
-    except asyncio.exceptions.TimeoutError:  # Pyshark is a bit broken.
-        pass
+    #capture.set_debug()  # Toggle comment to toggle Debug mode of TShark.
+
+    #try:
+    capture.sniff(timeout=timeout)
+
+    #except asyncio.exceptions.TimeoutError:  # Pyshark is a bit broken.
+    #    pass
 
     capture.close()
 
 
-def shark_read_capture():
+def shark_read_captures():
+    import os
     import pyshark
-    from pprint import pprint
+    from os import listdir
+    from deploy import deduce_operation_from_file
 
-    in_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.cap"
-    out_file = "/home/duclos/Documents/work/TensorDSE/shark/attributes.txt"
+    capture_dir = "shark/"
 
-    cap = pyshark.FileCapture(in_file)
+    for capture_file in listdir(capture_dir):
 
-    usb_timer = UsbTimer() 
+        op = deduce_operation_from_file(capture_file, ending="_capture.cap")
 
-    usb_timer.obtain_total_time_elapsed(cap)
+        cap = pyshark.FileCapture(capture_dir + capture_file)
+        raw_cap = cap[0].get_raw_packet()
 
-    usb_timer.obtain_first_host_pkt(cap)
-    usb_timer.obtain_last_host_pkt(cap)
+        usb_timer = UsbTimer() 
+        usb_timer.obtain_total_time_elapsed(cap)
 
-    usb_timer.obtain_first_edge_pkt(cap)
-    usb_timer.obtain_last_edge_pkt(cap)
+        usb_timer.obtain_first_host_pkt(cap)
+        usb_timer.obtain_last_host_pkt(cap)
 
-    cap.close()
+        usb_timer.obtain_first_edge_pkt(cap)
+        usb_timer.obtain_last_edge_pkt(cap)
 
-    export_analysis(usb_timer)
+        cap.close()
+
+        export_analysis(usb_timer, op)
 
 
-def shark_manager(count):
+def shark_manager(folder):
+    import os
     import threading
     import pyshark
+    import time
+    from docker import TO_DOCKER, FROM_DOCKER, home, docker_exec, docker_copy
+    from deploy import deduce_operations_from_folder
+    from  utils import retrieve_folder_path
 
-    t1 = threading.Thread(target=shark_capture_init, args=())
-    t2 = threading.Thread(target=shark_deploy_edge, args=(count,))
+    path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
+    docker_copy(path_to_tensorDSE, TO_DOCKER)
 
-    t1.start()
-    t2.start()
+    models_info = deduce_operations_from_folder(folder, 
+                                                beginning="quant_", 
+                                                ending = "_edgetpu.tflite")
 
-    while (t1.is_alive() or t2.is_alive()):
-        pass
+    for m_i in models_info:
+        t1 = threading.Thread(target=shark_capture_init, args=(10, m_i[1] + "_"))
+        t2 = threading.Thread(target=docker_exec, args=("shark_single_edge_deploy", m_i[0],))
 
-    t1.join()
-    t2.join()
+        t1.start()
+        t2.start()
 
-    shark_read_capture()
+        start = time.perf_counter()
+        while (t1.is_alive() or t2.is_alive()):
+            pass
+            
+        end = time.perf_counter()
+        time = end - start
+
+        t1.join()
+        t2.join()
+
+    shark_read_captures()
 
 
-def export_analysis():
-    pass
+def export_analysis(usb_timer, op):
+    from utils import extend_directory 
+
+    out_dir = "results/shark/" 
+    extend_directory(out_dir, op)
+    extended_dir = out_dir + op
+    
+    results_file = extended_dir + "Results.txt"
+
+    with open(results_file, 'w') as f:
+        f.write("Operation Name: " + str(op) + "\n")
+        f.write("Operation Name: " + str(op) + "\n")
+        f.write("Operation Name: " + str(op) + "\n")
+        f.write("Operation Name: " + str(op) + "\n")
+        f.write("Operation Name: " + str(op) + "\n")
 
 
 if __name__ == '__main__':
+    from docker import docker_start
     import argparse
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -143,6 +183,10 @@ if __name__ == '__main__':
                         default="Both", 
                         help='Mode in which the script will run: All, Read, Capture or Deploy.')
 
+    parser.add_argument('-f', '--folder', required=False, 
+                        default="", 
+                        help='Folder.')
+
     args = parser.parse_args()
 
     if (args.mode == "Capture"):
@@ -150,10 +194,17 @@ if __name__ == '__main__':
         shark_capture_init()
 
     elif(args.mode == "Deploy"):
+        docker_start()
         shark_deploy_edge(args.count)
 
     elif (args.mode == "Read"):
-        shark_read_capture()
+        shark_read_captures()
+
+    elif (args.mode == "All" and args.folder != ""):
+        shark_usbmon_init()
+        docker_start()
+        shark_manager(args.folder)
 
     else:
-        shark_manager(args.count)
+        print("Invaild arguments.")
+

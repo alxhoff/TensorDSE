@@ -202,7 +202,7 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--group', type=bool, default=False,
                         help='Flag to determine if its a group deployment or single model deplyment.')
 
-    parser.add_argument('-l', '--log', type=bool, default=True,
+    parser.add_argument('-l', '--log', type=bool, default=False,
                         help='Flag to know if the user wishes to log the performance or not.')
 
     parser.add_argument('-f', '--group_folder', default="",
@@ -212,15 +212,15 @@ if __name__ == '__main__':
 
     if ("cpu" in args.delegate):
         if (args.group):
-            cpu_group_tflite_deployment(args.group_folder, count=args.count, log_performance=args.log)
+            cpu_group_tflite_deployment(args.group_folder, count=args.count, log_performance=(not args.log))
         else:
-            cpu_tflite_deployment(args.model, args.name, args.count)
+            cpu_tflite_deployment(args.model, args.name, args.count, args.log)
 
     elif ("edge_tpu" in args.delegate):
         if (args.group):
-            edge_group_tflite_deployment(args.group_folder, count=args.count, log_performance=args.log)
+            edge_group_tflite_deployment(args.group_folder, count=args.count, log_performance=(not args.log))
         else:
-            edge_tflite_deployment(args.model, args.name, args.count)
+            edge_tflite_deployment(args.model, args.name, args.count, log_performance=(not args.log))
     else:
         print("INVALID delegate input.")
 

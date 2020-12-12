@@ -67,7 +67,7 @@ def create_csv_file(path_file, folder_name, results):
             fw.writerow([results[i][0], results[i][1]])
 
 
-def extend_directory(path_to_dir, extended_dir, parent_dir):
+def extend_directory(path_to_dir, extended_dir, parent_dir=""):
     #TODO Hardcoded for 'Nix Systems
     import os
 
