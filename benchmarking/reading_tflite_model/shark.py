@@ -6,41 +6,53 @@ class UsbTimer:
     initial_time = 0
     final_time = 0
 
-    ts_host_first = None
-    ts_host_last = None
+    ts_host_first = 0
+    ts_host_last = 0
 
-    ts_edge_first = None
-    ts_edge_last = None
+    ts_edge_first = 0
+    ts_edge_last = 0
+
+    def get_total_pkts(self, cap):
+        length=0
+        try:
+            for c in cap:
+                length+=1
+
+        except:
+            pass
+
+
+        self.total_packets = length
 
     def obtain_first_host_pkt(self, cap):
         for c in cap:
             if (c['USB'].src == "host"):
-                self.ts_host_first = c['USB'].urb_ts_sec
+                self.ts_host_first = float(c['USB'].urb_ts_sec) / 10**0
                 break
 
     def obtain_last_host_pkt(self, cap):
         for c in reversed(cap):
             if (c['USB'].src == "host"):
-                self.ts_host_first = c['USB'].urb_ts_sec
+                self.ts_host_last = float(c['USB'].urb_ts_sec) / 10**0
                 break
 
     def obtain_first_edge_pkt(self, cap):
         for c in cap:
             if (not c['USB'].src == "host"):
-                self.ts_edge_first = c['USB'].urb_ts_sec
+                self.ts_edge_first = float(c['USB'].urb_ts_sec) / 10**0
                 break
 
     def obtain_last_edge_pkt(self, cap):
         for c in reversed(cap):
             if (not c['USB'].src == "host"):
-                self.ts_edge_last = c['USB'].urb_ts_sec
+                self.ts_edge_last = float(c['USB'].urb_ts_sec) / 10**0
                 break
 
     def obtain_total_time_elapsed(self, cap):
-        lgth = len(cap)
-        self.initial_time = cap[0]['USB'].urb_ts_sec
-        self.final_time = cap[lgth - 1]['USB'].urb_ts_sec
-        self.time_elapsed = self.final_time - self.initial_time
+        lgth = self.total_packets
+        self.initial_time = float(cap[0]['USB'].urb_ts_sec) / 10**0
+        self.final_time = float(cap[lgth-1]['USB'].urb_ts_sec) / 10**0
+        self.time_elapsed = float(self.final_time - self.initial_time)
 
 def prep_capture_file():
     import os
@@ -67,22 +79,20 @@ def shark_usbmon_init():
 
 
 def shark_capture_init(timeout, op_name):
+    import os
     import asyncio
     import pyshark
 
     prep_capture_file()
     out_file = "shark/" + op_name + "capture.cap"
 
-    capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file,
-                                  include_raw=True, use_json=True)
+    capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file)
+    
+    try:
+        capture.sniff(timeout=timeout)
 
-    #capture.set_debug()  # Toggle comment to toggle Debug mode of TShark.
-
-    #try:
-    capture.sniff(timeout=timeout)
-
-    #except asyncio.exceptions.TimeoutError:  # Pyshark is a bit broken.
-    #    pass
+    except asyncio.exceptions.TimeoutError:  # Pyshark is a bit broken.
+        pass
 
     capture.close()
 
@@ -99,10 +109,11 @@ def shark_read_captures():
 
         op = deduce_operation_from_file(capture_file, ending="_capture.cap")
 
-        cap = pyshark.FileCapture(capture_dir + capture_file)
-        raw_cap = cap[0].get_raw_packet()
+        cap = pyshark.FileCapture(input_file=capture_dir + capture_file, keep_packets=True)
+        #cap.set_debug()
 
         usb_timer = UsbTimer() 
+        usb_timer.get_total_pkts(cap)
         usb_timer.obtain_total_time_elapsed(cap)
 
         usb_timer.obtain_first_host_pkt(cap)
@@ -111,7 +122,11 @@ def shark_read_captures():
         usb_timer.obtain_first_edge_pkt(cap)
         usb_timer.obtain_last_edge_pkt(cap)
 
-        cap.close()
+        try:
+            cap.close()
+
+        except pyshark.capture.capture.TSharkCrashException:
+            pass
 
         export_analysis(usb_timer, op)
 
@@ -120,7 +135,6 @@ def shark_manager(folder):
     import os
     import threading
     import pyshark
-    import time
     from docker import TO_DOCKER, FROM_DOCKER, home, docker_exec, docker_copy
     from deploy import deduce_operations_from_folder
     from  utils import retrieve_folder_path
@@ -133,21 +147,24 @@ def shark_manager(folder):
                                                 ending = "_edgetpu.tflite")
 
     for m_i in models_info:
-        t1 = threading.Thread(target=shark_capture_init, args=(10, m_i[1] + "_"))
+        import time
+
+        deploy_bool = False
+
+        t1 = threading.Thread(target=shark_capture_init, args=(15, m_i[1] + "_"))
         t2 = threading.Thread(target=docker_exec, args=("shark_single_edge_deploy", m_i[0],))
 
         t1.start()
         t2.start()
 
-        start = time.perf_counter()
         while (t1.is_alive() or t2.is_alive()):
-            pass
+           pass 
             
-        end = time.perf_counter()
-        time = end - start
 
         t1.join()
         t2.join()
+
+        time.sleep(2)
 
     shark_read_captures()
 
@@ -159,14 +176,20 @@ def export_analysis(usb_timer, op):
     extend_directory(out_dir, op)
     extended_dir = out_dir + op
     
-    results_file = extended_dir + "Results.txt"
+    results_file = extended_dir + "/Results.txt"
 
     with open(results_file, 'w') as f:
         f.write("Operation Name: " + str(op) + "\n")
-        f.write("Operation Name: " + str(op) + "\n")
-        f.write("Operation Name: " + str(op) + "\n")
-        f.write("Operation Name: " + str(op) + "\n")
-        f.write("Operation Name: " + str(op) + "\n")
+        f.write("Total Time Elapsed/Difference: " + str(usb_timer.time_elapsed) + "\n")
+        f.write("Total Number of Packets: " + str(usb_timer.total_packets) + "\n\n")
+
+        f.write("Time Stamp of First FROM Edge sent Packet: " + str(usb_timer.ts_edge_first) + "\n")
+        f.write("Time Stamp of Last FROM Edge sent Packet: " + str(usb_timer.ts_edge_last) + "\n")
+        f.write("Difference: " + str(float(usb_timer.ts_edge_last - usb_timer.ts_edge_first)) + "\n\n")
+
+        f.write("Time Stamp of First FROM Host sent Packet: " + str(usb_timer.ts_host_first) + "\n")
+        f.write("Time Stamp of Last FROM Host sent Packet: " + str(usb_timer.ts_host_last) + "\n")
+        f.write("Difference: " + str(float(usb_timer.ts_host_last - usb_timer.ts_host_first)) + "\n\n")
 
 
 if __name__ == '__main__':
@@ -178,6 +201,10 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--count', required=False, 
                         default=1000, 
                         help='Count of the number of times of edge deployment.')
+
+    parser.add_argument('-t', '--timeout', required=False, type=int,
+                        default=60, 
+                        help='Timeout used to enforce time employed on capture/listening of usb packets.')
 
     parser.add_argument('-m', '--mode', required=False, 
                         default="Both", 
@@ -191,7 +218,7 @@ if __name__ == '__main__':
 
     if (args.mode == "Capture"):
         shark_usbmon_init()
-        shark_capture_init()
+        shark_capture_init(args.timeout, "TEST")
 
     elif(args.mode == "Deploy"):
         docker_start()
