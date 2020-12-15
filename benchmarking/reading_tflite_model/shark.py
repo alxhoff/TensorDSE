@@ -1,62 +1,18 @@
+EDGE_TPU_ID = ""
+
+
 class UsbTimer:
     def __init__(self):
         pass
 
-    time_elapsed = 0
-    initial_time = 0
-    final_time = 0
+    ts_absolute_begin = 0
+    ts_begin_edge2host = 0
+    ts_absolute_end = 0
 
-    ts_host_first = 0
-    ts_host_last = 0
-
-    ts_edge_first = 0
-    ts_edge_last = 0
-
-    def get_total_pkts(self, cap):
-        length=0
-        try:
-            for c in cap:
-                length+=1
-
-        except:
-            pass
-
-
-        self.total_packets = length
-
-    def obtain_first_host_pkt(self, cap):
-        for c in cap:
-            if (c['USB'].src == "host"):
-                self.ts_host_first = float(c['USB'].urb_ts_sec) / 10**0
-                break
-
-    def obtain_last_host_pkt(self, cap):
-        for c in reversed(cap):
-            if (c['USB'].src == "host"):
-                self.ts_host_last = float(c['USB'].urb_ts_sec) / 10**0
-                break
-
-    def obtain_first_edge_pkt(self, cap):
-        for c in cap:
-            if (not c['USB'].src == "host"):
-                self.ts_edge_first = float(c['USB'].urb_ts_sec) / 10**0
-                break
-
-    def obtain_last_edge_pkt(self, cap):
-        for c in reversed(cap):
-            if (not c['USB'].src == "host"):
-                self.ts_edge_last = float(c['USB'].urb_ts_sec) / 10**0
-                break
-
-    def obtain_total_time_elapsed(self, cap):
-        lgth = self.total_packets
-        self.initial_time = float(cap[0]['USB'].urb_ts_sec) / 10**0
-        self.final_time = float(cap[lgth-1]['USB'].urb_ts_sec) / 10**0
-        self.time_elapsed = float(self.final_time - self.initial_time)
 
 def prep_capture_file():
     import os
-    cap_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.cap"
+    cap_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.pcap"
     os.system("[ -f " + cap_file + " ] || touch " + cap_file)
 
 def shark_deploy_edge(count, objct):
@@ -72,6 +28,34 @@ def shark_deploy_edge(count, objct):
     docker.docker_exec("shark_edge_python_deploy")
 
 
+def count_packets(cap):
+    lngth = 0
+    try:
+        for c in cap:
+            lngth += 1
+    except:
+        pass
+
+    return lngth
+
+
+def lsusb_identify():
+    import os
+
+    global EDGE_TPU_ID
+    
+    lsusb_cmd = "lsusb | grep Google > temp.txt"
+    os.system(lsusb_cmd)
+    with open("temp.txt", "r") as f:
+        for line in f.readlines():
+            if "Google" in line:
+                bus = int(line.split()[1])
+                device = int((line.split()[3]).split(":")[0])
+                EDGE_TPU_ID = str(bus) + "." + str(device)
+
+    os.system("[ -f temp.txt ] && rm temp.txt")
+
+
 def shark_usbmon_init():
     import os
     usbmon_cmd = "sudo modprobe usbmon"
@@ -84,9 +68,14 @@ def shark_capture_init(timeout, op_name):
     import pyshark
 
     prep_capture_file()
-    out_file = "shark/" + op_name + "capture.cap"
+    out_file = "shark/" + op_name + "capture.pcap"
 
-    capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file)
+    param_dict = {
+            "--param" : "value",
+            "--param" : "value"
+    }
+
+    capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file, include_raw=True)
     
     try:
         capture.sniff(timeout=timeout)
@@ -104,27 +93,48 @@ def shark_read_captures():
     from deploy import deduce_operation_from_file
 
     capture_dir = "shark/"
+    read_filter = "usb.transfer_type==URB_BULK"
 
     for capture_file in listdir(capture_dir):
 
+        usb_timer = UsbTimer() 
+        cap_file_path = capture_dir + capture_file
         op = deduce_operation_from_file(capture_file, ending="_capture.cap")
 
-        cap = pyshark.FileCapture(input_file=capture_dir + capture_file, keep_packets=True)
-        #cap.set_debug()
+        capture = pyshark.FileCapture(input_file=cap_file_path, 
+                                      display_filter=read_filter)
 
-        usb_timer = UsbTimer() 
-        usb_timer.get_total_pkts(cap)
-        usb_timer.obtain_total_time_elapsed(cap)
-
-        usb_timer.obtain_first_host_pkt(cap)
-        usb_timer.obtain_last_host_pkt(cap)
-
-        usb_timer.obtain_first_edge_pkt(cap)
-        usb_timer.obtain_last_edge_pkt(cap)
+        host_first = 0
+        edge_first = 0
 
         try:
-            cap.close()
+            for pkt in capture:
+                if ("host" in pkt.usb.src or EDGE_TPU_ID in pkt.usb.src):
+                    if ("host" in pkt.usb.src):
+                        if (host_first == 0):
+                            usb_timer.ts_absolute_begin = pkt.frame_info.time_relative
+                            host_first = 1
+                        
+                        if (edge_first == 0):
+                            usb_timer.begin_inference = pkt.frame_info.time_relative
 
+                    if (EDGE_TPU_ID in pkt.usb.src):
+                        if (edge_first == 0):
+                            usb_timer.ts_begin_edge2host = pkt.frame_info.time_relative
+                            edge_first = 1
+
+                    usb_timer.ts_absolute_end = pkt.frame_info.time_relative
+
+        except RuntimeError:
+            pass
+        except pyshark.capture.capture.TSharkCrashException:
+            pass
+
+        try:
+            capture.close()
+
+        except RuntimeError:
+            pass
         except pyshark.capture.capture.TSharkCrashException:
             pass
 
@@ -149,8 +159,6 @@ def shark_manager(folder):
     for m_i in models_info:
         import time
 
-        deploy_bool = False
-
         t1 = threading.Thread(target=shark_capture_init, args=(15, m_i[1] + "_"))
         t2 = threading.Thread(target=docker_exec, args=("shark_single_edge_deploy", m_i[0],))
 
@@ -166,30 +174,23 @@ def shark_manager(folder):
 
         time.sleep(2)
 
-    shark_read_captures()
+    # shark_read_captures()
 
 
 def export_analysis(usb_timer, op):
+    import csv
     from utils import extend_directory 
 
     out_dir = "results/shark/" 
     extend_directory(out_dir, op)
     extended_dir = out_dir + op
-    
-    results_file = extended_dir + "/Results.txt"
+    results_file = extended_dir + "/Results.csv"
 
-    with open(results_file, 'w') as f:
-        f.write("Operation Name: " + str(op) + "\n")
-        f.write("Total Time Elapsed/Difference: " + str(usb_timer.time_elapsed) + "\n")
-        f.write("Total Number of Packets: " + str(usb_timer.total_packets) + "\n\n")
+    with open(results_file, 'w') as csvfile:
+        fw = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
-        f.write("Time Stamp of First FROM Edge sent Packet: " + str(usb_timer.ts_edge_first) + "\n")
-        f.write("Time Stamp of Last FROM Edge sent Packet: " + str(usb_timer.ts_edge_last) + "\n")
-        f.write("Difference: " + str(float(usb_timer.ts_edge_last - usb_timer.ts_edge_first)) + "\n\n")
-
-        f.write("Time Stamp of First FROM Host sent Packet: " + str(usb_timer.ts_host_first) + "\n")
-        f.write("Time Stamp of Last FROM Host sent Packet: " + str(usb_timer.ts_host_last) + "\n")
-        f.write("Difference: " + str(float(usb_timer.ts_host_last - usb_timer.ts_host_first)) + "\n\n")
+        fw.writerow([usb_timer.ts_absolute_begin, usb_timer.ts_absolute_end,
+                    usb_timer.ts_absolute_end, usb_timer.ts_absolute_end])
 
 
 if __name__ == '__main__':
@@ -225,10 +226,12 @@ if __name__ == '__main__':
         shark_deploy_edge(args.count)
 
     elif (args.mode == "Read"):
+        lsusb_identify()
         shark_read_captures()
 
     elif (args.mode == "All" and args.folder != ""):
         shark_usbmon_init()
+        lsusb_identify()
         docker_start()
         shark_manager(args.folder)
 
