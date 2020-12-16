@@ -1,9 +1,9 @@
 import logging
 import os
+import json
 
 def load_json_file(log: logging.Logger, file_path: str):
 
-    import json
     import urllib.request
     from pathlib import Path
 
@@ -86,7 +86,7 @@ def info_mapping(mapping: list):
     
     return sequential_ops
 
-def seperate_ops(original_model: dict, submodel: dict, info: list):
+def seperate_ops(original_model: dict, submodel: dict, info: list, main_dir_path: str, submodel_filename: str):
 
     original_graph = original_model["subgraphs"][0]
 
@@ -105,9 +105,11 @@ def seperate_ops(original_model: dict, submodel: dict, info: list):
 
     new_tensors = []
     tensor_indexes = []
+
     for new_op in new_ops:
         for i,op_input in enumerate(new_op["inputs"]):
             if op_input in tensor_indexes:
+                new_op["inputs"][i] = new_tensors.index(original_graph["tensors"][op_input])
                 continue
             else:
                 tensor_indexes.append(op_input)
@@ -115,6 +117,7 @@ def seperate_ops(original_model: dict, submodel: dict, info: list):
                 new_op["inputs"][i] = len(new_tensors) - 1
         for j, op_output in enumerate(new_op["outputs"]):
             if op_output in tensor_indexes:
+                new_op["outputs"][j] = new_tensors.index(original_graph["tensors"][op_output])
                 continue
             else:
                 tensor_indexes.append(op_output)
@@ -136,10 +139,25 @@ def seperate_ops(original_model: dict, submodel: dict, info: list):
             buffer_indexes.append(index)
             new_buffers.append(original_model["buffers"][index])
             new_tensor["buffer"] = len(new_buffers) - 1
+    
+    submodel["operator_codes"] = new_opcodes
+    submodel["subgraphs"][0]["tensors"]     =   new_tensors
+    submodel["subgraphs"][0]["inputs"]      =   new_inputs
+    submodel["subgraphs"][0]["outputs"]     =   new_outputs
+    submodel["subgraphs"][0]["operators"]   =   new_ops
+    submodel["buffers"]                     =   new_buffers
+    submodel["metadata"][0]["buffer"]       =   len(new_buffers) - 1
 
-def merge_ops(original_model: dict, submodel: dict, info: list):
+    submodel_filepath = os.path.join(main_dir_path,"models","submodels",submodel_filename)
+    
+    with open(submodel_filepath,"w") as fout:
+        json.dump(submodel, fout, indent=2)
 
-    seperate_ops(original_model,submodel,info)
+    return info,submodel
+
+def merge_ops(original_model: dict, submodel: dict, info: list, main_dir_path: str, submodel_filename: str):
+
+    info,submodel = seperate_ops(original_model,submodel,info,main_dir_path,submodel_filename)
     info.pop(0)
     return info,submodel
 
@@ -165,9 +183,9 @@ def initialize_submodel_file(log: logging.Logger, main_dir_path: str, info: list
                                                      "submodels")
 
     submodel_number = '_'.join([str(elem) for elem in info[0]])
-    submodel_name = "submodel_" + submodel_number + ".json"
-    submodel_path = os.path.join(submodels_dir_path,submodel_name)
+    submodel_filename = "submodel_" + submodel_number + ".json"
+    submodel_path = os.path.join(submodels_dir_path,submodel_filename)
     copy_file(shell_model_path,submodel_path)
     submodel = load_json_file(log, submodels_dir_path)
-    return submodel
+    return submodel,submodel_filename
 

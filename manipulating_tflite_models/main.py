@@ -24,8 +24,8 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
     
 
     while merge_flag:
-        submodel = utils.initialize_submodel_file(log, main_dir_path, info)
-        info, submodel = utils.merge_ops(original_model, submodel, info)
+        submodel,submodel_filename = utils.initialize_submodel_file(log, main_dir_path, info)
+        info, submodel = utils.merge_ops(original_model, submodel, info, main_dir_path,submodel_filename)
         if len(info) == 0:
             merge_flag = False
             break
