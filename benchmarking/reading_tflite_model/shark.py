@@ -1,4 +1,4 @@
-EDGE_TPU_ID = ""
+edge_tpu_id = ""
 
 
 class UsbTimer:
@@ -6,7 +6,8 @@ class UsbTimer:
         pass
 
     ts_absolute_begin = 0
-    ts_begin_edge2host = 0
+    ts_begin_inference = 0
+    ts_begin_return = 0
     ts_absolute_end = 0
 
 
@@ -42,7 +43,7 @@ def count_packets(cap):
 def lsusb_identify():
     import os
 
-    global EDGE_TPU_ID
+    global edge_tpu_id
     
     lsusb_cmd = "lsusb | grep Google > temp.txt"
     os.system(lsusb_cmd)
@@ -51,7 +52,7 @@ def lsusb_identify():
             if "Google" in line:
                 bus = int(line.split()[1])
                 device = int((line.split()[3]).split(":")[0])
-                EDGE_TPU_ID = str(bus) + "." + str(device)
+                edge_tpu_id = str(bus) + "." + str(device)
 
     os.system("[ -f temp.txt ] && rm temp.txt")
 
@@ -68,6 +69,7 @@ def shark_capture_init(timeout, op_name):
     import pyshark
 
     prep_capture_file()
+    capture_filter = "usb.transfer_type==URB_BULK"
     out_file = "shark/" + op_name + "capture.pcap"
 
     param_dict = {
@@ -75,7 +77,7 @@ def shark_capture_init(timeout, op_name):
             "--param" : "value"
     }
 
-    capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file, include_raw=True)
+    capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file)
     
     try:
         capture.sniff(timeout=timeout)
@@ -83,7 +85,15 @@ def shark_capture_init(timeout, op_name):
     except asyncio.exceptions.TimeoutError:  # Pyshark is a bit broken.
         pass
 
-    capture.close()
+    try:
+        capture.close()
+
+    except TSharkCrashException:
+        pass
+    except RuntimeError:
+        pass
+    except pyshark.capture.capture.TSharkCrashException:
+        pass
 
 
 def shark_read_captures():
@@ -99,7 +109,7 @@ def shark_read_captures():
 
         usb_timer = UsbTimer() 
         cap_file_path = capture_dir + capture_file
-        op = deduce_operation_from_file(capture_file, ending="_capture.cap")
+        op = deduce_operation_from_file(capture_file, ending="_capture.pcap")
 
         capture = pyshark.FileCapture(input_file=cap_file_path, 
                                       display_filter=read_filter)
@@ -109,24 +119,22 @@ def shark_read_captures():
 
         try:
             for pkt in capture:
-                if ("host" in pkt.usb.src or EDGE_TPU_ID in pkt.usb.src):
+                if ("host" in pkt.usb.src or edge_tpu_id in pkt.usb.src):
                     if ("host" in pkt.usb.src):
                         if (host_first == 0):
                             usb_timer.ts_absolute_begin = pkt.frame_info.time_relative
                             host_first = 1
                         
                         if (edge_first == 0):
-                            usb_timer.begin_inference = pkt.frame_info.time_relative
+                            usb_timer.ts_begin_inference = pkt.frame_info.time_relative
 
-                    if (EDGE_TPU_ID in pkt.usb.src):
+                    if (edge_tpu_id in pkt.usb.src):
                         if (edge_first == 0):
-                            usb_timer.ts_begin_edge2host = pkt.frame_info.time_relative
+                            usb_timer.ts_begin_return = pkt.frame_info.time_relative
                             edge_first = 1
 
                     usb_timer.ts_absolute_end = pkt.frame_info.time_relative
 
-        except RuntimeError:
-            pass
         except pyshark.capture.capture.TSharkCrashException:
             pass
 
@@ -138,6 +146,7 @@ def shark_read_captures():
         except pyshark.capture.capture.TSharkCrashException:
             pass
 
+        os.system("pgrep tshark && killall -9 tshark")
         export_analysis(usb_timer, op)
 
 
@@ -189,8 +198,9 @@ def export_analysis(usb_timer, op):
     with open(results_file, 'w') as csvfile:
         fw = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
-        fw.writerow([usb_timer.ts_absolute_begin, usb_timer.ts_absolute_end,
-                    usb_timer.ts_absolute_end, usb_timer.ts_absolute_end])
+        fw.writerow(["begin","inference","return","end"])
+        fw.writerow([usb_timer.ts_absolute_begin, usb_timer.ts_begin_inference,
+                    usb_timer.ts_begin_return, usb_timer.ts_absolute_end])
 
 
 if __name__ == '__main__':
