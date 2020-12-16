@@ -1,8 +1,8 @@
 import logging
+import os
 
 def load_json_file(log: logging.Logger, file_path: str):
 
-    import os
     import json
     import urllib.request
     from pathlib import Path
@@ -38,10 +38,17 @@ def load_json_file(log: logging.Logger, file_path: str):
                     log.info("Converting the model from binary flatbuffers to JSON")
                     echo_run("flatc", "-t", "--strict-json", "--defaults-json", schema_path, "--", file_path_tflite)
         else:
-            log.info("TFLite model not found.")
-            return 0
+            if json_file_exists:
+                with open(file_path_json) as fin:
+                    model = json.load(fin)
+                    log.info("Loading of shell submodel in JSON successful")
+                    return model
+            else:
+                log.info("TFLite model not found.")
+                break
 
 def echo_run(*cmd):
+
     import subprocess
     
     #Execute an arbitrary command and echo its output.
@@ -137,7 +144,7 @@ def merge_ops(original_model: dict, submodel: dict, info: list):
     return info,submodel
 
 def check_for_source_model(models_dir: str):
-    import os
+
     source_model_dir = os.path.join(models_dir,"source_model")
     for file in os.listdir(source_model_dir):
         if file.endswith(".tflite"):
@@ -146,8 +153,21 @@ def check_for_source_model(models_dir: str):
     
     return source_model_filename,source_model_filepath
 
-def copy_file(file_path: str, target_path):
+def copy_file(file_path: str, target_path: str):
     echo_run("cp",file_path,target_path)
 
-def initialize_submodel():
-    
+def initialize_submodel_file(log: logging.Logger, main_dir_path: str, info: list):
+
+    shell_model_path = os.path.join(main_dir_path, "models", 
+                                                   "shell_models",
+                                                   "source_model_shell.json")
+    submodels_dir_path = os.path.join(main_dir_path, "models",
+                                                     "submodels")
+
+    submodel_number = '_'.join([str(elem) for elem in info[0]])
+    submodel_name = "submodel_" + submodel_number + ".json"
+    submodel_path = os.path.join(submodels_dir_path,submodel_name)
+    copy_file(shell_model_path,submodel_path)
+    submodel = load_json_file(log, submodels_dir_path)
+    return submodel
+

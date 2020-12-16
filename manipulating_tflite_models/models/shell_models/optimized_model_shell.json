@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "operator_codes": [
+  ],
+  "subgraphs": [
+    {
+      "tensors": [
+      ],
+      "inputs": [
+      ],
+      "outputs": [
+      ],
+      "operators": [
+      ]
+    }
+  ],
+  "description": "Exported from Subgraph.",
+  "buffers": [
+  ]
+}
