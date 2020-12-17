@@ -165,6 +165,8 @@ def delete_file(file_path: str):
 def convert_to_json(schema_path: str, file_path: str):
     echo_run("flatc", "-t", "--strict-json", "--defaults-json", schema_path, "--", file_path)
 
+def move_file()
+
 def convert_to_tflite(schema_path: str, file_path: str):
     echo_run("flatc", "-b", schema_path, file_path)
 
