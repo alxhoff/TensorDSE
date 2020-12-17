@@ -2,26 +2,22 @@ import logging
 import os
 import json
 
-def load_json_file(log: logging.Logger, file_path: str):
+def load_json_model(log: logging.Logger, file_dir_path: str, main_dir_path: str):
 
-    import urllib.request
-    from pathlib import Path
-
-    
     tflite_file_exists = False
     json_file_exists = False
 
+    schema_path = os.path.join(main_dir_path,"schema","schema.fbs")
+
     while json_file_exists == False:
 
-        for file in os.listdir(file_path):
+        for file in os.listdir(file_dir_path):
             if file.endswith(".tflite"):
-                file_path_tflite = os.path.join(file_path, file)
+                file_path_tflite = os.path.join(file_dir_path, file)
                 tflite_file_exists = True
             elif file.endswith(".json"):
-                file_path_json = os.path.join(file_path, file)
+                file_path_json = os.path.join(file_dir_path, file)
                 json_file_exists = True
-
-        schema_path = os.path.join(file_path,"schema.fbs")
     
         if tflite_file_exists:
             if json_file_exists:
@@ -30,13 +26,8 @@ def load_json_file(log: logging.Logger, file_path: str):
                     log.info("Loading of model in JSON successful")
                     return model
             else:
-                if not Path(schema_path).exists():
-                    log.info("schema.fbs was not found, downloading")
-                    urllib.request.urlretrieve("https://github.com/tensorflow/tensorflow/raw/master/tensorflow/lite/schema/schema.fbs",
-                                               "schema.fbs")
-                    log.info("Downloaded schema.fbs")
-                    log.info("Converting the model from binary flatbuffers to JSON")
-                    echo_run("flatc", "-t", "--strict-json", "--defaults-json", schema_path, "--", file_path_tflite)
+                log.info("Converting the model from binary flatbuffers to JSON")
+                convert_to_json(schema_path,file_path_tflite)
         else:
             if json_file_exists:
                 with open(file_path_json) as fin:
@@ -86,18 +77,18 @@ def info_mapping(mapping: list):
     
     return sequential_ops
 
-def merge_ops(original_model: dict, submodel: dict, info: list, main_dir_path: str, submodel_filename: str):
+def create_submodel(source_model: dict, submodel: dict, info: list, main_dir_path: str, submodel_filename: str):
 
-    original_graph = original_model["subgraphs"][0]
+    source_graph = source_model["subgraphs"][0]
 
     new_ops = []
-    for i,op in enumerate(original_graph["operators"]):
+    for i,op in enumerate(source_graph["operators"]):
         for info_op in info[0]:
             if info_op == i:
                 new_ops.append(op)
 
     new_opcodes = []
-    for i, op_code in enumerate(original_model["operator_codes"]):
+    for i, op_code in enumerate(source_model["operator_codes"]):
         for new_op in new_ops:
             if i == new_op["opcode_index"]:
                 new_opcodes.append(op_code)
@@ -109,19 +100,19 @@ def merge_ops(original_model: dict, submodel: dict, info: list, main_dir_path: s
     for new_op in new_ops:
         for i,op_input in enumerate(new_op["inputs"]):
             if op_input in tensor_indexes:
-                new_op["inputs"][i] = new_tensors.index(original_graph["tensors"][op_input])
+                new_op["inputs"][i] = new_tensors.index(source_graph["tensors"][op_input])
                 continue
             else:
                 tensor_indexes.append(op_input)
-                new_tensors.append(original_graph["tensors"][op_input])
+                new_tensors.append(source_graph["tensors"][op_input])
                 new_op["inputs"][i] = len(new_tensors) - 1
         for j, op_output in enumerate(new_op["outputs"]):
             if op_output in tensor_indexes:
-                new_op["outputs"][j] = new_tensors.index(original_graph["tensors"][op_output])
+                new_op["outputs"][j] = new_tensors.index(source_graph["tensors"][op_output])
                 continue
             else:
                 tensor_indexes.append(op_output)
-                new_tensors.append(original_graph["tensors"][op_output])
+                new_tensors.append(source_graph["tensors"][op_output])
                 new_op["outputs"][j] = len(new_tensors) - 1
     
     new_inputs = []
@@ -137,7 +128,7 @@ def merge_ops(original_model: dict, submodel: dict, info: list, main_dir_path: s
             continue
         else:
             buffer_indexes.append(index)
-            new_buffers.append(original_model["buffers"][index])
+            new_buffers.append(source_model["buffers"][index])
             new_tensor["buffer"] = len(new_buffers) - 1
     
     submodel["operator_codes"] = new_opcodes
@@ -171,26 +162,26 @@ def copy_file(file_path: str, target_path: str):
 def delete_file(file_path: str):
     echo_run("rm", "-v", file_path)
 
-def initialize_submodel_file(log: logging.Logger, main_dir_path: str, info: list):
+def convert_to_json(schema_path: str, file_path: str):
+    echo_run("flatc", "-t", "--strict-json", "--defaults-json", schema_path, "--", file_path)
+
+def convert_to_tflite(schema_path: str, file_path: str):
+    echo_run("flatc", "-b", schema_path, file_path)
+
+def initialize_submodel(log: logging.Logger, main_dir_path: str, info: list):
 
     shell_model_path = os.path.join(main_dir_path, "models", 
                                                    "shell_models",
                                                    "source_model_shell.json")
     submodels_dir_path = os.path.join(main_dir_path, "models",
                                                      "submodels")
-    
-    log.info("Deleting old submodels...")
-    for file in os.listdir(submodels_dir_path):
-        if file.endswith(".json"):
-            file_path = os.path.join(submodels_dir_path,file)
-            delete_file(file_path)
             
     log.info("Creating submodel file for operations: %s",info[0])
     submodel_number = '_'.join([str(elem) for elem in info[0]])
     submodel_filename = "submodel_" + submodel_number + ".json"
     submodel_path = os.path.join(submodels_dir_path,submodel_filename)
     copy_file(shell_model_path,submodel_path)
-    submodel = load_json_file(log, submodels_dir_path)
+    submodel = load_json_model(log, submodels_dir_path,main_dir_path)
     log.info("Submodel file: %s created",submodel_filename)
     return submodel,submodel_filename
 
