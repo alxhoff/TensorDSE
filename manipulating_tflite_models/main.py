@@ -22,14 +22,14 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
     else:
         merge_flag = False
     
-
     while merge_flag:
         submodel,submodel_filename = utils.initialize_submodel_file(log, main_dir_path, info)
-        info, submodel = utils.merge_ops(original_model, submodel, info, main_dir_path,submodel_filename)
+        utils.merge_ops(original_model, submodel, info, main_dir_path,submodel_filename)
         if len(info) == 0:
             merge_flag = False
             break
-
+    
+    
     """log.info("Creating tmp files...")
     tmp_folder_dir = os.path.dirname(os.path.dirname(source_model_filepath))
     tmp_folder_path = os.path.join(tmp_folder_dir, "submodels", "tmp_files")

@@ -86,7 +86,7 @@ def info_mapping(mapping: list):
     
     return sequential_ops
 
-def seperate_ops(original_model: dict, submodel: dict, info: list, main_dir_path: str, submodel_filename: str):
+def merge_ops(original_model: dict, submodel: dict, info: list, main_dir_path: str, submodel_filename: str):
 
     original_graph = original_model["subgraphs"][0]
 
@@ -152,14 +152,8 @@ def seperate_ops(original_model: dict, submodel: dict, info: list, main_dir_path
     
     with open(submodel_filepath,"w") as fout:
         json.dump(submodel, fout, indent=2)
-
-    return info,submodel
-
-def merge_ops(original_model: dict, submodel: dict, info: list, main_dir_path: str, submodel_filename: str):
-
-    info,submodel = seperate_ops(original_model,submodel,info,main_dir_path,submodel_filename)
+    
     info.pop(0)
-    return info,submodel
 
 def check_for_source_model(models_dir: str):
 
@@ -174,6 +168,9 @@ def check_for_source_model(models_dir: str):
 def copy_file(file_path: str, target_path: str):
     echo_run("cp",file_path,target_path)
 
+def delete_file(file_path: str):
+    echo_run("rm", "-v", file_path)
+
 def initialize_submodel_file(log: logging.Logger, main_dir_path: str, info: list):
 
     shell_model_path = os.path.join(main_dir_path, "models", 
@@ -181,11 +178,19 @@ def initialize_submodel_file(log: logging.Logger, main_dir_path: str, info: list
                                                    "source_model_shell.json")
     submodels_dir_path = os.path.join(main_dir_path, "models",
                                                      "submodels")
-
+    
+    log.info("Deleting old submodels...")
+    for file in os.listdir(submodels_dir_path):
+        if file.endswith(".json"):
+            file_path = os.path.join(submodels_dir_path,file)
+            delete_file(file_path)
+            
+    log.info("Creating submodel file for operations: %s",info[0])
     submodel_number = '_'.join([str(elem) for elem in info[0]])
     submodel_filename = "submodel_" + submodel_number + ".json"
     submodel_path = os.path.join(submodels_dir_path,submodel_filename)
     copy_file(shell_model_path,submodel_path)
     submodel = load_json_file(log, submodels_dir_path)
+    log.info("Submodel file: %s created",submodel_filename)
     return submodel,submodel_filename
 
