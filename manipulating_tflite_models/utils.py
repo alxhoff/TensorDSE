@@ -159,13 +159,14 @@ def check_for_source_model(models_dir: str):
 def copy_file(file_path: str, target_path: str):
     echo_run("cp",file_path,target_path)
 
+def move_file(file_path: str, target_path: str):
+    echo_run("mv",file_path,target_path)
+
 def delete_file(file_path: str):
-    echo_run("rm", "-v", file_path)
+    echo_run("rm", file_path)
 
 def convert_to_json(schema_path: str, file_path: str):
     echo_run("flatc", "-t", "--strict-json", "--defaults-json", schema_path, "--", file_path)
-
-def move_file()
 
 def convert_to_tflite(schema_path: str, file_path: str):
     echo_run("flatc", "-b", schema_path, file_path)
@@ -187,3 +188,26 @@ def initialize_submodel(log: logging.Logger, main_dir_path: str, info: list):
     log.info("Submodel file: %s created",submodel_filename)
     return submodel,submodel_filename
 
+def initialize_optimized_model(log: logging.Logger, main_dir_path: str,):
+
+    shell_model_path = os.path.join(main_dir_path, "models", 
+                                                   "shell_models",
+                                                   "optimized_model_shell.json")
+    optimized_model_dir = os.path.join(main_dir_path, "models","optimized_model")
+    source_model_dir = os.path.join(main_dir_path,"models","source_model")
+    for file in os.listdir(source_model_dir):
+        if file.endswith(".tflite"):
+            source_model_name = file.split(".",1)[0]
+            optimized_model_filename = source_model_name + "_opt" + "_edgetpu" + ".json"
+    
+    log.info("Creating optimized model...")
+    optimized_model_path = os.path.join(optimized_model_dir,optimized_model_filename)
+    copy_file(shell_model_path,optimized_model_path)
+    optimized_model = load_json_model(log, optimized_model_dir,main_dir_path)
+    log.info("Optimized model file: %s created",optimized_model_filename)
+    return optimized_model,optimized_model_filename
+
+def docker_compile():
+    echo_run("sudo","docker","start","debian-docker")
+    echo_run("sudo","docker","attach","debian-docker")
+    echo_run("exit")
