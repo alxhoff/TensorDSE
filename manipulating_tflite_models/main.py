@@ -6,6 +6,10 @@ import urllib.request
 
 import utils
 
+FROM_CONTAINER = "from_container"
+TO_CONTAINER   = "to_container"
+CONTAINER_SUBMODELS_PATH = "/home/deb/TensorDSE/submodels"
+
 mapping = [[0,2],[1,2],[2,2],[3,0],[4,2],[5,2],[6,2]]
 
 def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
@@ -52,20 +56,22 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
         if len(info) == 0:
             merge_flag = False
             break
+    
+    utils.docker_start()
 
     for file in os.listdir(main_dir_path):
         if file.endswith(".tflite"):
             submodel_tflite_file_path = os.path.join(main_dir_path,file)
+            utils.docker_copy(submodel_tflite_file_path,TO_CONTAINER,CONTAINER_SUBMODELS_PATH)
+            file_to_compile_path = os.path.join(CONTAINER_SUBMODELS_PATH,file)
+            utils.docker_compile(file_to_compile_path)
             submodel_tflite_file_target_path = os.path.join(main_dir_path,"models","submodels",file)
             utils.move_file(submodel_tflite_file_path,submodel_tflite_file_target_path)
 
-
-
     log.info("Initializing optimized model...")
     optimized_model,optimized_model_filename = utils.initialize_optimized_model(log,main_dir_path)
-    log.info("Optimized model initialized.")
+    log.info("Optimized model initialized.")    
 
-    #utils.docker_compile()
 
 if __name__ == '__main__':
     
