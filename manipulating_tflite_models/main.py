@@ -62,8 +62,8 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
     for file in os.listdir(main_dir_path):
         if file.endswith(".tflite"):
             submodel_tflite_file_path = os.path.join(main_dir_path,file)
-            utils.docker_copy(submodel_tflite_file_path,TO_CONTAINER,CONTAINER_SUBMODELS_PATH)
             file_to_compile_path = os.path.join(CONTAINER_SUBMODELS_PATH,file)
+            utils.docker_copy(submodel_tflite_file_path,TO_CONTAINER,file_to_compile_path)
             utils.docker_compile(file_to_compile_path)
             submodel_tflite_file_target_path = os.path.join(main_dir_path,"models","submodels",file)
             utils.move_file(submodel_tflite_file_path,submodel_tflite_file_target_path)

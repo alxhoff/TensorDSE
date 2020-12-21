@@ -207,10 +207,6 @@ def initialize_optimized_model(log: logging.Logger, main_dir_path: str,):
     log.info("Optimized model file: %s created",optimized_model_filename)
     return optimized_model,optimized_model_filename
 
-def place_within_quotes(string: str):
-    from shlex import quote
-    return "".join(quote(string))
-
 def docker_start():
     echo_run("sudo","docker","start","debian-docker")
 
@@ -226,5 +222,6 @@ def docker_copy(file_path: str, direction: str, target_location: str):
     echo_run("sudo","docker","cp",file_path,target_location)
 
 def docker_compile(file_path: str):
-    compiling_command = place_within_quotes("edgetpu_compiler -s " + file_path)
+    compiling_command = "edgetpu_compiler -s %s" % file_path
+    compiling_command = '"' + compiling_command + '"'
     echo_run("sudo","docker","exec","-ti","debian-docker","sh","-c",compiling_command)
