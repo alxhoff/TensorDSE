@@ -65,6 +65,11 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
             file_to_compile_path = os.path.join(CONTAINER_SUBMODELS_PATH,file)
             utils.docker_copy(submodel_tflite_file_path,TO_CONTAINER,file_to_compile_path)
             utils.docker_compile(file_to_compile_path)
+            submodel_model_name = file.split(".",1)[0]
+            compiled_file_path = submodel_model_name + "_edgetpu" + ".tflite"
+            compiled_file_target_path = os.path.join(main_dir_path,"models","submodels",compiled_file_path)
+            utils.docker_copy(compiled_file_path, FROM_CONTAINER, compiled_file_target_path)
+            utils.docker_clean()
             submodel_tflite_file_target_path = os.path.join(main_dir_path,"models","submodels",file)
             utils.move_file(submodel_tflite_file_path,submodel_tflite_file_target_path)
 

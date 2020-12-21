@@ -223,5 +223,8 @@ def docker_copy(file_path: str, direction: str, target_location: str):
 
 def docker_compile(file_path: str):
     compiling_command = "edgetpu_compiler -s %s" % file_path
-    compiling_command = '"' + compiling_command + '"'
-    echo_run("sudo","docker","exec","-ti","debian-docker","sh","-c",compiling_command)
+    echo_run('sudo','docker','exec','-ti','debian-docker','sh','-c',"%s" % compiling_command)
+
+def docker_clean():
+    command = "find -type f -name '*submodel*' -delete"
+    echo_run('sudo','docker','exec','-ti','debian-docker','sh','-c',"%s" % command)
