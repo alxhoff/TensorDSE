@@ -14,14 +14,23 @@ mapping = [[0,2],[1,2],[2,2],[3,0],[4,2],[5,2],[6,2]]
 
 def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
     
-    log.info("Checking submodels directory...")
-    log.info("Pre-existing submodels found.")
-    log.info("Deleting...")
+    log.info("Starting docker...")
+    utils.docker_start()
+
+    log.info("Cleaning pre-existing files...")
     submodels_dir_path = os.path.join(main_dir_path,"models","submodels")
-    for file in os.listdir(submodels_dir_path):
-        if file.endswith(".json") or file.endswith(".tflite"):
-            file_path = os.path.join(submodels_dir_path,file)
-            utils.delete_file(file_path)
+    json_submodels_dir = os.path.join(main_dir_path,"models","submodels","json")
+    for file in os.listdir(json_submodels_dir):
+        json_file_path = os.path.join(json_submodels_dir,file)
+        utils.delete_file(json_file_path)
+    tflite_submodels_dir = os.path.join(main_dir_path,"models","submodels","tflite")
+    for file in os.listdir(tflite_submodels_dir):
+        tflite_file_path = os.path.join(tflite_submodels_dir,file)
+        utils.delete_file(tflite_file_path)
+    optimized_model_dir = os.path.join(main_dir_path,"models","optimized_model")
+    for file in os.listdir(optimized_model_dir):
+        optimized_model_file_path = os.path.join(optimized_model_dir,file)
+        utils.delete_file(optimized_model_file_path)
 
     log.info("Checking schema...")
     schema_path = os.path.join(main_dir_path,"schema","schema.fbs")
@@ -35,48 +44,56 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
         
     log.info("Patching source model in JSON...")
     source_model_dir_path = os.path.join(main_dir_path, "models", "source_model")
-    source_model = utils.load_json_model(log,source_model_dir_path,main_dir_path)
+    source_model = utils.load_source_model(log,source_model_dir_path,main_dir_path)
     
     log.info("Analyzing mapping...")
-    info = utils.info_mapping(mapping)
-    log.info("Operations to be merged have following indexes: %s" % info)
+    info,opt_mapping = utils.optimize_mapping(mapping)
+    print(opt_mapping)
 
     if len(info) != 0:
+
         merge_flag = True
+
+        log.info("Operations to be merged have following indexes: %s" % info)
+
+        log.info("Initializing optimized model...")
+        optimized_model,optimized_model_filename = utils.initialize_optimized_model(log,main_dir_path)
+        log.info("Optimized model initialized.")
+
+        while merge_flag:
+
+            submodel,submodel_filename = utils.initialize_submodel(log, main_dir_path, info)
+            utils.create_submodel(source_model, submodel, info, main_dir_path,submodel_filename)
+            tflite_submodel_filename,tflite_submodel_path = utils.convert_to_tflite(schema_path,
+                                                                                submodels_dir_path,
+                                                                                submodel_filename)
+            file_to_compile_path = os.path.join(CONTAINER_SUBMODELS_PATH,tflite_submodel_filename)
+            utils.docker_copy(tflite_submodel_path,TO_CONTAINER,file_to_compile_path)
+            utils.docker_compile(file_to_compile_path)
+            submodel_name = tflite_submodel_filename.split(".",1)[0]
+            compiled_model_filename = submodel_name + "_edgetpu" + ".tflite"
+            compiled_file_target_path = os.path.join(main_dir_path,"models",
+                                                                   "submodels",
+                                                                   "tflite",
+                                                                   compiled_model_filename)
+            utils.docker_copy(compiled_model_filename, FROM_CONTAINER, compiled_file_target_path)
+            utils.docker_clean()
+            log.info("Converting compiled submodel to JSON...")
+            json_compiled_submodel_filename,json_compiled_submodel_path = utils.convert_to_json(schema_path,
+                                                                                                submodels_dir_path,
+                                                                                                compiled_model_filename)
+            log.info("JSON file: %s for compiled submodel created." % json_compiled_submodel_filename)
+
+            json_compiled_submodel = utils.load_json_model(json_compiled_submodel_path)
+            utils.add_submodel(source_model,json_compiled_submodel,optimized_model,opt_mapping)
+
+            if len(info) == 0:
+                merge_flag = False
+                break
+
     else:
         merge_flag = False
-    
-    while merge_flag:
-
-        submodel,submodel_filename = utils.initialize_submodel(log, main_dir_path, info)
-        utils.create_submodel(source_model, submodel, info, main_dir_path,submodel_filename)
-        submodel_file_path = os.path.join(submodels_dir_path,submodel_filename)
-        utils.convert_to_tflite(schema_path,submodel_file_path)
-
-        if len(info) == 0:
-            merge_flag = False
-            break
-    
-    utils.docker_start()
-
-    for file in os.listdir(main_dir_path):
-        if file.endswith(".tflite"):
-            submodel_tflite_file_path = os.path.join(main_dir_path,file)
-            file_to_compile_path = os.path.join(CONTAINER_SUBMODELS_PATH,file)
-            utils.docker_copy(submodel_tflite_file_path,TO_CONTAINER,file_to_compile_path)
-            utils.docker_compile(file_to_compile_path)
-            submodel_model_name = file.split(".",1)[0]
-            compiled_file_path = submodel_model_name + "_edgetpu" + ".tflite"
-            compiled_file_target_path = os.path.join(main_dir_path,"models","submodels",compiled_file_path)
-            utils.docker_copy(compiled_file_path, FROM_CONTAINER, compiled_file_target_path)
-            utils.docker_clean()
-            submodel_tflite_file_target_path = os.path.join(main_dir_path,"models","submodels",file)
-            utils.move_file(submodel_tflite_file_path,submodel_tflite_file_target_path)
-
-    log.info("Initializing optimized model...")
-    optimized_model,optimized_model_filename = utils.initialize_optimized_model(log,main_dir_path)
-    log.info("Optimized model initialized.")    
-
+        log.info("The model does not contain operations which can be merged")
 
 if __name__ == '__main__':
     
