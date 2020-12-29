@@ -48,7 +48,7 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
     
     log.info("Analyzing mapping...")
     info,opt_mapping = utils.optimize_mapping(mapping)
-    print(opt_mapping)
+    print(info)
 
     if len(info) != 0:
 
@@ -59,6 +59,11 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
         log.info("Initializing optimized model...")
         optimized_model,optimized_model_filename = utils.initialize_optimized_model(log,main_dir_path)
         log.info("Optimized model initialized.")
+
+        compiled_submodel = {}
+        op_count = 0
+        submodel_created = False
+        optimized_model = utils.update_optimized_model(source_model,compiled_submodel,optimized_model,mapping,submodel_created,op_count)
 
         while merge_flag:
 
@@ -85,12 +90,13 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
             log.info("JSON file: %s for compiled submodel created." % json_compiled_submodel_filename)
 
             json_compiled_submodel = utils.load_json_model(json_compiled_submodel_path)
-            utils.add_submodel(source_model,json_compiled_submodel,optimized_model,opt_mapping)
+            submodel_created = True
+            optimized_model,submodel_created,op_count = utils.update_optimized_model(source_model,json_compiled_submodel,optimized_model,mapping,submodel_created,op_count)
 
             if len(info) == 0:
                 merge_flag = False
                 break
-
+        
     else:
         merge_flag = False
         log.info("The model does not contain operations which can be merged")
