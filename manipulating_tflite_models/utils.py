@@ -252,199 +252,116 @@ def docker_clean():
     command = "find -type f -name '*submodel*' -delete"
     echo_run('sudo','docker','exec','-ti','debian-docker','sh','-c',"%s" % command)
 
-def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, op_index: int, op: list, edge_flag: bool):
+def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, op: list, edge_flag: bool):
 
     source_graph = source_model["subgraphs"][0]
     submodel_graph = compiled_submodel["subgraphs"][0]
-    new_ops = optimized_model["subgraphs"][0]["operators"]
-    new_opcodes = optimized_model["operator_codes"]
-    new_tensors = optimized_model["subgraphs"][0]["tensors"]
+
+    opt_ops = optimized_model["subgraphs"][0]["operators"]
+    opt_opcodes = optimized_model["operator_codes"]
+    opt_tensors = optimized_model["subgraphs"][0]["tensors"]
+    opt_buffers = optimized_model["buffers"]
 
     if edge_flag == True:
-        
-        new_ops.append(submodel_graph["operators"][0])
 
-        new_opcodes = new_opcodes.append(compiled_submodel["operator_codes"][0])
-
-        tensor_indexes = []
-
-        for new_op in new_ops:
-            for i,op_input in enumerate(new_ops[0]["inputs"]):
-                if op_input in tensor_indexes:
-                    new_op["inputs"][i] = new_tensors.index(source_graph["tensors"][op_input])
-                    continue
-                else:
-                    tensor_indexes.append(op_input)
-                    new_tensors.append(source_graph["tensors"][op_input])
-                    new_op["inputs"][i] = len(new_tensors) - 1
-            for j, op_output in enumerate(new_op["outputs"]):
-                if op_output in tensor_indexes:
-                    new_op["outputs"][j] = new_tensors.index(source_graph["tensors"][op_output])
-                    continue
-                else:
-                    tensor_indexes.append(op_output)
-                    new_tensors.append(source_graph["tensors"][op_output])
-                    new_op["outputs"][j] = len(new_tensors) - 1
-                
-        new_inputs = []
-        new_outputs = []
-        new_inputs.append(new_ops[0]["inputs"][0])
-        new_outputs.append(new_ops[len(new_ops) - 1]["outputs"][0])
-
-        new_buffers = []
-        buffer_indexes = []
-        for new_tensor in new_tensors:
-            index = new_tensor["buffer"]
-            if index in buffer_indexes:
-                continue
-            else:
-                buffer_indexes.append(index)
-                new_buffers.append(source_model["buffers"][index])
-                new_tensor["buffer"] = len(new_buffers) - 1
-        for i, op_code in enumerate(source_model["operator_codes"]):
-            for new_op in new_ops:
-                if i == new_op["opcode_index"]:
-                    new_opcodes.append(op_code)
-                    new_op["opcode_index"] = len(new_opcodes) - 1
-
-        new_tensors = []
-        tensor_indexes = []
-
-        for new_op in new_ops:
-            for i,op_input in enumerate(new_op["inputs"]):
-                if op_input in tensor_indexes:
-                    new_op["inputs"][i] = new_tensors.index(source_graph["tensors"][op_input])
-                    continue
-                else:
-                    tensor_indexes.append(op_input)
-                    new_tensors.append(source_graph["tensors"][op_input])
-                    new_op["inputs"][i] = len(new_tensors) - 1
-            for j, op_output in enumerate(new_op["outputs"]):
-                if op_output in tensor_indexes:
-                    new_op["outputs"][j] = new_tensors.index(source_graph["tensors"][op_output])
-                    continue
-                else:
-                    tensor_indexes.append(op_output)
-                    new_tensors.append(source_graph["tensors"][op_output])
-                    new_op["outputs"][j] = len(new_tensors) - 1
-                
-        new_inputs = []
-        new_outputs = []
-        new_inputs.append(new_ops[0]["inputs"][0])
-        new_outputs.append(new_ops[len(new_ops) - 1]["outputs"][0])
-
-        new_buffers = []
-        buffer_indexes = []
-        for new_tensor in new_tensors:
-            index = new_tensor["buffer"]
-            if index in buffer_indexes:
-                continue
-            else:
-                buffer_indexes.append(index)
-                new_buffers.append(source_model["buffers"][index])
-                new_tensor["buffer"] = len(new_buffers) - 1
-        #TODO
-        
-
-    elif edge_flag == False:
-        #TODO
         new_ops = []
-        for i,ops in enumerate(source_graph["operators"]):
-            if op[0] == i:
-                new_ops.append(ops)
-                break
-
-        new_opnew_ops = []
-        for i,ops in enumerate(source_graph["operators"]):
-            if op[0] == i:
-                new_ops.append(ops)
-                break
+        new_ops.append(submodel_graph["operators"][0])
+        opt_ops.append(submodel_graph["operators"][0])
 
         new_opcodes = []
-        for i, op_code in enumerate(source_model["operator_codes"]):
-            for new_op in new_ops:
-                if i == new_op["opcode_index"]:
-                    new_opcodes.append(op_code)
-                    new_op["opcode_index"] = len(new_opcodes) - 1
+        new_opcodes.append(compiled_submodel["operator_codes"][0])
+        if compiled_submodel["operator_codes"][0] not in opt_opcodes:
+            opt_opcodes.append(compiled_submodel["operator_codes"][0])
+            opt_ops[len(opt_ops) - 1]["opcode_index"] = opt_opcodes.index(compiled_submodel["operator_codes"][0])
+        else:
+            opt_ops[len(opt_ops) - 1]["opcode_index"] = opt_opcodes.index(compiled_submodel["operator_codes"][0])
 
         new_tensors = []
-        tensor_indexes = []
-
+        
         for new_op in new_ops:
+            op_index = opt_ops.index(new_op)
             for i,op_input in enumerate(new_op["inputs"]):
-                if op_input in tensor_indexes:
-                    new_op["inputs"][i] = new_tensors.index(source_graph["tensors"][op_input])
+                if submodel_graph["tensors"][op_input] in opt_tensors:
+                    opt_ops[op_index]["inputs"][i] = opt_tensors.index(submodel_graph["tensors"][op_input])
+                    new_op["inputs"][i] = opt_tensors.index(submodel_graph["tensors"][op_input])
                     continue
                 else:
-                    tensor_indexes.append(op_input)
-                    new_tensors.append(source_graph["tensors"][op_input])
-                    new_op["inputs"][i] = len(new_tensors) - 1
+                    opt_tensors.append(submodel_graph["tensors"][op_input])
+                    new_tensors.append(submodel_graph["tensors"][op_input])
+                    opt_ops[op_index]["inputs"][i] = len(opt_tensors) - 1
+                    new_op["inputs"][i] = len(opt_tensors) - 1
             for j, op_output in enumerate(new_op["outputs"]):
-                if op_output in tensor_indexes:
-                    new_op["outputs"][j] = new_tensors.index(source_graph["tensors"][op_output])
+                if submodel_graph["tensors"][op_output] in opt_tensors:
+                    opt_ops[op_index]["outputs"][j] = opt_tensors.index(submodel_graph["tensors"][op_output])
+                    new_op["outputs"][j] = opt_tensors.index(submodel_graph["tensors"][op_output])
                     continue
                 else:
-                    tensor_indexes.append(op_output)
-                    new_tensors.append(source_graph["tensors"][op_output])
-                    new_op["outputs"][j] = len(new_tensors) - 1
+                    opt_tensors.append(submodel_graph["tensors"][op_output])
+                    new_tensors.append(submodel_graph["tensors"][op_output])
+                    opt_ops[op_index]["outputs"][j] = len(opt_tensors) - 1
+                    new_op["outputs"][j] = len(opt_tensors) - 1
                 
         new_inputs = []
         new_outputs = []
-        new_inputs.append(new_ops[0]["inputs"][0])
-        new_outputs.append(new_ops[len(new_ops) - 1]["outputs"][0])
-
-        new_buffers = []
-        buffer_indexes = []
+        new_inputs.append(opt_ops[0]["inputs"][0])
+        new_outputs.append(opt_ops[len(opt_ops) - 1]["outputs"][0])
+        
         for new_tensor in new_tensors:
-            index = new_tensor["buffer"]
-            if index in buffer_indexes:
-                continue
-            else:
-                buffer_indexes.append(index)
-                new_buffers.append(source_model["buffers"][index])
-                new_tensor["buffer"] = len(new_buffers) - 1
-        for i, op_code in enumerate(source_model["operator_codes"]):
-            for new_op in new_ops:
-                if i == new_op["opcode_index"]:
-                    new_opcodes.append(op_code)
-                    new_op["opcode_index"] = len(new_opcodes) - 1
+            buffer_index = new_tensor["buffer"]
+            opt_buffers.append(compiled_submodel["buffers"][buffer_index])
+            tensor_index = opt_tensors.index(new_tensor)
+            opt_tensors[tensor_index]["buffer"] = len(opt_buffers) - 1
+        
+    elif edge_flag == False:
+        
+        new_ops = []
+        new_ops.append(source_graph["operators"][op[0]])
+        opt_ops.append(source_graph["operators"][op[0]])
+
+        new_opcodes = []
+        source_opcode_index = new_ops[0]["opcode_index"]
+        new_opcodes.append(source_model["operator_codes"][source_opcode_index])
+        if new_opcodes[0] not in opt_opcodes:
+            opt_opcodes.append(source_model["operator_codes"][source_opcode_index])
+            opt_ops[len(opt_ops) - 1]["opcode_index"] = opt_opcodes.index(source_model["operator_codes"][source_opcode_index])
+        else:
+            opt_ops[len(opt_ops) - 1]["opcode_index"] = opt_opcodes.index(source_model["operator_codes"][source_opcode_index])
 
         new_tensors = []
-        tensor_indexes = []
-
+        
         for new_op in new_ops:
+            op_index = opt_ops.index(new_op)
             for i,op_input in enumerate(new_op["inputs"]):
-                if op_input in tensor_indexes:
-                    new_op["inputs"][i] = new_tensors.index(source_graph["tensors"][op_input])
+                if source_graph["tensors"][op_input] in opt_tensors:
+                    opt_ops[op_index]["inputs"][i] = opt_tensors.index(source_graph["tensors"][op_input])
+                    new_op["inputs"][i] = opt_tensors.index(source_graph["tensors"][op_input])
                     continue
                 else:
-                    tensor_indexes.append(op_input)
+                    opt_tensors.append(source_graph["tensors"][op_input])
                     new_tensors.append(source_graph["tensors"][op_input])
-                    new_op["inputs"][i] = len(new_tensors) - 1
+                    opt_ops[op_index]["inputs"][i] = len(opt_tensors) - 1
+                    new_op["inputs"][i] = len(opt_tensors) - 1
             for j, op_output in enumerate(new_op["outputs"]):
-                if op_output in tensor_indexes:
-                    new_op["outputs"][j] = new_tensors.index(source_graph["tensors"][op_output])
+                if source_graph["tensors"][op_output] in opt_tensors:
+                    opt_ops[op_index]["outputs"][j] = opt_tensors.index(source_graph["tensors"][op_output])
+                    new_op["outputs"][j] = opt_tensors.index(source_graph["tensors"][op_output])
                     continue
                 else:
-                    tensor_indexes.append(op_output)
+                    opt_tensors.append(source_graph["tensors"][op_output])
                     new_tensors.append(source_graph["tensors"][op_output])
-                    new_op["outputs"][j] = len(new_tensors) - 1
+                    opt_ops[op_index]["outputs"][j] = len(opt_tensors) - 1
+                    new_op["outputs"][j] = len(opt_tensors) - 1
                 
         new_inputs = []
         new_outputs = []
-        new_inputs.append(new_ops[0]["inputs"][0])
-        new_outputs.append(new_ops[len(new_ops) - 1]["outputs"][0])
-
-        new_buffers = []
-        buffer_indexes = []
+        new_inputs.append(opt_ops[0]["inputs"][0])
+        new_outputs.append(opt_ops[len(opt_ops) - 1]["outputs"][0])
+        
         for new_tensor in new_tensors:
-            index = new_tensor["buffer"]
-            if index in buffer_indexes:
-                continue
-            else:
-                buffer_indexes.append(index)
-                new_buffers.append(source_model["buffers"][index])
-                new_tensor["buffer"] = len(new_buffers) - 1
+            buffer_index = new_tensor["buffer"]
+            opt_buffers.append(compiled_submodel["buffers"][buffer_index])
+            tensor_index = opt_tensors.index(new_tensor)
+            opt_tensors[tensor_index]["buffer"] = len(opt_buffers) - 1
         
 def update_optimized_model(source_model: dict, compiled_submodel: dict, optimized_model: dict, mapping: list, submodel_created: bool, op_count: int):
 
@@ -456,7 +373,7 @@ def update_optimized_model(source_model: dict, compiled_submodel: dict, optimize
                 if op in info:
                     if submodel_created == True:
                         #TODO
-                        add_op(source_model,compiled_submodel,optimized_model,i,op,True)
+                        add_op(source_model,compiled_submodel,optimized_model,op,True)
                         op_count += 1
                         submodel_created = False
                         break
@@ -464,12 +381,12 @@ def update_optimized_model(source_model: dict, compiled_submodel: dict, optimize
                         break
                 else:
                     #TODO
-                    add_op(source_model,compiled_submodel,optimized_model,i,op,False)
+                    add_op(source_model,compiled_submodel,optimized_model,op,False)
                     op_count += 1
             elif len(op) != 1:
                 if submodel_created == True:
                     #TODO
-                    add_op(source_model,compiled_submodel,optimized_model,i,op,True)
+                    add_op(source_model,compiled_submodel,optimized_model,op,True)
                     op_count += 1
                     submodel_created = False
                     break

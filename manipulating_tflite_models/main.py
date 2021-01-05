@@ -63,7 +63,7 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
         compiled_submodel = {}
         op_count = 0
         submodel_created = False
-        optimized_model = utils.update_optimized_model(source_model,compiled_submodel,optimized_model,mapping,submodel_created,op_count)
+        #optimized_model = utils.update_optimized_model(source_model,compiled_submodel,optimized_model,mapping,submodel_created,op_count)
 
         while merge_flag:
 
@@ -90,8 +90,8 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
             log.info("JSON file: %s for compiled submodel created." % json_compiled_submodel_filename)
 
             json_compiled_submodel = utils.load_json_model(json_compiled_submodel_path)
-            submodel_created = True
-            optimized_model,submodel_created,op_count = utils.update_optimized_model(source_model,json_compiled_submodel,optimized_model,mapping,submodel_created,op_count)
+            #submodel_created = True
+            #optimized_model,submodel_created,op_count = utils.update_optimized_model(source_model,json_compiled_submodel,optimized_model,mapping,submodel_created,op_count)
 
             if len(info) == 0:
                 merge_flag = False
