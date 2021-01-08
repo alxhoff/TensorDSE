@@ -214,7 +214,7 @@ def initialize_optimized_model(log: logging.Logger, main_dir_path: str,):
                                                    "shell_models",
                                                    "optimized_model_shell.json")
 
-    optimized_model_dir = os.path.join(main_dir_path, "models","optimized_model")
+    optimized_model_dir = os.path.join(main_dir_path, "models","optimized_model","json")
 
     source_model_dir = os.path.join(main_dir_path,"models","source_model")
 
@@ -256,8 +256,9 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
 
     source_graph = source_model["subgraphs"][0]
     submodel_graph = compiled_submodel["subgraphs"][0]
+    opt_graph = optimized_model["subgraphs"][0]
 
-    opt_ops = optimized_model["subgraphs"][0]["operators"]
+    opt_ops = opt_graph["operators"]
     opt_opcodes = optimized_model["operator_codes"]
     opt_tensors = optimized_model["subgraphs"][0]["tensors"]
     opt_buffers = optimized_model["buffers"]
@@ -305,6 +306,8 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
         new_outputs = []
         new_inputs.append(opt_ops[0]["inputs"][0])
         new_outputs.append(opt_ops[len(opt_ops) - 1]["outputs"][0])
+        optimized_model["subgraphs"][0]["inputs"]      =   new_inputs
+        optimized_model["subgraphs"][0]["outputs"]     =   new_outputs
         
         for new_tensor in new_tensors:
             buffer_index = new_tensor["buffer"]
@@ -338,6 +341,8 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
                     continue
                 else:
                     opt_tensors.append(source_graph["tensors"][op_input])
+                    opt_tensors[len(opt_tensors) -1]["quantization"]["scale"][0] = 0
+                    opt_tensors[len(opt_tensors) -1]["quantization"]["zero_point"][0] = 0
                     new_tensors.append(source_graph["tensors"][op_input])
                     opt_ops[op_index]["inputs"][i] = len(opt_tensors) - 1
                     new_op["inputs"][i] = len(opt_tensors) - 1
@@ -348,6 +353,8 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
                     continue
                 else:
                     opt_tensors.append(source_graph["tensors"][op_output])
+                    opt_tensors[len(opt_tensors) -1]["quantization"]["scale"][0] = 0
+                    opt_tensors[len(opt_tensors) -1]["quantization"]["zero_point"][0] = 0
                     new_tensors.append(source_graph["tensors"][op_output])
                     opt_ops[op_index]["outputs"][j] = len(opt_tensors) - 1
                     new_op["outputs"][j] = len(opt_tensors) - 1
@@ -356,12 +363,16 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
         new_outputs = []
         new_inputs.append(opt_ops[0]["inputs"][0])
         new_outputs.append(opt_ops[len(opt_ops) - 1]["outputs"][0])
+        optimized_model["subgraphs"][0]["inputs"]      =   new_inputs
+        optimized_model["subgraphs"][0]["outputs"]     =   new_outputs
         
         for new_tensor in new_tensors:
             buffer_index = new_tensor["buffer"]
-            opt_buffers.append(compiled_submodel["buffers"][buffer_index])
+            opt_buffers.append(source_model["buffers"][buffer_index])
             tensor_index = opt_tensors.index(new_tensor)
             opt_tensors[tensor_index]["buffer"] = len(opt_buffers) - 1
+    
+    return optimized_model
         
 def update_optimized_model(source_model: dict, compiled_submodel: dict, optimized_model: dict, mapping: list, submodel_created: bool, op_count: int):
 
@@ -373,7 +384,7 @@ def update_optimized_model(source_model: dict, compiled_submodel: dict, optimize
                 if op in info:
                     if submodel_created == True:
                         #TODO
-                        add_op(source_model,compiled_submodel,optimized_model,op,True)
+                        optimized_model = add_op(source_model,compiled_submodel,optimized_model,op,True)
                         op_count += 1
                         submodel_created = False
                         break
@@ -381,12 +392,12 @@ def update_optimized_model(source_model: dict, compiled_submodel: dict, optimize
                         break
                 else:
                     #TODO
-                    add_op(source_model,compiled_submodel,optimized_model,op,False)
+                    optimized_model = add_op(source_model,compiled_submodel,optimized_model,op,False)
                     op_count += 1
             elif len(op) != 1:
                 if submodel_created == True:
                     #TODO
-                    add_op(source_model,compiled_submodel,optimized_model,op,True)
+                    optimized_model = add_op(source_model,compiled_submodel,optimized_model,op,True)
                     op_count += 1
                     submodel_created = False
                     break
