@@ -261,6 +261,7 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
     opt_ops = opt_graph["operators"]
     opt_opcodes = optimized_model["operator_codes"]
     opt_tensors = optimized_model["subgraphs"][0]["tensors"]
+    opt_tensor_names = [t["name"] for t in opt_tensors]
     opt_buffers = optimized_model["buffers"]
 
     if edge_flag == True:
@@ -273,18 +274,22 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
         new_opcodes.append(compiled_submodel["operator_codes"][0])
         if compiled_submodel["operator_codes"][0] not in opt_opcodes:
             opt_opcodes.append(compiled_submodel["operator_codes"][0])
-            opt_ops[len(opt_ops) - 1]["opcode_index"] = opt_opcodes.index(compiled_submodel["operator_codes"][0])
-        else:
-            opt_ops[len(opt_ops) - 1]["opcode_index"] = opt_opcodes.index(compiled_submodel["operator_codes"][0])
+        
+        opt_ops[len(opt_ops) - 1]["opcode_index"] = opt_opcodes.index(compiled_submodel["operator_codes"][0])
 
         new_tensors = []
         
         for new_op in new_ops:
             op_index = opt_ops.index(new_op)
             for i,op_input in enumerate(new_op["inputs"]):
-                if submodel_graph["tensors"][op_input] in opt_tensors:
-                    opt_ops[op_index]["inputs"][i] = opt_tensors.index(submodel_graph["tensors"][op_input])
-                    new_op["inputs"][i] = opt_tensors.index(submodel_graph["tensors"][op_input])
+                if submodel_graph["tensors"][op_input]["name"] in opt_tensor_names:
+                #if submodel_graph["tensors"][op_input] in opt_tensors:
+                    t_index = [k for k,t in enumerate(opt_tensors) if opt_tensors[k]["name"] == submodel_graph["tensors"][op_input]["name"]][0]
+                    #opt_tensors[t_index] = submodel_graph["tensors"][op_input]
+                    opt_ops[op_index]["inputs"][i] = t_index
+                    new_op["inputs"][i] = t_index
+                    #opt_ops[op_index]["inputs"][i] = opt_tensors.index(submodel_graph["tensors"][op_input])
+                    #new_op["inputs"][i] = opt_tensors.index(submodel_graph["tensors"][op_input])
                     continue
                 else:
                     opt_tensors.append(submodel_graph["tensors"][op_input])
@@ -292,9 +297,13 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
                     opt_ops[op_index]["inputs"][i] = len(opt_tensors) - 1
                     new_op["inputs"][i] = len(opt_tensors) - 1
             for j, op_output in enumerate(new_op["outputs"]):
-                if submodel_graph["tensors"][op_output] in opt_tensors:
-                    opt_ops[op_index]["outputs"][j] = opt_tensors.index(submodel_graph["tensors"][op_output])
-                    new_op["outputs"][j] = opt_tensors.index(submodel_graph["tensors"][op_output])
+                if submodel_graph["tensors"][op_output]["name"] in opt_tensor_names:
+                #if submodel_graph["tensors"][op_output] in opt_tensors:
+                    t_index = [k for k,t in enumerate(opt_tensors) if opt_tensors[k]["name"] == source_graph["tensors"][op_input]["name"]][0]
+                    opt_ops[op_index]["inputs"][i] = t_index
+                    new_op["inputs"][i] = t_index
+                    #opt_ops[op_index]["outputs"][j] = opt_tensors.index(submodel_graph["tensors"][op_output])
+                    #new_op["outputs"][j] = opt_tensors.index(submodel_graph["tensors"][op_output])
                     continue
                 else:
                     opt_tensors.append(submodel_graph["tensors"][op_output])
@@ -326,18 +335,21 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
         new_opcodes.append(source_model["operator_codes"][source_opcode_index])
         if new_opcodes[0] not in opt_opcodes:
             opt_opcodes.append(source_model["operator_codes"][source_opcode_index])
-            opt_ops[len(opt_ops) - 1]["opcode_index"] = opt_opcodes.index(source_model["operator_codes"][source_opcode_index])
-        else:
-            opt_ops[len(opt_ops) - 1]["opcode_index"] = opt_opcodes.index(source_model["operator_codes"][source_opcode_index])
-
+        
+        opt_ops[len(opt_ops) - 1]["opcode_index"] = opt_opcodes.index(source_model["operator_codes"][source_opcode_index])
+        
         new_tensors = []
         
         for new_op in new_ops:
             op_index = opt_ops.index(new_op)
             for i,op_input in enumerate(new_op["inputs"]):
-                if source_graph["tensors"][op_input] in opt_tensors:
-                    opt_ops[op_index]["inputs"][i] = opt_tensors.index(source_graph["tensors"][op_input])
-                    new_op["inputs"][i] = opt_tensors.index(source_graph["tensors"][op_input])
+                if source_graph["tensors"][op_input]["name"] in opt_tensor_names:
+                #if source_graph["tensors"][op_input] in opt_tensors:
+                    t_index = [k for k,t in enumerate(opt_tensors) if opt_tensors[k]["name"] == source_graph["tensors"][op_input]["name"]][0]
+                    opt_ops[op_index]["inputs"][i] = t_index
+                    new_op["inputs"][i] = t_index
+                    #opt_ops[op_index]["inputs"][i] = opt_tensors.index(source_graph["tensors"][op_input])
+                    #new_op["inputs"][i] = opt_tensors.index(source_graph["tensors"][op_input])
                     continue
                 else:
                     opt_tensors.append(source_graph["tensors"][op_input])
@@ -347,14 +359,18 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
                     opt_ops[op_index]["inputs"][i] = len(opt_tensors) - 1
                     new_op["inputs"][i] = len(opt_tensors) - 1
             for j, op_output in enumerate(new_op["outputs"]):
-                if source_graph["tensors"][op_output] in opt_tensors:
-                    opt_ops[op_index]["outputs"][j] = opt_tensors.index(source_graph["tensors"][op_output])
-                    new_op["outputs"][j] = opt_tensors.index(source_graph["tensors"][op_output])
+                if source_graph["tensors"][op_output]["name"] in opt_tensor_names:
+                #if source_graph["tensors"][op_output] in opt_tensors:
+                    t_index = [k for k,t in enumerate(opt_tensors) if opt_tensors[k]["name"] == source_graph["tensors"][op_output]["name"]][0]
+                    opt_ops[op_index]["outputs"][i] = t_index
+                    new_op["outputs"][i] = t_index
+                    #opt_ops[op_index]["outputs"][j] = opt_tensors.index(source_graph["tensors"][op_output])
+                    #new_op["outputs"][j] = opt_tensors.index(source_graph["tensors"][op_output])
                     continue
                 else:
                     opt_tensors.append(source_graph["tensors"][op_output])
-                    opt_tensors[len(opt_tensors) -1]["quantization"]["scale"][0] = 0
-                    opt_tensors[len(opt_tensors) -1]["quantization"]["zero_point"][0] = 0
+                    #opt_tensors[len(opt_tensors) -1]["quantization"]["scale"][0] = 0
+                    #opt_tensors[len(opt_tensors) -1]["quantization"]["zero_point"][0] = 0
                     new_tensors.append(source_graph["tensors"][op_output])
                     opt_ops[op_index]["outputs"][j] = len(opt_tensors) - 1
                     new_op["outputs"][j] = len(opt_tensors) - 1
