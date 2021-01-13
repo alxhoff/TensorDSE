@@ -33,30 +33,33 @@ def concat_args(args):
 def docker_start():
     import os
 
-    docker_start_cmd = "docker start " + docker
+    print("Starting docker...")
+    docker_start_cmd = f"docker start {docker}"
     os.system(docker_start_cmd)
 
 
 def docker_exec(cmd_type, objct=""):
     import os
 
-    mkdir_prefix = "[ -d " + home + objct + " ] || "
-    docker_exec_prefix = "docker exec -ti " + docker + " sh -c "
-    edge_compiler_suffix = objct + " -o" + home + "/comp"
+    print(f"Executing command: '{cmd_type}' on Docker...")
 
-    cd_deploy_dir = "cd " + home + "TensorDSE/benchmarking/reading_tflite_model/"
-    edge_deploy = "sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
-    shark_edge_deploy = "sudo python3 deploy.py -g True -l False -f models/tpu_compiled_models/ -d edge_tpu -c " + str(count)
-    shark_single_edge_deploy = "sudo python3 deploy.py -l False -d edge_tpu -c 1 -m " + objct
-    cpu_deploy = "sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c " + str(count)
+    mkdir_prefix = f"[ -d {home}{objct} ] || "
+    docker_exec_prefix = f"docker exec -ti {docker} sh -c "
+    edge_compiler_suffix = f"{objct} -o {home}/comp"
+
+    cd_deploy_dir = f"cd {home}TensorDSE/benchmarking/reading_tflite_model/"
+    edge_deploy = f"sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c {count}"
+    shark_edge_deploy = f"sudo python3 deploy.py -g True -l False -f models/tpu_compiled_models/ -d edge_tpu -c {count}"
+    shark_single_edge_deploy = f"sudo python3 deploy.py -l False -d edge_tpu -c 1 -m {objct}"
+    cpu_deploy = f"sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c {count}"
 
     docker_exec_dict = {
-        "mkdir"                     : [docker_exec_prefix, place_within_quotes(mkdir_prefix + "mkdir " + home + objct)],
-        "edgetpu_compiler"          : [docker_exec_prefix, place_within_quotes("edgetpu_compiler -s " + edge_compiler_suffix)],
-        "edge_python_deploy"        : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + edge_deploy)],
-        "shark_edge_python_deploy"  : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + shark_edge_deploy)],
-        "shark_single_edge_deploy"  : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + shark_single_edge_deploy)],
-        "cpu_python_deploy"         : [docker_exec_prefix, place_within_quotes(cd_deploy_dir + " && " + cpu_deploy)],
+        "mkdir"                     : [docker_exec_prefix, place_within_quotes(f"{mkdir_prefix} mkdir {home}{objct}")],
+        "edgetpu_compiler"          : [docker_exec_prefix, place_within_quotes(f"edgetpu_compiler -s {edge_compiler_suffix}")],
+        "edge_python_deploy"        : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {edge_deploy}")],
+        "shark_edge_python_deploy"  : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {shark_edge_deploy}")],
+        "shark_single_edge_deploy"  : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {shark_single_edge_deploy}")],
+        "cpu_python_deploy"         : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {cpu_deploy}")],
         ""                          : None
     }
 
@@ -70,10 +73,11 @@ def docker_exec(cmd_type, objct=""):
 def docker_copy(File, DIRECTION_FLAG, Location = ""):
     import os
    
+    print(f"Docker-Copying file {File} onto Location: {Location}...")
     if(DIRECTION_FLAG):
-        docker_copy_cmd = "docker cp " + File + " " + docker + ":" + home + Location 
+        docker_copy_cmd = f"docker cp {File} {docker}:{home}{Location}"
     else:
-        docker_copy_cmd = "docker cp " + docker + ":" + File + " " + os.getcwd() + "/" + Location
+        docker_copy_cmd = f"docker cp {docker}:{File} {os.getcwd()}/{Location}"
 
     os.system(docker_copy_cmd)
 

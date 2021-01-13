@@ -1,3 +1,7 @@
+import threading
+
+check = threading.Condition()
+
 edge_tpu_id = ""
 
 
@@ -16,17 +20,28 @@ def prep_capture_file():
     cap_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.pcap"
     os.system("[ -f " + cap_file + " ] || touch " + cap_file)
 
-def shark_deploy_edge(count, objct):
+
+def shark_deploy_edge(count, folder):
     import os
     import utils
+    from deploy import deduce_operations_from_folder
     import docker
     from docker import TO_DOCKER, FROM_DOCKER, home
-    
+
     path_to_tensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
     docker.docker_copy(path_to_tensorDSE, TO_DOCKER)
-
     docker.set_globals(count)
-    docker.docker_exec("shark_edge_python_deploy")
+
+    models_info = deduce_operations_from_folder(folder,
+                                                beginning="quant_",
+                                                ending="_edgetpu.tflite")
+
+    for m_i in models_info:
+        docker.docker_exec("shark_single_edge_deploy", m_i[0])
+
+        ans = input("Continue [y/n]?")
+        if ans != "y":
+            break
 
 
 def count_packets(cap):
@@ -44,7 +59,8 @@ def lsusb_identify():
     import os
 
     global edge_tpu_id
-    
+    print("IDing usb entry...")
+
     lsusb_cmd = "lsusb | grep Google > temp.txt"
     os.system(lsusb_cmd)
     with open("temp.txt", "r") as f:
@@ -63,7 +79,31 @@ def shark_usbmon_init():
     os.system(usbmon_cmd)
 
 
+def shark_capture_cont():
+    import os
+    import asyncio
+    import pyshark
+
+    global check
+
+    end_of_capture = False
+
+    capture_filter = "usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT"
+    capture = pyshark.LiveCapture(interface='usbmon0')
+
+    for packet in capture.sniff_continuously():
+        usb_timer = UsbTimer()
+
+        if (check.acquire() and end_of_capture):
+            check.notify()
+            break
+
+
 def shark_capture_init(timeout, op_name):
+    """
+    Function responsible for initializing the capture/listen socket on the usb
+    interface.
+    """
     import os
     import asyncio
     import pyshark
@@ -73,12 +113,12 @@ def shark_capture_init(timeout, op_name):
     out_file = "shark/" + op_name + "capture.pcap"
 
     param_dict = {
-            "--param" : "value",
-            "--param" : "value"
+        "--param": "value",
+        "--param": "value"
     }
 
     capture = pyshark.LiveCapture(interface='usbmon0', output_file=out_file)
-    
+
     try:
         capture.sniff(timeout=timeout)
 
@@ -88,8 +128,6 @@ def shark_capture_init(timeout, op_name):
     try:
         capture.close()
 
-    except TSharkCrashException:
-        pass
     except RuntimeError:
         pass
     except pyshark.capture.capture.TSharkCrashException:
@@ -107,11 +145,11 @@ def shark_read_captures():
 
     for capture_file in listdir(capture_dir):
 
-        usb_timer = UsbTimer() 
+        usb_timer = UsbTimer()
         cap_file_path = capture_dir + capture_file
         op = deduce_operation_from_file(capture_file, ending="_capture.pcap")
 
-        capture = pyshark.FileCapture(input_file=cap_file_path, 
+        capture = pyshark.FileCapture(input_file=cap_file_path,
                                       display_filter=read_filter)
 
         host_first = 0
@@ -124,7 +162,7 @@ def shark_read_captures():
                         if (host_first == 0):
                             usb_timer.ts_absolute_begin = pkt.frame_info.time_relative
                             host_first = 1
-                        
+
                         if (edge_first == 0):
                             usb_timer.ts_begin_inference = pkt.frame_info.time_relative
 
@@ -152,77 +190,82 @@ def shark_read_captures():
 
 def shark_manager(folder):
     import os
+    import time
     import threading
     import pyshark
     from docker import TO_DOCKER, FROM_DOCKER, home, docker_exec, docker_copy
     from deploy import deduce_operations_from_folder
-    from  utils import retrieve_folder_path
+    from utils import retrieve_folder_path
+
+    global check
 
     path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
     docker_copy(path_to_tensorDSE, TO_DOCKER)
 
-    models_info = deduce_operations_from_folder(folder, 
-                                                beginning="quant_", 
-                                                ending = "_edgetpu.tflite")
+    models_info = deduce_operations_from_folder(folder,
+                                                beginning="quant_",
+                                                ending="_edgetpu.tflite")
 
     for m_i in models_info:
-        import time
+        t_1 = threading.Thread(target=shark_capture_cont,
+                              args=())
 
-        t1 = threading.Thread(target=shark_capture_init, args=(15, m_i[1] + "_"))
-        t2 = threading.Thread(target=docker_exec, args=("shark_single_edge_deploy", m_i[0],))
+        t_2 = threading.Thread(target=docker_exec, args=(
+            "shark_single_edge_deploy", m_i[0],))
 
-        t1.start()
-        t2.start()
+        t_1.start()
+        t_2.start()
 
-        while (t1.is_alive() or t2.is_alive()):
-           pass 
-            
+        check.acquire()
+        check.wait()
 
-        t1.join()
-        t2.join()
+        t_1.join()
+        t_2.join()
 
-        time.sleep(2)
+        time.sleep(1)
 
     # shark_read_captures()
 
 
 def export_analysis(usb_timer, op):
     import csv
-    from utils import extend_directory 
+    from utils import extend_directory
 
-    out_dir = "results/shark/" 
+    out_dir = "results/shark/"
     extend_directory(out_dir, op)
     extended_dir = out_dir + op
     results_file = extended_dir + "/Results.csv"
 
     with open(results_file, 'w') as csvfile:
-        fw = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        fw = csv.writer(csvfile, delimiter=',', quotechar='|',
+                        quoting=csv.QUOTE_MINIMAL)
 
-        fw.writerow(["begin","inference","return","end"])
+        fw.writerow(["begin", "inference", "return", "end"])
         fw.writerow([usb_timer.ts_absolute_begin, usb_timer.ts_begin_inference,
-                    usb_timer.ts_begin_return, usb_timer.ts_absolute_end])
+                     usb_timer.ts_begin_return, usb_timer.ts_absolute_end])
 
 
 if __name__ == '__main__':
     from docker import docker_start
     import argparse
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-c', '--count', required=False, 
-                        default=1000, 
+    parser.add_argument('-c', '--count', required=False,
+                        default=1000,
                         help='Count of the number of times of edge deployment.')
 
     parser.add_argument('-t', '--timeout', required=False, type=int,
-                        default=60, 
+                        default=60,
                         help='Timeout used to enforce time employed on capture/listening of usb packets.')
 
-    parser.add_argument('-m', '--mode', required=False, 
-                        default="Both", 
+    parser.add_argument('-m', '--mode', required=False,
+                        default="Both",
                         help='Mode in which the script will run: All, Read, Capture or Deploy.')
 
-    parser.add_argument('-f', '--folder', required=False, 
-                        default="", 
+    parser.add_argument('-f', '--folder', required=False,
+                        default="",
                         help='Folder.')
 
     args = parser.parse_args()
@@ -233,7 +276,7 @@ if __name__ == '__main__':
 
     elif(args.mode == "Deploy"):
         docker_start()
-        shark_deploy_edge(args.count)
+        shark_deploy_edge(args.count, args.folder)
 
     elif (args.mode == "Read"):
         lsusb_identify()
@@ -247,4 +290,3 @@ if __name__ == '__main__':
 
     else:
         print("Invaild arguments.")
-

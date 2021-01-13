@@ -201,11 +201,13 @@ def full_tflite_analysis():
     global cpu_op_classes
     global edge_op_classes
 
+    print(f"Analyzing cpu results...")
     init_op_classes(results_folder + "cpu/", cpu_op_classes)
     store_op_info(cpu_op_classes)
     retreive_stat_info_op(cpu_op_classes)
     log_pdfs(cpu_op_classes)
 
+    print(f"Analyzing edge results...")
     init_op_classes(results_folder + "edge/", edge_op_classes)
     store_op_info(edge_op_classes)
     retreive_stat_info_op(edge_op_classes)

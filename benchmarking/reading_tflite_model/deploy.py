@@ -1,19 +1,19 @@
 import platform
 from utils import *
 
-EDGE_FOLDER="results/edge/"
-CPU_FOLDER="results/cpu/"
+EDGE_FOLDER = "results/edge/"
+CPU_FOLDER = "results/cpu/"
 
 EDGETPU_SHARED_LIB = {
-  'Linux'   :   'libedgetpu.so.1',
-  'Darwin'  :   'libedgetpu.1.dylib',
-  'Windows' :   'edgetpu.dll'
+    'Linux':   'libedgetpu.so.1',
+    'Darwin':   'libedgetpu.1.dylib',
+    'Windows':   'edgetpu.dll'
 }[platform.system()]
 
 
 def deduce_operation_from_file(tflite_file, beginning=None, ending=None):
     f = tflite_file
-    op=""
+    op = ""
 
     if(beginning and not ending):
         if beginning in tflite_file:
@@ -34,22 +34,24 @@ def deduce_operation_from_file(tflite_file, beginning=None, ending=None):
 def deduce_operations_from_folder(models_folder, beginning=None, ending=None):
     import os
     from os import listdir
-    from os.path import isfile,isdir,join
+    from os.path import isfile, isdir, join
 
-    tflite_models_info = [] 
+    tflite_models_info = []
 
     for f_1 in listdir(models_folder):
         f_1_path = models_folder + f_1
         if isdir(f_1_path):
             for f_2 in listdir(f_1_path):
-                f_2_path = f_1_path + "/" +  f_2
+                f_2_path = f_1_path + "/" + f_2
                 if (isfile(f_2_path) and f_2.endswith(".tflite")):
-                    op = deduce_operation_from_file(f_2, beginning=beginning, ending=ending)
+                    op = deduce_operation_from_file(
+                        f_2, beginning=beginning, ending=ending)
                     tflite_models_info.append([f_2_path, op])
 
         elif isfile(f_1_path):
             if (isfile(f_1_path) and f_1.endswith(".tflite")):
-                op = deduce_operation_from_file(f_1, beginning=beginning, ending=ending)
+                op = deduce_operation_from_file(
+                    f_1, beginning=beginning, ending=ending)
                 tflite_models_info.append([f_1_path, op])
 
     return tflite_models_info
@@ -63,17 +65,19 @@ def make_interpreter(model_file):
 
     device = {'device': device[0]} if device else {}
     shared_library = EDGETPU_SHARED_LIB
-    experimental_delegates = [ tflite.load_delegate(shared_library, device) ]   #Returns loaded Delegate object
+    experimental_delegates = [tflite.load_delegate(
+        shared_library, device)]  # Returns loaded Delegate object
 
-    return tflite.Interpreter(model_path=model_file, 
-                              model_content=None, 
+    return tflite.Interpreter(model_path=model_file,
+                              model_content=None,
                               experimental_delegates=experimental_delegates)
 
 
 def edge_group_tflite_deployment(models_folder, count=5, log_performance=True):
 
     for model_info in deduce_operations_from_folder(models_folder, beginning="quant_", ending="_edgetpu.tflite"):
-        edge_tflite_deployment(model_info[0], model_info[1], count, log_performance)
+        edge_tflite_deployment(
+            model_info[0], model_info[1], count, log_performance)
 
 
 def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
@@ -96,7 +100,8 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
     input_shape = input_details[0]['shape']
     input_dtype = input_details[0]['dtype']
 
-    input_data = np.array(np.random.random_sample(input_shape),dtype=input_dtype)
+    input_data = np.array(np.random.random_sample(
+        input_shape), dtype=input_dtype)
     interpreter.set_tensor(input_details[0]['index'], input_data)
 
     for i in range(count):
@@ -105,7 +110,6 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
 
         start = time.perf_counter()
         interpreter.invoke()  # Runs the interpreter/inference.
-
 
         # END
 
@@ -141,7 +145,8 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
     input_shape = input_details[0]['shape']
     input_dtype = input_details[0]['dtype']
 
-    input_data = np.array(np.random.random_sample(input_shape),dtype=input_dtype)
+    input_data = np.array(np.random.random_sample(
+        input_shape), dtype=input_dtype)
     interpreter.set_tensor(input_details[0]['index'], input_data)
 
     for i in range(count):
@@ -167,9 +172,10 @@ def full_tflite_deployment(count=1000):
     import utils
     import docker
     from docker import TO_DOCKER, FROM_DOCKER, home
-    
+
     path_to_tensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
-    path_to_docker_results =  home + "TensorDSE/benchmarking/reading_tflite_model/results/"
+    path_to_docker_results = home + \
+        "TensorDSE/benchmarking/reading_tflite_model/results/"
     path_to_results = "results/"
 
     docker.set_globals(count)
@@ -177,23 +183,27 @@ def full_tflite_deployment(count=1000):
     docker.docker_copy(path_to_tensorDSE, TO_DOCKER)
 
     docker.docker_exec("edge_python_deploy")
-    docker.docker_copy(path_to_docker_results + "edge/", FROM_DOCKER, path_to_results)
+    docker.docker_copy(path_to_docker_results + "edge/",
+                       FROM_DOCKER, path_to_results)
 
     docker.docker_exec("cpu_python_deploy")
-    docker.docker_copy(path_to_docker_results + "cpu/", FROM_DOCKER, path_to_results)
+    docker.docker_copy(path_to_docker_results + "cpu/",
+                       FROM_DOCKER, path_to_results)
+
 
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-d', '--delegate', 
+    parser.add_argument('-d', '--delegate',
                         required=True, help='cpu or edge_tpu.')
 
-    parser.add_argument('-m', '--model', 
+    parser.add_argument('-m', '--model',
                         help='File path to the .tflite file.')
 
-    parser.add_argument('-n', '--name',  
+    parser.add_argument('-n', '--name',
                         help='Name of Model/Operation, needed to create corresponding folder name.')
 
     parser.add_argument('-c', '--count', type=int, default=5,
@@ -212,15 +222,17 @@ if __name__ == '__main__':
 
     if ("cpu" in args.delegate):
         if (args.group):
-            cpu_group_tflite_deployment(args.group_folder, count=args.count, log_performance=(not args.log))
+            cpu_group_tflite_deployment(
+                args.group_folder, count=args.count, log_performance=(not args.log))
         else:
             cpu_tflite_deployment(args.model, args.name, args.count, args.log)
 
     elif ("edge_tpu" in args.delegate):
         if (args.group):
-            edge_group_tflite_deployment(args.group_folder, count=args.count, log_performance=(not args.log))
+            edge_group_tflite_deployment(
+                args.group_folder, count=args.count, log_performance=(not args.log))
         else:
-            edge_tflite_deployment(args.model, args.name, args.count, log_performance=(not args.log))
+            edge_tflite_deployment(args.model, args.name,
+                                   args.count, log_performance=(not args.log))
     else:
         print("INVALID delegate input.")
-
