@@ -1,18 +1,35 @@
 import threading
 
-check = threading.Condition()
+event = threading.Event()
 
 edge_tpu_id = ""
+
+count = 0
 
 
 class UsbTimer:
     def __init__(self):
         pass
 
+    def find_transfer_type(self, hexa_transfer_type):
+        default = None
+        transfer_dict = {
+                "0x00000001"    :   "INTERRUPT",
+                "0x00000002"    :   "CONTROL",
+                "0x00000003"    :   "BULK",
+                ""              :   None
+                }
+
+        self.transfer_type = transfer_dict.get(hexa_transfer_type, default)
+
+
+    packet_id = 0
+
     ts_absolute_begin = 0
     ts_begin_inference = 0
     ts_begin_return = 0
     ts_absolute_end = 0
+
 
 
 def prep_capture_file():
@@ -84,18 +101,30 @@ def shark_capture_cont():
     import asyncio
     import pyshark
 
-    global check
+    global event
 
+    beginning_of_comms = False
+    end_of_comms = False
     end_of_capture = False
 
     capture_filter = "usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT"
-    capture = pyshark.LiveCapture(interface='usbmon0')
+    capture = pyshark.LiveCapture(interface='usbmon0', display_filter=capture_filter)
 
     for packet in capture.sniff_continuously():
         usb_timer = UsbTimer()
+        usb_timer.find_transfer_type(packet.usb.transfer_type)
 
-        if (check.acquire() and end_of_capture):
-            check.notify()
+        if (usb_timer.transfer_type == "INTERRUPT"): # Check for beginning of capture
+            # usb_timer.ts_absolute_begin = packet.frame_info.time_relative
+            # beginning_of_comms = True
+            end_of_capture = True
+
+        if (not event.is_set() and end_of_capture):
+            event.set()
+
+            global count
+            count+=1
+
             break
 
 
@@ -216,11 +245,14 @@ def shark_manager(folder):
         t_1.start()
         t_2.start()
 
-        check.acquire()
-        check.wait()
+        event.wait()
+
+        event.clear()
 
         t_1.join()
         t_2.join()
+
+        print("Ended capture.")
 
         time.sleep(1)
 
@@ -287,6 +319,8 @@ if __name__ == '__main__':
         lsusb_identify()
         docker_start()
         shark_manager(args.folder)
+
+        print(f"Count: {count}")
 
     else:
         print("Invaild arguments.")
