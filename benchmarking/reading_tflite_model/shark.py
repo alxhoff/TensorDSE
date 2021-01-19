@@ -7,30 +7,45 @@ edge_tpu_id = ""
 count = 0
 
 
-class UsbTimer:
+class UsbPacket:
     def __init__(self):
-        pass
+        ts_absolute_begin = 0
+        ts_begin_inference = 0
+        ts_begin_return = 0
+        ts_absolute_end = 0
+
+    def create_copy(self, packet):
+        import copy
+        self.raw_packet = copy.deepcopy(packet)
+
+    def find_direction(self, packet):
+        self.direction = packet.usb.endpoint_address_direction
+
+    def find_scr_dest(self, packet):
+        self.src = packet.usb.src
+        self.dest = packet.usb.dst
 
     def find_transfer_type(self, hexa_transfer_type):
         default = None
         transfer_dict = {
                 "0x00000001"    :   "INTERRUPT",
                 "0x00000002"    :   "CONTROL",
-                "0x00000003"    :   "BULK",
+                "0x00000003"    :   self.find_bulk_type(),
                 ""              :   None
                 }
 
         self.transfer_type = transfer_dict.get(hexa_transfer_type, default)
 
+    def find_bulk_type(self):
+        if self.direction == '1':
+            return "BULK IN"
+        elif self.direction == '0':
+            return "BULK OUT"
+        else:
+            raise ValueError("Wrong attribute type in packet.endpoint_address_direction.")
 
-    packet_id = 0
-
-    ts_absolute_begin = 0
-    ts_begin_inference = 0
-    ts_begin_return = 0
-    ts_absolute_end = 0
-
-
+    def stamp_beginning(self, packet):
+        self.ts_absolute_begin = packet.frame_info.time_relative
 
 def prep_capture_file():
     import os
@@ -103,6 +118,8 @@ def shark_capture_cont():
 
     global event
 
+    usb_array = []
+
     beginning_of_comms = False
     end_of_comms = False
     end_of_capture = False
@@ -111,20 +128,36 @@ def shark_capture_cont():
     capture = pyshark.LiveCapture(interface='usbmon0', display_filter=capture_filter)
 
     for packet in capture.sniff_continuously():
-        usb_timer = UsbTimer()
-        usb_timer.find_transfer_type(packet.usb.transfer_type)
+        usb_packet = UsbPacket()
+        usb_packet.find_direction(packet)
+        usb_packet.find_transfer_type(packet.usb.transfer_type)
+        usb_packet.find_scr_dest(packet)
 
-        if (usb_timer.transfer_type == "INTERRUPT"): # Check for beginning of capture
-            # usb_timer.ts_absolute_begin = packet.frame_info.time_relative
-            # beginning_of_comms = True
-            end_of_capture = True
+        if (usb_packet.transfer_type == "INTERRUPT"): # Check for beginning of capture
+            beginning_of_comms = True
+            usb_packet.stamp_beginning(packet)
+            usb_packet.create_copy(packet)
+            usb_array.append(usb_packet)
+
+        elif (usb_packet.transfer_type == "BULK IN"):
+            usb_packet.create_copy(packet)
+            usb_array.append(usb_packet)
+            
+            if packet.usb.data_flag != '<':
+                pass
+
+        elif (usb_packet.transfer_type == "BULK OUT"):
+            usb_packet.create_copy(packet)
+            usb_array.append(usb_packet)
+
+            if packet.usb.data_flag != '<':
+                pass
+
+        else:
+            pass
 
         if (not event.is_set() and end_of_capture):
             event.set()
-
-            global count
-            count+=1
-
             break
 
 
@@ -174,7 +207,7 @@ def shark_read_captures():
 
     for capture_file in listdir(capture_dir):
 
-        usb_timer = UsbTimer()
+        usb_timer = UsbPacket()
         cap_file_path = capture_dir + capture_file
         op = deduce_operation_from_file(capture_file, ending="_capture.pcap")
 
@@ -246,7 +279,6 @@ def shark_manager(folder):
         t_2.start()
 
         event.wait()
-
         event.clear()
 
         t_1.join()

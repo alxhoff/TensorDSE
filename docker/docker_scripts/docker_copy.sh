@@ -1,12 +1,12 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-S_FILE=$1
+source_file=$1
 
-PWD=$(pwd)
-S_FILE="${PWD}/${S_FILE}"
+cwd=$(pwd)
+S_FILE="${cwd}/${source_file}"
 
 echo -n "Docker landing location: "
-read -r D_DIR
+read -r docker_location
 
-docker cp ${S_FILE} exp-docker:/home/deb/${D_DIR}
+docker cp ${source_file} exp-docker:/home/deb/${docker_location}
 
