@@ -1,5 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-D_DIR=$1
-docker cp exp-docker:/home/deb/${D_DIR} /home/duclos/Documents/work/FP_Files/
+d_dir=$1
+docker cp exp-docker:/home/deb/${d_dir} /home/duclos/Documents/work/FP_Files/
 
