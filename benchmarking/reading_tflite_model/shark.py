@@ -1,5 +1,4 @@
 import threading
-
 event = threading.Event()
 
 edge_tpu_id = ""
@@ -147,7 +146,7 @@ def export_analysis(usb_timer, op, append):
 def prep_capture_file():
     import os
     cap_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.pcap"
-    os.system("[ -f " + cap_file + " ] || touch " + cap_file)
+    os.system(f"[ -f {cap_file} ] || touch {cap_file}")
 
 
 def lsusb_identify():
@@ -281,9 +280,8 @@ def shark_manager(folder):
     import time
     import threading
     import pyshark
-    from docker import TO_DOCKER, FROM_DOCKER, home, docker_exec, docker_copy
-    from deploy import deduce_operations_from_folder
-    from utils import retrieve_folder_path, extend_directory
+    from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy
+    from utils import retrieve_folder_path, extend_directory, deduce_operations_from_folder
 
     global usb_array
     global check

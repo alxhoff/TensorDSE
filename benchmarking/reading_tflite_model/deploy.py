@@ -1,5 +1,4 @@
 import platform
-from utils import *
 
 EDGE_FOLDER = "results/edge/"
 CPU_FOLDER = "results/cpu/"
@@ -11,54 +10,7 @@ EDGETPU_SHARED_LIB = {
 }[platform.system()]
 
 
-def deduce_operation_from_file(tflite_file, beginning=None, ending=None):
-    f = tflite_file
-    op = ""
-
-    if(beginning and not ending):
-        if beginning in tflite_file:
-            op = f.split(beginning)[1]
-
-    elif(beginning and ending):
-        if beginning in tflite_file and ending in tflite_file:
-            op = f.split(beginning)[1]
-            op = op.split(ending)[0]
-
-    elif(ending and not beginning):
-        if ending in tflite_file:
-            op = f.split(ending)[0]
-
-    return op
-
-
-def deduce_operations_from_folder(models_folder, beginning=None, ending=None):
-    import os
-    from os import listdir
-    from os.path import isfile, isdir, join
-
-    tflite_models_info = []
-
-    for f_1 in listdir(models_folder):
-        f_1_path = models_folder + f_1
-        if isdir(f_1_path):
-            for f_2 in listdir(f_1_path):
-                f_2_path = f_1_path + "/" + f_2
-                if (isfile(f_2_path) and f_2.endswith(".tflite")):
-                    op = deduce_operation_from_file(
-                        f_2, beginning=beginning, ending=ending)
-                    tflite_models_info.append([f_2_path, op])
-
-        elif isfile(f_1_path):
-            if (isfile(f_1_path) and f_1.endswith(".tflite")):
-                op = deduce_operation_from_file(
-                    f_1, beginning=beginning, ending=ending)
-                tflite_models_info.append([f_1_path, op])
-
-    return tflite_models_info
-
-
 def make_interpreter(model_file):
-
     import tflite_runtime.interpreter as tflite
 
     model_file, *device = model_file.split('@')
@@ -74,6 +26,7 @@ def make_interpreter(model_file):
 
 
 def edge_group_tflite_deployment(models_folder, count=5, log_performance=True):
+    from utils import deduce_operations_from_folder
 
     for model_info in deduce_operations_from_folder(models_folder, beginning="quant_", ending="_edgetpu.tflite"):
         edge_tflite_deployment(
@@ -81,9 +34,9 @@ def edge_group_tflite_deployment(models_folder, count=5, log_performance=True):
 
 
 def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
-
     import time
     import numpy as np
+    from utils import create_csv_file
 
     edge_results = []
 
@@ -123,6 +76,7 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
 
 
 def cpu_group_tflite_deployment(models_folder, count=5, log_performance=True):
+    from utils import deduce_operations_from_folder
 
     for model_info in deduce_operations_from_folder(models_folder, beginning=None, ending=".tflite"):
         cpu_tflite_deployment(model_info[0], model_info[1], count)
@@ -132,6 +86,7 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
     import time
     import tensorflow as tf
     import numpy as np
+    from utils import create_csv_file
 
     cpu_results = []
 
@@ -167,27 +122,28 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
         create_csv_file(CPU_FOLDER, model_name, cpu_results)
 
 
-def full_tflite_deployment(count=1000):
+def tflite_deployment(count=1000):
     import os
     import utils
-    import docker
-    from docker import TO_DOCKER, FROM_DOCKER, home
+    from docker import set_docker_globals, docker_copy, docker_exec
+    from docker import TO_DOCKER, FROM_DOCKER, HOME
 
     path_to_tensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
-    path_to_docker_results = home + \
+    path_to_docker_results = HOME + \
         "TensorDSE/benchmarking/reading_tflite_model/results/"
+
     path_to_results = "results/"
 
-    docker.set_globals(count)
+    set_docker_globals(count)
 
-    docker.docker_copy(path_to_tensorDSE, TO_DOCKER)
+    docker_copy(path_to_tensorDSE, TO_DOCKER)
 
-    docker.docker_exec("edge_python_deploy")
-    docker.docker_copy(path_to_docker_results + "edge/",
-                       FROM_DOCKER, path_to_results)
+    docker_exec("edge_python_deploy")
+    docker_copy(path_to_docker_results + "edge/",
+                FROM_DOCKER, path_to_results)
 
-    docker.docker_exec("cpu_python_deploy")
-    docker.docker_copy(path_to_docker_results + "cpu/",
+    docker_exec("cpu_python_deploy")
+    docker_copy(path_to_docker_results + "cpu/",
                        FROM_DOCKER, path_to_results)
 
 

@@ -5,22 +5,6 @@ gen_op_in_shape = []
 gen_op_in_type = "float32"
 
 
-def retrieve_folder_path(path, folder):
-    return path.split(folder + "/")[0] + folder + "/"
-
-
-def fetch_file(directory, ending):
-    import os
-    from os import listdir
-    from os.path import isfile, join
-
-    for f in listdir(directory):
-        if (isfile(join(directory, f)) and f.endswith(ending)):
-            return f
-
-    return None
-
-
 def get_numpy_type(tensor_type):
     import numpy as np
 
@@ -33,16 +17,31 @@ def get_numpy_type(tensor_type):
     return tf_type_dict.get(tensor_type, default)
 
 
-def get_activation_id(activ_func):
+def place_within_quotes(string):
+    from shlex import quote
+    return "".join(quote(string))
 
-    options_dict = {
-        "RELU": "relu",
-        "SOFTMAX": "softmax",
-        "DROPOUT": None
-    }
 
-    default = None
-    return options_dict.get(activ_func, default)
+def concat_args(args):
+    summed_args = ""
+    for arg in range(len(args)):
+        summed_args += args[arg]
+    return summed_args
+
+
+
+def parse_csv(filename):
+    import csv
+
+    samples = []
+
+    with open(filename) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            samples.append(float(row[1]))
+
+    return samples
 
 
 def create_csv_file(path_file, folder_name, results):
@@ -60,7 +59,7 @@ def create_csv_file(path_file, folder_name, results):
             clean_up_cmd = "rm -r " + csv_dir + "*"
             os.system(clean_up_cmd)
     else:
-        raise NotImplentedError
+        raise NotImplementedError
 
     with open(csv_file, 'w') as csvfile:
         fw = csv.writer(csvfile, delimiter=',', quotechar='|',
@@ -70,8 +69,57 @@ def create_csv_file(path_file, folder_name, results):
             fw.writerow([results[i][0], results[i][1]])
 
 
+def deduce_operation_from_file(tflite_file, beginning=None, ending=None):
+    f = tflite_file
+    op = ""
+
+    if(beginning and not ending):
+        if beginning in tflite_file:
+            op = f.split(beginning)[1]
+
+    elif(beginning and ending):
+        if beginning in tflite_file and ending in tflite_file:
+            op = f.split(beginning)[1]
+            op = op.split(ending)[0]
+
+    elif(ending and not beginning):
+        if ending in tflite_file:
+            op = f.split(ending)[0]
+
+    return op
+
+
+def deduce_operations_from_folder(models_folder, beginning=None, ending=None):
+    import os
+    from os import listdir
+    from os.path import isfile, isdir, join
+
+    tflite_models_info = []
+
+    for f_1 in listdir(models_folder):
+        f_1_path = models_folder + f_1
+        if isdir(f_1_path):
+            for f_2 in listdir(f_1_path):
+                f_2_path = f_1_path + "/" + f_2
+                if (isfile(f_2_path) and f_2.endswith(".tflite")):
+                    op = deduce_operation_from_file(
+                        f_2, beginning=beginning, ending=ending)
+                    tflite_models_info.append([f_2_path, op])
+
+        elif isfile(f_1_path):
+            if (isfile(f_1_path) and f_1.endswith(".tflite")):
+                op = deduce_operation_from_file(
+                    f_1, beginning=beginning, ending=ending)
+                tflite_models_info.append([f_1_path, op])
+
+    return tflite_models_info
+
+
+def retrieve_folder_path(path, folder):
+    return path.split(folder + "/")[0] + folder + "/"
+
+
 def extend_directory(path_to_dir, extended_dir, parent_dir=""):
-    # TODO Hardcoded for 'Nix Systems
     import os
 
     if (os.path.exists(path_to_dir)):
@@ -93,7 +141,6 @@ def extend_directory(path_to_dir, extended_dir, parent_dir=""):
 
 
 def clean_directory(path_to_dir):
-    # TODO Hardcoded for 'Nix Systems
     import os
 
     if (os.path.exists(path_to_dir)):
@@ -101,7 +148,7 @@ def clean_directory(path_to_dir):
             rm_cmd = "rm -r " + path_to_dir
             os.system(rm_cmd)
     else:
-        raise NotImplentedError
+        raise NotImplementedError
 
 
 def prep_dataset_generator(op_name, input_place):
@@ -133,6 +180,21 @@ def generator():
         yield [input_data]
 
 
+def save_session(session, operation_name, operation, op_dir, input_place):
+    import tensorflow as tf
+
+    # Clears saved model directory.
+    tmp_model_saved_dir = extend_directory(op_dir, "tmp", operation_name)
+
+    # Saving Model into the saved model directory.
+    tf.compat.v1.saved_model.simple_save(session,
+                                         tmp_model_saved_dir,
+                                         inputs={operation_name +
+                                                 "_input": input_place},
+                                         outputs={operation_name+"_op": operation})
+    return tmp_model_saved_dir
+
+
 def tflite_quantization(converter):
     import tensorflow as tf
 
@@ -153,21 +215,6 @@ def tflite_quantization(converter):
     converter.inference_output_type = tf.uint8  # or tf.uint8
 
     return converter
-
-
-def save_session(session, operation_name, operation, op_dir, input_place):
-    import tensorflow as tf
-
-    # Clears saved model directory.
-    tmp_model_saved_dir = extend_directory(op_dir, "tmp", operation_name)
-
-    # Saving Model into the saved model directory.
-    tf.compat.v1.saved_model.simple_save(session,
-                                         tmp_model_saved_dir,
-                                         inputs={operation_name +
-                                                 "_input": input_place},
-                                         outputs={operation_name+"_op": operation})
-    return tmp_model_saved_dir
 
 
 def tflite_conversion(op_dir, model_saved_dir, operation_name, operation, input_place):

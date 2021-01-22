@@ -1,7 +1,7 @@
 import argparse
 import os
 from shark import shark_capture_cont, lsusb_identify, shark_usbmon_init
-from deploy import deduce_operations_from_folder
+from utils import deduce_operations_from_folder
 from docker import TO_DOCKER, FROM_DOCKER, home, docker_exec, docker_copy
 from utils import retrieve_folder_path
 

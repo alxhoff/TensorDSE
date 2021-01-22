@@ -1,18 +1,4 @@
-import matplotlib
-import matplotlib.pyplot as plt
-import statsmodels as sm
-import pandas as pd
-
-matplotlib.rcParams['figure.figsize'] = (16.0, 12.0)
-matplotlib.style.use('ggplot')
-
-edge_op_classes = []
-cpu_op_classes = []
-gen_op_classes = []
-
-delegate = ""
 results_folder = "results/"
-delegate_folder = results_folder + delegate
 
 class Operation:
     def __init__(self, path, op_name):
@@ -38,9 +24,9 @@ class Operation:
         """Model data by finding best fit distribution to data"""
 
         import warnings
+        import pandas as pd
         import numpy as np
         import scipy.stats as st
-
 
         data = self.samples
 
@@ -105,6 +91,7 @@ class Operation:
     def make_pdf(self, size=1000):
         """Generate distributions's Probability Distribution Function """
 
+        import pandas as pd
         import numpy as np
         import scipy.stats as st
 
@@ -128,6 +115,7 @@ class Operation:
         self.pdf = pdf
 
     def plot_all(self, bins=1000):
+        import matplotlib.pyplot as plt
         import pandas as pd
         import numpy as np
 
@@ -143,16 +131,23 @@ class Operation:
 
 
 def log_pdfs(op_classes):
+    import csv
+
     for op in op_classes:
-        file = op.path + "/" + op.op_name + "_info.txt"
-        with open(file, 'w') as f:
-            f.write("Operation: " + op.op_name +  "\n")
-            f.write("Number of Samples: " + str(len(op.samples)) +  "\n")
-            f.write("Mean: " + str(op.mean) +  "\n")
-            f.write("Median: " + str(op.median) +  "\n")
-            f.write("Standard Deviation: " + str(op.std_dev) +  "\n")
-            f.write("Distribution Name: " + str(op.dist_name) +  "\n")
-            f.write("PDF: " + str(op.pdf) +  "\n")
+        csv_file = f"{op.path}/{op.op_name}_analysis.csv"
+
+        with open(csv_file, 'w') as csvfile:
+                fw = csv.writer(csvfile, delimiter=',', quotechar='|',
+                            quoting=csv.QUOTE_MINIMAL)
+
+                fw.writerow(["op", "num_of_samples", 
+                             "mean", "median", 
+                             "std_dev", "pdf"])
+
+                fw.writerow([op.op_name, str(len(op.samples)), 
+                             str(op.mean), str(op.median),
+                             str(op.std_dev), str(op.dist_name)])
+
 
 def retreive_stat_info_op(op_classes):
     for op in op_classes:
@@ -161,33 +156,21 @@ def retreive_stat_info_op(op_classes):
         op.make_pdf()
         op.plot_all()
 
-        pass
-
-
-def parse_csv(file):
-    import csv
-
-    samples = []
-
-    with open(file) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        line_count = 0
-        for row in csv_reader:
-            samples.append(float(row[1]))
-
-    return samples
-
 
 def store_op_info(op_classes):
+    from utils import parse_csv
+
     for op in op_classes:
         results_csv = op.path + "/Results.csv"
         op.samples = parse_csv(results_csv)
 
 
-def init_op_classes(models_folder, op_classes):
+def init_op_classes(models_folder):
     import os
     from os import listdir
     from os.path import isfile,isdir,join
+
+    op_classes = []
 
     for f in listdir(models_folder):
         f_path = models_folder + f
@@ -195,20 +178,23 @@ def init_op_classes(models_folder, op_classes):
             op_tmp = Operation(f_path, f)
             op_classes.append(op_tmp)
 
+    return op_classes
 
-def full_tflite_analysis():
+
+def tflite_results_analysis():
+    import matplotlib
+    matplotlib.rcParams['figure.figsize'] = (16.0, 12.0)
+
     global results_folder
-    global cpu_op_classes
-    global edge_op_classes
 
     print(f"Analyzing cpu results...")
-    init_op_classes(results_folder + "cpu/", cpu_op_classes)
+    cpu_op_classes = init_op_classes(results_folder + "cpu/")
     store_op_info(cpu_op_classes)
     retreive_stat_info_op(cpu_op_classes)
     log_pdfs(cpu_op_classes)
 
     print(f"Analyzing edge results...")
-    init_op_classes(results_folder + "edge/", edge_op_classes)
+    edge_op_classes = init_op_classes(results_folder + "edge/")
     store_op_info(edge_op_classes)
     retreive_stat_info_op(edge_op_classes)
     log_pdfs(edge_op_classes)
@@ -222,32 +208,24 @@ if __name__ == '__main__':
                         default="cpu", 
                         help='Delegates: cpu or edge_tpu.')
 
-    parser.add_argument('-f', '--folder', required=False, 
-                        default="results/", 
-                        help='Folder containing results.')
-
     parser.add_argument('-a', '--all', required=False, 
                         default=True, 
                         help='Plot all hardware analysis.')
 
     args = parser.parse_args()
 
-    delegate = args.delegate + "/"
-    results_folder = args.folder
-    results_folder += delegate
-
-    if (not args.all):
-        init_op_classes(results_folder, gen_op_classes)
-        store_op_info(gen_op_classes)
-        retreive_stat_info_op(gen_op_classes)
-    else:
-        init_op_classes(args.folder + "cpu/", cpu_op_classes)
+    if (args.all):
+        cpu_op_classes = init_op_classes(results_folder + "cpu/")
         store_op_info(cpu_op_classes)
         retreive_stat_info_op(cpu_op_classes)
         log_pdfs(cpu_op_classes)
 
-        init_op_classes(args.folder + "edge/", edge_op_classes)
+        edge_op_classes = init_op_classes(results_folder + "edge/")
         store_op_info(edge_op_classes)
         retreive_stat_info_op(edge_op_classes)
         log_pdfs(edge_op_classes)
+    else:
+        gen_op_classes = init_op_classes(f"{results_folder}{args.delegate}/")
+        store_op_info(gen_op_classes)
+        retreive_stat_info_op(gen_op_classes)
 

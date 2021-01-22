@@ -1,17 +1,47 @@
-from analyze import *
-from docker import *
-from deploy import *
-from utils import *
-from gets import *
-
 COMPILED_MODELS_FOLDER = "models/tpu_compiled_models/"
 MODELS_FOLDER = "models/single_layer_models/"
 
 source_model_filename = ""
 
-# Functions to process each operation take the form of "process_" + the builtin opcode name that can
-# be found in the TFLite schema under `BuiltinOperator`. This way the functions can be resolved using `eval` and
-# the resolved builtin operator name.
+def get_strides(options):
+    return [1, options['StrideH'], options['StrideW'], 1]
+
+def get_padding(options):
+    return class_code_to_name(sys.modules['tflite'].Padding.Padding, options['Padding'])
+
+def get_filter(options):
+    # Pool Size
+    return [options['StrideH'], options['StrideW']]
+
+def get_input_tensor_shape(io):
+    return io[0][0][0]
+
+def get_kernel_shape(io):
+    return io[0][1][0][1:]
+
+def get_output_tensor_shape(io):
+    return io[1][0]
+
+def get_activation_function(options):
+    return class_code_to_name(sys.modules['tflite'].ActivationFunctionType.ActivationFunctionType, 
+                              options['FusedActivationFunction'])
+
+def get_num_dims(options):
+    return options['KeepNumDims']
+
+def get_weights_format(options):
+    return options['WeightsFormat']
+
+def get_activation_id(activ_func):
+
+    options_dict = {
+        "RELU": "relu",
+        "SOFTMAX": "softmax",
+        "DROPOUT": None
+    }
+
+    default = None
+    return options_dict.get(activ_func, default)
 
 
 def process_CONV_2D(options, io):
@@ -20,6 +50,7 @@ def process_CONV_2D(options, io):
     the given arguments.
     """
     import numpy as np
+    from utils import tflite_conversion, save_session
 
     op_name = "CONV_2D"
     conv_dir = f"{MODELS_FOLDER}{op_name}/"
@@ -61,7 +92,7 @@ def process_CONV_2D(options, io):
             sess, op_name, conv_2d, conv_dir, input_place)
 
     tflite_conversion(conv_dir, tmp_model_saved_dir,
-                      op_name, conv_2d, input_place)
+                        op_name, conv_2d, input_place)
 
 
 def process_MAX_POOL_2D(options, io):
@@ -70,6 +101,7 @@ def process_MAX_POOL_2D(options, io):
     the given arguments.
     """
     import numpy as np
+    from utils import tflite_conversion, save_session
 
     op_name = "MAX_POOL_2D"
     pool_dir = f"{MODELS_FOLDER}{op_name}/"
@@ -105,7 +137,7 @@ def process_MAX_POOL_2D(options, io):
             sess, op_name, pool_2d, pool_dir, input_place)
 
     tflite_conversion(pool_dir, tmp_model_saved_dir,
-                      op_name, pool_2d, input_place)
+                        op_name, pool_2d, input_place)
 
 
 def process_RESHAPE(options, io):
@@ -114,6 +146,7 @@ def process_RESHAPE(options, io):
     the given arguments.
     """
     import numpy as np
+    from utils import tflite_conversion, save_session
 
     op_name = "RESHAPE"
     reshape_dir = f"{MODELS_FOLDER}{op_name}/"
@@ -144,7 +177,7 @@ def process_RESHAPE(options, io):
             sess, op_name, reshape, reshape_dir, input_place)
 
     tflite_conversion(reshape_dir, tmp_model_saved_dir,
-                      op_name, reshape, input_place)
+                        op_name, reshape, input_place)
 
 
 def process_FULLY_CONNECTED(options, io):
@@ -153,6 +186,7 @@ def process_FULLY_CONNECTED(options, io):
     the given arguments.
     """
     import numpy as np
+    from utils import tflite_conversion, save_session
 
     activ_func = get_activation_function(options)
     activ_func = get_activation_id(activ_func)
@@ -193,7 +227,8 @@ def process_FULLY_CONNECTED(options, io):
         tmp_model_saved_dir = save_session(
             sess, op_name, fcl, fcl_dir, input_place)
 
-    tflite_conversion(fcl_dir, tmp_model_saved_dir, op_name, fcl, input_place)
+    tflite_conversion(fcl_dir, tmp_model_saved_dir, 
+                        op_name, fcl, input_place)
 
 
 def process_SOFTMAX(options, io):
@@ -202,6 +237,7 @@ def process_SOFTMAX(options, io):
     the given arguments.
     """
     import numpy as np
+    from utils import tflite_conversion, save_session
 
     op_name = "SOFTMAX"
     softmx_dir = f"{MODELS_FOLDER}{op_name}/"
@@ -231,12 +267,62 @@ def process_SOFTMAX(options, io):
             sess, op_name, Soft, softmx_dir, input_place)
 
     tflite_conversion(softmx_dir, tmp_model_saved_dir,
-                      op_name, Soft, input_place)
+                        op_name, Soft, input_place)
+
+
+def class_code_to_name(cls, code):
+    for name, value in cls.__dict__.items():
+        if value == code:
+            return name
+    return None
+
+
+def print_options(options):
+    if options:
+        for key, item in options.items():
+            print("{} -> {}".format(key, item))
+
+
+def process_options(op, options):
+    op_type = class_code_to_name(sys.modules['tflite'].BuiltinOptions.BuiltinOptions, 
+                                 op.BuiltinOptionsType())
+
+    if op_type != "NONE":
+        import re
+
+        opt = eval("sys.modules['tflite'].{}.{}()".format(op_type, op_type))
+        opt.Init(options.Bytes, options.Pos)
+
+        methods = [func for func in dir(opt) if
+                   callable(getattr(opt, func)) and re.search(r'^((?!Init)(?!__)(?!{}).)*$'.format(op_type), func)]
+
+        opts = {}
+        for method in methods:
+            opts[method] = eval("opt.{}()".format(method))
+
+        return opts
+    return None
+
+
+def process_io_lengths(op):
+    return (op.InputsLength(), op.OutputsLength())
+
+
+def process_io(op):
+    (input, output) = process_io_lengths(op)
+    inputs = []
+    outputs = []
+    for i in range(input):
+        inputs.append(op.Inputs(i))
+    for i in range(output):
+        outputs.append(op.Outputs(i))
+
+    return (inputs, outputs)
 
 
 def process_operation(model, graph, op):
     """
-    Processes necessary information to create a softmax operation from
+    Processes necessary information to recreate the operation passed within the
     the given arguments.
     """
 
@@ -270,10 +356,10 @@ def process_operation(model, graph, op):
     eval("process_" + op_name)(op_opts, (input_tensors, output_tensors))
 
 
-def source_tflite_conversion():
+def split_tflite_model():
     """
-    Individually calls onto the process_operation function to prepare the corresponding
-    function call that recreates the chosen operation.
+    Individually calls onto the process_operation function that recreates 
+    the operation within the name of the 'process' function.
     """
     with open(source_model_filename, "rb") as f:
         model = sys.modules["tflite"].Model.Model.GetRootAsModel(f.read(), 0)
@@ -289,6 +375,10 @@ if __name__ == '__main__':
     import argparse
     import tensorflow as tf
 
+    from deploy import tflite_deployment
+    from cmpile import tflite_compilation
+    from analyze import tflite_results_analysis
+
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -298,7 +388,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-c', '--count',
                         type=int, default=1000,
-                        help='Number of times to run inference.')
+                        help='Number of times to measure inference.')
 
     args = parser.parse_args()
     source_model_filename = args.model
@@ -313,7 +403,7 @@ if __name__ == '__main__':
         for cls in classes:
             setattr(sys.modules[__name__], cls.__name__, cls)
 
-    source_tflite_conversion()
-    edge_tflite_compilation()
-    full_tflite_deployment(count=args.count)
-    full_tflite_analysis()
+    split_tflite_model()
+    tflite_compilation()
+    tflite_deployment(count=args.count)
+    tflite_results_analysis()
