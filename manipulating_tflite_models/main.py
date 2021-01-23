@@ -10,7 +10,7 @@ FROM_CONTAINER = "from_container"
 TO_CONTAINER   = "to_container"
 CONTAINER_SUBMODELS_PATH = "/home/deb/TensorDSE/submodels"
 
-mapping = [[0,2],[1,2],[2,2],[3,0],[4,2],[5,2],[6,2]]
+mapping = [[0,0],[1,0],[2,0],[3,2],[4,2],[5,0],[6,0]]
 
 def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
     
@@ -18,6 +18,7 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
     utils.docker_start()
 
     log.info("Cleaning pre-existing files...")
+
     submodels_dir_path = os.path.join(main_dir_path,"models","submodels")
     json_submodels_dir = os.path.join(main_dir_path,"models","submodels","json")
     for file in os.listdir(json_submodels_dir):
@@ -27,10 +28,16 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
     for file in os.listdir(tflite_submodels_dir):
         tflite_file_path = os.path.join(tflite_submodels_dir,file)
         utils.delete_file(tflite_file_path)
+    
     optimized_model_dir = os.path.join(main_dir_path,"models","optimized_model")
-    """for file in os.listdir(optimized_model_dir):
-        optimized_model_file_path = os.path.join(optimized_model_dir,file)
-        utils.delete_file(optimized_model_file_path)"""
+    json_opmodel_dir = os.path.join(optimized_model_dir,"json")
+    for file in os.listdir(json_opmodel_dir):
+        optimized_model_file_path = os.path.join(json_opmodel_dir,file)
+        utils.delete_file(optimized_model_file_path)
+    tflite_opmodel_dir = os.path.join(optimized_model_dir,"tflite")
+    for file in os.listdir(tflite_opmodel_dir):
+        optimized_model_file_path = os.path.join(tflite_opmodel_dir,file)
+        utils.delete_file(optimized_model_file_path)
 
     log.info("Checking schema...")
     schema_path = os.path.join(main_dir_path,"schema","schema.fbs")
@@ -48,9 +55,17 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
     
     log.info("Analyzing mapping...")
     info,opt_mapping = utils.optimize_mapping(mapping)
-    print(info)
 
-    if len(info) != 0:
+    if (len(info) == 0):
+
+        log.info("The model does not contain operations which can be merged")
+
+    elif (len(info[0]) == len(mapping)):
+
+        log.info("Preparing to merge all the operations in the model.")
+        #TODO
+
+    else:
 
         merge_flag = True
 
@@ -101,11 +116,7 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
                     json.dump(optimized_model, fout, indent=2)
                 utils.convert_to_tflite(schema_path,optimized_model_dir,optimized_model_filename)
                 break
-
         
-    else:
-        merge_flag = False
-        log.info("The model does not contain operations which can be merged")
 
 if __name__ == '__main__':
     
@@ -113,7 +124,6 @@ if __name__ == '__main__':
 
     log = logging.getLogger(__name__)
     logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
-
     tflite_model_optimization(log, main_dir_path)
 
     pass

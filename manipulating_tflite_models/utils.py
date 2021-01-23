@@ -92,17 +92,16 @@ def create_submodel(source_model: dict, submodel: dict, info: list, main_dir_pat
     source_graph = source_model["subgraphs"][0]
 
     new_ops = []
-    for i,op in enumerate(source_graph["operators"]):
-        for info_op in info[0]:
-            if info_op == i:
-                new_ops.append(op)
-
+    for info_op in info[0]:
+        new_ops.append(source_graph["operators"][info_op])
+            
     new_opcodes = []
-    for i, op_code in enumerate(source_model["operator_codes"]):
-        for new_op in new_ops:
-            if i == new_op["opcode_index"]:
-                new_opcodes.append(op_code)
-                new_op["opcode_index"] = len(new_opcodes) - 1
+    for new_op in new_ops:
+        if source_model["operator_codes"][new_op["opcode_index"]] not in new_opcodes:
+            new_opcodes.append(source_model["operator_codes"][new_op["opcode_index"]])
+            new_op["opcode_index"] = len(new_opcodes) - 1
+        else:
+            new_op["opcode_index"] = new_opcodes.index(source_model["operator_codes"][new_op["opcode_index"]])
 
     new_tensors = []
     tensor_indexes = []
@@ -131,15 +130,10 @@ def create_submodel(source_model: dict, submodel: dict, info: list, main_dir_pat
     new_outputs.append(new_ops[len(new_ops) - 1]["outputs"][0])
 
     new_buffers = []
-    buffer_indexes = []
-    for new_tensor in new_tensors:
-        index = new_tensor["buffer"]
-        if index in buffer_indexes:
-            continue
-        else:
-            buffer_indexes.append(index)
-            new_buffers.append(source_model["buffers"][index])
-            new_tensor["buffer"] = len(new_buffers) - 1
+    for i,new_tensor in enumerate(new_tensors):
+        buffer_index = new_tensor["buffer"]
+        new_buffers.append(source_model["buffers"][buffer_index])
+        new_tensor["buffer"] = len(new_buffers) - 1
     
     submodel["operator_codes"] = new_opcodes
     submodel["subgraphs"][0]["tensors"]     =   new_tensors
@@ -255,7 +249,8 @@ def docker_clean():
 def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, op: list, edge_flag: bool):
 
     source_graph = source_model["subgraphs"][0]
-    submodel_graph = compiled_submodel["subgraphs"][0]
+    if len(compiled_submodel) != 0 :
+        submodel_graph = compiled_submodel["subgraphs"][0]
     opt_graph = optimized_model["subgraphs"][0]
 
     opt_ops = opt_graph["operators"]
@@ -353,8 +348,8 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
                     continue
                 else:
                     opt_tensors.append(source_graph["tensors"][op_input])
-                    opt_tensors[len(opt_tensors) -1]["quantization"]["scale"][0] = 0
-                    opt_tensors[len(opt_tensors) -1]["quantization"]["zero_point"][0] = 0
+                    #opt_tensors[len(opt_tensors) -1]["quantization"]["scale"][0] = 0
+                    #opt_tensors[len(opt_tensors) -1]["quantization"]["zero_point"][0] = 0
                     new_tensors.append(source_graph["tensors"][op_input])
                     opt_ops[op_index]["inputs"][i] = len(opt_tensors) - 1
                     new_op["inputs"][i] = len(opt_tensors) - 1
@@ -399,24 +394,19 @@ def update_optimized_model(source_model: dict, compiled_submodel: dict, optimize
             if len(op) == 1:
                 if op in info:
                     if submodel_created == True:
-                        #TODO
                         optimized_model = add_op(source_model,compiled_submodel,optimized_model,op,True)
                         op_count += 1
                         submodel_created = False
-                        break
                     elif submodel_created == False:
                         break
                 else:
-                    #TODO
                     optimized_model = add_op(source_model,compiled_submodel,optimized_model,op,False)
                     op_count += 1
             elif len(op) != 1:
                 if submodel_created == True:
-                    #TODO
                     optimized_model = add_op(source_model,compiled_submodel,optimized_model,op,True)
                     op_count += 1
                     submodel_created = False
-                    break
                 elif submodel_created == False:
                     break
         else:
