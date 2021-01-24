@@ -3,6 +3,12 @@ def retrieve_converted_operations():
     from docker import CONVERTED_MODELS_DIR
     from os import listdir
     from os.path import isfile, isdir, join, exists
+    """From the folder containing all converted-to-tflite models retreives the paths
+    to these files and also the corresponding operation names.
+
+    Uses the 'CONVERTED_MODELS_DIR' variable found in the docker.py script to
+    know the path to the compiled models first level directoty.
+    """
 
     ops = []
     path_ops = []
@@ -17,6 +23,25 @@ def retrieve_converted_operations():
 
 
 def retrieve_quantized_tflites(ops, path_ops):
+    """Retreives the path to the quantized tflite models on host and their
+    future paths on the docker to be used for compilation.
+
+    As the quantized tflite models
+
+    Parameters
+    ----------
+    ops : array
+    Array of strings containing the operation names of the to-be-compiled
+    models.
+
+    path_ops : array
+    Array of strings containing the paths the to-be-compiled models.
+
+    Returns
+    -------
+    quant_sources : Path
+    quant_targets : array
+    """
     import os
     from os import listdir
     from os.path import isfile, join, exists
@@ -42,26 +67,52 @@ def retrieve_quantized_tflites(ops, path_ops):
     return quant_sources, quant_targets
                 
 def compile_quantized_files_on_dckr(quant_targets):
+    """Compiles the quantized tflite models onto the docker.
+
+    Loops through the array of paths to the existent quantized tflite files and
+    compiles them individually.
+
+    Parameters
+    ----------
+    quant_targets : array
+    Array of strings containing the paths to each quantized tflite model located
+    on the Docker.
+    """
     from docker import docker_exec
 
     for q in quant_targets:
         docker_exec("edgetpu_compiler", q)
 
 def create_folders_dckr():
+    """Creates folders necessary for the compilation of the quantized tflite
+    models.
+
+    Creates a 'quant' and a 'comp' folder onto the $HOME path of the used
+    docker.
+    """
     from docker import docker_exec
 
     docker_exec("mkdir", "quant")
     docker_exec("mkdir", "comp")
 
 def single_tflite_compilation(target):
+    """TODO : Not yet implemented -> copy, compile and copy back a single model."""
     from docker import docker_exec
-
     # Compiles target on Docker
-    docker_exec("edgetpu_compiler", target)
+    # docker_exec("edgetpu_compiler", target)
+
+    raise NotImplementedError
 
 def tflite_compilation():
+    """Manager function responsible for preping and executing the compilation
+    of the quantized tflite models.
+
+    Starts the docker, reteives the paths and operation names of the quantized
+    tflite models, creates necessary folders on the docker, copys quantized
+    tflite models from host to docker, compiled them and copys them back.
+    """
     from docker import docker_start
-    from docker import copy_quantized_files_to_dckr, copy_quantized_files_from_dckr
+    from docker import copy_quantized_files_to_dckr, copy_compiled_files_from_dckr
 
     docker_start()
 
@@ -71,7 +122,7 @@ def tflite_compilation():
     create_folders_dckr()
     copy_quantized_files_to_dckr(quant_sources)
     compile_quantized_files_on_dckr(quant_targets)
-    copy_quantized_files_from_dckr()
+    copy_compiled_files_from_dckr()
 
 if __name__ == '__main__':
     import argparse

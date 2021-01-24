@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 echo -n "Docker file/folder: "
-read -r D_DIR
+read -r d_dir
 
-docker cp debian-docker:/home/debian/single_layer_models/${D_DIR}/edge/edge_${D_DIR}_edgetpu.tflite /home/duclos/Documents/work/FP_Files/edge/
+docker cp debian-docker:/home/debian/single_layer_models/${d_dir}/edge/edge_${D_DIR}_edgetpu.tflite /home/duclos/Documents/work/FP_Files/edge/
 

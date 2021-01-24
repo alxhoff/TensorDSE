@@ -6,7 +6,15 @@ edge_tpu_id = ""
 usb_array = []
 
 class UsbTimer:
+    """Class containing all necessary time stamps regarding usb traffic and
+    their methods.
+
+    As usb traffic is read during the edge_tpu deployment. These methods(functions)
+    will either simply save the overloaded timestamps onto the class instance or 
+    perform minor operations to deduce other relevant information.
+    """
     def __init__(self):
+        # Absolute Begin
         self.ts_absolute_begin = 0
 
         # Last CPU sent request before actual data was sent to device(TPU).
@@ -21,11 +29,13 @@ class UsbTimer:
         # First Data present packet sent from device(TPU) to CPU.
         self.ts_end_inference = 0
 
-        # Receiving Data
+        # End of Receiving Data
         self.ts_absolute_end = 0
 
 
     def print_stamps(self):
+        """Function used to debug timing values, prints all important stamps."""
+
         print(f"ABSOLUTE BEGINNING/BEGINNING OF REQUESTS (HOST): {self.ts_absolute_begin}")
         print(f"END OF REQUESTS (HOST): {self.ts_end_host_send_request}")
         print(f"END OF HOST SENT DATA: {self.ts_end_submission}")
@@ -34,45 +44,78 @@ class UsbTimer:
         print(f"ABSOLUTE END: {self.ts_absolute_end}")
 
     def stamp_beginning(self, packet):
+        """Saves the overloaded packet's timestamp onto ts_absolute_begin.
+        Parameters
+        ----------
+        packet : object
+        This object has as attributes all necessary data regarding an incoming
+        usb packet. This will be the same attribute for all stamp-like methods.
+        """
         self.ts_absolute_begin = packet.frame_info.time_relative
 
     def stamp_ending(self, packet):
+        """Saves the overloaded packet's timestamp onto ts_absolute_end."""
         self.ts_absolute_end = packet.frame_info.time_relative
 
     def stamp_inference(self, packet):
+        """Computes the stamps of the begiinning an enf of inference.
+
+        Will be called when the first return data packet is sent from the tpu
+        to the host, which signals the end of inference time. Therefore the last
+        data packet sent from the host to the tpu must then mark the beginning
+        of inference.
+        """
         self.ts_begin_inference = self.ts_end_submission
-        self.ts_end_inference = float(packet.frame_info.time_relative) - float(self.ts_begin_inference)
+        self.ts_end_inference = packet.frame_info.time_relative
 
     def stamp_end_host_send_request(self, packet):
+        """Saves the overloaded packet's timestamp onto ts_end_host_send_request."""
         self.ts_end_host_send_request = packet.frame_info.time_relative
     
     def stamp_beginning_submission(self, packet):
+        """Saves the overloaded packet's timestamp onto ts_begin_submission."""
         self.ts_begin_submission = packet.frame_info.time_relative
 
     def stamp_beginning_return(self, packet):
+        """Saves the overloaded packet's timestamp onto ts_begin_return."""
         self.ts_begin_return = packet.frame_info.time_relative
 
     def stamp_end_tpu_send_request(self, packet):
+        """Saves the overloaded packet's timestamp onto ts_end_tpu_send_request."""
         self.ts_end_tpu_send_request = packet.frame_info.time_relative
 
     def stamp_src_host(self, packet):
+        """Saves the overloaded packet's timestamp onto ts_end_submission."""
         self.ts_end_submission = packet.frame_info.time_relative
 
     def stamp_src_device(self, packet):
+        """Saves the overloaded packet's timestamp onto ts_end_return."""
         self.ts_end_return = packet.frame_info.time_relative
 
 class UsbPacket:
+    """Class containing all necessary methods to decode/retreive human
+    understandable information regarding incoming usb packets.
+
+    Not only does these methods decode usb info but also sometimes exposes them
+    as easy to use booleans that are useful in conditional statements.
+    """
     def __init__(self):
         pass
 
     def find_direction(self, packet):
+        """Method that stores the overloaded packet's flag denoting direction
+        of usb transfer.
+        """
         self.direction = packet.usb.endpoint_address_direction
 
     def find_scr_dest(self, packet):
+        """Stores source and destination values of overloaded packet."""
         self.src = packet.usb.src
         self.dest = packet.usb.dst
 
-    def find_transfer_type(self, hexa_transfer_type):
+    def find_transfer_type(self, packet):
+        """Finds the urb transfer type of the overloaded packet."""
+        hexa_transfer_type = packet.usb.transfer_type
         default = None
         transfer_dict = {
                 "0x00000001"    :   "INTERRUPT",
@@ -84,6 +127,7 @@ class UsbPacket:
         self.transfer_type = transfer_dict.get(hexa_transfer_type, default)
 
     def find_urb_type(self, urb_type):
+        """Finds the urb type of the overloaded packet."""
         default = None
         transfer_dict = {
                 "'S'"    :   "SUBMIT",
@@ -94,6 +138,7 @@ class UsbPacket:
         self.urb_type = transfer_dict.get(urb_type, default)
 
     def find_bulk_type(self):
+        """Finds the packet's usb bulk variation with use of its direction var."""
         if self.direction == '1':
             return "BULK IN"
         elif self.direction == '0':
@@ -102,6 +147,7 @@ class UsbPacket:
             raise ValueError("Wrong attribute type in packet.endpoint_address_direction.")
 
     def find_data_presence(self, packet):
+        """Finds if the overloaded packet contains actual DATA being sent."""
         tmp = packet.usb.data_flag
         if tmp == '>' or tmp == '<':
             return False
@@ -116,6 +162,27 @@ class UsbPacket:
 
 
 def export_analysis(usb_timer, op, append):
+    """Creates CSV file with the relevant usb transfer timestamps.
+
+    The csv file will contain a header exposing the names of the variables
+    stored in each row and then corresponding timestamps regarding the current 
+    usb traffic of the current instance of edge_tpu deployment.
+
+    Parameters
+    ---------
+    usb_timer : Object
+    Instance of the UsbTimer() class.
+
+    op : String
+    Current operation name. 
+
+    append : bool
+    True - if the csv file has already been created and the new values are to be
+    appended to the existent 'Results.csv' file.
+
+    False - if a csv file has to be created, given one doesnt exist yet and then 
+    corresponding headers must then be placed.
+    """
     import csv
     from utils import extend_directory
 
@@ -143,13 +210,14 @@ def export_analysis(usb_timer, op, append):
                          usb_timer.ts_end_tpu_send_request, usb_timer.ts_absolute_end])
 
 
-def prep_capture_file():
-    import os
-    cap_file = "/home/duclos/Documents/work/TensorDSE/shark/capture.pcap"
-    os.system(f"[ -f {cap_file} ] || touch {cap_file}")
-
-
 def lsusb_identify():
+    """Aims to identify the device ID where the edge tpu is connected. 
+
+    This ID is constituted as the bus Nr it os on concatenated by a device Nr 
+    which is created as usb devices are plugged onto to the host. The latter
+    value will change/increment every time the edge_tpu is re-plugged onto the 
+    host.
+    """
     import os
 
     print("IDing usb entry...")
@@ -169,12 +237,35 @@ def lsusb_identify():
 
 
 def shark_usbmon_init():
+    """Initializes the usbmon driver module."""
     import os
     usbmon_cmd = "sudo modprobe usbmon"
     os.system(usbmon_cmd)
 
 
 def shark_capture_cont(op, cnt):
+    """Continuouly reads usb packet traffic and retreives the necessary
+    timestamps within that cycle.
+
+    This Function is called as a separate thread to a edge tpu deployment or is 
+    called alone if the user also deploys the edge tpu on a separate instance or
+    script. With use of the pyshark module, this function will listen onto the 
+    usbmon0 interface for usb traffic and will read packet by packet as they are
+    sniffed. By Decoding/Reading packet info it will take note of important
+    timestamps that denote significant moments during host <-> edge_tpu
+    communication.
+
+    Parameters
+    ---------
+    op : String
+    Characterizes the operation name.
+
+    cnt : Integer
+    Indicates which number this instance is of the for loop running in the
+    parent process of the 'shark_manager()'. Useful to know if it is the first,
+    which then urges the need to create a brand new 'Results.csv' file
+    concerning this instance of edge deployment usb traffic analysis.
+    """
     import os
     import pyshark
 
@@ -199,7 +290,7 @@ def shark_capture_cont(op, cnt):
     for packet in capture.sniff_continuously():
         usb_packet = UsbPacket()
         usb_packet.find_direction(packet)
-        usb_packet.find_transfer_type(packet.usb.transfer_type)
+        usb_packet.find_transfer_type(packet)
         usb_packet.find_scr_dest(packet)
         usb_packet.find_urb_type(packet.usb.urb_type)
 
@@ -220,6 +311,8 @@ def shark_capture_cont(op, cnt):
             else:
                 pass
 
+        # Checks for BULK transfers, as they constitute actual data transfers or
+        # connection requests..
         elif ((usb_packet.transfer_type == "BULK IN" 
                or usb_packet.transfer_type == "BULK OUT")):
 
@@ -276,6 +369,22 @@ def shark_capture_cont(op, cnt):
 
 
 def shark_manager(folder):
+    """Manages the two threads that take care of deploying and listening to
+    edge_tpu <-> host communication.
+
+    This Function is called to manage two simple threads, one will deploy
+    edge_tpu tflite models and the other calls on the 'shark_capture_cont'
+    function which will listen on usb traffic and retrieve the necessary
+    timestamps. With use of the 'check' object one is able to signal flags
+    between threads or between child and parent processes. Only when this flag
+    is signaled that the 'check.wait()' function will stop blocking and the rest 
+    of the code will then continue executing.
+
+    Parameters
+    ---------
+    folder : String
+    Characterizes the folder where the compiled edge tflite models are located.
+    """
     import os
     import time
     import threading
