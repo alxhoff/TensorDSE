@@ -1,3 +1,5 @@
+# Global variables needed to generate the correct values for the freezing
+# of each model.
 gen_op_name = ""
 
 gen_op_in_shape = []
@@ -196,6 +198,19 @@ def save_session(session, operation_name, operation, op_dir, input_place):
 
 
 def tflite_quantization(converter):
+    """Quantizes a converter object so that the compilation on the edge tpu is
+    made possible.
+
+    Parameters
+    ----------
+    converter : tf.lite.TFLiteConverter.from_saved_model() Object
+    Object created during the conversion of a tensorflow session, which in its
+    place was exported to a specific folder. 
+
+    Returns
+    -------
+    converter : tf.lite.TFLiteConverter.from_saved_model()
+    """
     import tensorflow as tf
 
     converter.experimental_new_converter = False
@@ -217,7 +232,28 @@ def tflite_quantization(converter):
     return converter
 
 
-def tflite_conversion(op_dir, model_saved_dir, operation_name, operation, input_place):
+def tflite_conversion(op_dir, model_saved_dir, operation_name, input_place):
+    """Manager function responsible for converting a tensorflow session into a
+    tflite model.
+
+    Parameters
+    ----------
+    op_dir : String
+    Path to the directory where the tflite model of this operation will be
+    saved.
+
+    model_saved_dir : String
+    Path to the directory where the exported tensorflow session has been saved
+    to. Needed for the converter to be able to read the model and convert it to
+    a tflite format.
+
+    operation_name : String
+    Name of the operation.
+
+    input_place : Tensorflow Tensor
+    Shape and type of input tenosr necessary to generate samples to quantize the
+    to be produced tflite model.
+    """
     import tensorflow as tf
 
     tf_model_filename = op_dir + operation_name + ".tflite"

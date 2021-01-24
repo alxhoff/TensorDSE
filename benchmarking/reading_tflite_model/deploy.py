@@ -11,6 +11,17 @@ EDGETPU_SHARED_LIB = {
 
 
 def make_interpreter(model_file):
+    """Creates the interpreter object needed to deploy a model onto the tpu.
+
+    Parameters
+    ----------
+    model_file : String
+    Path to the tflite model that will be deployed to the edge tpu.
+
+    Returns
+    -------
+    tflite.Interpreter Object
+    """
     import tflite_runtime.interpreter as tflite
 
     model_file, *device = model_file.split('@')
@@ -26,6 +37,20 @@ def make_interpreter(model_file):
 
 
 def edge_group_tflite_deployment(models_folder, count=5, log_performance=True):
+    """Deploys a group/series of tflite models onto the tpu.
+
+    Parameters
+    ----------
+    models_folder : String
+    Indicates the path to the folder where the compiled tflite models are
+    located.
+
+    count : Integer
+    Number of times each model will be deployed.
+
+    log_performance : Bool
+    Tells if the deployed edge models are to be timed or not.
+    """
     from utils import deduce_operations_from_folder
 
     for model_info in deduce_operations_from_folder(models_folder, beginning="quant_", ending="_edgetpu.tflite"):
@@ -34,6 +59,23 @@ def edge_group_tflite_deployment(models_folder, count=5, log_performance=True):
 
 
 def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
+    """The actual deployment on the edge tpu of a single model.
+
+    Parameters
+    ----------
+    model_file : String
+    Indicates the path to the model which will be deployed located.
+
+    model_name : String
+    Indicates the name of the operation regarding this model, needed to know
+    which folder the results must be saved onto.
+
+    count : Integer
+    Number of times this model will be deployed.
+
+    log_performance : Bool
+    Tells if the deployed edge models are to be timed or not.
+    """
     import time
     import numpy as np
     from utils import create_csv_file
@@ -76,6 +118,20 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
 
 
 def cpu_group_tflite_deployment(models_folder, count=5, log_performance=True):
+    """Deploys a group/series of tflite models onto the cpu.
+
+    Parameters
+    ----------
+    models_folder : String
+    Indicates the path to the folder where the compiled tflite models are
+    located.
+
+    count : Integer
+    Number of times each model will be deployed.
+
+    log_performance : Bool
+    Tells if the deployed edge models are to be timed or not.
+    """
     from utils import deduce_operations_from_folder
 
     for model_info in deduce_operations_from_folder(models_folder, beginning=None, ending=".tflite"):
@@ -83,6 +139,23 @@ def cpu_group_tflite_deployment(models_folder, count=5, log_performance=True):
 
 
 def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
+    """The actual deployment on the cpu of a single model.
+
+    Parameters
+    ----------
+    model_file : String
+    Indicates the path to the model which will be deployed located.
+
+    model_name : String
+    Indicates the name of the operation regarding this model, needed to know
+    which folder the results must be saved onto.
+
+    count : Integer
+    Number of times each model will be deployed.
+
+    log_performance : Bool
+    Tells if the deployed edge models are to be timed or not.
+    """
     import time
     import tensorflow as tf
     import numpy as np
@@ -123,6 +196,18 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
 
 
 def tflite_deployment(count=1000):
+    """Manager function responsible for preping and executing the deployment
+    of the compiled tflite models.
+
+    Starts the docker, sets the number of times (count) that they will be
+    deployed, copies the necessary folders on the docker, deploys the models, 
+    copies the results back.
+
+    Parameters
+    ----------
+    count : Integer
+    Indicates the number of times each model will be deplyed.
+    """
     import os
     import utils
     from docker import set_docker_globals, docker_copy, docker_exec

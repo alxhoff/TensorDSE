@@ -8,6 +8,14 @@ def retrieve_converted_operations():
 
     Uses the 'CONVERTED_MODELS_DIR' variable found in the docker.py script to
     know the path to the compiled models first level directoty.
+
+    Returns
+    -------
+    ops : array of strings
+    Containing the names of the operations of these converted tflite models.
+
+    path_ops : array of strings
+    Containing the paths to these converted tflite models directories.
     """
 
     ops = []
@@ -24,23 +32,27 @@ def retrieve_converted_operations():
 
 def retrieve_quantized_tflites(ops, path_ops):
     """Retreives the path to the quantized tflite models on host and their
-    future paths on the docker to be used for compilation.
+    future paths on the docker to be used for copying and compilation.
 
     As the quantized tflite models
 
     Parameters
     ----------
     ops : array
-    Array of strings containing the operation names of the to-be-compiled
+    Array of strings containing the operations names of the to-be-compiled
     models.
 
     path_ops : array
-    Array of strings containing the paths the to-be-compiled models.
+    Array of strings containing the paths to the folders of the 
+    to-be-compiled models.
 
     Returns
     -------
-    quant_sources : Path
-    quant_targets : array
+    quant_sources : array of strings
+    Containing the path to the quantized tflite models not yet compiled.
+
+    quant_targets : array of strings
+    Containing the 'future' paths of the already edge compiled tflite models.
     """
     import os
     from os import listdir
@@ -59,7 +71,10 @@ def retrieve_quantized_tflites(ops, path_ops):
 
         if(os.path.exists(quantized_models_dir)):
             for q in listdir(quantized_models_dir):
-                if (isfile(join(quantized_models_dir, q)) and q.startswith(beginning) and q.endswith(ending)):
+                if isfile(join(quantized_models_dir, q) 
+                    and q.startswith(beginning) 
+                    and q.endswith(ending)):
+
                     path_to_quant = join(quantized_models_dir, q)
                     quant_sources.append(path_to_quant)
                     quant_targets.append(f"{HOME}{LOCATION}/{q}")
@@ -97,7 +112,7 @@ def create_folders_dckr():
 
 def single_tflite_compilation(target):
     """TODO : Not yet implemented -> copy, compile and copy back a single model."""
-    from docker import docker_exec
+    # from docker import docker_exec
     # Compiles target on Docker
     # docker_exec("edgetpu_compiler", target)
 
@@ -108,8 +123,8 @@ def tflite_compilation():
     of the quantized tflite models.
 
     Starts the docker, reteives the paths and operation names of the quantized
-    tflite models, creates necessary folders on the docker, copys quantized
-    tflite models from host to docker, compiled them and copys them back.
+    tflite models, creates necessary folders on the docker, copies quantized
+    tflite models from host to docker, compiled them and copies them back.
     """
     from docker import docker_start
     from docker import copy_quantized_files_to_dckr, copy_compiled_files_from_dckr
@@ -140,10 +155,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if (args.mode == "Group"):
+    if args.mode == "Group":
         tflite_compilation()
-    elif (args.mode == "Single" and args.target != ""):
+
+    elif args.mode == "Single" and args.target != "":
         single_tflite_compilation(args.target)
+
     else:
         print("Invalid passed argument combination.")
 

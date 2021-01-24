@@ -12,6 +12,9 @@ class UsbTimer:
     As usb traffic is read during the edge_tpu deployment. These methods(functions)
     will either simply save the overloaded timestamps onto the class instance or 
     perform minor operations to deduce other relevant information.
+
+    Attributes
+    -------
     """
     def __init__(self):
         # Absolute Begin
@@ -19,6 +22,8 @@ class UsbTimer:
 
         # Last CPU sent request before actual data was sent to device(TPU).
         self.ts_end_host_send_request = 0 
+
+        self.ts_end_submission = 0 
 
         # Last CPU sent of actual data and where the TPU begins to compute the result.
         self.ts_begin_inference = 0
@@ -45,6 +50,7 @@ class UsbTimer:
 
     def stamp_beginning(self, packet):
         """Saves the overloaded packet's timestamp onto ts_absolute_begin.
+
         Parameters
         ----------
         packet : object
@@ -57,17 +63,6 @@ class UsbTimer:
         """Saves the overloaded packet's timestamp onto ts_absolute_end."""
         self.ts_absolute_end = packet.frame_info.time_relative
 
-    def stamp_inference(self, packet):
-        """Computes the stamps of the begiinning an enf of inference.
-
-        Will be called when the first return data packet is sent from the tpu
-        to the host, which signals the end of inference time. Therefore the last
-        data packet sent from the host to the tpu must then mark the beginning
-        of inference.
-        """
-        self.ts_begin_inference = self.ts_end_submission
-        self.ts_end_inference = packet.frame_info.time_relative
-
     def stamp_end_host_send_request(self, packet):
         """Saves the overloaded packet's timestamp onto ts_end_host_send_request."""
         self.ts_end_host_send_request = packet.frame_info.time_relative
@@ -79,6 +74,8 @@ class UsbTimer:
     def stamp_beginning_return(self, packet):
         """Saves the overloaded packet's timestamp onto ts_begin_return."""
         self.ts_begin_return = packet.frame_info.time_relative
+        self.ts_begin_inference = self.ts_end_submission
+        self.ts_end_inference = self.ts_begin_return
 
     def stamp_end_tpu_send_request(self, packet):
         """Saves the overloaded packet's timestamp onto ts_end_tpu_send_request."""
@@ -91,6 +88,7 @@ class UsbTimer:
     def stamp_src_device(self, packet):
         """Saves the overloaded packet's timestamp onto ts_end_return."""
         self.ts_end_return = packet.frame_info.time_relative
+        self.ts_end_inference = self.ts_end_return
 
 class UsbPacket:
     """Class containing all necessary methods to decode/retreive human
@@ -194,20 +192,20 @@ def export_analysis(usb_timer, op, append):
                             quoting=csv.QUOTE_MINIMAL)
 
             fw.writerow([usb_timer.ts_absolute_begin, usb_timer.ts_end_host_send_request, 
-                         usb_timer.ts_end_submission, usb_timer.ts_begin_inference,
-                         usb_timer.ts_end_tpu_send_request, usb_timer.ts_absolute_end])
+                         usb_timer.ts_end_submission, usb_timer.ts_end_tpu_send_request,
+                         usb_timer.ts_end_inference, usb_timer.ts_absolute_end])
     else:
         with open(results_file, 'w') as csvfile:
             fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                             quoting=csv.QUOTE_MINIMAL)
 
             fw.writerow(["absolute_begin", "end_requests_host", 
-                        "end_host_submissions", "inference_begin", 
-                        "end_requests_tpu", "absolute_end"])
+                        "end_host_submissions", "end_requests_tpu", 
+                        "inference_end", "absolute_end"])
 
             fw.writerow([usb_timer.ts_absolute_begin, usb_timer.ts_end_host_send_request, 
-                         usb_timer.ts_end_submission, usb_timer.ts_begin_inference,
-                         usb_timer.ts_end_tpu_send_request, usb_timer.ts_absolute_end])
+                         usb_timer.ts_end_submission, usb_timer.ts_end_tpu_send_request,
+                         usb_timer.ts_end_inference, usb_timer.ts_absolute_end])
 
 
 def lsusb_identify():
@@ -349,7 +347,6 @@ def shark_capture_cont(op, cnt):
 
                 if beginning_of_return == False:
                     usb_timer.stamp_beginning_return(packet)
-                    usb_timer.stamp_inference(packet)
                     beginning_of_return = True
 
                 usb_timer.stamp_src_device(packet)

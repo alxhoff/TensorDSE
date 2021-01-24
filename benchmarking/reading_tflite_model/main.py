@@ -96,7 +96,7 @@ def process_CONV_2D(options, io):
             sess, op_name, conv_2d, conv_dir, input_place)
 
     tflite_conversion(conv_dir, tmp_model_saved_dir,
-                        op_name, conv_2d, input_place)
+                        op_name, input_place)
 
 
 def process_MAX_POOL_2D(options, io):
@@ -138,7 +138,7 @@ def process_MAX_POOL_2D(options, io):
             sess, op_name, pool_2d, pool_dir, input_place)
 
     tflite_conversion(pool_dir, tmp_model_saved_dir,
-                        op_name, pool_2d, input_place)
+                        op_name, input_place)
 
 
 def process_RESHAPE(options, io):
@@ -175,7 +175,7 @@ def process_RESHAPE(options, io):
             sess, op_name, reshape, reshape_dir, input_place)
 
     tflite_conversion(reshape_dir, tmp_model_saved_dir,
-                        op_name, reshape, input_place)
+                        op_name, input_place)
 
 
 def process_FULLY_CONNECTED(options, io):
@@ -223,7 +223,7 @@ def process_FULLY_CONNECTED(options, io):
             sess, op_name, fcl, fcl_dir, input_place)
 
     tflite_conversion(fcl_dir, tmp_model_saved_dir, 
-                        op_name, fcl, input_place)
+                        op_name, input_place)
 
 
 def process_SOFTMAX(options, io):
@@ -259,7 +259,7 @@ def process_SOFTMAX(options, io):
             sess, op_name, Soft, softmx_dir, input_place)
 
     tflite_conversion(softmx_dir, tmp_model_saved_dir,
-                        op_name, Soft, input_place)
+                        op_name, input_place)
 
 
 def class_code_to_name(cls, code):
