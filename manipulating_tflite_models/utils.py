@@ -16,13 +16,17 @@ def load_source_model(log: logging.Logger, file_dir_path: str, main_dir_path: st
 
     while json_file_exists == False:
 
-        for file in os.listdir(file_dir_path):
+        tflite_file_dir_path = os.path.join(file_dir_path,"tflite")
+        for file in os.listdir(tflite_file_dir_path):
             if file.endswith(".tflite"):
-                file_path_tflite = os.path.join(file_dir_path, file)
+                file_path_tflite = os.path.join(tflite_file_dir_path, file)
                 tflite_file_name = file
                 tflite_file_exists = True
-            elif file.endswith(".json"):
-                file_path_json = os.path.join(file_dir_path, file)
+        
+        json_file_dir_path = os.path.join(file_dir_path,"json")
+        for file in os.listdir(json_file_dir_path):
+            if file.endswith(".json"):
+                file_path_json = os.path.join(json_file_dir_path, file)
                 json_file_name = file
                 json_file_exists = True
     
@@ -210,7 +214,7 @@ def initialize_optimized_model(log: logging.Logger, main_dir_path: str,):
 
     optimized_model_dir = os.path.join(main_dir_path, "models","optimized_model","json")
 
-    source_model_dir = os.path.join(main_dir_path,"models","source_model")
+    source_model_dir = os.path.join(main_dir_path,"models","source_model","tflite")
 
     for file in os.listdir(source_model_dir):
         if file.endswith(".tflite"):
