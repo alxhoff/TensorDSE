@@ -2,7 +2,7 @@ import argparse
 import os
 from shark import shark_capture_cont, lsusb_identify, shark_usbmon_init
 from utils import deduce_operations_from_folder
-from docker import TO_DOCKER, FROM_DOCKER, home, docker_exec, docker_copy
+from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy, docker_start
 from utils import retrieve_folder_path
 
 parser = argparse.ArgumentParser(
@@ -22,6 +22,7 @@ if args.mode != "":
     if (args.mode == "Deploy"):
         # shark_usbmon_init()
         lsusb_identify()
+        docker_start()
 
         inp = input("Continue [y/n]")
 
