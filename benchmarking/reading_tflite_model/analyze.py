@@ -182,18 +182,21 @@ def init_op_classes(models_folder):
 
 
 def tflite_results_analysis():
+    import logging
     import matplotlib
     matplotlib.rcParams['figure.figsize'] = (16.0, 12.0)
 
-    global results_folder
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
 
-    print(f"Analyzing cpu results...")
+    global results_folder
+    log.info("Analyzing cpu results...")
     cpu_op_classes = init_op_classes(results_folder + "cpu/")
     store_op_info(cpu_op_classes)
     retreive_stat_info_op(cpu_op_classes)
     log_pdfs(cpu_op_classes)
 
-    print(f"Analyzing edge results...")
+    log.info("Analyzing edge results...")
     edge_op_classes = init_op_classes(results_folder + "edge/")
     store_op_info(edge_op_classes)
     retreive_stat_info_op(edge_op_classes)

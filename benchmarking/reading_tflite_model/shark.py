@@ -217,8 +217,12 @@ def lsusb_identify():
     host.
     """
     import os
+    import logging
 
-    print("IDing usb entry...")
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+
+    log.info("IDing usb entry...")
 
     lsusb_cmd = "lsusb | grep Google > temp.txt"
     os.system(lsusb_cmd)

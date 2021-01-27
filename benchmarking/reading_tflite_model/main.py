@@ -1,3 +1,8 @@
+import logging
+
+log = logging.getLogger(__name__)
+logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+
 COMPILED_MODELS_FOLDER = "models/tpu_compiled_models/"
 MODELS_FOLDER = "models/single_layer_models/"
 
@@ -377,6 +382,8 @@ def process_operation(model, graph, op):
     op_opts_name = class_code_to_name(sys.modules["tflite"].BuiltinOptions.BuiltinOptions,
                                       op.BuiltinOptionsType())
 
+    log.info(f"Processing the operation: {op_name}")
+
     io_lengths = process_io_lengths(op)
     io = process_io(op)  # IO indexes are retreived.
 
@@ -439,6 +446,7 @@ if __name__ == '__main__':
 
     path = os.path.join(os.path.dirname(__file__), "tflite")
 
+    log.info("Importing flatbuffers API...")
     for py in [f[:-3] for f in os.listdir(path) if f.endswith('.py') and f != '__init__.py']:
         mod_name = '.'.join(["tflite", py])
         mod = __import__(mod_name, fromlist=[py])

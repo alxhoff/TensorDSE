@@ -26,9 +26,13 @@ def set_docker_globals(cnt):
 
 def docker_start():
     """Starts docker."""
+    import logging
     import os
 
-    print("Starting docker...")
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+
+    log.info("Starting docker...")
     docker_start_cmd = f"docker start {DOCKER} > /dev/null"
     os.system(docker_start_cmd)
 
@@ -74,9 +78,13 @@ def docker_exec(cmd_type, objct=""):
     #                                       created.
     """
     import os
+    import logging
     from utils import place_within_quotes, concat_args
 
-    print(f"Executing command: '{cmd_type}' on Docker...")
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+
+    log.info(f"Executing command: '{cmd_type}' on Docker...")
 
     # Listing relevant command strings.
     mkdir_prefix = f"[ -d {HOME}{objct} ] || "
@@ -129,8 +137,13 @@ def docker_copy(File, direction_flag, Location=""):
     Path to where the to-be-copied files must land.
     """
     import os
-   
-    print(f"Docker-Copying file {File} onto Location: {Location}...")
+    import logging
+
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+
+    log.info(f"Docker-Copying file {File} onto Location: {Location}...")
+
     if(direction_flag):
         docker_copy_cmd = f"docker cp {File} {DOCKER}:{HOME}{Location}"
     else:

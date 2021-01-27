@@ -1,35 +1,33 @@
-Package      Version
------------- -----------
-appdirs      1.4.4
-asn1crypto   1.4.0
-btrfsutil    5.9
-CacheControl 0.12.6
-cffi         1.14.4
-chardet      3.0.4
-colorama     0.4.4
-contextlib2  0.6.0.post1
-cryptography 3.2.1
-distlib      0.3.1
-distro       1.5.0
-html5lib     1.1
-idna         2.10
-lensfun      0.3.95
-msgpack      1.0.0
-ordered-set  4.0.2
-packaging    20.7
-pep517       0.9.1
-pip          20.2.1
-ply          3.11
-progress     1.5
-pycparser    2.20
-pyOpenSSL    20.0.0
-pyparsing    2.4.7
-requests     2.25.0
-resolvelib   0.5.3
-retrying     1.3.3
-setuptools   50.3.2
-six          1.15.0
-team         1.0
-toml         0.10.2
-urllib3      1.25.10
-webencodings 0.5.1
+appdirs      
+asn1crypto   
+btrfsutil    
+CacheControl 
+cffi         
+chardet      
+colorama     
+contextlib2 
+cryptography 
+distlib      
+distro       
+html5lib     
+idna         
+lensfun      
+msgpack      
+ordered-set  
+packaging    
+pep517       
+pip          
+ply          
+progress     
+pycparser    
+pyOpenSSL    
+pyparsing    
+requests     
+resolvelib   
+retrying     
+setuptools   
+six          
+team         
+toml         
+urllib3    
+webencodings 
