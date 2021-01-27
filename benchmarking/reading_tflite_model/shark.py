@@ -435,6 +435,68 @@ def shark_manager(folder):
         print("\n")
 
 
+def shark_single_manager(model):
+    """Manages the two threads that take care of deploying and listening to
+    edge_tpu <-> host communication.
+
+    This Function is called to manage two simple threads, one will deploy
+    edge_tpu tflite models and the other calls on the 'shark_capture_cont'
+    function which will listen on usb traffic and retrieve the necessary
+    timestamps. With use of the 'check' object one is able to signal flags
+    between threads or between child and parent processes. Only when this flag
+    is signaled that the 'check.wait()' function will stop blocking and the rest 
+    of the code will then continue executing.
+
+    Parameters
+    ---------
+    folder : String
+    Characterizes the folder where the compiled edge tflite models are located.
+    """
+    import os
+    import time
+    import threading
+    import pyshark
+    from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy
+    from utils import retrieve_folder_path, extend_directory, deduce_operation_from_file, deduce_filename
+
+    global usb_array
+    global check
+
+    path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
+    docker_copy(path_to_tensorDSE, TO_DOCKER)
+
+    filename = deduce_filename(model)
+    op = deduce_operation_from_file(f"{filename}.tflite",
+                                    beginning=None,
+                                    ending="_edgetpu.tflite")
+    out_dir = "results/shark/"
+    cnt = 5
+
+    for i in range(cnt):
+        if i == 0:
+            extend_directory(out_dir, op)
+
+        print(f"\nOperation: {op}")
+        print("Begun capture.")
+        t_1 = threading.Thread(target=shark_capture_cont,
+                              args=(op, i))
+
+        t_2 = threading.Thread(target=docker_exec, args=(
+                "shark_single_edge_deploy", model,))
+
+        t_1.start()
+        t_2.start()
+
+        event.wait()
+        event.clear()
+
+        t_1.join()
+        t_2.join()
+
+        print("Ended capture.")
+    print("\n")
+
+print("\n")
 
 if __name__ == '__main__':
     from docker import docker_start
@@ -447,10 +509,6 @@ if __name__ == '__main__':
                         default=1000,
                         help='Count of the number of times of edge deployment.')
 
-    parser.add_argument('-t', '--timeout', required=False, type=int,
-                        default=60,
-                        help='Timeout used to enforce time employed on capture/listening of usb packets.')
-
     parser.add_argument('-m', '--mode', required=False,
                         default="Both",
                         help='Mode in which the script will run: All, Read, Capture or Deploy.')
@@ -458,6 +516,10 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--folder', required=False,
                         default="",
                         help='Folder.')
+
+    parser.add_argument('-t', '--target', required=False,
+                        default="",
+                        help='Model.')
 
     args = parser.parse_args()
 
@@ -467,5 +529,10 @@ if __name__ == '__main__':
         docker_start()
         shark_manager(args.folder)
 
+    elif (args.mode == "Single"):
+        shark_usbmon_init()
+        lsusb_identify()
+        docker_start()
+        shark_single_manager(args.target)
     else:
         print("Invaild arguments.")

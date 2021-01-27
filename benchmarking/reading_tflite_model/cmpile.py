@@ -110,13 +110,19 @@ def create_folders_dckr():
     docker_exec("mkdir", "quant")
     docker_exec("mkdir", "comp")
 
-def single_tflite_compilation(target):
-    """TODO : Not yet implemented -> copy, compile and copy back a single model."""
-    # from docker import docker_exec
-    # Compiles target on Docker
-    # docker_exec("edgetpu_compiler", target)
+def single_tflite_compilation(target, target_filename):
+    """"""
+    from docker import HOME
+    from docker import TO_DOCKER, FROM_DOCKER
+    from docker import docker_exec, docker_copy
 
-    raise NotImplementedError
+    docker_compiled_file = f"{HOME}comp/{target_filename}"
+    docker_copied_file = f"{HOME}{target_filename}"
+
+    docker_copy(target, TO_DOCKER)
+    docker_exec("edgetpu_compiler", docker_copied_file)
+    docker_copy(docker_compiled_file, FROM_DOCKER, "models/tpu_compiled_models/")
+
 
 def tflite_compilation():
     """Manager function responsible for preping and executing the compilation
@@ -140,6 +146,7 @@ def tflite_compilation():
     copy_compiled_files_from_dckr()
 
 if __name__ == '__main__':
+    from utils import deduce_filename
     import argparse
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -159,7 +166,8 @@ if __name__ == '__main__':
         tflite_compilation()
 
     elif args.mode == "Single" and args.target != "":
-        single_tflite_compilation(args.target)
+        model_name = deduce_filename(args.target)
+        single_tflite_compilation(args.target, f"{model_name}.tflite")
 
     else:
         print("Invalid passed argument combination.")

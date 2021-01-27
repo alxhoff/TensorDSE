@@ -30,6 +30,12 @@ def concat_args(args):
         summed_args += args[arg]
     return summed_args
 
+def load_json(file_path):
+    import json
+
+    with open(file_path) as f:
+        model = json.load(f)
+        return model
 
 
 def parse_csv(filename):
@@ -70,6 +76,18 @@ def create_csv_file(path_file, folder_name, results):
         for i in range(len(results)):
             fw.writerow([results[i][0], results[i][1]])
 
+
+def deduce_filename(filepath):
+    import os
+    from os import listdir
+    from os.path import isfile, isdir, join
+
+    num = filepath.count('/')
+    file_name = filepath.split("/")[num]
+    file_name = file_name.split(".tflite")[0]
+
+    return file_name
+        
 
 def deduce_operation_from_file(tflite_file, beginning=None, ending=None):
     f = tflite_file
@@ -121,22 +139,22 @@ def retrieve_folder_path(path, folder):
     return path.split(folder + "/")[0] + folder + "/"
 
 
-def extend_directory(path_to_dir, extended_dir, parent_dir=""):
+def extend_directory(path_to_dir, extended_dir):
     import os
 
     if (os.path.exists(path_to_dir)):
         ext_dir = path_to_dir + extended_dir
         if (not os.path.exists(ext_dir)):
-            mkdir_cmd = "mkdir " + ext_dir
+            mkdir_cmd = f"mkdir -p {ext_dir}"
             os.system(mkdir_cmd)
         else:
-            rm_cmd = "rm -r " + ext_dir
-            mkdir_cmd = "mkdir " + ext_dir
+            rm_cmd = f"rm -r {ext_dir}"
+            mkdir_cmd = f"mkdir -p {ext_dir}"
             os.system(rm_cmd)
             os.system(mkdir_cmd)
     else:
         ext_dir = path_to_dir + extended_dir
-        mkdir_cmd = "mkdir -p" + ext_dir
+        mkdir_cmd = f"mkdir -p {ext_dir}"
         os.system(mkdir_cmd)
 
     return ext_dir + "/"
@@ -186,7 +204,7 @@ def save_session(session, operation_name, operation, op_dir, input_place):
     import tensorflow as tf
 
     # Clears saved model directory.
-    tmp_model_saved_dir = extend_directory(op_dir, "tmp", operation_name)
+    tmp_model_saved_dir = extend_directory(op_dir, "tmp")
 
     # Saving Model into the saved model directory.
     tf.compat.v1.saved_model.simple_save(session,
@@ -259,7 +277,7 @@ def tflite_conversion(op_dir, model_saved_dir, operation_name, input_place):
     tf_model_filename = op_dir + operation_name + ".tflite"
     prep_dataset_generator(operation_name, input_place)
 
-    edge_dir = extend_directory(op_dir, "quant", operation_name)
+    edge_dir = extend_directory(op_dir, "quant")
     edge_tf_model_filename = edge_dir + "quant_" + operation_name + ".tflite"
 
     # Creates Converter Object.

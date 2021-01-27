@@ -85,7 +85,7 @@ def docker_exec(cmd_type, objct=""):
     logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
 
     log.info(f"Executing command: '{cmd_type}' on Docker...")
-
+    
     # Listing relevant command strings.
     mkdir_prefix = f"[ -d {HOME}{objct} ] || "
     docker_exec_prefix = f"docker exec -ti {DOCKER} sh -c "

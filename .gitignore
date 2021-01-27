@@ -1,8 +1,6 @@
-venv
-venv/*
-./venv
-./venv/*
 tags
+./venv
+venv
 *.tags
 *.tags/
 *.tags/*
