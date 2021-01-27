@@ -435,7 +435,7 @@ def shark_manager(folder):
         print("\n")
 
 
-def shark_single_manager(model):
+def shark_single_manager(model, count):
     """Manages the two threads that take care of deploying and listening to
     edge_tpu <-> host communication.
 
@@ -470,7 +470,7 @@ def shark_single_manager(model):
                                     beginning=None,
                                     ending="_edgetpu.tflite")
     out_dir = "results/shark/"
-    cnt = 5
+    cnt = int(count)
 
     for i in range(cnt):
         if i == 0:
@@ -533,6 +533,6 @@ if __name__ == '__main__':
         shark_usbmon_init()
         lsusb_identify()
         docker_start()
-        shark_single_manager(args.target)
+        shark_single_manager(args.target, args.count)
     else:
         print("Invaild arguments.")
