@@ -369,7 +369,7 @@ def shark_capture_cont(op, cnt):
             break
 
 
-def shark_manager(folder):
+def shark_manager(folder, count):
     """Manages the two threads that take care of deploying and listening to
     edge_tpu <-> host communication.
 
@@ -403,7 +403,7 @@ def shark_manager(folder):
                                                 beginning="quant_",
                                                 ending="_edgetpu.tflite")
     out_dir = "results/shark/"
-    cnt = 5
+    cnt = int(count)
 
     for m_i in models_info:
         for i in range(cnt):
@@ -430,6 +430,7 @@ def shark_manager(folder):
             t_2.join()
 
             print("Ended capture.")
+            time.sleep(1)
             print("\n")
 
         print("\n")
@@ -440,7 +441,7 @@ def shark_single_manager(model, count):
     edge_tpu <-> host communication.
 
     This Function is called to manage two simple threads, one will deploy
-    edge_tpu tflite models and the other calls on the 'shark_capture_cont'
+    a single edge_tpu tflite model and the other calls on the 'shark_capture_cont'
     function which will listen on usb traffic and retrieve the necessary
     timestamps. With use of the 'check' object one is able to signal flags
     between threads or between child and parent processes. Only when this flag
@@ -494,6 +495,7 @@ def shark_single_manager(model, count):
         t_2.join()
 
         print("Ended capture.")
+        time.sleep(1)
     print("\n")
 
 print("\n")
@@ -527,7 +529,7 @@ if __name__ == '__main__':
         shark_usbmon_init()
         lsusb_identify()
         docker_start()
-        shark_manager(args.folder)
+        shark_manager(args.folder, args.count)
 
     elif (args.mode == "Single"):
         shark_usbmon_init()

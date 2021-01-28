@@ -47,7 +47,7 @@ if __name__ == '__main__':
     assert (model_name != None), "Model name was not able to be deduced."
 
     project_dir = os.path.dirname(os.path.abspath(__file__))
-    schema_path = os.path.join(project_dir, "json", "schema.fbs")
+    schema_path = os.path.join(project_dir, "schema", "schema.fbs")
     json_dir = os.path.join(project_dir,"json")
 
     convert_to_json(model, model_name)

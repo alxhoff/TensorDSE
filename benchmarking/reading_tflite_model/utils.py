@@ -56,15 +56,15 @@ def create_csv_file(path_file, folder_name, results):
     import os
     import csv
 
-    csv_dir = path_file + folder_name + "/"
-    csv_file = csv_dir + "/" + "Results.csv"
+    csv_dir = f"{path_file}{folder_name}/"
+    csv_file = f"{csv_dir}/Results.csv"
 
     if (os.path.exists(path_file)):
         if (not os.path.exists(csv_dir)):
-            mkdir_cmd = "mkdir " + csv_dir
+            mkdir_cmd = f"mkdir {csv_dir}"
             os.system(mkdir_cmd)
         else:
-            clean_up_cmd = "rm -r " + csv_dir + "*"
+            clean_up_cmd = f"rm -r {csv_dir}*"
             os.system(clean_up_cmd)
     else:
         raise NotImplementedError
