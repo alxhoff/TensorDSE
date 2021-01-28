@@ -387,6 +387,14 @@ def add_op(source_model: dict, compiled_submodel: dict, optimized_model: dict, o
             tensor_index = opt_tensors.index(new_tensor)
             opt_tensors[tensor_index]["buffer"] = len(opt_buffers) - 1
     
+    options = ["FullyConnectedOptions","Conv2DOptions","DepthwiseConv2DOptions"]
+    if opt_ops[len(opt_ops) - 1]["builtin_options_type"] in options:
+        tensor_index_input_0 = opt_ops[len(opt_ops) - 1]["inputs"][0]
+        tensor_index_input_1 = opt_ops[len(opt_ops) - 1]["inputs"][1]
+        tensor_index_output = opt_ops[len(opt_ops) - 1]["inputs"][2]
+
+        opt_tensors[tensor_index_output]["quantization"]["scale"][0] = opt_tensors[tensor_index_input_0]["quantization"]["scale"][0]*opt_tensors[tensor_index_input_1]["quantization"]["scale"][0]
+
     return optimized_model
         
 def update_optimized_model(source_model: dict, compiled_submodel: dict, optimized_model: dict, mapping: list, submodel_created: bool, op_count: int):
@@ -416,5 +424,3 @@ def update_optimized_model(source_model: dict, compiled_submodel: dict, optimize
         else:
             continue
     return optimized_model,submodel_created,op_count
-
-            
