@@ -21,10 +21,10 @@ args = parser.parse_args()
 if args.mode != "":
     if (args.mode == "Deploy"):
         # shark_usbmon_init()
-        lsusb_identify()
+        edge_tpu_id = lsusb_identify()
         docker_start()
 
-        inp = input("Continue [y/n]")
+        inp = input("Wait: ")
 
         models_info = deduce_operations_from_folder(args.folder,
                                                     beginning="quant_",
@@ -35,21 +35,18 @@ if args.mode != "":
 
         for m_i in models_info:
             docker_exec("shark_single_edge_deploy", m_i[0])
-            inp = input("Continue [y/n]: ")
-
-            if (inp != "y"):
-                break
+            inp = input("Wait: ")
         
     elif (args.mode == "Capture"):
-        lsusb_identify()
-        models_info = deduce_operations_from_folder("models/tpu_compiled_models/",
+        edge_tpu_id = lsusb_identify()
+        models_info = deduce_operations_from_folder("models/compiled/",
                                                     beginning="quant_",
                                                     ending="_edgetpu.tflite")
         for i in range(3):
             for m_i in models_info:
                 print(f"Operation {m_i[1]}")
-                shark_capture_cont(m_i[1], i)
-                inp = input("Next:")
+                shark_capture_cont(m_i[1], i, edge_tpu_id)
+                inp = input("Wait: ")
 
     elif (args.mode == "CSV"):
         from shark import export_analysis, UsbTimer
@@ -58,7 +55,7 @@ if args.mode != "":
         example.ts_absolute_begin = 4
         example.ts_absolute_end = 4
 
-        cnt = 3
+        cnt = 5
         for i in range(cnt):
             export_analysis(example, "CONV_2D", i!=0)
 else:
