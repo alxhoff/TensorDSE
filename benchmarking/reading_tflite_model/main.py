@@ -3,8 +3,8 @@ import logging
 log = logging.getLogger(__name__)
 logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
 
-COMPILED_MODELS_FOLDER = "models/tpu_compiled_models/"
-MODELS_FOLDER = "models/single_layer_models/"
+COMPILED_MODELS_FOLDER = "models/compiled/"
+MODELS_FOLDER = "models/layers/"
 
 source_model_filename = ""
 
@@ -433,8 +433,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-m', '--model',
-                        default="models/source_models/MNIST_model.tflite",
+    parser.add_argument('-t', '--target',
+                        default="models/source/MNIST_model.tflite",
                         help='File path to the SOURCE .tflite file.')
 
     parser.add_argument('-c', '--count',
@@ -442,7 +442,7 @@ if __name__ == '__main__':
                         help='Number of times to measure inference.')
 
     args = parser.parse_args()
-    source_model_filename = args.model
+    source_model_filename = args.target
 
     path = os.path.join(os.path.dirname(__file__), "tflite")
 

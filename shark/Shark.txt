@@ -1,7 +1,0 @@
--- INSTALLATION --
-sudo pacman -S wireshark-qt wireshark-cli
-
--- SETUP --
-sudo usermod -aG wireshark $USER
-sudo modprobe usbmon
-

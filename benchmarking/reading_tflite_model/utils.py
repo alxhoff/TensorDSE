@@ -297,3 +297,7 @@ def tflite_conversion(op_dir, model_saved_dir, operation_name, input_place):
     open(edge_tf_model_filename, "wb").write(edge_tflite_model)
 
     clean_directory(model_saved_dir)
+
+def direct_tflite_conversion(op_dir, model_saved_dir, operation_name, input_place):
+    import tensorflow as tf
+    pass

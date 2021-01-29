@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     project_dir = os.path.dirname(os.path.abspath(__file__))
     schema_path = os.path.join(project_dir, "schema", "schema.fbs")
-    json_dir = os.path.join(project_dir,"json")
+    json_dir = os.path.join(project_dir,"models/json")
 
     convert_to_json(model, model_name)
 

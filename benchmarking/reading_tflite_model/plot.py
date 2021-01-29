@@ -120,7 +120,7 @@ if __name__ == '__main__':
                         help='Folder.')
 
     parser.add_argument('-t', '--target', required=False,
-                        default="results/shark/mobilnet/Results.",
+                        default="results/shark/mobilnet/Results.csv",
                         help='Model.')
 
 
