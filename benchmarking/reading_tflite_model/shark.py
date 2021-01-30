@@ -1,5 +1,4 @@
 import threading
-event = threading.Event()
 
 class UsbTimer:
     """Class containing all necessary time stamps regarding usb traffic and
@@ -343,7 +342,6 @@ def shark_capture_cont(op, cnt, edge_tpu_id):
     import os
     import pyshark
 
-    global event
     global usb_array
 
     usb_timer = UsbTimer()
@@ -381,8 +379,6 @@ def shark_capture_cont(op, cnt, edge_tpu_id):
             elif (beginning_of_comms == True 
                     and usb_packet.verify_src(edge_tpu_id, "end")):
 
-                print(packet.usb.src)
-                print(packet.usb.dst)
                 end_of_comms = True
                 usb_timer.stamp_ending(packet)
             else:
@@ -435,10 +431,9 @@ def shark_capture_cont(op, cnt, edge_tpu_id):
         else:
             pass
 
-        if (not event.is_set() and end_of_comms == True):
-            usb_timer.print_stamps()
+        if end_of_comms == True:
+            # usb_timer.print_stamps()
             export_analysis(usb_timer, op, cnt!=0)
-            event.set()
             break
 
 
@@ -475,7 +470,7 @@ def shark_manager(folder, count, edge_tpu_id):
     models_info = deduce_operations_from_folder(folder,
                                                 beginning="quant_",
                                                 ending="_edgetpu.tflite")
-    out_dir = "results/shark/"
+    out_dir = "results/usb/"
     cnt = int(count)
 
     for m_i in models_info:
@@ -496,11 +491,8 @@ def shark_manager(folder, count, edge_tpu_id):
             t_1.start()
             t_2.start()
 
-            event.wait()
-            event.clear()
-
-            t_1.join()
             t_2.join()
+            t_1.join()
 
             print("Ended capture.")
             time.sleep(1)
@@ -543,7 +535,7 @@ def shark_single_manager(model, count, edge_tpu_id):
     op = deduce_operation_from_file(f"{filename}.tflite",
                                     beginning=None,
                                     ending="_edgetpu.tflite")
-    out_dir = "results/shark/"
+    out_dir = "results/usb/"
     cnt = int(count)
 
     for i in range(cnt):
@@ -560,9 +552,6 @@ def shark_single_manager(model, count, edge_tpu_id):
 
         t_1.start()
         t_2.start()
-
-        event.wait()
-        event.clear()
 
         t_1.join()
         t_2.join()
