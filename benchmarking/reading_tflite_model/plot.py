@@ -174,6 +174,26 @@ def plot_manager(folder):
         results_file = store_avgs(model_name, avgs, filesize)
 
 
+def plot_single_manager(filepath):
+    import os
+    import logging
+    from utils import deduce_filename
+
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
+    log.info("Obtaining averages...")
+    filename_fdr = os.path.dirname(
+                    os.path.abspath(filepath))
+
+    model_name = deduce_filename(filename_fdr, ending=None)
+    filesize = deduce_plot_filesize(model_name)
+
+    values = read_timestamps(filepath)
+    avgs = find_avgs(values)
+    results_file = store_avgs(model_name, avgs, filesize)
+
+
 if __name__ == '__main__':
     import os
     from utils import deduce_filename

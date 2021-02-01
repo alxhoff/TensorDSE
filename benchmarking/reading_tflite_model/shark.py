@@ -1,16 +1,15 @@
-import threading
-
 class UsbTimer:
     """Class containing all necessary time stamps regarding usb traffic and
     their methods.
 
     As usb traffic is read during the edge_tpu deployment. These methods(functions)
-    will either simply save the overloaded timestamps onto the class instance or 
+    will either simply save the overloaded timestamps onto the class instance or
     perform minor operations to deduce other relevant information.
 
     Attributes
     -------
     """
+
     def __init__(self):
         # Absolute Begin
         self.ts_absolute_begin = 0
@@ -19,13 +18,13 @@ class UsbTimer:
         self.ts_begin_host_send_request = 0
 
         # Last host sent request before actual data was sent to device(TPU).
-        self.ts_end_host_send_request = 0 
+        self.ts_end_host_send_request = 0
 
         # Beginning of host sent data to device(TPU).
         self.ts_begin_submission = 0
 
         # End of host sent data to device(TPU).
-        self.ts_end_submission = 0 
+        self.ts_end_submission = 0
 
         # First TPU sent request before actual data was sent to the CPU.
         self.ts_begin_tpu_send_request = 0
@@ -34,14 +33,13 @@ class UsbTimer:
         self.ts_end_tpu_send_request = 0
 
         # End of device(TPU) sent data to host.
-        self.ts_begin_return = 0 
+        self.ts_begin_return = 0
 
         # End of device(TPU) sent data to host.
-        self.ts_end_return = 0 
+        self.ts_end_return = 0
 
         # End of Receiving Data
         self.ts_absolute_end = 0
-
 
     def print_stamps(self):
         """Function used to debug timing values, prints all important stamps."""
@@ -57,7 +55,8 @@ class UsbTimer:
         print(f"BEGIN OF REQUESTS (TPU): {self.ts_begin_tpu_send_request}")
         print(f"END OF REQUESTS (TPU):{self.ts_end_tpu_send_request}")
 
-        print(f"INFERENCE END/BEGIN OF SUBMISSION (TPU): {self.ts_begin_return}")
+        print(
+            f"INFERENCE END/BEGIN OF SUBMISSION (TPU): {self.ts_begin_return}")
         print(f"END OF SUBMISSION (TPU): {self.ts_end_return}")
 
         print(f"ABSOLUTE END: {self.ts_absolute_end}")
@@ -84,7 +83,7 @@ class UsbTimer:
     def stamp_end_host_send_request(self, packet):
         """Saves the overloaded packet's timestamp onto ts_end_host_send_request."""
         self.ts_end_host_send_request = packet.frame_info.time_relative
-    
+
     def stamp_beginning_submission(self, packet):
         """Saves the overloaded packet's timestamp onto ts_begin_submission."""
         self.ts_begin_submission = packet.frame_info.time_relative
@@ -109,6 +108,7 @@ class UsbTimer:
         """Saves the overloaded packet's timestamp onto ts_end_return."""
         self.ts_end_return = packet.frame_info.time_relative
 
+
 class UsbPacket:
     """Class containing all necessary methods to decode/retreive human
     understandable information regarding incoming usb packets.
@@ -116,6 +116,7 @@ class UsbPacket:
     Not only does these methods decode usb info but also sometimes exposes them
     as easy to use booleans that are useful in conditional statements.
     """
+
     def __init__(self):
         pass
 
@@ -135,10 +136,10 @@ class UsbPacket:
         hexa_transfer_type = packet.usb.transfer_type
         default = "OTHER"
         transfer_dict = {
-                "0x00000001"    :   "INTERRUPT",
-                "0x00000002"    :   "CONTROL",
-                "0x00000003"    :   self.find_bulk_type(),
-                }
+            "0x00000001":   "INTERRUPT",
+            "0x00000002":   "CONTROL",
+            "0x00000003":   self.find_bulk_type(),
+        }
 
         self.transfer_type = transfer_dict.get(hexa_transfer_type, default)
 
@@ -146,10 +147,10 @@ class UsbPacket:
         """Finds the urb type of the overloaded packet."""
         default = None
         transfer_dict = {
-                "'S'"    :   "SUBMIT",
-                "'C'"    :   "COMPLETE",
-                ""              :   None
-                }
+            "'S'":   "SUBMIT",
+            "'C'":   "COMPLETE",
+            "":   None
+        }
 
         self.urb_type = transfer_dict.get(urb_type, default)
 
@@ -160,7 +161,8 @@ class UsbPacket:
         elif self.direction == '0':
             return "BULK OUT"
         else:
-            raise ValueError("Wrong attribute type in packet.endpoint_address_direction.")
+            raise ValueError(
+                "Wrong attribute type in packet.endpoint_address_direction.")
 
     def find_data_presence(self, packet):
         """Finds if the overloaded packet contains actual DATA being sent."""
@@ -187,7 +189,7 @@ def export_analysis(usb_timer, op, append, filesize):
     """Creates CSV file with the relevant usb transfer timestamps.
 
     The csv file will contain a header exposing the names of the variables
-    stored in each row and then corresponding timestamps regarding the current 
+    stored in each row and then corresponding timestamps regarding the current
     usb traffic of the current instance of edge_tpu deployment.
 
     Parameters
@@ -196,7 +198,7 @@ def export_analysis(usb_timer, op, append, filesize):
     Instance of the UsbTimer() class.
 
     op : String
-    Current operation name. 
+    Current operation name.
 
     append : bool
     True - if the csv file has already been created and the new values are to be
@@ -205,7 +207,7 @@ def export_analysis(usb_timer, op, append, filesize):
     filesize : String
     Size in Bytes of current op file.
 
-    False - if a csv file has to be created, given one doesnt exist yet and then 
+    False - if a csv file has to be created, given one doesnt exist yet and then
     corresponding headers must then be placed.
     """
     import csv
@@ -221,11 +223,11 @@ def export_analysis(usb_timer, op, append, filesize):
                             quoting=csv.QUOTE_MINIMAL)
 
             fw.writerow([usb_timer.ts_absolute_begin,   # Same as ts_begin_host_send_request.
-                         usb_timer.ts_begin_submission, # ts_end_host_requests - negative values
-                         usb_timer.ts_end_submission, 
+                         usb_timer.ts_begin_submission,  # ts_end_host_requests - negative values
+                         usb_timer.ts_end_submission,
                          usb_timer.ts_begin_tpu_send_request,
                          usb_timer.ts_begin_return,  # ts_end_tpu_requests - negative values
-                         usb_timer.ts_absolute_end]) #Should be same as ts_end_return.
+                         usb_timer.ts_absolute_end])  # Should be same as ts_end_return.
     else:
         extend_directory(results_dir, results_folder)
         with open(results_file, 'w') as csvfile:
@@ -234,25 +236,25 @@ def export_analysis(usb_timer, op, append, filesize):
                             quoting=csv.QUOTE_MINIMAL)
 
             fw.writerow(["start_host_request_and_absolute_begin",
-                         "end_host_request_and_start_host_submission", 
+                         "end_host_request_and_start_host_submission",
                          "end_host_submission_and_start_inference",
-                         "start_tpu_request", 
+                         "start_tpu_request",
                          "end_inference_and_start_tpu_submission",
                          "end_tpu_submission_and_absolute_end"])
 
             fw.writerow([usb_timer.ts_absolute_begin,   # Same as ts_begin_host_send_request.
-                         usb_timer.ts_begin_submission, # ts_end_host_requests - negative values
-                         usb_timer.ts_end_submission, 
+                         usb_timer.ts_begin_submission,  # ts_end_host_requests - negative values
+                         usb_timer.ts_end_submission,
                          usb_timer.ts_begin_tpu_send_request,
                          usb_timer.ts_begin_return,  # ts_end_tpu_requests - negative values
-                         usb_timer.ts_absolute_end]) #Should be same as ts_end_return.
+                         usb_timer.ts_absolute_end])  # Should be same as ts_end_return.
 
 
 def prepare_ulimit():
     import logging
     import os
     log = logging.getLogger(__name__)
-    logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
     log.info("Prepping ulimit...")
     os.system("ulimit -n 4096")
@@ -262,18 +264,18 @@ def reset_ulimit():
     import logging
     import os
     log = logging.getLogger(__name__)
-    logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
     log.info("Resetting ulimit...")
     os.system("ulimit -n 1024")
 
 
 def lsusb_identify():
-    """Aims to identify the device ID where the edge tpu is connected. 
+    """Aims to identify the device ID where the edge tpu is connected.
 
-    This ID is constituted as the bus Nr it os on concatenated by a device Nr 
+    This ID is constituted as the bus Nr it os on concatenated by a device Nr
     which is created as usb devices are plugged onto to the host. The latter
-    value will change/increment every time the edge_tpu is re-plugged onto the 
+    value will change/increment every time the edge_tpu is re-plugged onto the
     host.
     """
     import os
@@ -283,15 +285,16 @@ def lsusb_identify():
     edge_tpu_id = ""
 
     log = logging.getLogger(__name__)
-    logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
     log.info("IDing usb entry...")
     lsusb_cmd = "lsusb | grep Google > temp"
     os.system(lsusb_cmd)
 
-    p = subprocess.run(list(["cat", "temp"]), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    p = subprocess.run(list(["cat", "temp"]),
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     output = p.stdout.decode()
-    
+
     if "Google" in output:
         bus = int(output.split()[1])
         device = int((output.split()[3]).split(":")[0])
@@ -299,7 +302,8 @@ def lsusb_identify():
     else:
         lsusb_cmd = "lsusb | grep Global > temp"
         os.system(lsusb_cmd)
-        p = subprocess.run(["cat", "temp"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        p = subprocess.run(
+            ["cat", "temp"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output = p.stdout.decode()
 
         if "Global" in output:
@@ -307,7 +311,8 @@ def lsusb_identify():
             device = int((output.split()[3]).split(":")[0])
             edge_tpu_id = f"{bus}.{device}"
         else:
-            raise ValueError("Unable to identidy Google Coral Bus and Device address.")
+            raise ValueError(
+                "Unable to identidy Google Coral Bus and Device address.")
 
     os.system("[ -f temp ] && rm temp")
     return edge_tpu_id
@@ -324,9 +329,9 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
     """Continuouly reads usb packet traffic and retreives the necessary
     timestamps within that cycle.
 
-    This Function is called as a separate thread to a edge tpu deployment or is 
+    This Function is called as a separate thread to a edge tpu deployment or is
     called alone if the user also deploys the edge tpu on a separate instance or
-    script. With use of the pyshark module, this function will listen onto the 
+    script. With use of the pyshark module, this function will listen onto the
     usbmon0 interface for usb traffic and will read packet by packet as they are
     sniffed. By Decoding/Reading packet info it will take note of important
     timestamps that denote significant moments during host <-> edge_tpu
@@ -363,7 +368,8 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
     beginning_of_return = False
 
     capture_filter = "usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT"
-    capture = pyshark.LiveCapture(interface='usbmon0', display_filter=capture_filter)
+    capture = pyshark.LiveCapture(
+        interface='usbmon0', display_filter=capture_filter)
 
     for packet in capture.sniff_continuously():
         usb_packet = UsbPacket()
@@ -383,7 +389,7 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
                 usb_timer.stamp_beginning(packet)
                 beginning_of_comms = True
 
-            elif (beginning_of_comms == True 
+            elif (beginning_of_comms == True
                     and usb_packet.verify_src(edge_tpu_id, "end")):
 
                 end_of_comms = True
@@ -393,38 +399,43 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
 
         # Checks for BULK transfers, as they constitute actual data transfers or
         # connection requests..
-        elif ((usb_packet.transfer_type == "BULK IN" 
-               or usb_packet.transfer_type == "BULK OUT")):
+        elif ((usb_packet.transfer_type == "BULK IN"
+               or usb_packet.transfer_type == "BULK OUT")
+              and beginning_of_comms == True):
 
             if (usb_packet.urb_type == "SUBMIT" and data_is_present == False):
-                assert (usb_packet.src == "host"), "Submit packets should only be from host!"
+                assert (usb_packet.src 
+                        == "host"), "Submit packets should only be from host!"
 
-                if (begin_host_send_request == False):
+                if begin_host_send_request == False:
                     usb_timer.stamp_begin_host_send_request(packet)
                     begin_host_send_request = True
 
                 usb_timer.stamp_end_host_send_request(packet)
 
             elif (usb_packet.urb_type == "SUBMIT" and data_is_present == True):
-                assert (usb_packet.src == "host"), "Submit packets should only be from host!"
+                assert (usb_packet.src 
+                        == "host"), "Submit packets should only be from host!"
 
-                if beginning_of_submission == False and beginning_of_comms ==True:
+                if beginning_of_submission == False:
                     usb_timer.stamp_beginning_submission(packet)
                     beginning_of_submission = True
 
                 usb_timer.stamp_src_host(packet)
 
             elif usb_packet.urb_type == "COMPLETE" and data_is_present == False:
-                assert (usb_packet.src != "host"), "Complete packets should only be from device!"
+                assert (usb_packet.src !=
+                        "host"), "Complete packets should only be from device!"
 
-                if (begin_tpu_send_request == False and beginning_of_comms == True):
+                if begin_tpu_send_request == False:
                     usb_timer.stamp_begin_tpu_send_request(packet)
                     begin_tpu_send_request = True
 
                 usb_timer.stamp_end_tpu_send_request(packet)
 
             elif (usb_packet.urb_type == "COMPLETE" and data_is_present == True):
-                assert (usb_packet.src != "host"), "Complete packets should only be from device!"
+                assert (usb_packet.src !=
+                        "host"), "Complete packets should only be from device!"
 
                 if beginning_of_return == False:
                     usb_timer.stamp_beginning_return(packet)
@@ -440,7 +451,7 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
 
         if end_of_comms == True:
             # usb_timer.print_stamps()
-            export_analysis(usb_timer, op, cnt!=0, op_filesize)
+            export_analysis(usb_timer, op, cnt != 0, op_filesize)
             break
 
 
@@ -453,7 +464,7 @@ def shark_manager(folder, count, edge_tpu_id):
     function which will listen on usb traffic and retrieve the necessary
     timestamps. With use of the 'check' object one is able to signal flags
     between threads or between child and parent processes. Only when this flag
-    is signaled that the 'check.wait()' function will stop blocking and the rest 
+    is signaled that the 'check.wait()' function will stop blocking and the rest
     of the code will then continue executing.
 
     Parameters
@@ -490,10 +501,10 @@ def shark_manager(folder, count, edge_tpu_id):
 
             print("Begun capture.")
             t_1 = threading.Thread(target=shark_capture_cont,
-                                  args=(op, i, edge_tpu_id, filesize))
+                                   args=(op, i, edge_tpu_id, filesize))
 
             t_2 = threading.Thread(target=docker_exec, args=(
-                    "shark_single_edge_deploy", m_i[0],))
+                "shark_single_edge_deploy", m_i[0],))
 
             t_1.start()
             t_2.start()
@@ -517,7 +528,7 @@ def shark_single_manager(model, count, edge_tpu_id):
     function which will listen on usb traffic and retrieve the necessary
     timestamps. With use of the 'check' object one is able to signal flags
     between threads or between child and parent processes. Only when this flag
-    is signaled that the 'check.wait()' function will stop blocking and the rest 
+    is signaled that the 'check.wait()' function will stop blocking and the rest
     of the code will then continue executing.
 
     Parameters
@@ -550,10 +561,10 @@ def shark_single_manager(model, count, edge_tpu_id):
 
         print("Begun capture.")
         t_1 = threading.Thread(target=shark_capture_cont,
-                              args=(op, i, edge_tpu_id, filesize))
+                               args=(op, i, edge_tpu_id, filesize))
 
         t_2 = threading.Thread(target=docker_exec, args=(
-                "shark_single_edge_deploy", model,))
+            "shark_single_edge_deploy", model,))
 
         t_1.start()
         t_2.start()
@@ -562,14 +573,14 @@ def shark_single_manager(model, count, edge_tpu_id):
         t_1.join()
 
         print("Ended capture.")
-        time.sleep(1)
     print("\n")
+
 
 print("\n")
 
 if __name__ == '__main__':
-    from docker import docker_start
     import argparse
+    from docker import docker_start
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -607,5 +618,6 @@ if __name__ == '__main__':
         docker_start()
         shark_single_manager(args.target, args.count, edge_tpu_id)
         reset_ulimit()
+
     else:
         print("Invaild arguments.")
