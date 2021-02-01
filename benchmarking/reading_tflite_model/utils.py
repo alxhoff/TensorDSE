@@ -89,14 +89,14 @@ def deduce_filesize(filepath):
     return output.split("\n")[0]
 
 
-def deduce_filename(filepath):
+def deduce_filename(filepath, ending=".tflite"):
     import os
     from os import listdir
     from os.path import isfile, isdir, join
 
     num = filepath.count('/')
     file_name = filepath.split("/")[num]
-    file_name = file_name.split(".tflite")[0]
+    file_name = file_name.split(ending)[0]
 
     return file_name
         

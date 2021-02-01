@@ -1,12 +1,12 @@
 class UsbAverages():
-    def __init__(self, host_comms_avg, tpu_comms_avg,
-                    host_submission_avg, tpu_return_avg,
+    def __init__(self, host_comms_avg, host_submission_avg,
+                    tpu_comms_avg, tpu_return_avg,
                     inference_avg, total_avg):
 
         self.host_comms_avg = host_comms_avg
-        self.tpu_comms_avg = tpu_comms_avg
-
         self.host_submission_avg = host_submission_avg
+
+        self.tpu_comms_avg = tpu_comms_avg
         self.tpu_return_avg = tpu_return_avg
 
         self.inference_avg = inference_avg
@@ -28,6 +28,17 @@ class UsbTimes():
         self.total_time = total_time
 
 
+def deduce_plot_filesize(model_name):
+    import os
+    from os import listdir
+    from os.path import isfile, isdir, join
+
+    num = model_name.count('_')
+    filesize = model_name.split("_")[num]
+
+    return filesize
+
+
 def deduce_plot_ops(folder, filename):
     import os
     from os import listdir
@@ -36,7 +47,7 @@ def deduce_plot_ops(folder, filename):
     plot_info = []
 
     for dirs in listdir(folder):
-        res_path = folder + dirs
+        res_path = f"{folder}{dirs}"
         op = dirs
         for results in listdir(res_path):
             if results == "Results.csv":
@@ -64,14 +75,15 @@ def read_timestamps(filename):
                 tpu_comms_time = float(row[4]) - float(row[3])
                 tpu_return_time = float(row[5]) - float(row[4])
 
-                inference_time = float(row[4]) - float(row[1])
+                inference_time = float(row[4]) - float(row[2])
                 total_time = float(row[5]) - float(row[0])
 
                 usb_timer = UsbTimes(host_comms_time, host_submission_time, 
                                         tpu_comms_time, tpu_return_time,
                                         inference_time, total_time)
 
-                usb_timers_array.append(usb_timer)
+                if (tpu_comms_time > 0 and inference_time > 0):
+                    usb_timers_array.append(usb_timer)
 
             row_count += 1
 
@@ -109,14 +121,14 @@ def find_avgs(values):
     inference_avg = (inference_avg / i) * 10**6
     total_avg = (total_avg / i) * 10**6
 
-    usb_average = UsbAverages(host_comms_avg, tpu_comms_avg, 
-                    host_submission_avg, tpu_return_avg,
-                    inference_avg, total_avg)
+    usb_average = UsbAverages(host_comms_avg, host_submission_avg, 
+                                tpu_comms_avg, tpu_return_avg,
+                                inference_avg, total_avg)
 
     return usb_average
 
 
-def store_avgs(filename, avgs):
+def store_avgs(filename, avgs, filesize):
     import os
     import csv
 
@@ -129,12 +141,21 @@ def store_avgs(filename, avgs):
         fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                         quoting=csv.QUOTE_MINIMAL)
 
+        fw.writerow(["host_comms_avg",
+                     "host_submission_avg", 
+                     "tpu_comms_avg",
+                     "tpu_return_avg", 
+                     "inference_avg",
+                     "total_avg",
+                     "data_size"])
+
         fw.writerow([avgs.host_comms_avg, 
                      avgs.host_submission_avg,
                      avgs.tpu_comms_avg,
                      avgs.tpu_return_avg,
                      avgs.inference_avg,
-                     avgs.total_avg])
+                     avgs.total_avg,
+                     filesize])
 
     return csv_file
 
@@ -146,14 +167,16 @@ def plot_manager(folder):
     for model_info in models_info:
         model_name = model_info[0]
         filename = model_info[1]
+        filesize = deduce_plot_filesize(filename)
 
         values = read_timestamps(filename)
         avgs = find_avgs(values)
-        results_file = store_avgs(model_name, avgs)
+        results_file = store_avgs(model_name, avgs, filesize)
 
 
 if __name__ == '__main__':
     import os
+    from utils import deduce_filename
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -176,12 +199,15 @@ if __name__ == '__main__':
         plot_manager(args.folder)
 
     elif (args.mode == "Single" and args.target != ""):
-        filename = args.target
-        model_name = deduce_plot_ops(os.path.dirname(
-            os.path.abspath(filename)), filename)
+        filepath = args.target
+        filename_fdr = os.path.dirname(
+                        os.path.abspath(filepath))
 
-        values = read_timestamps(filename)
+        model_name = deduce_filename(filename_fdr, ending=None)
+        filesize = deduce_plot_filesize(model_name)
+
+        values = read_timestamps(filepath)
         avgs = find_avgs(values)
-        results_file = store_avgs(model_name, avgs)
+        results_file = store_avgs(model_name, avgs, filesize)
     else:
         print("Invaild arguments.")
