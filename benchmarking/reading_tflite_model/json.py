@@ -25,6 +25,13 @@ def convert_to_json(file_path, filename):
     os.system(convert_json_cmd)
     os.system(f"mv {filename}.json models/json/")
 
+
+def json_conversion_manager(tflite_model):
+    import os
+    import json
+
+    pass
+
         
 if __name__ == '__main__':
     import sys

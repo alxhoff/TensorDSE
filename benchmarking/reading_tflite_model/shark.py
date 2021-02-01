@@ -233,10 +233,10 @@ def export_analysis(usb_timer, op, append):
                          "end_inference_and_start_tpu_submission",
                          "end_tpu_submission_and_absolute_end"])
 
-            fw.writerow([usb_timer.ts_absolute_begin, #Same as ts_begin_host_send_request.
-                         usb_timer.ts_end_host_send_request, 
+            fw.writerow([usb_timer.ts_absolute_begin,   # Same as ts_begin_host_send_request.
+                         usb_timer.ts_begin_submission, # ts_end_host_requests - negative values
                          usb_timer.ts_end_submission, 
-                         usb_timer.ts_begin_tpu_send_request,
+                         usb_timer.ts_begin_tpu_send_request, # ts_begin_tpu_requests - negative values
                          usb_timer.ts_begin_return, 
                          usb_timer.ts_absolute_end]) #Should be same as ts_end_return.
 
