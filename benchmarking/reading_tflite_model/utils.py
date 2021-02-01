@@ -77,6 +77,18 @@ def create_csv_file(path_file, folder_name, results):
             fw.writerow([results[i][0], results[i][1]])
 
 
+def deduce_filesize(filepath):
+    import os
+    import subprocess
+
+    os.system("du -sh %s | awk '{ print $1 }' > temp"%filepath) 
+    p = subprocess.run(list(["cat", "temp"]), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output = p.stdout.decode()
+
+    os.system("[ -f temp ] && rm temp") 
+    return output.split("\n")[0]
+
+
 def deduce_filename(filepath):
     import os
     from os import listdir

@@ -183,7 +183,7 @@ class UsbPacket:
             raise ValueError("Unacceptable string value.")
 
 
-def export_analysis(usb_timer, op, append):
+def export_analysis(usb_timer, op, append, filesize):
     """Creates CSV file with the relevant usb transfer timestamps.
 
     The csv file will contain a header exposing the names of the variables
@@ -202,27 +202,34 @@ def export_analysis(usb_timer, op, append):
     True - if the csv file has already been created and the new values are to be
     appended to the existent 'Results.csv' file.
 
+    filesize : String
+    Size in Bytes of current op file.
+
     False - if a csv file has to be created, given one doesnt exist yet and then 
     corresponding headers must then be placed.
     """
     import csv
     from utils import extend_directory
 
-    results_file = f"results/usb/{op}/Results.csv"
+    results_dir = "results/usb/"
+    results_folder = f"{op}_{filesize}"
+    results_file = f"results/usb/{op}_{filesize}/Results.csv"
 
     if (append == True):
         with open(results_file, 'a+') as csvfile:
             fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                             quoting=csv.QUOTE_MINIMAL)
 
-            fw.writerow([usb_timer.ts_absolute_begin, #Same as ts_begin_host_send_request.
-                         usb_timer.ts_end_host_send_request, 
+            fw.writerow([usb_timer.ts_absolute_begin,   # Same as ts_begin_host_send_request.
+                         usb_timer.ts_begin_submission, # ts_end_host_requests - negative values
                          usb_timer.ts_end_submission, 
                          usb_timer.ts_begin_tpu_send_request,
-                         usb_timer.ts_begin_return, 
+                         usb_timer.ts_begin_return,  # ts_end_tpu_requests - negative values
                          usb_timer.ts_absolute_end]) #Should be same as ts_end_return.
     else:
+        extend_directory(results_dir, results_folder)
         with open(results_file, 'w') as csvfile:
+
             fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                             quoting=csv.QUOTE_MINIMAL)
 
@@ -236,8 +243,8 @@ def export_analysis(usb_timer, op, append):
             fw.writerow([usb_timer.ts_absolute_begin,   # Same as ts_begin_host_send_request.
                          usb_timer.ts_begin_submission, # ts_end_host_requests - negative values
                          usb_timer.ts_end_submission, 
-                         usb_timer.ts_begin_tpu_send_request, # ts_begin_tpu_requests - negative values
-                         usb_timer.ts_begin_return, 
+                         usb_timer.ts_begin_tpu_send_request,
+                         usb_timer.ts_begin_return,  # ts_end_tpu_requests - negative values
                          usb_timer.ts_absolute_end]) #Should be same as ts_end_return.
 
 
@@ -313,7 +320,7 @@ def shark_usbmon_init():
     os.system(usbmon_cmd)
 
 
-def shark_capture_cont(op, cnt, edge_tpu_id):
+def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
     """Continuouly reads usb packet traffic and retreives the necessary
     timestamps within that cycle.
 
@@ -433,7 +440,7 @@ def shark_capture_cont(op, cnt, edge_tpu_id):
 
         if end_of_comms == True:
             # usb_timer.print_stamps()
-            export_analysis(usb_timer, op, cnt!=0)
+            export_analysis(usb_timer, op, cnt!=0, op_filesize)
             break
 
 
@@ -459,10 +466,9 @@ def shark_manager(folder, count, edge_tpu_id):
     import threading
     import pyshark
     from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy
-    from utils import retrieve_folder_path, extend_directory, deduce_operations_from_folder
+    from utils import retrieve_folder_path, extend_directory, deduce_operations_from_folder, deduce_filesize
 
     global usb_array
-    global check
 
     path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
     docker_copy(path_to_tensorDSE, TO_DOCKER)
@@ -475,15 +481,16 @@ def shark_manager(folder, count, edge_tpu_id):
 
     for m_i in models_info:
         for i in range(cnt):
+            filepath = m_i[0]
             op = m_i[1]
-            print(f"\nOperation: {op}")
 
-            if i == 0:
-                extend_directory(out_dir, op)
+            filesize = deduce_filesize(filepath)
+
+            print(f"\nOperation: {op}")
 
             print("Begun capture.")
             t_1 = threading.Thread(target=shark_capture_cont,
-                                  args=(op, i, edge_tpu_id))
+                                  args=(op, i, edge_tpu_id, filesize))
 
             t_2 = threading.Thread(target=docker_exec, args=(
                     "shark_single_edge_deploy", m_i[0],))
@@ -523,29 +530,27 @@ def shark_single_manager(model, count, edge_tpu_id):
     import threading
     import pyshark
     from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy
-    from utils import retrieve_folder_path, extend_directory, deduce_operation_from_file, deduce_filename
+    from utils import retrieve_folder_path, extend_directory, deduce_operation_from_file, deduce_filename, deduce_filesize
 
     global usb_array
-    global check
 
     path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
     docker_copy(path_to_tensorDSE, TO_DOCKER)
 
     filename = deduce_filename(model)
+    filesize = deduce_filesize(model)
     op = deduce_operation_from_file(f"{filename}.tflite",
-                                    beginning=None,
+                                    beginning="quant_",
                                     ending="_edgetpu.tflite")
     out_dir = "results/usb/"
     cnt = int(count)
 
     for i in range(cnt):
-        if i == 0:
-            extend_directory(out_dir, op)
-
         print(f"\nOperation: {op}")
+
         print("Begun capture.")
         t_1 = threading.Thread(target=shark_capture_cont,
-                              args=(op, i, edge_tpu_id))
+                              args=(op, i, edge_tpu_id, filesize))
 
         t_2 = threading.Thread(target=docker_exec, args=(
                 "shark_single_edge_deploy", model,))
@@ -553,8 +558,8 @@ def shark_single_manager(model, count, edge_tpu_id):
         t_1.start()
         t_2.start()
 
-        t_1.join()
         t_2.join()
+        t_1.join()
 
         print("Ended capture.")
         time.sleep(1)
@@ -598,7 +603,7 @@ if __name__ == '__main__':
     elif (args.mode == "Single"):
         shark_usbmon_init()
         prepare_ulimit()
-        lsusb_identify()
+        edge_tpu_id = lsusb_identify()
         docker_start()
         shark_single_manager(args.target, args.count, edge_tpu_id)
         reset_ulimit()
