@@ -44,7 +44,9 @@ class UsbTimer:
     def print_stamps(self):
         """Function used to debug timing values, prints all important stamps."""
 
+        print()
         print(f"ABSOLUTE BEGINNING: {self.ts_absolute_begin}")
+        print(f"INTERRUPT BEGINNING FROM {self.interrupt_begin_src} ---> {self.interrupt_begin_dst}")
 
         print(f"BEGIN OF REQUESTS (HOST): {self.ts_begin_host_send_request}")
         print(f"END OF REQUESTS (HOST): {self.ts_end_host_send_request}")
@@ -60,6 +62,7 @@ class UsbTimer:
         print(f"END OF SUBMISSION (TPU): {self.ts_end_return}")
 
         print(f"ABSOLUTE END: {self.ts_absolute_end}")
+        print(f"INTERRUPT ENDING FROM {self.interrupt_end_src} ---> {self.interrupt_end_dst}")
 
     def stamp_beginning(self, packet):
         """Saves the overloaded packet's timestamp onto ts_absolute_begin.
@@ -71,10 +74,14 @@ class UsbTimer:
         usb packet. This will be the same attribute for all stamp-like methods.
         """
         self.ts_absolute_begin = packet.frame_info.time_relative
+        self.interrupt_begin_src = packet.usb.src
+        self.interrupt_begin_dst = packet.usb.dst
 
     def stamp_ending(self, packet):
         """Saves the overloaded packet's timestamp onto ts_absolute_end."""
         self.ts_absolute_end = packet.frame_info.time_relative
+        self.interrupt_end_src = packet.usb.src
+        self.interrupt_end_dst = packet.usb.dst
 
     def stamp_begin_host_send_request(self, packet):
         """Saves the overloaded packet's timestamp onto ts_begin_host_send_request."""
@@ -386,14 +393,15 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
             if (beginning_of_comms == False
                     and usb_packet.verify_src(edge_tpu_id, "begin")):
 
-                usb_timer.stamp_beginning(packet)
                 beginning_of_comms = True
+                usb_timer.stamp_beginning(packet)
 
             elif (beginning_of_comms == True
                     and usb_packet.verify_src(edge_tpu_id, "end")):
 
                 end_of_comms = True
                 usb_timer.stamp_ending(packet)
+
             else:
                 pass
 
@@ -450,7 +458,7 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
             pass
 
         if end_of_comms == True:
-            # usb_timer.print_stamps()
+            usb_timer.print_stamps()
             export_analysis(usb_timer, op, cnt != 0, op_filesize)
             break
 
@@ -508,6 +516,9 @@ def shark_manager(folder, count, edge_tpu_id):
 
             t_1.start()
             t_2.start()
+
+            while(t_2.is_alive()):
+                pass
 
             t_2.join()
             t_1.join()
@@ -568,6 +579,9 @@ def shark_single_manager(model, count, edge_tpu_id):
 
         t_1.start()
         t_2.start()
+
+        while(t_2.is_alive()):
+            pass
 
         t_2.join()
         t_1.join()
