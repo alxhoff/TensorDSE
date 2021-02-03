@@ -134,7 +134,7 @@ def log_pdfs(op_classes):
     import csv
 
     for op in op_classes:
-        csv_file = f"{op.path}/{op.op_name}_analysis.csv"
+        csv_file = f"{op.path}/Analysis.csv"
 
         with open(csv_file, 'w') as csvfile:
                 fw = csv.writer(csvfile, delimiter=',', quotechar='|',
@@ -211,7 +211,7 @@ if __name__ == '__main__':
                         default="cpu", 
                         help='Delegates: cpu or edge_tpu.')
 
-    parser.add_argument('-a', '--all', required=False, 
+    parser.add_argument('-m', '--all', required=False, 
                         default=True, 
                         help='Plot all hardware analysis.')
 

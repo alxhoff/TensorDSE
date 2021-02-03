@@ -28,6 +28,19 @@ class UsbTimes():
         self.total_time = total_time
 
 
+def parse_plot_csv(filename):
+    import csv
+
+    ret = []
+
+    with open(filename) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        for row in csv_reader:
+            ret.append(row)
+            
+    return ret
+
+
 def deduce_plot_filesize(model_name):
     import os
     from os import listdir
@@ -56,6 +69,49 @@ def deduce_plot_ops(folder, filename):
 
     return plot_info
 
+def integrate_csv(usb_f, cpu_r, edge_r):
+    import csv
+
+    with open(usb_f, 'a+') as csvfile:
+        fw = csv.writer(csvfile, delimiter=',', quotechar='|',
+                        quoting=csv.QUOTE_MINIMAL)
+
+        for row in cpu_r:
+            fw.writerow(row)
+
+        for row in edge_r:
+            fw.writerow(row)
+
+
+def integrate_results(usb_results_file, op):
+    import os
+    from os import listdir
+    from os.path import isfile, isdir, join
+
+    from utils import deduce_filename, parse_csv
+
+    cpu_results_dir = "results/cpu"
+    edge_results_dir = "results/edge"
+
+    op = deduce_filename(op, ".csv")
+
+    for dirs in listdir(cpu_results_dir):
+        if dirs in op:
+            cpu_filepath = f"{cpu_results_dir}/{dirs}/Analysis.csv"
+            edge_filepath = f"{edge_results_dir}/{dirs}/Analysis.csv"
+
+            cpu_results = parse_plot_csv(cpu_filepath)
+            cpu_results[1][2]  = float(cpu_results[1][2]) * 10**6
+            cpu_results[1][3]  = float(cpu_results[1][3]) * 10**6
+            cpu_results[1][4]  = float(cpu_results[1][4]) * 10**6
+
+            edge_results = parse_plot_csv(edge_filepath)
+            edge_results[1][2] = float(edge_results[1][2]) * 10**6
+            edge_results[1][3] = float(edge_results[1][3]) * 10**6
+            edge_results[1][4] = float(edge_results[1][4]) * 10**6
+
+            integrate_csv(usb_results_file, cpu_results, edge_results)
+
 
 def read_timestamps(filename):
     import os
@@ -68,7 +124,7 @@ def read_timestamps(filename):
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = True
         for row in csv_reader:
-            if (header == True):
+            if (not header):
                 host_comms_time = float(row[1]) - float(row[0])
                 host_submission_time = float(row[2]) - float(row[1])
 
@@ -138,7 +194,7 @@ def store_avgs(filename, avgs, filesize):
 
     from utils import extend_directory
 
-    csv_dir = extend_directory("results/usb_end/", filename)
+    csv_dir = extend_directory("results/plot/", filename)
     csv_file = f"{csv_dir}/Results.csv"
 
     with open(csv_file, 'w') as csvfile:
@@ -170,12 +226,15 @@ def plot_manager(folder):
 
     for model_info in models_info:
         model_name = model_info[0]
-        filename = model_info[1]
-        filesize = deduce_plot_filesize(filename)
+        filepath = model_info[1]
+        filesize = deduce_plot_filesize(filepath)
 
-        values = read_timestamps(filename)
+        values = read_timestamps(filepath)
         avgs = find_avgs(values)
-        results_file = store_avgs(model_name, avgs, filesize)
+        usb_results_file = store_avgs(model_name, avgs, filesize)
+
+        integrate_results(usb_results_file, 
+                            os.path.dirname(os.path.abspath(filepath)))
 
 
 def plot_single_manager(filepath):
@@ -195,7 +254,9 @@ def plot_single_manager(filepath):
 
     values = read_timestamps(filepath)
     avgs = find_avgs(values)
-    results_file = store_avgs(model_name, avgs, filesize)
+    usb_results_file = store_avgs(model_name, avgs, filesize)
+
+    integrate_results(usb_results_file, filename_fdr)
 
 
 if __name__ == '__main__':
@@ -224,14 +285,6 @@ if __name__ == '__main__':
 
     elif (args.mode == "Single" and args.target != ""):
         filepath = args.target
-        filename_fdr = os.path.dirname(
-                        os.path.abspath(filepath))
-
-        model_name = deduce_filename(filename_fdr, ending=None)
-        filesize = deduce_plot_filesize(model_name)
-
-        values = read_timestamps(filepath)
-        avgs = find_avgs(values)
-        results_file = store_avgs(model_name, avgs, filesize)
+        plot_single_manager(filepath)
     else:
         print("Invaild arguments.")
