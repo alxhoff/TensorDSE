@@ -1,3 +1,6 @@
+DEBUG = 0
+
+
 class UsbTimer:
     """Class containing all necessary time stamps regarding usb traffic and
     their methods.
@@ -45,8 +48,8 @@ class UsbTimer:
         """Function used to debug timing values, prints all important stamps."""
 
         print()
-        print(f"ABSOLUTE BEGINNING: {self.ts_absolute_begin}")
         print(f"INTERRUPT BEGINNING FROM {self.interrupt_begin_src} ---> {self.interrupt_begin_dst}")
+        print(f"ABSOLUTE BEGINNING: {self.ts_absolute_begin}")
 
         print(f"BEGIN OF REQUESTS (HOST): {self.ts_begin_host_send_request}")
         print(f"END OF REQUESTS (HOST): {self.ts_end_host_send_request}")
@@ -125,7 +128,7 @@ class UsbPacket:
     """
 
     def __init__(self):
-        pass
+        self.data_presence = "UNALLOCATED"
 
     def find_direction(self, packet):
         """Method that stores the overloaded packet's flag denoting direction
@@ -177,8 +180,10 @@ class UsbPacket:
         if tmp == '>' or tmp == '<':
             return False
         elif tmp == 'present (0)':
+            self.data_presence = True
             return True
         else:
+            self.data_presence = False
             return False
 
     def verify_src(self, edge_tpu_id, string):
@@ -190,6 +195,21 @@ class UsbPacket:
 
         else:
             raise ValueError("Unacceptable string value.")
+
+def debug_usb(usb_array):
+    from tabulate import tabulate
+
+    i = 0
+    for u in usb_array:
+        table = [
+                    [f"USB ({i})", 
+                    f"{u.src} --> {u.dest}", 
+                    f"{u.transfer_type} - {u.urb_type}",
+                    f"{u.data_presence}"]
+                ]
+
+        print(tabulate(table))
+        i += 1
 
 
 def export_analysis(usb_timer, op, append, filesize):
@@ -361,7 +381,7 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
     import os
     import pyshark
 
-    global usb_array
+    usb_array = []
 
     usb_timer = UsbTimer()
 
@@ -378,89 +398,126 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
     capture = pyshark.LiveCapture(
         interface='usbmon0', display_filter=capture_filter)
 
-    for packet in capture.sniff_continuously():
-        usb_packet = UsbPacket()
-        usb_packet.find_direction(packet)
-        usb_packet.find_transfer_type(packet)
-        usb_packet.find_scr_dest(packet)
-        usb_packet.find_urb_type(packet.usb.urb_type)
+    for raw_packet in capture.sniff_continuously():
+        custom_packet = UsbPacket()
+        custom_packet.find_direction(raw_packet)
+        custom_packet.find_transfer_type(raw_packet)
+        custom_packet.find_scr_dest(raw_packet)
+        custom_packet.find_urb_type(raw_packet.usb.urb_type)
 
-        data_is_present = usb_packet.find_data_presence(packet)
+        data_is_present = custom_packet.find_data_presence(raw_packet)
 
         # Checks for beginning and ending of captures, as interrupts appear at these point.
-        if (usb_packet.transfer_type == "INTERRUPT"):
+        if (custom_packet.transfer_type == "INTERRUPT"):
 
             if (beginning_of_comms == False
-                    and usb_packet.verify_src(edge_tpu_id, "begin")):
+                    and custom_packet.verify_src(edge_tpu_id, "begin")):
 
                 beginning_of_comms = True
-                usb_timer.stamp_beginning(packet)
+                usb_timer.stamp_beginning(raw_packet)
+
+                if DEBUG:
+                    usb_array.append(custom_packet)
 
             elif (beginning_of_comms == True
-                    and usb_packet.verify_src(edge_tpu_id, "end")):
+                    and custom_packet.verify_src(edge_tpu_id, "end")):
 
                 end_of_comms = True
-                usb_timer.stamp_ending(packet)
+                usb_timer.stamp_ending(raw_packet)
+
+                if DEBUG:
+                    usb_array.append(custom_packet)
 
             else:
                 pass
 
         # Checks for BULK transfers, as they constitute actual data transfers or
         # connection requests..
-        elif ((usb_packet.transfer_type == "BULK IN"
-               or usb_packet.transfer_type == "BULK OUT")
+        elif ((custom_packet.transfer_type == "BULK IN"
+               or custom_packet.transfer_type == "BULK OUT")
               and beginning_of_comms == True):
 
-            if (usb_packet.urb_type == "SUBMIT" and data_is_present == False):
-                assert (usb_packet.src 
+            if (custom_packet.urb_type == "SUBMIT" and not data_is_present):
+                assert (custom_packet.src 
                         == "host"), "Submit packets should only be from host!"
 
                 if begin_host_send_request == False:
-                    usb_timer.stamp_begin_host_send_request(packet)
+                    usb_timer.stamp_begin_host_send_request(raw_packet)
                     begin_host_send_request = True
 
-                usb_timer.stamp_end_host_send_request(packet)
+                    if DEBUG:
+                        usb_array.append(custom_packet)
 
-            elif (usb_packet.urb_type == "SUBMIT" and data_is_present == True):
-                assert (usb_packet.src 
+                else:
+                    usb_timer.stamp_end_host_send_request(raw_packet)
+
+                    if DEBUG:
+                        usb_array.append(custom_packet)
+
+            elif (custom_packet.urb_type == "SUBMIT" and data_is_present == True):
+                assert (custom_packet.src 
                         == "host"), "Submit packets should only be from host!"
 
                 if beginning_of_submission == False:
-                    usb_timer.stamp_beginning_submission(packet)
+                    usb_timer.stamp_beginning_submission(raw_packet)
                     beginning_of_submission = True
 
-                usb_timer.stamp_src_host(packet)
+                    if DEBUG:
+                        usb_array.append(custom_packet)
+                else:
+                    usb_timer.stamp_src_host(raw_packet)
 
-            elif usb_packet.urb_type == "COMPLETE" and data_is_present == False:
-                assert (usb_packet.src !=
+                    if DEBUG:
+                        usb_array.append(custom_packet)
+
+            elif custom_packet.urb_type == "COMPLETE" and not data_is_present:
+                assert (custom_packet.src !=
                         "host"), "Complete packets should only be from device!"
 
                 if begin_tpu_send_request == False:
-                    usb_timer.stamp_begin_tpu_send_request(packet)
+                    usb_timer.stamp_begin_tpu_send_request(raw_packet)
                     begin_tpu_send_request = True
 
-                usb_timer.stamp_end_tpu_send_request(packet)
+                    if DEBUG:
+                        usb_array.append(custom_packet)
+                else:
+                    usb_timer.stamp_end_tpu_send_request(raw_packet)
 
-            elif (usb_packet.urb_type == "COMPLETE" and data_is_present == True):
-                assert (usb_packet.src !=
+                    if DEBUG:
+                        usb_array.append(custom_packet)
+
+            elif (custom_packet.urb_type == "COMPLETE" and data_is_present == True):
+                assert (custom_packet.src !=
                         "host"), "Complete packets should only be from device!"
 
                 if beginning_of_return == False:
-                    usb_timer.stamp_beginning_return(packet)
+                    usb_timer.stamp_beginning_return(raw_packet)
                     beginning_of_return = True
 
-                usb_timer.stamp_src_device(packet)
+                    if DEBUG:
+                        usb_array.append(custom_packet)
+                else:
+                    usb_timer.stamp_src_device(raw_packet)
+
+                    if DEBUG:
+                        usb_array.append(custom_packet)
 
             else:
-                pass
+                raise ValueError(
+                    "There shouldnt be non Bulk IN/OUT transfers within BULK.")
 
-        else:
+        else: # NON-BULK and NON-INTERRUPT PACKETS
             pass
 
         if end_of_comms == True:
-            usb_timer.print_stamps()
+            if DEBUG:
+                usb_timer.print_stamps()
+                debug_usb(usb_array)
+
+            capture.close()
             export_analysis(usb_timer, op, cnt != 0, op_filesize)
             break
+
 
 
 def shark_manager(folder, count, edge_tpu_id):
@@ -524,7 +581,6 @@ def shark_manager(folder, count, edge_tpu_id):
             t_1.join()
 
             print("Ended capture.")
-            time.sleep(1)
             print("\n")
 
         print("\n")
@@ -605,7 +661,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-m', '--mode', required=False,
                         default="Both",
-                        help='Mode in which the script will run: All, Read, Capture or Deploy.')
+                        help='Mode in which the script will run: All, Single, or Debug.')
 
     parser.add_argument('-f', '--folder', required=False,
                         default="",
@@ -632,6 +688,22 @@ if __name__ == '__main__':
         docker_start()
         shark_single_manager(args.target, args.count, edge_tpu_id)
         reset_ulimit()
+
+    elif (args.mode == "Debug"):
+        from utils import deduce_filename, deduce_filesize, deduce_operation_from_file
+        DEBUG = 1
+
+        shark_usbmon_init()
+        edge_tpu_id = lsusb_identify()
+
+        filename = deduce_filename(args.target)
+        filesize = deduce_filesize(args.target)
+        op = deduce_operation_from_file(f"{filename}.tflite",
+                                        beginning="quant_",
+                                        ending="_edgetpu.tflite")
+
+        shark_capture_cont(op, 0, edge_tpu_id, filesize)
+
 
     else:
         print("Invaild arguments.")

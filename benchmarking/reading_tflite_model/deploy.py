@@ -238,8 +238,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-d', '--delegate',
-                        required=True, help='cpu or edge_tpu.')
+    parser.add_argument('-d', '--delegate', default="",
+                        required=False, help='cpu or edge_tpu.')
 
     parser.add_argument('-m', '--model',
                         help='File path to the .tflite file.')
@@ -259,6 +259,9 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--group_folder', default="",
                         help='Path to folder where the group of models is located. Only accepted in group mode.')
 
+    parser.add_argument('-t', '--debug', default="",
+                        required=False, help='cpu or edge_tpu.')
+
     args = parser.parse_args()
 
     if ("cpu" in args.delegate):
@@ -275,5 +278,28 @@ if __name__ == '__main__':
         else:
             edge_tflite_deployment(args.model, args.name,
                                    args.count, log_performance=(not args.log))
+    elif (args.debug == "ON"):
+        import os
+        from utils import deduce_operations_from_folder, retrieve_folder_path
+        from docker import docker_start, docker_exec, docker_copy, TO_DOCKER
+
+        docker_start()
+        models_info = deduce_operations_from_folder(args.group_folder,
+                                                    beginning="quant_",
+                                                    ending="_edgetpu.tflite")
+
+        path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
+        docker_copy(path_to_tensorDSE, TO_DOCKER)
+
+        for m_i in models_info:
+            inp = input(f"Operation {m_i[1]}, Continue to Next? ")
+            if inp == "":
+                continue
+            elif inp == "c":
+                print("End.")
+                break
+            else:
+                docker_exec("shark_single_edge_deploy", m_i[0])
+
     else:
         print("INVALID delegate input.")

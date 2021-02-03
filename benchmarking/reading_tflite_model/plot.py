@@ -66,9 +66,9 @@ def read_timestamps(filename):
 
     with open(filename) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
-        row_count = 0
+        header = True
         for row in csv_reader:
-            if (row_count != 0):
+            if (header == True):
                 host_comms_time = float(row[1]) - float(row[0])
                 host_submission_time = float(row[2]) - float(row[1])
 
@@ -82,10 +82,14 @@ def read_timestamps(filename):
                                         tpu_comms_time, tpu_return_time,
                                         inference_time, total_time)
 
-                if (tpu_comms_time > 0 and inference_time > 0):
+                if (host_comms_time > 0
+                    and host_submission_time > 0
+                    and tpu_comms_time > 0 
+                    and tpu_return_time > 0 
+                    and inference_time > 0):
                     usb_timers_array.append(usb_timer)
 
-            row_count += 1
+            header = False
 
     return usb_timers_array
 
