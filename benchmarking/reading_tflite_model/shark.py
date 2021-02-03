@@ -44,29 +44,6 @@ class UsbTimer:
         # End of Receiving Data
         self.ts_absolute_end = 0
 
-    def print_stamps(self):
-        """Function used to debug timing values, prints all important stamps."""
-
-        print()
-        print(f"INTERRUPT BEGINNING FROM {self.interrupt_begin_src} ---> {self.interrupt_begin_dst}")
-        print(f"ABSOLUTE BEGINNING: {self.ts_absolute_begin}")
-
-        print(f"BEGIN OF REQUESTS (HOST): {self.ts_begin_host_send_request}")
-        print(f"END OF REQUESTS (HOST): {self.ts_end_host_send_request}")
-
-        print(f"BEGIN OF HOST SENT DATA: {self.ts_begin_submission}")
-        print(f"END OF HOST SENT DATA: {self.ts_end_submission}")
-
-        print(f"BEGIN OF REQUESTS (TPU): {self.ts_begin_tpu_send_request}")
-        print(f"END OF REQUESTS (TPU):{self.ts_end_tpu_send_request}")
-
-        print(
-            f"INFERENCE END/BEGIN OF SUBMISSION (TPU): {self.ts_begin_return}")
-        print(f"END OF SUBMISSION (TPU): {self.ts_end_return}")
-
-        print(f"ABSOLUTE END: {self.ts_absolute_end}")
-        print(f"INTERRUPT ENDING FROM {self.interrupt_end_src} ---> {self.interrupt_end_dst}")
-
     def stamp_beginning(self, packet):
         """Saves the overloaded packet's timestamp onto ts_absolute_begin.
 
@@ -128,7 +105,7 @@ class UsbPacket:
     """
 
     def __init__(self):
-        self.data_presence = "UNALLOCATED"
+        self.data_presence = "Void"
 
     def find_direction(self, packet):
         """Method that stores the overloaded packet's flag denoting direction
@@ -176,15 +153,19 @@ class UsbPacket:
 
     def find_data_presence(self, packet):
         """Finds if the overloaded packet contains actual DATA being sent."""
+
         tmp = packet.usb.data_flag
         if tmp == '>' or tmp == '<':
+            self.data_presence = False
+            return False
+        elif 'not present' in tmp:
+            self.data_presence = False
             return False
         elif tmp == 'present (0)':
             self.data_presence = True
             return True
         else:
-            self.data_presence = False
-            return False
+            raise ValueError("Unknown data presence variable.")
 
     def verify_src(self, edge_tpu_id, string):
         if string == "begin":
@@ -196,20 +177,71 @@ class UsbPacket:
         else:
             raise ValueError("Unacceptable string value.")
 
+def debug_stamps(usb_timer):
+    """Function used to debug timing values, prints all important stamps."""
+    from tabulate import tabulate
+
+    table = [
+                [   
+                f"BEGINNING", f"{usb_timer.ts_absolute_begin}", f"{usb_timer.interrupt_begin_src} ---> {usb_timer.interrupt_begin_dst}"
+                ],
+
+                [
+                f"BEGIN OF REQUESTS (HOST)", f"{usb_timer.ts_begin_host_send_request}"
+                ],
+
+                [
+                f"END OF REQUESTS (HOST)", f"{usb_timer.ts_end_host_send_request}"
+                ],
+
+                [
+                f"BEGIN OF HOST SENT DATA", f"{usb_timer.ts_begin_submission}"
+                ],
+
+                [
+                f"END OF HOST SENT DATA", f"{usb_timer.ts_end_submission}"
+                ],
+
+                [
+                f"BEGIN OF REQUESTS (TPU)", f"{usb_timer.ts_begin_tpu_send_request}"
+                ],
+
+                [
+                f"END OF REQUESTS (TPU)", f"{usb_timer.ts_end_tpu_send_request}"
+                ],
+
+                [
+                f"BEGIN OF SUBMISSION (TPU)", f"{usb_timer.ts_begin_return}"
+                ],
+
+                [
+                f"END OF SUBMISSION (TPU)", f"{usb_timer.ts_end_return}"
+                ],
+
+                [
+                f"END", f"{usb_timer.ts_absolute_end}", f"{usb_timer.interrupt_end_src} ---> {usb_timer.interrupt_end_dst}"
+                ]
+           ]
+
+    print(f"\nTIMESTAMPS\n{tabulate(table)}")
+
 def debug_usb(usb_array):
     from tabulate import tabulate
 
     i = 0
-    for u in usb_array:
-        table = [
-                    [f"USB ({i})", 
-                    f"{u.src} --> {u.dest}", 
-                    f"{u.transfer_type} - {u.urb_type}",
-                    f"{u.data_presence}"]
-                ]
+    print()
+    table = []
+    for u,i in zip(usb_array, range(len(usb_array))):
+        tmp = [
+               f"USB ({i + 1})", 
+               f"{u.src} --> {u.dest}", 
+               f"{u.transfer_type} - {u.urb_type}",
+               f"{u.data_presence}"
+               ]
 
-        print(tabulate(table))
-        i += 1
+        table.append(tmp)
+
+    print(f"USB PACKETS\n{tabulate(table)}")
 
 
 def export_analysis(usb_timer, op, append, filesize):
@@ -511,7 +543,7 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
 
         if end_of_comms == True:
             if DEBUG:
-                usb_timer.print_stamps()
+                debug_stamps(usb_timer)
                 debug_usb(usb_array)
 
             capture.close()
@@ -702,6 +734,7 @@ if __name__ == '__main__':
                                         beginning="quant_",
                                         ending="_edgetpu.tflite")
 
+        print(f"Operation: {op}")
         shark_capture_cont(op, 0, edge_tpu_id, filesize)
 
 
