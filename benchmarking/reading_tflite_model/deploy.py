@@ -112,7 +112,6 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
         edge_results.append([i, inference_time])
-        print(inference_time)
 
     if (log_performance == True):
         create_csv_file(EDGE_FOLDER, model_name, edge_results)
@@ -191,6 +190,7 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
         # END
 
         cpu_results.append([i, inference_time])
+        print(inference_time)
 
     if (log_performance == True):
         create_csv_file(CPU_FOLDER, model_name, cpu_results)
@@ -265,14 +265,14 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if ("cpu" in args.delegate):
+    if ("cpu" in args.delegate and args.debug == ""):
         if (args.group):
             cpu_group_tflite_deployment(
                 args.group_folder, count=args.count, log_performance=(not args.log))
         else:
             cpu_tflite_deployment(args.model, args.name, args.count, args.log)
 
-    elif ("edge_tpu" in args.delegate):
+    elif ("edge_tpu" in args.delegate and args.debug == ""):
         if (args.group):
             edge_group_tflite_deployment(
                 args.group_folder, count=args.count, log_performance=(not args.log))
@@ -300,7 +300,10 @@ if __name__ == '__main__':
                 print("End.")
                 break
             else:
-                docker_exec("shark_single_edge_deploy", m_i[0])
+                if args.delegate == "cpu":
+                    docker_exec("cpu_single_deploy", m_i[0])
+                else:
+                    docker_exec("shark_single_edge_deploy", m_i[0])
 
     else:
         print("INVALID delegate input.")

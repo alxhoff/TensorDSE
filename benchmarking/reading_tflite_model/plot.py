@@ -69,6 +69,20 @@ def deduce_plot_ops(folder, filename):
 
     return plot_info
 
+
+def find_raw_means(cpu_r, edge_r):
+    cnt = 0
+    cpu_mean = 0
+    edge_mean = 0
+
+    for c,e in zip(cpu_r, edge_r):
+        cpu_mean = cpu_mean + c
+        edge_mean = edge_mean + e
+        cnt += 1
+
+    return ((cpu_mean/cnt) * 10**6), ((edge_mean/cnt) * 10**6)
+
+
 def integrate_csv(usb_f, cpu_r, edge_r):
     import csv
 
@@ -76,11 +90,8 @@ def integrate_csv(usb_f, cpu_r, edge_r):
         fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                         quoting=csv.QUOTE_MINIMAL)
 
-        for row in cpu_r:
-            fw.writerow(row)
-
-        for row in edge_r:
-            fw.writerow(row)
+        fw.writerow(["edge", edge_r])
+        fw.writerow(["cpu", cpu_r])
 
 
 def integrate_results(usb_results_file, op):
@@ -97,18 +108,14 @@ def integrate_results(usb_results_file, op):
 
     for dirs in listdir(cpu_results_dir):
         if dirs in op:
-            cpu_filepath = f"{cpu_results_dir}/{dirs}/Analysis.csv"
-            edge_filepath = f"{edge_results_dir}/{dirs}/Analysis.csv"
+            cpu_filepath = f"{cpu_results_dir}/{dirs}/Results.csv"
+            edge_filepath = f"{edge_results_dir}/{dirs}/Results.csv"
 
-            cpu_results = parse_plot_csv(cpu_filepath)
-            cpu_results[1][2]  = float(cpu_results[1][2]) * 10**6
-            cpu_results[1][3]  = float(cpu_results[1][3]) * 10**6
-            cpu_results[1][4]  = float(cpu_results[1][4]) * 10**6
+            cpu_results = parse_csv(cpu_filepath)
+            edge_results = parse_csv(edge_filepath)
 
-            edge_results = parse_plot_csv(edge_filepath)
-            edge_results[1][2] = float(edge_results[1][2]) * 10**6
-            edge_results[1][3] = float(edge_results[1][3]) * 10**6
-            edge_results[1][4] = float(edge_results[1][4]) * 10**6
+            cpu_results, edge_results = find_raw_means(cpu_results, 
+                                                            edge_results)
 
             integrate_csv(usb_results_file, cpu_results, edge_results)
 
