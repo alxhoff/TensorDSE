@@ -183,7 +183,7 @@ def debug_stamps(usb_timer):
 
     table = [
                 [   
-                f"BEGINNING", f"{usb_timer.ts_absolute_begin}", f"{usb_timer.interrupt_begin_src} ---> {usb_timer.interrupt_begin_dst}"
+                f"INTERRUPT BEGIN", f"{usb_timer.ts_absolute_begin}", f"{usb_timer.interrupt_begin_src} ---> {usb_timer.interrupt_begin_dst}"
                 ],
 
                 [
@@ -219,7 +219,7 @@ def debug_stamps(usb_timer):
                 ],
 
                 [
-                f"END", f"{usb_timer.ts_absolute_end}", f"{usb_timer.interrupt_end_src} ---> {usb_timer.interrupt_end_dst}"
+                f"INTERRUPT END", f"{usb_timer.ts_absolute_end}", f"{usb_timer.interrupt_end_src} ---> {usb_timer.interrupt_end_dst}"
                 ]
            ]
 
@@ -286,7 +286,7 @@ def export_analysis(usb_timer, op, append, filesize):
                          usb_timer.ts_end_submission,
                          usb_timer.ts_begin_tpu_send_request,
                          usb_timer.ts_begin_return,  # ts_end_tpu_requests - negative values
-                         usb_timer.ts_absolute_end])  # Should be same as ts_end_return.
+                         usb_timer.ts_end_return])  # Sometimes absolute end doesnt match
     else:
         extend_directory(results_dir, results_folder)
         with open(results_file, 'w') as csvfile:
@@ -306,7 +306,7 @@ def export_analysis(usb_timer, op, append, filesize):
                          usb_timer.ts_end_submission,
                          usb_timer.ts_begin_tpu_send_request,
                          usb_timer.ts_begin_return,  # ts_end_tpu_requests - negative values
-                         usb_timer.ts_absolute_end])  # Should be same as ts_end_return.
+                         usb_timer.ts_end_return])  # Sometimes absolute end doesnt match
 
 
 def prepare_ulimit():
@@ -371,7 +371,7 @@ def lsusb_identify():
             edge_tpu_id = f"{bus}.{device}"
         else:
             raise ValueError(
-                "Unable to identidy Google Coral Bus and Device address.")
+                "Unable to identify Google Coral Bus and Device address.")
 
     os.system("[ -f temp ] && rm temp")
     return edge_tpu_id
@@ -426,7 +426,10 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
     begin_tpu_send_request = False
     beginning_of_return = False
 
-    capture_filter = "usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT"
+    end_of_capture = False
+
+    # capture_filter = "usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT"
+    capture_filter = ""
     capture = pyshark.LiveCapture(
         interface='usbmon0', display_filter=capture_filter)
 
@@ -538,17 +541,21 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
                 raise ValueError(
                     "There shouldnt be non Bulk IN/OUT transfers within BULK.")
 
-        else: # NON-BULK and NON-INTERRUPT PACKETS
-            pass
+        else: # NON-BULK/INTERRUPT PACKETS - CONTROL PACKETS
+            if end_of_comms == True:
+                end_of_capture = True
+                if DEBUG:
+                    usb_array.append(custom_packet)
 
-        if end_of_comms == True:
+        if end_of_capture == True:
             if DEBUG:
                 debug_stamps(usb_timer)
                 debug_usb(usb_array)
 
-            capture.close()
             export_analysis(usb_timer, op, cnt != 0, op_filesize)
             break
+
+    capture.close()
 
 
 
@@ -657,8 +664,8 @@ def shark_single_manager(model, count, edge_tpu_id):
 
     for i in range(cnt):
         print(f"\nOperation: {op}")
-
         print("Begun capture.")
+
         t_1 = threading.Thread(target=shark_capture_cont,
                                args=(op, i, edge_tpu_id, filesize))
 
@@ -673,12 +680,11 @@ def shark_single_manager(model, count, edge_tpu_id):
 
         t_2.join()
         t_1.join()
-
+    
         print("Ended capture.")
+
     print("\n")
 
-
-print("\n")
 
 if __name__ == '__main__':
     import argparse
@@ -696,7 +702,7 @@ if __name__ == '__main__':
                         help='Mode in which the script will run: All, Single, or Debug.')
 
     parser.add_argument('-f', '--folder', required=False,
-                        default="",
+                        default="models/compiled/",
                         help='Folder.')
 
     parser.add_argument('-t', '--target', required=False,
@@ -722,21 +728,30 @@ if __name__ == '__main__':
         reset_ulimit()
 
     elif (args.mode == "Debug"):
-        from utils import deduce_filename, deduce_filesize, deduce_operation_from_file
+        from utils import deduce_filename, deduce_filesize, deduce_operations_from_folder
         DEBUG = 1
 
         shark_usbmon_init()
         edge_tpu_id = lsusb_identify()
 
-        filename = deduce_filename(args.target)
-        filesize = deduce_filesize(args.target)
-        op = deduce_operation_from_file(f"{filename}.tflite",
-                                        beginning="quant_",
-                                        ending="_edgetpu.tflite")
+        models_info = deduce_operations_from_folder(args.folder,
+                                                    beginning="quant_",
+                                                    ending="_edgetpu.tflite")
 
-        print(f"Operation: {op}")
-        shark_capture_cont(op, 0, edge_tpu_id, filesize)
+        for m_i in models_info:
+            filename = m_i[1]
+            filepath = m_i[0]
+            filesize = deduce_filesize(filepath)
+
+            inp = input(f"Operation {m_i[1]}, Continue to Next? ")
+            if inp == "":
+                continue
+            elif inp == "c":
+                print("End.")
+                break
+            else:
+                shark_capture_cont(filename, 0, edge_tpu_id, filesize)
 
 
     else:
-        print("Invaild arguments.")
+        print("Invalid arguments.")

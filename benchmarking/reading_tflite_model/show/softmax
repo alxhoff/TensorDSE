@@ -1,0 +1,55 @@
+TIMESTAMPS
+-------------------------  -------  ----------------
+BEGINNING                  2.2027   host ---> 2.18.3
+BEGIN OF REQUESTS (HOST)   2.2027
+END OF REQUESTS (HOST)     2.20343
+BEGIN OF HOST SENT DATA    2.20319
+END OF HOST SENT DATA      2.20328
+BEGIN OF REQUESTS (TPU)    2.2032
+END OF REQUESTS (TPU)      2.20332
+BEGIN OF SUBMISSION (TPU)  2.20328
+END OF SUBMISSION (TPU)    2.20376
+END                        2.2038   2.18.3 ---> host
+-------------------------  -------  ----------------
+
+USB PACKETS
+--------  ---------------  --------------------  -----
+USB (1)   host --> 2.18.3  INTERRUPT - SUBMIT    False
+USB (2)   host --> 2.18.1  BULK IN - SUBMIT      False
+USB (3)   host --> 2.18.1  BULK IN - SUBMIT      False
+USB (4)   host --> 2.18.1  BULK IN - SUBMIT      False
+USB (5)   host --> 2.18.1  BULK IN - SUBMIT      False
+USB (6)   host --> 2.18.1  BULK IN - SUBMIT      False
+USB (7)   host --> 2.18.1  BULK IN - SUBMIT      False
+USB (8)   host --> 2.18.1  BULK IN - SUBMIT      False
+USB (9)   host --> 2.18.1  BULK IN - SUBMIT      False
+USB (10)  host --> 2.18.1  BULK OUT - SUBMIT     True
+USB (11)  host --> 2.18.1  BULK OUT - SUBMIT     True
+USB (12)  2.18.1 --> host  BULK OUT - COMPLETE   False
+USB (13)  host --> 2.18.1  BULK OUT - SUBMIT     True
+USB (14)  host --> 2.18.1  BULK OUT - SUBMIT     True
+USB (15)  2.18.1 --> host  BULK OUT - COMPLETE   False
+USB (16)  2.18.1 --> host  BULK OUT - COMPLETE   False
+USB (17)  2.18.1 --> host  BULK OUT - COMPLETE   False
+USB (18)  host --> 2.18.1  BULK OUT - SUBMIT     True
+USB (19)  host --> 2.18.1  BULK OUT - SUBMIT     True
+USB (20)  host --> 2.18.1  BULK OUT - SUBMIT     True
+USB (21)  host --> 2.18.1  BULK OUT - SUBMIT     True
+USB (22)  2.18.2 --> host  BULK IN - COMPLETE    True
+USB (23)  2.18.1 --> host  BULK OUT - COMPLETE   False
+USB (24)  2.18.1 --> host  BULK OUT - COMPLETE   False
+USB (25)  2.18.1 --> host  BULK OUT - COMPLETE   False
+USB (26)  2.18.1 --> host  BULK OUT - COMPLETE   False
+USB (27)  host --> 2.18.2  BULK IN - SUBMIT      False
+USB (28)  2.18.1 --> host  BULK IN - COMPLETE    True
+USB (29)  2.18.2 --> host  BULK IN - COMPLETE    True
+USB (30)  host --> 2.18.2  BULK IN - SUBMIT      False
+USB (31)  host --> 2.18.1  BULK IN - SUBMIT      False
+USB (32)  2.18.1 --> host  BULK IN - COMPLETE    True
+USB (33)  2.18.2 --> host  BULK IN - COMPLETE    True
+USB (34)  2.18.1 --> host  BULK IN - COMPLETE    True
+USB (35)  2.18.1 --> host  BULK IN - COMPLETE    True
+USB (36)  2.18.1 --> host  BULK IN - COMPLETE    True
+USB (37)  2.18.3 --> host  INTERRUPT - COMPLETE  True
+--------  ---------------  --------------------  -----
+
