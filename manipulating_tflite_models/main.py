@@ -12,9 +12,9 @@ CONTAINER_SUBMODELS_PATH = "/home/deb/TensorDSE/submodels"
 
 mapping = [[0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],
 [7,2],[8,2],[9,2],[10,2],[11,2],[12,2],[13,2],
-[14,2],[15,0],[16,0],[17,0],[18,0],[19,0],[20,0],
-[21,0],[22,0],[23,0],[24,0],[25,0],[26,0],[27,0],
-[28,0],[29,0],[30,0]]
+[14,2],[15,2],[16,2],[17,2],[18,2],[19,2],[20,2],
+[21,2],[22,2],[23,2],[24,2],[25,2],[26,2],[27,2],
+[28,2],[29,2],[30,0]]
 
 """mapping = [[0,2],[1,2],[2,2],[3,0],[4,2],[5,2],[6,2]]"""
 
@@ -29,21 +29,21 @@ def tflite_model_optimization(log: logging.Logger, main_dir_path: str):
     json_submodels_dir = os.path.join(main_dir_path,"models","submodels","json")
     for file in os.listdir(json_submodels_dir):
         json_file_path = os.path.join(json_submodels_dir,file)
-        utils.delete_file(json_file_path)
+        os.remove(json_file_path)
     tflite_submodels_dir = os.path.join(main_dir_path,"models","submodels","tflite")
     for file in os.listdir(tflite_submodels_dir):
         tflite_file_path = os.path.join(tflite_submodels_dir,file)
-        utils.delete_file(tflite_file_path)
+        os.remove(tflite_file_path)
     
     optimized_model_dir = os.path.join(main_dir_path,"models","optimized_model")
     json_opmodel_dir = os.path.join(optimized_model_dir,"json")
     for file in os.listdir(json_opmodel_dir):
         optimized_model_file_path = os.path.join(json_opmodel_dir,file)
-        utils.delete_file(optimized_model_file_path)
+        os.remove(optimized_model_file_path)
     tflite_opmodel_dir = os.path.join(optimized_model_dir,"tflite")
     for file in os.listdir(tflite_opmodel_dir):
         optimized_model_file_path = os.path.join(tflite_opmodel_dir,file)
-        utils.delete_file(optimized_model_file_path)
+        os.remove(optimized_model_file_path)
 
     log.info("Checking schema...")
     schema_path = os.path.join(main_dir_path,"schema","schema.fbs")
