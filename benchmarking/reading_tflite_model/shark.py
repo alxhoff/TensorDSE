@@ -53,47 +53,47 @@ class UsbTimer:
         This object has as attributes all necessary data regarding an incoming
         usb packet. This will be the same attribute for all stamp-like methods.
         """
-        self.ts_absolute_begin = packet.frame_info.time_relative
+        self.ts_absolute_begin = float(packet.frame_info.time_relative)
         self.interrupt_begin_src = packet.usb.src
         self.interrupt_begin_dst = packet.usb.dst
 
     def stamp_ending(self, packet):
         """Saves the overloaded packet's timestamp onto ts_absolute_end."""
-        self.ts_absolute_end = packet.frame_info.time_relative
+        self.ts_absolute_end = float(packet.frame_info.time_relative)
         self.interrupt_end_src = packet.usb.src
         self.interrupt_end_dst = packet.usb.dst
 
     def stamp_begin_host_send_request(self, packet):
         """Saves the overloaded packet's timestamp onto ts_begin_host_send_request."""
-        self.ts_begin_host_send_request = packet.frame_info.time_relative
+        self.ts_begin_host_send_request = float(packet.frame_info.time_relative)
 
     def stamp_end_host_send_request(self, packet):
         """Saves the overloaded packet's timestamp onto ts_end_host_send_request."""
-        self.ts_end_host_send_request = packet.frame_info.time_relative
+        self.ts_end_host_send_request = float(packet.frame_info.time_relative)
 
     def stamp_beginning_submission(self, packet):
         """Saves the overloaded packet's timestamp onto ts_begin_submission."""
-        self.ts_begin_submission = packet.frame_info.time_relative
+        self.ts_begin_submission = float(packet.frame_info.time_relative)
 
     def stamp_beginning_return(self, packet):
         """Saves the overloaded packet's timestamp onto ts_begin_return."""
-        self.ts_begin_return = packet.frame_info.time_relative
+        self.ts_begin_return = float(packet.frame_info.time_relative)
 
     def stamp_begin_tpu_send_request(self, packet):
         """Saves the overloaded packet's timestamp onto ts_begin_tpu_send_request."""
-        self.ts_begin_tpu_send_request = packet.frame_info.time_relative
+        self.ts_begin_tpu_send_request = float(packet.frame_info.time_relative)
 
     def stamp_end_tpu_send_request(self, packet):
         """Saves the overloaded packet's timestamp onto ts_end_tpu_send_request."""
-        self.ts_end_tpu_send_request = packet.frame_info.time_relative
+        self.ts_end_tpu_send_request = float(packet.frame_info.time_relative)
 
     def stamp_src_host(self, packet):
         """Saves the overloaded packet's timestamp onto ts_end_submission."""
-        self.ts_end_submission = packet.frame_info.time_relative
+        self.ts_end_submission = float(packet.frame_info.time_relative)
 
     def stamp_src_device(self, packet):
         """Saves the overloaded packet's timestamp onto ts_end_return."""
-        self.ts_end_return = packet.frame_info.time_relative
+        self.ts_end_return = float(packet.frame_info.time_relative)
 
 
 class UsbPacket:
@@ -183,43 +183,47 @@ def debug_stamps(usb_timer):
 
     table = [
                 [   
-                f"INTERRUPT BEGIN", f"{usb_timer.ts_absolute_begin}", f"{usb_timer.interrupt_begin_src} ---> {usb_timer.interrupt_begin_dst}"
+                f"INTERRUPT BEGIN", f"{float(usb_timer.ts_absolute_begin)}", f"{usb_timer.interrupt_begin_src} ---> {usb_timer.interrupt_begin_dst}"
                 ],
 
                 [
-                f"BEGIN OF REQUESTS (HOST)", f"{usb_timer.ts_begin_host_send_request}"
+                f"BEGIN OF REQUESTS (HOST)", f"{float(usb_timer.ts_begin_host_send_request)}"
                 ],
 
                 [
-                f"END OF REQUESTS (HOST)", f"{usb_timer.ts_end_host_send_request}"
+                f"END OF REQUESTS (HOST)", f"{float(usb_timer.ts_end_host_send_request)}"
                 ],
 
                 [
-                f"BEGIN OF HOST SENT DATA", f"{usb_timer.ts_begin_submission}"
+                f"BEGIN OF HOST SENT DATA", f"{float(usb_timer.ts_begin_submission)}"
                 ],
 
                 [
-                f"END OF HOST SENT DATA", f"{usb_timer.ts_end_submission}"
+                f"END OF HOST SENT DATA", f"{float(usb_timer.ts_end_submission)}"
                 ],
 
                 [
-                f"BEGIN OF REQUESTS (TPU)", f"{usb_timer.ts_begin_tpu_send_request}"
+                f"BEGIN OF REQUESTS (TPU)", f"{float(usb_timer.ts_begin_tpu_send_request)}"
                 ],
 
                 [
-                f"END OF REQUESTS (TPU)", f"{usb_timer.ts_end_tpu_send_request}"
+                f"END OF REQUESTS (TPU)", f"{float(usb_timer.ts_end_tpu_send_request)}"
                 ],
 
                 [
-                f"BEGIN OF SUBMISSION (TPU)", f"{usb_timer.ts_begin_return}"
+                f"BEGIN OF SUBMISSION (TPU)", f"{float(usb_timer.ts_begin_return)}"
                 ],
 
                 [
-                f"END OF SUBMISSION (TPU)", f"{usb_timer.ts_end_return}"
+                f"END OF SUBMISSION (TPU)", f"{float(usb_timer.ts_end_return)}"
                 ],
 
                 [
-                f"INTERRUPT END", f"{usb_timer.ts_absolute_end}", f"{usb_timer.interrupt_end_src} ---> {usb_timer.interrupt_end_dst}"
+                f"INTERRUPT END", f"{float(usb_timer.ts_absolute_end)}", f"{usb_timer.interrupt_end_src} ---> {usb_timer.interrupt_end_dst}"
+                ],
+
+                [
+                f"TOTAL TIME: {float(float(usb_timer.ts_absolute_end) - float(usb_timer.ts_absolute_begin))}"
                 ]
            ]
 

@@ -1,5 +1,8 @@
-class UsbAverages():
-    def __init__(self, host_comms_avg, host_submission_avg,
+class UsbStats():
+    def __init__(self):
+        pass
+
+    def append_avgs(self, host_comms_avg, host_submission_avg,
                     tpu_comms_avg, tpu_return_avg,
                     inference_avg, total_avg):
 
@@ -12,20 +15,44 @@ class UsbAverages():
         self.inference_avg = inference_avg
         self.total_avg = total_avg
 
+    def append_stds(self, host_comms_std, host_submission_std,
+                    tpu_comms_std, tpu_return_std,
+                    inference_std, total_std):
+
+        self.host_comms_std = host_comms_std
+        self.host_submission_std = host_submission_std
+
+        self.tpu_comms_std = tpu_comms_std
+        self.tpu_return_std = tpu_return_std
+
+        self.inference_std = inference_std
+        self.total_std = total_std
+
 
 class UsbTimes():
-    def __init__(self, host_comms_time, host_submission_time, 
-                    tpu_comms_time, tpu_return_time,
-                    inference_time, total_time):
+    def __init__(self):
 
-        self.host_comms_time = host_comms_time
-        self.host_submission_time = host_submission_time
+        self.host_comms_array = []
+        self.host_submission_array = []
 
-        self.tpu_comms_time = tpu_comms_time
-        self.tpu_return_time = tpu_return_time
+        self.tpu_comms_array = []
+        self.tpu_return_array = []
 
-        self.inference_time = inference_time
-        self.total_time = total_time
+        self.inference_array = []
+        self.total_array = []
+
+    def append_times(self, host_comms_time, host_submission_time, 
+                            tpu_comms_time, tpu_return_time,
+                            inference_time, total_time):
+
+        self.host_comms_array.append(host_comms_time)
+        self.host_submission_array.append(host_submission_time)
+
+        self.tpu_comms_array.append(tpu_comms_time)
+        self.tpu_return_array.append(tpu_return_time)
+
+        self.inference_array.append(inference_time)
+        self.total_array.append(total_time)
 
 
 def parse_plot_csv(filename):
@@ -125,7 +152,7 @@ def read_timestamps(filename):
     import csv
     assert (os.path.exists(filename)), "File doesnt exist."
 
-    usb_timers_array = []
+    usb_times = UsbTimes()
 
     with open(filename) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
@@ -141,61 +168,55 @@ def read_timestamps(filename):
                 inference_time = float(row[4]) - float(row[2])
                 total_time = float(row[5]) - float(row[0])
 
-                usb_timer = UsbTimes(host_comms_time, host_submission_time, 
-                                        tpu_comms_time, tpu_return_time,
-                                        inference_time, total_time)
-
-                if (host_comms_time > 0
-                    and host_submission_time > 0
-                    and tpu_comms_time > 0 
-                    and tpu_return_time > 0 
+                if (host_comms_time > 0 and host_submission_time > 0
+                    and tpu_comms_time > 0 and tpu_return_time > 0 
                     and inference_time > 0):
-                    usb_timers_array.append(usb_timer)
+
+                    usb_times.append_times(host_comms_time, host_submission_time, 
+                                            tpu_comms_time, tpu_return_time,
+                                            inference_time, total_time)
+
 
             header = False
 
-    return usb_timers_array
+    return usb_times
 
 
-def find_avgs(values):
-    i = 0
+def find_stats(values):
+    import statistics
 
-    host_comms_avg = 0
-    host_submission_avg = 0
-    tpu_comms_avg = 0
-    tpu_return_avg = 0
-    inference_avg = 0
-    total_avg = 0
+    usb_stats = UsbStats()
 
-    for u_t in values:
-        host_comms_avg += u_t.host_comms_time
-        host_submission_avg += u_t.host_submission_time
+    host_comms_avg = statistics.mean(values.host_comms_array)
+    host_comms_std = statistics.stdev(values.host_comms_array)
 
-        tpu_comms_avg += u_t.tpu_comms_time
-        tpu_return_avg += u_t.tpu_return_time
-
-        inference_avg += u_t.inference_time
-        total_avg += u_t.total_time
-
-        i += 1
-
-    host_comms_avg = (host_comms_avg / i) * 10**6
-    host_submission_avg = (host_submission_avg / i) * 10**6
-
-    tpu_comms_avg = (tpu_comms_avg / i) * 10**6
-    tpu_return_avg = (tpu_return_avg / i) * 10**6
-
-    inference_avg = (inference_avg / i) * 10**6
-    total_avg = (total_avg / i) * 10**6
-
-    usb_average = UsbAverages(host_comms_avg, host_submission_avg, 
-                                tpu_comms_avg, tpu_return_avg,
-                                inference_avg, total_avg)
-
-    return usb_average
+    host_submission_avg = statistics.mean(values.host_submission_array)
+    host_submission_std = statistics.stdev(values.host_submission_array)
 
 
-def store_avgs(filename, avgs, filesize):
+    tpu_comms_avg = statistics.mean(values.tpu_comms_array)
+    tpu_comms_std = statistics.stdev(values.tpu_comms_array)
+
+    tpu_return_avg = statistics.mean(values.tpu_return_array)
+    tpu_return_std = statistics.stdev(values.tpu_return_array)
+
+    inference_avg = statistics.mean(values.inference_array)
+    inference_std = statistics.stdev(values.inference_array)
+
+    total_avg = statistics.mean(values.total_array)
+    total_std = statistics.stdev(values.total_array)
+
+    usb_stats.append_avgs(host_comms_avg, host_submission_avg, 
+                            tpu_comms_avg, tpu_return_avg,
+                            inference_avg, total_avg)
+    usb_stats.append_stds(host_comms_std, host_submission_std, 
+                            tpu_comms_std, tpu_return_std,
+                            inference_std, total_std)
+
+    return usb_stats
+
+
+def store_stats(filename, stats, filesize):
     import os
     import csv
 
@@ -213,16 +234,35 @@ def store_avgs(filename, avgs, filesize):
                      "tpu_comms_avg",
                      "tpu_return_avg", 
                      "inference_avg",
-                     "total_avg",
-                     "data_size"])
+                     "total_avg"
+                     ])
 
-        fw.writerow([avgs.host_comms_avg, 
-                     avgs.host_submission_avg,
-                     avgs.tpu_comms_avg,
-                     avgs.tpu_return_avg,
-                     avgs.inference_avg,
-                     avgs.total_avg,
-                     filesize])
+        fw.writerow([stats.host_comms_avg, 
+                     stats.host_submission_avg,
+                     stats.tpu_comms_avg,
+                     stats.tpu_return_avg,
+                     stats.inference_avg,
+                     stats.total_avg
+                     ])
+
+        fw.writerow(["host_comms_std",
+                     "host_submission_std", 
+                     "tpu_comms_std",
+                     "tpu_return_std", 
+                     "inference_std",
+                     "total_std"
+                     ])
+
+        fw.writerow([stats.host_comms_std, 
+                     stats.host_submission_std,
+                     stats.tpu_comms_std,
+                     stats.tpu_return_std,
+                     stats.inference_std,
+                     stats.total_std
+                     ])
+
+        fw.writerow(["data_size"])
+        fw.writerow([filesize])
 
     return csv_file
 
@@ -259,9 +299,9 @@ def plot_single_manager(filepath):
     model_name = deduce_filename(filename_fdr, ending=None)
     filesize = deduce_plot_filesize(model_name)
 
-    values = read_timestamps(filepath)
-    avgs = find_avgs(values)
-    usb_results_file = store_avgs(model_name, avgs, filesize)
+    times = read_timestamps(filepath)
+    stats = find_stats(times)
+    usb_results_file = store_stats(model_name, avgs, stddevs, filesize)
 
     integrate_results(usb_results_file, filename_fdr)
 
