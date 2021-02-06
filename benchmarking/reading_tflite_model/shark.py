@@ -313,14 +313,14 @@ def export_analysis(usb_timer, op, append, filesize):
                          usb_timer.ts_end_return])  # Sometimes absolute end doesnt match
 
 
-def prepare_ulimit():
+def prepare_ulimit(limit=4096):
     import logging
     import os
     log = logging.getLogger(__name__)
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
     log.info("Prepping ulimit...")
-    os.system("ulimit -n 4096")
+    os.system(f"ulimit -n {limit}")
 
 
 def reset_ulimit():
@@ -561,9 +561,6 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
 
             break
 
-    # capture.close()
-
-
 
 def shark_manager(folder, count, edge_tpu_id):
     """Manages the two threads that take care of deploying and listening to
@@ -586,6 +583,7 @@ def shark_manager(folder, count, edge_tpu_id):
     from multiprocessing import Process
     from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy
     from utils import retrieve_folder_path, extend_directory, deduce_operations_from_folder, deduce_filesize
+    from plot import plot_manager
 
     global usb_array
 
@@ -605,7 +603,7 @@ def shark_manager(folder, count, edge_tpu_id):
 
             filesize = deduce_filesize(filepath)
 
-            print(f"\nOperation: {op}")
+            print(f"\nOperation {op}: {i+1}/{cnt}")
             print("Begun capture.")
 
             p_1 = Process(target=shark_capture_cont,
@@ -621,8 +619,10 @@ def shark_manager(folder, count, edge_tpu_id):
             p_1.join()
     
         print("Ended capture.")
-
         print("\n")
+
+    usb_results_folder = out_dir
+    plot_manager(usb_results_folder)
 
 
 def shark_single_manager(model, count, edge_tpu_id):
@@ -646,6 +646,7 @@ def shark_single_manager(model, count, edge_tpu_id):
     from multiprocessing import Process
     from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy
     from utils import retrieve_folder_path, extend_directory, deduce_operation_from_file, deduce_filename, deduce_filesize
+    from plot import plot_single_manager
 
     global usb_array
 
@@ -661,7 +662,7 @@ def shark_single_manager(model, count, edge_tpu_id):
     cnt = int(count)
 
     for i in range(cnt):
-        print(f"\nOperation: {op}")
+        print(f"\nOperation {op}: {i+1}/{cnt}")
         print("Begun capture.")
 
         p_1 = Process(target=shark_capture_cont,
@@ -675,10 +676,13 @@ def shark_single_manager(model, count, edge_tpu_id):
 
         p_2.join()
         p_1.join()
-    
+
         print("Ended capture.")
 
     print("\n")
+
+    usb_results_file = f"{out_dir}{op}_{filesize}/Results.csv"
+    plot_single_manager(usb_results_file)
 
 
 if __name__ == '__main__':
@@ -708,7 +712,7 @@ if __name__ == '__main__':
 
     if (args.mode == "All" and args.folder != ""):
         shark_usbmon_init()
-        prepare_ulimit()
+        prepare_ulimit(10096)
         edge_tpu_id = lsusb_identify()
         docker_start()
         shark_manager(args.folder, args.count, edge_tpu_id)

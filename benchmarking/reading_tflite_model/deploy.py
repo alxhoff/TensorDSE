@@ -99,7 +99,9 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
         input_shape), dtype=input_dtype)
     interpreter.set_tensor(input_details[0]['index'], input_data)
 
+    print("EDGE DEPLOYMENT")
     for i in range(count):
+        print(f"{model_name}: {i+1}/{count}")
 
         # INFERENCE TIME
 
@@ -112,8 +114,9 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
         edge_results.append([i, inference_time])
-        print('%.1fms' % (inference_time * 1000))
+        print('(Python) Inference Time %.1fms' % (inference_time * 1000))
 
+    print()
     if (log_performance == True):
         create_csv_file(EDGE_FOLDER, model_name, edge_results)
 
@@ -178,7 +181,9 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
         input_shape), dtype=input_dtype)
     interpreter.set_tensor(input_details[0]['index'], input_data)
 
+    print("CPU DEPLOYMENT")
     for i in range(count):
+        print(f"{model_name}: {i+1}/{count}")
 
         # INFERENCE TIME
         start = time.perf_counter()
@@ -190,8 +195,9 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
         cpu_results.append([i, inference_time])
-        print('%.1fms' % (inference_time * 1000))
+        print('(Python) Inference Time %.1fms' % (inference_time * 1000))
 
+    print()
     if (log_performance == True):
         create_csv_file(CPU_FOLDER, model_name, cpu_results)
 
@@ -257,53 +263,64 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--log', type=bool, default=False,
                         help='Flag to know if the user wishes to log the performance or not.')
 
-    parser.add_argument('-f', '--group_folder', default="",
+    parser.add_argument('-f', '--group_folder', default="models/compiled/",
                         help='Path to folder where the group of models is located. Only accepted in group mode.')
 
-    parser.add_argument('-t', '--debug', default="",
-                        required=False, help='cpu or edge_tpu.')
+    parser.add_argument('-M', '--mode', default="Deploy",
+                        required=False, help='Debug or Deploy, should only be used with source==Host.')
+
+    parser.add_argument('-s', '--source', default="Docker",
+                        required=False, help='Host or Docker.')
 
     args = parser.parse_args()
 
-    if ("cpu" in args.delegate and args.debug == ""):
-        if (args.group):
-            cpu_group_tflite_deployment(
-                args.group_folder, count=args.count, log_performance=(not args.log))
-        else:
-            cpu_tflite_deployment(args.model, args.name, args.count, args.log)
-
-    elif ("edge_tpu" in args.delegate and args.debug == ""):
-        if (args.group):
-            edge_group_tflite_deployment(
-                args.group_folder, count=args.count, log_performance=(not args.log))
-        else:
-            edge_tflite_deployment(args.model, args.name,
-                                   args.count, log_performance=(not args.log))
-    elif (args.debug == "ON"):
-        import os
-        from utils import deduce_operations_from_folder, retrieve_folder_path
-        from docker import docker_start, docker_exec, docker_copy, TO_DOCKER
-
-        docker_start()
-        models_info = deduce_operations_from_folder(args.group_folder,
-                                                    beginning="quant_",
-                                                    ending="_edgetpu.tflite")
-
-        path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
-        docker_copy(path_to_tensorDSE, TO_DOCKER)
-
-        for m_i in models_info:
-            inp = input(f"Operation {m_i[1]}, Continue to Next? ")
-            if inp == "":
-                continue
-            elif inp == "c":
-                print("End.")
-                break
+    if args.source == "Docker":
+        if ("cpu" in args.delegate):
+            if (args.group):
+                cpu_group_tflite_deployment(
+                    args.group_folder, count=args.count, log_performance=(not args.log))
             else:
-                if args.delegate == "cpu":
-                    docker_exec("cpu_single_deploy", m_i[0])
-                else:
-                    docker_exec("shark_single_edge_deploy", m_i[0])
+                cpu_tflite_deployment(args.model, args.name, args.count, args.log)
+
+        elif ("edge_tpu" in args.delegate):
+            if (args.group):
+                edge_group_tflite_deployment(
+                    args.group_folder, count=args.count, log_performance=(not args.log))
+            else:
+                edge_tflite_deployment(args.model, args.name,
+                                       args.count, log_performance=(not args.log))
+        else:
+            print("INVALID delegate input.")
 
     else:
-        print("INVALID delegate input.")
+        if args.mode == "All":
+            tflite_deployment(args.count)
+
+        elif args.mode == "Debug":
+            import os
+            from utils import deduce_operations_from_folder, retrieve_folder_path
+            from docker import docker_start, docker_exec, docker_copy, TO_DOCKER
+
+            docker_start()
+            models_info = deduce_operations_from_folder(args.group_folder,
+                                                        beginning="quant_",
+                                                        ending="_edgetpu.tflite")
+
+            path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
+            docker_copy(path_to_tensorDSE, TO_DOCKER)
+
+            for m_i in models_info:
+                inp = input(f"Operation {m_i[1]}, Continue to Next? ")
+                if inp == "":
+                    continue
+                elif inp == "c":
+                    print("End.")
+                    break
+                else:
+                    if args.delegate == "cpu":
+                        docker_exec("cpu_single_deploy", m_i[0])
+                    else:
+                        docker_exec("shark_single_edge_deploy", m_i[0])
+
+        else:
+            print("INVALID delegate input.")

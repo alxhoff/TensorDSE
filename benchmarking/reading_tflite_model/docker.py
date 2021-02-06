@@ -1,4 +1,4 @@
-CONVERTED_MODELS_DIR = "models/single_layer_models"
+CONVERTED_MODELS_DIR = "models/layers"
 TO_DOCKER = 1
 FROM_DOCKER = 0
 
@@ -92,10 +92,10 @@ def docker_exec(cmd_type, objct=""):
     edge_compiler_suffix = f"{objct} -o {HOME}/comp"
 
     cd_deploy_dir = f"cd {HOME}TensorDSE/benchmarking/reading_tflite_model/"
-    edge_deploy = f"sudo python3 deploy.py -g True -f models/tpu_compiled_models/ -d edge_tpu -c {count}"
-    shark_edge_deploy = f"sudo python3 deploy.py -g True -l False -f models/tpu_compiled_models/ -d edge_tpu -c {count}"
+    edge_deploy = f"sudo python3 deploy.py -g True -f models/compiled/ -d edge_tpu -c {count}"
+    shark_edge_deploy = f"sudo python3 deploy.py -g True -l False -f models/compiled/ -d edge_tpu -c {count}"
     shark_single_edge_deploy = f"sudo python3 deploy.py -l False -d edge_tpu -c 1 -m {objct}"
-    cpu_deploy = f"sudo python3 deploy.py -g True -f models/single_layer_models/ -d cpu -c {count}"
+    cpu_deploy = f"sudo python3 deploy.py -g True -f models/layers/ -d cpu -c {count}"
     cpu_single_deploy = f"sudo python3 deploy.py -l False -d cpu -c 1 -m {objct}"
 
     docker_exec_dict = {
@@ -173,6 +173,6 @@ def copy_quantized_files_to_dckr(quant_sources):
 def copy_compiled_files_from_dckr():
     """Copys edge compiled tflite models/files from docker to the host."""
     import os
-    docker_copy(HOME + "/comp", FROM_DOCKER, Location="models/tpu_compiled_models/")
-    os.system("cp models/tpu_compiled_models/comp/*edgetpu.tflite models/tpu_compiled_models/")
-    os.system("rm -r models/tpu_compiled_models/comp/")
+    docker_copy(HOME + "/comp", FROM_DOCKER, Location="models/compiled/")
+    os.system("cp models/compiled/comp/*edgetpu.tflite models/compiled/")
+    os.system("rm -r models/compiled/comp/")

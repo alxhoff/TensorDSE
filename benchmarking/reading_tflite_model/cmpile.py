@@ -121,7 +121,7 @@ def single_tflite_compilation(target, target_filename):
 
     docker_copy(target, TO_DOCKER)
     docker_exec("edgetpu_compiler", docker_copied_file)
-    docker_copy(docker_compiled_file, FROM_DOCKER, "models/tpu_compiled_models/")
+    docker_copy(docker_compiled_file, FROM_DOCKER, "models/compiled/")
 
 
 def tflite_compilation():

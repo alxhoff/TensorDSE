@@ -117,15 +117,29 @@ def integrate_csv(usb_f, cpu_r, edge_r):
         fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                         quoting=csv.QUOTE_MINIMAL)
 
-        fw.writerow(["edge", edge_r])
-        fw.writerow(["cpu", cpu_r])
+        # MEAN STDDEV MEDIAN
+
+        fw.writerow(["edge"])
+        fw.writerow([
+                        "mean", "stddev", "median"
+                    ])
+        fw.writerow([
+                        10**6*float(edge_r[0]), 10**6*float(edge_r[0]), 10**6*float(edge_r[0])
+                    ])
+
+        fw.writerow(["cpu"])
+        fw.writerow([
+                        "mean", "stddev", "median"
+                    ])
+        fw.writerow([
+                        10**6*float(cpu_r[0]), 10**6*float(cpu_r[0]), 10**6*float(cpu_r[0])
+                    ])
 
 
 def integrate_results(usb_results_file, op):
     import os
     from os import listdir
     from os.path import isfile, isdir, join
-
     from utils import deduce_filename, parse_csv
 
     cpu_results_dir = "results/cpu"
@@ -141,8 +155,7 @@ def integrate_results(usb_results_file, op):
             cpu_results = parse_csv(cpu_filepath)
             edge_results = parse_csv(edge_filepath)
 
-            cpu_results, edge_results = find_raw_means(cpu_results, 
-                                                            edge_results)
+            cpu_results, edge_results = find_python_stats(cpu_results, edge_results)
 
             integrate_csv(usb_results_file, cpu_results, edge_results)
 
@@ -209,11 +222,20 @@ def find_stats(values):
     usb_stats.append_avgs(host_comms_avg, host_submission_avg, 
                             tpu_comms_avg, tpu_return_avg,
                             inference_avg, total_avg)
+
     usb_stats.append_stds(host_comms_std, host_submission_std, 
                             tpu_comms_std, tpu_return_std,
                             inference_std, total_std)
 
     return usb_stats
+
+def find_python_stats(cpu_r, edge_r):
+    import statistics
+
+    cpu_r = [statistics.mean(cpu_r), statistics.stdev(cpu_r), statistics.median(cpu_r)]
+    edge_r = [statistics.mean(edge_r), statistics.stdev(edge_r), statistics.median(edge_r)]
+
+    return cpu_r, edge_r
 
 
 def store_stats(filename, stats, filesize):
@@ -237,12 +259,12 @@ def store_stats(filename, stats, filesize):
                      "total_avg"
                      ])
 
-        fw.writerow([stats.host_comms_avg, 
-                     stats.host_submission_avg,
-                     stats.tpu_comms_avg,
-                     stats.tpu_return_avg,
-                     stats.inference_avg,
-                     stats.total_avg
+        fw.writerow([10**6 * float(stats.host_comms_avg), 
+                     10**6 * float(stats.host_submission_avg),
+                     10**6 * float(stats.tpu_comms_avg),
+                     10**6 * float(stats.tpu_return_avg),
+                     10**6 * float(stats.inference_avg),
+                     10**6 * float(stats.total_avg)
                      ])
 
         fw.writerow(["host_comms_std",
@@ -253,16 +275,19 @@ def store_stats(filename, stats, filesize):
                      "total_std"
                      ])
 
-        fw.writerow([stats.host_comms_std, 
-                     stats.host_submission_std,
-                     stats.tpu_comms_std,
-                     stats.tpu_return_std,
-                     stats.inference_std,
-                     stats.total_std
+        fw.writerow([10**6 * float(stats.host_comms_std), 
+                     10**6 * float(stats.host_submission_std),
+                     10**6 * float(stats.tpu_comms_std),
+                     10**6 * float(stats.tpu_return_std),
+                     10**6 * float(stats.inference_std),
+                     10**6 * float(stats.total_std)
                      ])
 
-        fw.writerow(["data_size"])
-        fw.writerow([filesize])
+        fw.writerow([])
+
+        fw.writerow(["data_size", filesize])
+
+        fw.writerow([])
 
     return csv_file
 
@@ -272,19 +297,11 @@ def plot_manager(folder):
     models_info = deduce_plot_ops(folder, "Results.csv")
 
     for model_info in models_info:
-        model_name = model_info[0]
+        op = model_info[0]
         filepath = model_info[1]
-        filesize = deduce_plot_filesize(filepath)
+        plot_single_manager(filepath, op)
 
-        values = read_timestamps(filepath)
-        avgs = find_avgs(values)
-        usb_results_file = store_avgs(model_name, avgs, filesize)
-
-        integrate_results(usb_results_file, 
-                            os.path.dirname(os.path.abspath(filepath)))
-
-
-def plot_single_manager(filepath):
+def plot_single_manager(filepath, op=""):
     import os
     import logging
     from utils import deduce_filename
@@ -292,7 +309,7 @@ def plot_single_manager(filepath):
     log = logging.getLogger(__name__)
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-    log.info("Obtaining averages...")
+    log.info(f"Compiling plot results: {op}...")
     filename_fdr = os.path.dirname(
                     os.path.abspath(filepath))
 
@@ -301,7 +318,7 @@ def plot_single_manager(filepath):
 
     times = read_timestamps(filepath)
     stats = find_stats(times)
-    usb_results_file = store_stats(model_name, avgs, stddevs, filesize)
+    usb_results_file = store_stats(model_name, stats, filesize)
 
     integrate_results(usb_results_file, filename_fdr)
 

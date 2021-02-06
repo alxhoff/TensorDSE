@@ -10,15 +10,14 @@ class Operation:
         self.std_dev = 0
 
     def get_basic_info(self):
-        import numpy as np
-        import pandas as pd
+        from statistics import mean, median, stdev
 
         data = self.samples
         total = len(self.samples)
 
-        self.std_dev = np.std(data, dtype = np.float64)
-        self.mean = np.mean(data, dtype = np.float64)
-        self.median = np.median(data)
+        self.std_dev = stdev(data)
+        self.mean = mean(data)
+        self.median = median(data)
 
     def best_fit_distribution(self, bins=1000, ax=None):
         """Model data by finding best fit distribution to data"""
@@ -140,11 +139,11 @@ def log_pdfs(op_classes):
                 fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                             quoting=csv.QUOTE_MINIMAL)
 
-                fw.writerow(["op", "num_of_samples", 
+                fw.writerow(["num_of_samples", 
                              "mean", "median", 
                              "std_dev", "pdf"])
 
-                fw.writerow([op.op_name, str(len(op.samples)), 
+                fw.writerow([str(len(op.samples)), 
                              str(op.mean), str(op.median),
                              str(op.std_dev), str(op.dist_name)])
 
