@@ -15,6 +15,7 @@ sudo docker ps -a
 sudo docker pull debian
 sudo docker --name debian-docker -it -d debian
 sudo docker run --name <docker_name> --privileged -v /dev/bus/usb:/dev/bus/usb -it -d debian
+(ALLOWS USB USE/PERMISSIONS)
 
 -- DOCKER START --
 sudo docker start <docker_name>

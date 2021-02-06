@@ -127,6 +127,8 @@ def integrate_csv(usb_f, cpu_r, edge_r):
                         10**6*float(edge_r[0]), 10**6*float(edge_r[0]), 10**6*float(edge_r[0])
                     ])
 
+        fw.writerow([])
+
         fw.writerow(["cpu"])
         fw.writerow([
                         "mean", "stddev", "median"
