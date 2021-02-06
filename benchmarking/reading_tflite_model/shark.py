@@ -555,11 +555,13 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
             if DEBUG:
                 debug_stamps(usb_timer)
                 debug_usb(usb_array)
+                # export_analysis(usb_timer, op, cnt != 0, op_filesize)
+            else:
+                export_analysis(usb_timer, op, cnt != 0, op_filesize)
 
-            export_analysis(usb_timer, op, cnt != 0, op_filesize)
             break
 
-    capture.close()
+    # capture.close()
 
 
 
@@ -581,9 +583,7 @@ def shark_manager(folder, count, edge_tpu_id):
     Characterizes the folder where the compiled edge tflite models are located.
     """
     import os
-    import time
-    import threading
-    import pyshark
+    from multiprocessing import Process
     from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy
     from utils import retrieve_folder_path, extend_directory, deduce_operations_from_folder, deduce_filesize
 
@@ -606,25 +606,21 @@ def shark_manager(folder, count, edge_tpu_id):
             filesize = deduce_filesize(filepath)
 
             print(f"\nOperation: {op}")
-
             print("Begun capture.")
-            t_1 = threading.Thread(target=shark_capture_cont,
-                                   args=(op, i, edge_tpu_id, filesize))
 
-            t_2 = threading.Thread(target=docker_exec, args=(
-                "shark_single_edge_deploy", m_i[0],))
+            p_1 = Process(target=shark_capture_cont,
+                            args=(op, i, edge_tpu_id, filesize))
 
-            t_1.start()
-            t_2.start()
+            p_2 = Process(target=docker_exec, 
+                            args=("shark_single_edge_deploy", filepath,))
 
-            while(t_2.is_alive()):
-                pass
+            p_1.start()
+            p_2.start()
 
-            t_2.join()
-            t_1.join()
-
-            print("Ended capture.")
-            print("\n")
+            p_2.join()
+            p_1.join()
+    
+        print("Ended capture.")
 
         print("\n")
 
@@ -647,9 +643,7 @@ def shark_single_manager(model, count, edge_tpu_id):
     Characterizes the folder where the compiled edge tflite models are located.
     """
     import os
-    import time
-    import threading
-    import pyshark
+    from multiprocessing import Process
     from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy
     from utils import retrieve_folder_path, extend_directory, deduce_operation_from_file, deduce_filename, deduce_filesize
 
@@ -670,20 +664,17 @@ def shark_single_manager(model, count, edge_tpu_id):
         print(f"\nOperation: {op}")
         print("Begun capture.")
 
-        t_1 = threading.Thread(target=shark_capture_cont,
-                               args=(op, i, edge_tpu_id, filesize))
+        p_1 = Process(target=shark_capture_cont,
+                        args=(op, i, edge_tpu_id, filesize))
 
-        t_2 = threading.Thread(target=docker_exec, args=(
-            "shark_single_edge_deploy", model,))
+        p_2 = Process(target=docker_exec, 
+                        args=("shark_single_edge_deploy", model,))
 
-        t_1.start()
-        t_2.start()
+        p_1.start()
+        p_2.start()
 
-        while(t_2.is_alive()):
-            pass
-
-        t_2.join()
-        t_1.join()
+        p_2.join()
+        p_1.join()
     
         print("Ended capture.")
 
