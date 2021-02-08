@@ -67,6 +67,18 @@ def parse_plot_csv(filename):
             
     return ret
 
+def deduce_plot_filename(model_name):
+    num = model_name.count('_')
+    op = ""
+
+    for i in range(num):
+        if i < num - 1:
+            op = f"{op}{model_name.split('_')[i]}_"
+        else:
+            op = f"{op}{model_name.split('_')[i]}"
+
+    return op
+
 
 def deduce_plot_filesize(model_name):
     import os
@@ -129,35 +141,42 @@ def integrate_csv(usb_f, cpu_r, edge_r):
 
         fw.writerow([])
 
-        fw.writerow(["cpu"])
-        fw.writerow([
-                        "mean", "stddev", "median"
-                    ])
-        fw.writerow([
-                        10**6*float(cpu_r[0]), 10**6*float(cpu_r[0]), 10**6*float(cpu_r[0])
-                    ])
+        if cpu_r != None:
+            fw.writerow(["cpu"])
+            fw.writerow([
+                            "mean", "stddev", "median"
+                        ])
+            fw.writerow([
+                            10**6*float(cpu_r[0]), 10**6*float(cpu_r[0]), 10**6*float(cpu_r[0])
+                        ])
 
 
 def integrate_results(usb_results_file, op):
     import os
     from os import listdir
-    from os.path import isfile, isdir, join
-    from utils import deduce_filename, parse_csv
+    from os.path import isfile
+    from utils import parse_csv, deduce_filename
 
     cpu_results_dir = "results/cpu"
     edge_results_dir = "results/edge"
 
-    op = deduce_filename(op, ".csv")
+    op = deduce_filename(op)
+    op = deduce_plot_filename(op)
 
-    for dirs in listdir(cpu_results_dir):
-        if dirs in op:
+    for dirs in listdir(edge_results_dir):
+        if dirs == op:
             cpu_filepath = f"{cpu_results_dir}/{dirs}/Results.csv"
             edge_filepath = f"{edge_results_dir}/{dirs}/Results.csv"
 
-            cpu_results = parse_csv(cpu_filepath)
-            edge_results = parse_csv(edge_filepath)
+            if isfile(cpu_filepath):
+                cpu_results = parse_csv(cpu_filepath)
+                edge_results = parse_csv(edge_filepath)
+                cpu_results, edge_results = find_python_stats(cpu_results, edge_results)
+            else:
+                cpu_results = None
+                edge_results = parse_csv(edge_filepath)
+                edge_results = find_python_stats(cpu_results, edge_results)
 
-            cpu_results, edge_results = find_python_stats(cpu_results, edge_results)
 
             integrate_csv(usb_results_file, cpu_results, edge_results)
 
@@ -169,6 +188,8 @@ def read_timestamps(filename):
 
     usb_times = UsbTimes()
 
+    cnt = 0
+    valid_cnt = 0
     with open(filename) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = True
@@ -187,14 +208,17 @@ def read_timestamps(filename):
                     and tpu_comms_time > 0 and tpu_return_time > 0 
                     and inference_time > 0):
 
+                    valid_cnt += 1
                     usb_times.append_times(host_comms_time, host_submission_time, 
                                             tpu_comms_time, tpu_return_time,
                                             inference_time, total_time)
 
+                cnt += 1
+
 
             header = False
 
-    return usb_times
+    return usb_times, f"{valid_cnt}/{cnt}"
 
 
 def find_stats(values):
@@ -234,13 +258,16 @@ def find_stats(values):
 def find_python_stats(cpu_r, edge_r):
     import statistics
 
-    cpu_r = [statistics.mean(cpu_r), statistics.stdev(cpu_r), statistics.median(cpu_r)]
-    edge_r = [statistics.mean(edge_r), statistics.stdev(edge_r), statistics.median(edge_r)]
+    if cpu_r != None:
+        cpu_r = [statistics.mean(cpu_r), statistics.stdev(cpu_r), statistics.median(cpu_r)]
+        edge_r = [statistics.mean(edge_r), statistics.stdev(edge_r), statistics.median(edge_r)]
+        return cpu_r, edge_r
+    else:
+        edge_r = [statistics.mean(edge_r), statistics.stdev(edge_r), statistics.median(edge_r)]
+        return edge_r
 
-    return cpu_r, edge_r
 
-
-def store_stats(filename, stats, filesize):
+def store_stats(filename, stats, filesize, valid_str):
     import os
     import csv
 
@@ -252,6 +279,13 @@ def store_stats(filename, stats, filesize):
     with open(csv_file, 'w') as csvfile:
         fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                         quoting=csv.QUOTE_MINIMAL)
+
+
+        fw.writerow(["Operation", filename])
+        fw.writerow(["Data Size", filesize])
+        fw.writerow(["valid", valid_str])
+
+        fw.writerow([])
 
         fw.writerow(["host_comms_avg",
                      "host_submission_avg", 
@@ -269,6 +303,7 @@ def store_stats(filename, stats, filesize):
                      10**6 * float(stats.total_avg)
                      ])
 
+        fw.writerow([])
         fw.writerow(["host_comms_std",
                      "host_submission_std", 
                      "tpu_comms_std",
@@ -284,10 +319,6 @@ def store_stats(filename, stats, filesize):
                      10**6 * float(stats.inference_std),
                      10**6 * float(stats.total_std)
                      ])
-
-        fw.writerow([])
-
-        fw.writerow(["data_size", filesize])
 
         fw.writerow([])
 
@@ -318,9 +349,9 @@ def plot_single_manager(filepath, op=""):
     model_name = deduce_filename(filename_fdr, ending=None)
     filesize = deduce_plot_filesize(model_name)
 
-    times = read_timestamps(filepath)
+    times, valid_str = read_timestamps(filepath)
     stats = find_stats(times)
-    usb_results_file = store_stats(model_name, stats, filesize)
+    usb_results_file = store_stats(model_name, stats, filesize, valid_str)
 
     integrate_results(usb_results_file, filename_fdr)
 
