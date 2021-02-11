@@ -95,18 +95,20 @@ def docker_exec(cmd_type, objct=""):
     edge_deploy = f"sudo python3 deploy.py -g True -f models/compiled/ -d edge_tpu -c {count}"
     shark_edge_deploy = f"sudo python3 deploy.py -g True -l False -f models/compiled/ -d edge_tpu -c {count}"
     shark_single_edge_deploy = f"sudo python3 deploy.py -l False -d edge_tpu -c 1 -m {objct}"
+    shark_single_edge_deploy_log = f"sudo python3 deploy.py -d edge_tpu -c 1 -m {objct}"
     cpu_deploy = f"sudo python3 deploy.py -g True -f models/layers/ -d cpu -c {count}"
     cpu_single_deploy = f"sudo python3 deploy.py -l False -d cpu -c 1 -m {objct}"
 
     docker_exec_dict = {
-        "mkdir"                     : [docker_exec_prefix, place_within_quotes(f"{mkdir_prefix} mkdir {HOME}{objct}")],
-        "edgetpu_compiler"          : [docker_exec_prefix, place_within_quotes(f"edgetpu_compiler -s {edge_compiler_suffix}")],
-        "edge_python_deploy"        : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {edge_deploy}")],
-        "shark_edge_python_deploy"  : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {shark_edge_deploy}")],
-        "shark_single_edge_deploy"  : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {shark_single_edge_deploy}")],
-        "cpu_single_deploy"         : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {cpu_single_deploy}")],
-        "cpu_python_deploy"         : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {cpu_deploy}")],
-        ""                          : None
+        "mkdir"                         : [docker_exec_prefix, place_within_quotes(f"{mkdir_prefix} mkdir {HOME}{objct}")],
+        "edgetpu_compiler"              : [docker_exec_prefix, place_within_quotes(f"edgetpu_compiler -s {edge_compiler_suffix}")],
+        "edge_python_deploy"            : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {edge_deploy}")],
+        "shark_edge_python_deploy"      : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {shark_edge_deploy}")],
+        "shark_single_edge_deploy"      : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {shark_single_edge_deploy}")],
+        "shark_single_edge_deploy_log"  : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {shark_single_edge_deploy_log}")],
+        "cpu_single_deploy"             : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {cpu_single_deploy}")],
+        "cpu_python_deploy"             : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {cpu_deploy}")],
+        ""                              : None
     }
 
     default = None

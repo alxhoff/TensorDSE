@@ -28,6 +28,7 @@ class UsbTimer:
 
         # End of host sent data to device(TPU).
         self.ts_end_submission = 0
+        self.ts_end_submission_soft = 0
 
         # First TPU sent request before actual data was sent to the CPU.
         self.ts_begin_tpu_send_request = 0
@@ -78,6 +79,7 @@ class UsbTimer:
     def stamp_beginning_return(self, packet):
         """Saves the overloaded packet's timestamp onto ts_begin_return."""
         self.ts_begin_return = float(packet.frame_info.time_relative)
+        self.ts_end_submission_soft = float(self.ts_end_submission)
 
     def stamp_begin_tpu_send_request(self, packet):
         """Saves the overloaded packet's timestamp onto ts_begin_tpu_send_request."""
@@ -223,7 +225,7 @@ def debug_stamps(usb_timer):
                 ],
 
                 [
-                f"TOTAL TIME: {float(float(usb_timer.ts_absolute_end) - float(usb_timer.ts_absolute_begin))}"
+                f"TOTAL TIME: {10**3 * float(float(usb_timer.ts_end_return) - float(usb_timer.ts_absolute_begin))}ms"
                 ]
            ]
 
@@ -285,12 +287,15 @@ def export_analysis(usb_timer, op, append, filesize):
             fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                             quoting=csv.QUOTE_MINIMAL)
 
-            fw.writerow([usb_timer.ts_absolute_begin,   # Same as ts_begin_host_send_request.
-                         usb_timer.ts_begin_submission,  # ts_end_host_requests - negative values
-                         usb_timer.ts_end_submission,
-                         usb_timer.ts_begin_tpu_send_request,
-                         usb_timer.ts_begin_return,  # ts_end_tpu_requests - negative values
-                         usb_timer.ts_end_return])  # Sometimes absolute end doesnt match
+            fw.writerow([usb_timer.ts_absolute_begin,             # Begin
+                         usb_timer.ts_begin_submission,           # Begin Host Sub
+                         usb_timer.ts_end_submission_soft,        # End Host Sub / There are issues with ts_end_submission
+                         usb_timer.ts_end_submission_soft,        # Begin TPU Request / ts_begin_tpu_send_request causes negative values
+                         usb_timer.ts_begin_return,               # Begin TPU Sub/Return
+                         usb_timer.ts_end_return,                 # End TPU Sub/Return
+                         (usb_timer.ts_end_return - usb_timer.ts_absolute_begin),
+                         (10**6 *  (usb_timer.ts_end_return - usb_timer.ts_absolute_begin))
+                         ])
     else:
         extend_directory(results_dir, results_folder)
         with open(results_file, 'w') as csvfile:
@@ -303,14 +308,19 @@ def export_analysis(usb_timer, op, append, filesize):
                          "end_host_submission_and_start_inference",
                          "start_tpu_request",
                          "end_inference_and_start_tpu_submission",
-                         "end_tpu_submission_and_absolute_end"])
+                         "end_tpu_submission_and_absolute_end",
+                         "total_time_sec",
+                         "total_time_uS"])
 
-            fw.writerow([usb_timer.ts_absolute_begin,   # Same as ts_begin_host_send_request.
-                         usb_timer.ts_begin_submission,  # ts_end_host_requests - negative values
-                         usb_timer.ts_end_submission,
-                         usb_timer.ts_begin_tpu_send_request,
-                         usb_timer.ts_begin_return,  # ts_end_tpu_requests - negative values
-                         usb_timer.ts_end_return])  # Sometimes absolute end doesnt match
+            fw.writerow([usb_timer.ts_absolute_begin,             # Begin
+                         usb_timer.ts_begin_submission,           # Begin Host Sub
+                         usb_timer.ts_end_submission_soft,        # End Host Sub / There are issues with ts_end_submission
+                         usb_timer.ts_end_submission_soft,        # Begin TPU Request / ts_begin_tpu_send_request causes negative values
+                         usb_timer.ts_begin_return,               # Begin TPU Sub/Return
+                         usb_timer.ts_end_return,                 # End TPU Sub/Return
+                         (usb_timer.ts_end_return - usb_timer.ts_absolute_begin),
+                         (10**6 *  (usb_timer.ts_end_return - usb_timer.ts_absolute_begin))
+                         ])
 
 
 def prepare_ulimit(limit=4096):
@@ -476,7 +486,9 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
                or custom_packet.transfer_type == "BULK OUT")
               and beginning_of_comms == True):
 
-            if (custom_packet.urb_type == "SUBMIT" and not data_is_present):
+            if (custom_packet.urb_type == "SUBMIT" 
+                    and not data_is_present
+                    and not beginning_of_submission):
                 assert (custom_packet.src 
                         == "host"), "Submit packets should only be from host!"
 
@@ -484,16 +496,13 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
                     usb_timer.stamp_begin_host_send_request(raw_packet)
                     begin_host_send_request = True
 
-                    if DEBUG:
-                        usb_array.append(custom_packet)
+                usb_timer.stamp_end_host_send_request(raw_packet)
 
-                else:
-                    usb_timer.stamp_end_host_send_request(raw_packet)
+                if DEBUG:
+                    usb_array.append(custom_packet)
 
-                    if DEBUG:
-                        usb_array.append(custom_packet)
-
-            elif (custom_packet.urb_type == "SUBMIT" and data_is_present == True):
+            elif (custom_packet.urb_type == "SUBMIT" 
+                    and data_is_present):
                 assert (custom_packet.src 
                         == "host"), "Submit packets should only be from host!"
 
@@ -501,15 +510,15 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
                     usb_timer.stamp_beginning_submission(raw_packet)
                     beginning_of_submission = True
 
-                    if DEBUG:
-                        usb_array.append(custom_packet)
-                else:
-                    usb_timer.stamp_src_host(raw_packet)
+                usb_timer.stamp_src_host(raw_packet)
+                    
+                if DEBUG:
+                    usb_array.append(custom_packet)
 
-                    if DEBUG:
-                        usb_array.append(custom_packet)
 
-            elif custom_packet.urb_type == "COMPLETE" and not data_is_present:
+            elif (custom_packet.urb_type == "COMPLETE" 
+                and not data_is_present
+                and not beginning_of_return):
                 assert (custom_packet.src !=
                         "host"), "Complete packets should only be from device!"
 
@@ -517,15 +526,13 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
                     usb_timer.stamp_begin_tpu_send_request(raw_packet)
                     begin_tpu_send_request = True
 
-                    if DEBUG:
-                        usb_array.append(custom_packet)
-                else:
-                    usb_timer.stamp_end_tpu_send_request(raw_packet)
+                usb_timer.stamp_end_tpu_send_request(raw_packet)
 
-                    if DEBUG:
-                        usb_array.append(custom_packet)
+                if DEBUG:
+                    usb_array.append(custom_packet)
 
-            elif (custom_packet.urb_type == "COMPLETE" and data_is_present == True):
+            elif (custom_packet.urb_type == "COMPLETE" 
+                    and data_is_present):
                 assert (custom_packet.src !=
                         "host"), "Complete packets should only be from device!"
 
@@ -533,29 +540,30 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
                     usb_timer.stamp_beginning_return(raw_packet)
                     beginning_of_return = True
 
-                    if DEBUG:
-                        usb_array.append(custom_packet)
-                else:
-                    usb_timer.stamp_src_device(raw_packet)
+                usb_timer.stamp_src_device(raw_packet)
 
-                    if DEBUG:
-                        usb_array.append(custom_packet)
-
-            else:
-                raise ValueError(
-                    "There shouldnt be non Bulk IN/OUT transfers within BULK.")
-
-        else: # NON-BULK/INTERRUPT PACKETS - CONTROL PACKETS
-            if end_of_comms == True:
-                end_of_capture = True
                 if DEBUG:
                     usb_array.append(custom_packet)
 
+            else:
+                pass
+
+        else: # CONTROL PACKETS
+            if end_of_comms == True:
+                end_of_capture = True
+
+                if DEBUG:
+                    usb_array.append(custom_packet)
+
+
         if end_of_capture == True:
             if DEBUG:
+                from plot import validity_check
+
                 debug_stamps(usb_timer)
                 debug_usb(usb_array)
-                # export_analysis(usb_timer, op, cnt != 0, op_filesize)
+                export_analysis(usb_timer, op, cnt != 0, op_filesize)
+                validity_check(op, op_filesize)
             else:
                 export_analysis(usb_timer, op, cnt != 0, op_filesize)
 
@@ -618,7 +626,8 @@ def shark_manager(folder, count, edge_tpu_id):
             p_2.join()
             p_1.join()
     
-        print("Ended capture.")
+            print("Ended capture.")
+
         print("\n")
 
     usb_results_folder = out_dir
@@ -669,7 +678,7 @@ def shark_single_manager(model, count, edge_tpu_id):
                         args=(op, i, edge_tpu_id, filesize))
 
         p_2 = Process(target=docker_exec, 
-                        args=("shark_single_edge_deploy", model,))
+                        args=("shark_single_edge_deploy_log", model,))
 
         p_1.start()
         p_2.start()

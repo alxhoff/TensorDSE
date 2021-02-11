@@ -99,7 +99,9 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
         input_shape), dtype=input_dtype)
     interpreter.set_tensor(input_details[0]['index'], input_data)
 
-    print("EDGE DEPLOYMENT")
+    if count > 1:
+        print("EDGE DEPLOYMENT")
+
     for i in range(count):
         print(f"{model_name}: {i+1}/{count}")
 
@@ -114,9 +116,8 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
         edge_results.append([i, inference_time])
-        print('(Python) Inference Time %.1fms' % (inference_time * 1000))
+        print('Inference Time %.1fms' % (inference_time * 1000))
 
-    print()
     if (log_performance == True):
         create_csv_file(EDGE_FOLDER, model_name, edge_results)
 
@@ -181,7 +182,9 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
         input_shape), dtype=input_dtype)
     interpreter.set_tensor(input_details[0]['index'], input_data)
 
-    print("CPU DEPLOYMENT")
+    if count > 1:
+        print("CPU DEPLOYMENT")
+
     for i in range(count):
         print(f"{model_name}: {i+1}/{count}")
 
@@ -195,9 +198,8 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
         cpu_results.append([i, inference_time])
-        print('(Python) Inference Time %.1fms' % (inference_time * 1000))
+        print('Inference Time %.1fms' % (inference_time * 1000))
 
-    print()
     if (log_performance == True):
         create_csv_file(CPU_FOLDER, model_name, cpu_results)
 
@@ -287,6 +289,11 @@ if __name__ == '__main__':
                 edge_group_tflite_deployment(
                     args.group_folder, count=args.count, log_performance=(not args.log))
             else:
+                if args.name == None:
+                    from utils import deduce_filename
+                    from plot import deduce_plot_filename
+                    args.name = deduce_plot_filename(deduce_filename(args.model))
+
                 edge_tflite_deployment(args.model, args.name,
                                        args.count, log_performance=(not args.log))
         else:

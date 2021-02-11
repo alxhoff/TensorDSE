@@ -41,6 +41,8 @@ class UsbTimes():
         self.inference_array = []
         self.total_array = []
 
+        self.neg_values = []
+
     def append_times(self, host_comms_time, host_submission_time, 
                             tpu_comms_time, tpu_return_time,
                             inference_time, total_time):
@@ -53,6 +55,32 @@ class UsbTimes():
 
         self.inference_array.append(inference_time)
         self.total_array.append(total_time)
+
+    def append_neg_times(self, host_comms_time, host_submission_time, 
+                                tpu_comms_time, tpu_return_time,
+                                inference_time, total_time):
+
+        self.neg_values.append([host_comms_time, host_submission_time, 
+                                tpu_comms_time, tpu_return_time,
+                                inference_time, total_time])
+
+    def print_neg_values(self):
+        from tabulate import tabulate
+        table = []
+
+        table.append(["HOST_COMMS", "HOST_SUB", "TPU_COMMS", "TPU_RET", "INFER", "TOTAL"])
+        for arr in self.neg_values:
+            table.append([    
+                arr[0] if float(arr[0]) < 0 else "<<>>",
+                arr[1] if float(arr[1]) < 0 else "<<>>",
+                arr[2] if float(arr[2]) < 0 else "<<>>",
+                arr[3] if float(arr[3]) < 0 else "<<>>",
+                arr[4] if float(arr[4]) < 0 else "<<>>",
+                arr[5] if float(arr[5]) < 0 else "<<>>"
+                ])
+            pass
+
+        print(f"NEGATIVE VALUES\n{tabulate(table)}")
 
 
 def parse_plot_csv(filename):
@@ -183,42 +211,60 @@ def integrate_results(usb_results_file, op):
 
 def read_timestamps(filename):
     import os
+    import sys
     import csv
+    import logging
     assert (os.path.exists(filename)), "File doesnt exist."
 
     usb_times = UsbTimes()
 
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
     cnt = 0
-    valid_cnt = 0
+    v_cnt = 0
     with open(filename) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = True
         for row in csv_reader:
-            if (not header):
-                host_comms_time = float(row[1]) - float(row[0])
-                host_submission_time = float(row[2]) - float(row[1])
+            if not header:
+                cnt += 1
+                host_comms_time = float(float(row[1]) - float(row[0]))
+                host_submission_time = float(float(row[2]) - float(row[1]))
 
-                tpu_comms_time = float(row[4]) - float(row[3])
-                tpu_return_time = float(row[5]) - float(row[4])
+                tpu_comms_time = float(float(row[4]) - float(row[3]))
+                tpu_return_time = float(float(row[5]) - float(row[4]))
 
-                inference_time = float(row[4]) - float(row[2])
-                total_time = float(row[5]) - float(row[0])
+                inference_time = float(float(row[5]) - float(row[2]))
+                total_time = float(float(row[5]) - float(row[0]))
 
                 if (host_comms_time > 0 and host_submission_time > 0
                     and tpu_comms_time > 0 and tpu_return_time > 0 
                     and inference_time > 0):
 
-                    valid_cnt += 1
+                    v_cnt += 1
                     usb_times.append_times(host_comms_time, host_submission_time, 
                                             tpu_comms_time, tpu_return_time,
                                             inference_time, total_time)
 
-                cnt += 1
-
+                else:
+                    usb_times.append_neg_times(host_comms_time, host_submission_time, 
+                                            tpu_comms_time, tpu_return_time,
+                                            inference_time, total_time)
 
             header = False
 
-    return usb_times, f"{valid_cnt}/{cnt}"
+
+    if len(usb_times.neg_values) > 0:
+        print(f"\n{filename}:")
+        usb_times.print_neg_values()
+        print("\n")
+
+    if v_cnt == 0: 
+        sys.exit("No valid results found.")
+
+    log.info(f"Valid: {v_cnt}/{cnt}")
+    return usb_times, f"{v_cnt}/{cnt}"
 
 
 def find_stats(values):
@@ -324,6 +370,10 @@ def store_stats(filename, stats, filesize, valid_str):
 
     return csv_file
 
+def validity_check(model_name, model_size):
+    filename = f"results/usb/{model_name}_{model_size}/Results.csv"
+    read_timestamps(filename)
+
 
 def plot_manager(folder):
     import os
@@ -377,6 +427,7 @@ if __name__ == '__main__':
                         help='Model.')
 
     args = parser.parse_args()
+
     if (args.mode == "All" and args.folder != ""):
         plot_manager(args.folder)
 
