@@ -13,7 +13,6 @@ sudo docker ps -a
 
 -- DOCKER SETUP --
 sudo docker pull debian
-sudo docker --name debian-docker -it -d debian
 sudo docker run --name <docker_name> --privileged -v /dev/bus/usb:/dev/bus/usb -it -d debian
 (ALLOWS USB USE/PERMISSIONS)
 
@@ -38,6 +37,8 @@ passwd root
 login deb
     <insert password>
 
+usermod -aG sudo deb
+
 sudo apt-get install gnupg curl git python3 python3-pip
 
 echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
@@ -54,7 +55,7 @@ bash install_requirements.sh
 
 sudo pip3 install Pillow
 sudo pip3 install tensorflow
-sudo pip3 install https://dl.google.com/coral/python/tflite_runtime-2.1.0.post1-cp37-cp37m-linux_x86_64.whl
+sudo apt-get install python3-pycoral
 
 -- EXAMPLE MODEL RUN EDGETPU --
 python3 classify_image.py \

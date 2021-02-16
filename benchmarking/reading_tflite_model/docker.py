@@ -3,7 +3,7 @@ TO_DOCKER = 1
 FROM_DOCKER = 0
 
 HOME = "/home/deb/"
-DOCKER = "exp-docker"
+DOCKER = "debian-docker"
 LOCATION = "quant"
 
 count = 1000

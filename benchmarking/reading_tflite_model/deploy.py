@@ -256,7 +256,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--name',
                         help='Name of Model/Operation, needed to create corresponding folder name.')
 
-    parser.add_argument('-c', '--count', type=int, default=5,
+    parser.add_argument('-c', '--count', type=int, default=1,
                         help='Number of times to run inference.')
 
     parser.add_argument('-g', '--group', type=bool, default=False,
@@ -282,7 +282,7 @@ if __name__ == '__main__':
                 cpu_group_tflite_deployment(
                     args.group_folder, count=args.count, log_performance=(not args.log))
             else:
-                cpu_tflite_deployment(args.model, args.name, args.count, args.log)
+                cpu_tflite_deployment(args.model, args.name, args.count, log_performance=(not args.log))
 
         elif ("edge_tpu" in args.delegate):
             if (args.group):
@@ -292,7 +292,8 @@ if __name__ == '__main__':
                 if args.name == None:
                     from utils import deduce_filename
                     from plot import deduce_plot_filename
-                    args.name = deduce_plot_filename(deduce_filename(args.model))
+                    args.name = (deduce_plot_filename(deduce_filename(args.model))).split(
+                                "quant_")[1]
 
                 edge_tflite_deployment(args.model, args.name,
                                        args.count, log_performance=(not args.log))
@@ -324,10 +325,11 @@ if __name__ == '__main__':
                     print("End.")
                     break
                 else:
-                    if args.delegate == "cpu":
-                        docker_exec("cpu_single_deploy", m_i[0])
-                    else:
-                        docker_exec("shark_single_edge_deploy", m_i[0])
+                    for i in range(args.count):
+                        if args.delegate == "cpu":
+                            docker_exec("cpu_single_deploy", m_i[0])
+                        else:
+                            docker_exec("shark_single_edge_deploy", m_i[0])
 
         else:
             print("INVALID delegate input.")
