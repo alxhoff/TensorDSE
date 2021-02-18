@@ -71,12 +71,12 @@ class UsbTimes():
         table.append(["HOST_COMMS", "HOST_SUB", "TPU_COMMS", "TPU_RET", "INFER", "TOTAL"])
         for arr in self.neg_values:
             table.append([    
-                arr[0] if float(arr[0]) < 0 else "<<>>",
-                arr[1] if float(arr[1]) < 0 else "<<>>",
-                arr[2] if float(arr[2]) < 0 else "<<>>",
-                arr[3] if float(arr[3]) < 0 else "<<>>",
-                arr[4] if float(arr[4]) < 0 else "<<>>",
-                arr[5] if float(arr[5]) < 0 else "<<>>"
+                arr[0] if float(arr[0]) < 0 else "    ",
+                arr[1] if float(arr[1]) < 0 else "    ",
+                arr[2] if float(arr[2]) < 0 else "    ",
+                arr[3] if float(arr[3]) < 0 else "    ",
+                arr[4] if float(arr[4]) < 0 else "    ",
+                arr[5] if float(arr[5]) < 0 else "    "
                 ])
             pass
 
@@ -261,7 +261,7 @@ def read_timestamps(filename):
         print("\n")
 
     if v_cnt == 0: 
-        sys.exit("No valid results found.")
+        sys.exit("NO VALID RESULTS FOUND.")
 
     log.info(f"Valid: {v_cnt}/{cnt}")
     return usb_times, f"{v_cnt}/{cnt}"

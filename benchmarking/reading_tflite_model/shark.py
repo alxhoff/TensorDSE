@@ -253,6 +253,15 @@ def debug_usb(usb_array):
     print()
     color = ""
     back = None
+    header = []
+    header.append([
+                    f"USB Nr",
+                    f"Direction",
+                    f"Types",
+                    f"Data Presence",
+                    f"Data Validity"
+                    ])
+
     table = []
     for u,i in zip(usb_array, range(len(usb_array))):
         if u.transfer_type == "INTERRUPT":
@@ -264,19 +273,23 @@ def debug_usb(usb_array):
                 color = "white"
                 back = None
 
-            elif (u.src == "host" and u.data_presence):
+            elif (u.src == "host" and not u.valid_data_len):
+                color = "red"
+                back = "on_blue"
+
+            elif (u.src == "host" and u.data_presence and u.valid_data_len):
                 color = "white"
                 back = "on_red"
 
             elif (u.src != "host" and not u.data_presence):
-                color = "green"
+                color = "blue"
                 back = None
 
             elif (u.src != "host" 
                     and u.data_presence
                     and u.valid_data_len):
-                color = "blue"
-                back = None
+                color = "white"
+                back = "on_blue"
 
             elif (u.src != "host" 
                     and u.data_presence
@@ -295,12 +308,15 @@ def debug_usb(usb_array):
                debug_color_text(f"USB ({i + 1})", color, back), 
                debug_color_text(f"{u.src} --> {u.dest}", color, back), 
                debug_color_text(f"{u.transfer_type} - {u.urb_type}", color, back),
-               debug_color_text(f"{u.data_presence}", color, back)
+               debug_color_text(f"{u.data_presence}", color, back),
+               debug_color_text(f"{u.valid_data_len}", color, back)
                ]
 
         table.append(tmp)
 
-    print(f"USB PACKETS\n{tabulate(table)}")
+    print("USB PACKETS")
+    print(f"{tabulate(header)}")
+    print(f"{tabulate(table)}")
 
 
 def export_analysis(usb_timer, op, append, filesize):
@@ -342,9 +358,9 @@ def export_analysis(usb_timer, op, append, filesize):
 
             fw.writerow([usb_timer.ts_absolute_begin,             # Begin
                          usb_timer.ts_begin_submission,           # Begin Host Sub
-                         usb_timer.ts_end_submission,             # End Host Sub / There are issues with ts_end_submission
-                         usb_timer.ts_end_submission,             # Begin TPU Request / ts_begin_tpu_send_request causes negative values
-                         usb_timer.ts_begin_return,               # Begin TPU Sub/Return
+                         usb_timer.ts_end_submission,             # End Host Sub
+                         usb_timer.ts_end_submission,             # Begin TPU Request
+                         usb_timer.ts_begin_return,               # Begin TPU Return/ End TPU Request
                          usb_timer.ts_end_return,                 # End TPU Sub/Return
                          (usb_timer.ts_end_return - usb_timer.ts_absolute_begin),
                          (10**6 *  (usb_timer.ts_end_return - usb_timer.ts_absolute_begin))
@@ -367,9 +383,9 @@ def export_analysis(usb_timer, op, append, filesize):
 
             fw.writerow([usb_timer.ts_absolute_begin,             # Begin
                          usb_timer.ts_begin_submission,           # Begin Host Sub
-                         usb_timer.ts_end_submission,             # End Host Sub / There are issues with ts_end_submission
-                         usb_timer.ts_end_submission,             # Begin TPU Request / ts_begin_tpu_send_request causes negative values
-                         usb_timer.ts_begin_return,               # Begin TPU Sub/Return
+                         usb_timer.ts_end_submission,             # End Host Sub
+                         usb_timer.ts_end_submission,             # Begin TPU Request
+                         usb_timer.ts_begin_return,               # Begin TPU Return/ End TPU Request
                          usb_timer.ts_end_return,                 # End TPU Sub/Return
                          (usb_timer.ts_end_return - usb_timer.ts_absolute_begin),
                          (10**6 *  (usb_timer.ts_end_return - usb_timer.ts_absolute_begin))
@@ -791,7 +807,7 @@ if __name__ == '__main__':
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('-c', '--count', required=False,
-                        default=1000,
+                        default=1,
                         help='Count of the number of times of edge deployment.')
 
     parser.add_argument('-m', '--mode', required=False,

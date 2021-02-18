@@ -4,3 +4,8 @@ sudo pacman -S wireshark-qt wireshark-cli
 -- SETUP --
 sudo usermod -aG wireshark $USER
 sudo modprobe usbmon
+
+-- USEFUL FILTERS -- 
+usb.idProduct and usb.idVendor
+usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT
+

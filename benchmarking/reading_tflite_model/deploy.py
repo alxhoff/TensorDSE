@@ -325,11 +325,13 @@ if __name__ == '__main__':
                     print("End.")
                     break
                 else:
-                    for i in range(args.count):
+                    inp = "NONE"
+                    while(inp != "" and inp != 'c'):
                         if args.delegate == "cpu":
                             docker_exec("cpu_single_deploy", m_i[0])
                         else:
                             docker_exec("shark_single_edge_deploy", m_i[0])
+                        inp = input("Continue: ")
 
         else:
             print("INVALID delegate input.")
