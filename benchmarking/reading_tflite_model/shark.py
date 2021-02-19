@@ -44,6 +44,11 @@ class UsbTimer:
         # End of Receiving Data
         self.ts_absolute_end = 0
 
+        self.interrupt_begin_src = ""
+        self.interrupt_begin_dst = ""
+        self.interrupt_end_src = ""
+        self.interrupt_end_dst = ""
+
     def stamp_beginning(self, packet):
         """Saves the overloaded packet's timestamp onto ts_absolute_begin.
 
@@ -106,6 +111,9 @@ class UsbPacket:
 
     def __init__(self):
         self.data_presence = "Void"
+
+    def timestamp(self, packet):
+        self.ts = float(packet.frame_info.time_relative)
 
     def find_direction(self, packet):
         """Method that stores the overloaded packet's flag denoting direction
@@ -184,61 +192,88 @@ class UsbPacket:
         elif string == "end":
             return True if (edge_tpu_id in self.src and "host" == self.dest) else False
 
-        else:
-            raise ValueError("Unacceptable string value.")
+        else: # both
+            return True if ((edge_tpu_id in self.src and "host" == self.dest) 
+                            or ("host" == self.src and edge_tpu_id in self.dest)) else False
 
-def debug_stamps(usb_timer):
+    def verify_begin_return(self, packet):
+        endp = int(packet.usb.endpoint_address_number)
+        if endp == 2:
+            self.dubious_return = True
+            return True
+        else:
+            self.dubious_return = False
+            return False
+
+
+def debug_stamps(usb_timer_arr):
     """Function used to debug timing values, prints all important stamps."""
     from termcolor import colored
     from tabulate import tabulate
 
-    table = [
-                [   
-                f"INTERRUPT BEGIN", f"{float(usb_timer.ts_absolute_begin)}", f"{usb_timer.interrupt_begin_src} ---> {usb_timer.interrupt_begin_dst}"
-                ],
+    length = len(usb_timer_arr)
+    sessions_nr = 0
+    for usb_timer in usb_timer_arr:
+        sessions_nr += 1
+        table = [
+                    [   
+                    f"INTERRUPT BEGIN / BEGIN of SESSION", 
+                    f"{float(usb_timer.ts_absolute_begin)}" if (sessions_nr == 1) else f"{float(usb_timer.ts_begin_host_send_request)}", 
+                    f"{usb_timer.interrupt_begin_src} ---> {usb_timer.interrupt_begin_dst}" if (sessions_nr == 1) else " "
+                    ],
 
-                [
-                f"BEGIN OF REQUESTS (HOST)", f"{float(usb_timer.ts_begin_host_send_request)}"
-                ],
+                    [
+                    f"BEGIN OF REQUESTS (HOST)", 
+                    f"{float(usb_timer.ts_begin_host_send_request)}"
+                    ],
 
-                [
-                f"END OF REQUESTS (HOST)", f"{float(usb_timer.ts_end_host_send_request)}"
-                ],
+                    [
+                    f"END OF REQUESTS (HOST)", 
+                    f"{float(usb_timer.ts_end_host_send_request)}"
+                    ],
 
-                [
-                f"BEGIN OF HOST SENT DATA", f"{float(usb_timer.ts_begin_submission)}"
-                ],
+                    [
+                    f"BEGIN OF HOST SENT DATA", 
+                    f"{float(usb_timer.ts_begin_submission)}"
+                    ],
 
-                [
-                f"END OF HOST SENT DATA", f"{float(usb_timer.ts_end_submission)}"
-                ],
+                    [
+                    f"END OF HOST SENT DATA", 
+                    f"{float(usb_timer.ts_end_submission)}"
+                    ],
 
-                [
-                f"BEGIN OF REQUESTS (TPU)", f"{float(usb_timer.ts_begin_tpu_send_request)}"
-                ],
+                    [
+                    f"BEGIN OF REQUESTS (TPU)", 
+                    f"{float(usb_timer.ts_begin_tpu_send_request)}"
+                    ],
 
-                [
-                f"END OF REQUESTS (TPU)", f"{float(usb_timer.ts_end_tpu_send_request)}"
-                ],
+                    [
+                    f"END OF REQUESTS (TPU)", 
+                    f"{float(usb_timer.ts_end_tpu_send_request)}"
+                    ],
 
-                [
-                f"BEGIN OF SUBMISSION (TPU)", f"{float(usb_timer.ts_begin_return)}"
-                ],
+                    [
+                    f"BEGIN OF SUBMISSION (TPU)", 
+                    f"{float(usb_timer.ts_begin_return)}"
+                    ],
 
-                [
-                f"END OF SUBMISSION (TPU)", f"{float(usb_timer.ts_end_return)}"
-                ],
+                    [
+                    f"END OF SUBMISSION (TPU)", 
+                    f"{float(usb_timer.ts_end_return)}"
+                    ],
 
-                [
-                f"INTERRUPT END", f"{float(usb_timer.ts_absolute_end)}", f"{usb_timer.interrupt_end_src} ---> {usb_timer.interrupt_end_dst}"
-                ],
+                    [
+                    f"INTERRUPT END / END OF SESSION", 
+                    f"{float(usb_timer.ts_absolute_end)}" if (length == sessions_nr) else f"{float(usb_timer.ts_end_return)}", 
+                    f"{usb_timer.interrupt_end_src} ---> {usb_timer.interrupt_end_dst}" if (length == sessions_nr) else " "
+                    ],
 
-                [
-                f"TOTAL TIME: {1000 * (float(usb_timer.ts_end_return) - float(usb_timer.ts_absolute_begin))}ms"
-                ]
-           ]
+                    [
+                    f"TOTAL TIME: {1000 * (float(usb_timer.ts_end_return) - float(usb_timer.ts_begin_host_send_request))}ms"
+                    ]
+               ]
 
-    print(f"\nTIMESTAMPS\n{tabulate(table)}")
+        print(f"\nTIMESTAMPS[{sessions_nr}]\n{tabulate(table)}")
 
 def debug_color_text(text, color, back):
     from termcolor import colored
@@ -258,6 +293,7 @@ def debug_usb(usb_array):
                     f"USB Nr",
                     f"Direction",
                     f"Types",
+                    f"Timestamp",
                     f"Data Presence",
                     f"Data Validity"
                     ])
@@ -308,6 +344,7 @@ def debug_usb(usb_array):
                debug_color_text(f"USB ({i + 1})", color, back), 
                debug_color_text(f"{u.src} --> {u.dest}", color, back), 
                debug_color_text(f"{u.transfer_type} - {u.urb_type}", color, back),
+               debug_color_text(f"{u.ts}", color, back),
                debug_color_text(f"{u.data_presence}", color, back),
                debug_color_text(f"{u.valid_data_len}", color, back)
                ]
@@ -318,8 +355,21 @@ def debug_usb(usb_array):
     print(f"{tabulate(header)}")
     print(f"{tabulate(table)}")
 
+def backtrack_comms(usb_array):
+    import copy
+    tmp = copy.deepcopy(usb_array)
+    # tmp = tmp[:-1]
+    return tmp[-1].ts
 
-def export_analysis(usb_timer, op, append, filesize):
+
+def deduce_sessions_nr(model_name):
+    num = 1
+    if "-" in model_name:
+        num = model_name.count("-")
+    
+    return num
+
+def export_analysis(usb_timer_arr, op, append, filesize):
     """Creates CSV file with the relevant usb transfer timestamps.
 
     The csv file will contain a header exposing the names of the variables
@@ -356,15 +406,17 @@ def export_analysis(usb_timer, op, append, filesize):
             fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                             quoting=csv.QUOTE_MINIMAL)
 
-            fw.writerow([usb_timer.ts_absolute_begin,             # Begin
-                         usb_timer.ts_begin_submission,           # Begin Host Sub
-                         usb_timer.ts_end_submission,             # End Host Sub
-                         usb_timer.ts_end_submission,             # Begin TPU Request
-                         usb_timer.ts_begin_return,               # Begin TPU Return/ End TPU Request
-                         usb_timer.ts_end_return,                 # End TPU Sub/Return
-                         (usb_timer.ts_end_return - usb_timer.ts_absolute_begin),
-                         (10**6 *  (usb_timer.ts_end_return - usb_timer.ts_absolute_begin))
-                         ])
+            row = []
+            for usb_timer in usb_timer_arr:
+                row.append(usb_timer.ts_begin_host_send_request),  # Begin
+                row.append(usb_timer.ts_begin_submission),         # Begin Host Sub
+                row.append(usb_timer.ts_end_submission),           # End Host Sub
+                row.append(usb_timer.ts_end_submission),           # Begin TPU Request
+                row.append(usb_timer.ts_begin_return),             # Begin TPU Return/ End TPU Request
+                row.append(usb_timer.ts_end_return)                # End TPU Sub/Return
+
+            fw.writerow(row)
+
     else:
         extend_directory(results_dir, results_folder)
         with open(results_file, 'w') as csvfile:
@@ -372,25 +424,25 @@ def export_analysis(usb_timer, op, append, filesize):
             fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                             quoting=csv.QUOTE_MINIMAL)
 
-            fw.writerow(["start_host_request_and_absolute_begin",
-                         "end_host_request_and_start_host_submission",
-                         "end_host_submission_and_start_inference",
-                         "start_tpu_request",
-                         "end_inference_and_start_tpu_submission",
-                         "end_tpu_submission_and_absolute_end",
-                         "total_time_sec",
-                         "total_time_uS"])
-
-            fw.writerow([usb_timer.ts_absolute_begin,             # Begin
-                         usb_timer.ts_begin_submission,           # Begin Host Sub
-                         usb_timer.ts_end_submission,             # End Host Sub
-                         usb_timer.ts_end_submission,             # Begin TPU Request
-                         usb_timer.ts_begin_return,               # Begin TPU Return/ End TPU Request
-                         usb_timer.ts_end_return,                 # End TPU Sub/Return
-                         (usb_timer.ts_end_return - usb_timer.ts_absolute_begin),
-                         (10**6 *  (usb_timer.ts_end_return - usb_timer.ts_absolute_begin))
+            fw.writerow(["start",
+                         "end_host_comms",
+                         "end_host_submission",
+                         "start_tpu_comms",
+                         "start_tpu_return",
+                         "end_tpu_return"
                          ])
 
+            
+            row = []
+            for usb_timer in usb_timer_arr:
+                row.append(usb_timer.ts_begin_host_send_request),  # Begin
+                row.append(usb_timer.ts_begin_submission),         # Begin Host Sub
+                row.append(usb_timer.ts_end_submission),           # End Host Sub
+                row.append(usb_timer.ts_end_submission),           # Begin TPU Request
+                row.append(usb_timer.ts_begin_return),             # Begin TPU Return/ End TPU Request
+                row.append(usb_timer.ts_end_return)                # End TPU Sub/Return
+
+            fw.writerow(row)
 
 def prepare_ulimit(limit=4096):
     import logging
@@ -467,7 +519,7 @@ def shark_usbmon_init():
     os.system(usbmon_cmd)
 
 
-def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
+def shark_capture(op, cnt, edge_tpu_id, op_filesize, sessions):
     """Continuouly reads usb packet traffic and retreives the necessary
     timestamps within that cycle.
 
@@ -498,10 +550,13 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
 
     usb_array = []
 
+    usb_timer_array = []
     usb_timer = UsbTimer()
 
-    beginning_of_comms = False
-    end_of_comms = False
+    BEGIN = False
+    END = False
+
+    multiple_sessions = sessions > 1
 
     beginning_of_submission = False
     begin_host_send_request = False
@@ -509,56 +564,52 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
     begin_tpu_send_request = False
     beginning_of_return = False
 
-    end_of_capture = False
-
     # capture_filter = "usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT"
     capture_filter = ""
     capture = pyshark.LiveCapture(
         interface='usbmon0', display_filter=capture_filter)
 
+    running_sess = 1
     for raw_packet in capture.sniff_continuously():
         custom_packet = UsbPacket()
+        custom_packet.timestamp(raw_packet)
         custom_packet.find_direction(raw_packet)
         custom_packet.find_transfer_type(raw_packet)
         custom_packet.find_scr_dest(raw_packet)
         custom_packet.find_urb_type(raw_packet.usb.urb_type)
 
+        valid_comms = custom_packet.verify_src(edge_tpu_id, "all")
         data_is_present = custom_packet.find_data_presence(raw_packet)
         data_is_valid = custom_packet.find_data_length(raw_packet)
 
         # Checks for beginning and ending of captures, as interrupts appear at these point.
         if (custom_packet.transfer_type == "INTERRUPT"):
 
-            if (beginning_of_comms == False
+            if (BEGIN == False
                     and custom_packet.verify_src(edge_tpu_id, "begin")):
-
-                beginning_of_comms = True
+                BEGIN = True
                 usb_timer.stamp_beginning(raw_packet)
+                usb_array.append(custom_packet)
 
-                if DEBUG:
-                    usb_array.append(custom_packet)
-
-            elif (beginning_of_comms == True
+            elif (BEGIN == True
                     and custom_packet.verify_src(edge_tpu_id, "end")):
-
-                end_of_comms = True
+                END = True
                 usb_timer.stamp_ending(raw_packet)
-
-                if DEBUG:
-                    usb_array.append(custom_packet)
+                usb_array.append(custom_packet)
 
             else:
                 pass
 
-        # Checks for BULK transfers, as they constitute actual data transfers or
-        # connection requests..
+        # Checks for BULK transfers, as they constitute 
+        # actual data transfers or token packets.
         elif ((custom_packet.transfer_type == "BULK IN"
                or custom_packet.transfer_type == "BULK OUT")
-              and beginning_of_comms == True):
+               and valid_comms == True
+               and BEGIN == True):
 
             if (custom_packet.urb_type == "SUBMIT" 
-                    and not data_is_present
-                    and not beginning_of_submission):
+                    and not data_is_present):
+
                 assert (custom_packet.src 
                         == "host"), "Submit packets should only be from host!"
 
@@ -566,13 +617,14 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
                     usb_timer.stamp_begin_host_send_request(raw_packet)
                     begin_host_send_request = True
 
-                usb_timer.stamp_end_host_send_request(raw_packet)
+                if not beginning_of_submission:
+                    usb_timer.stamp_end_host_send_request(raw_packet)
 
-                if DEBUG:
-                    usb_array.append(custom_packet)
+                usb_array.append(custom_packet)
 
             elif (custom_packet.urb_type == "SUBMIT" 
                     and data_is_present):
+
                 assert (custom_packet.src 
                         == "host"), "Submit packets should only be from host!"
 
@@ -580,14 +632,36 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
                     usb_timer.stamp_beginning_submission(raw_packet)
                     beginning_of_submission = True
 
+                if (beginning_of_return
+                        and multiple_sessions
+                        and running_sess < sessions): # and host begins to send again
+
+                    import copy
+                    # print(f"New Session: USB number {len(usb_array) + 1}")
+                    last_usb_timer = copy.deepcopy(usb_timer)
+                    usb_timer_array.append(last_usb_timer)
+
+                    usb_timer = UsbTimer()
+                    ts_h_end  = backtrack_comms(usb_array)
+                    ts_h_begin  = last_usb_timer.ts_end_return
+
+                    usb_timer.ts_absolute_begin = ts_h_begin
+                    usb_timer.ts_begin_host_send_request = ts_h_begin
+                    usb_timer.ts_end_host_send_request = ts_h_end
+                    usb_timer.ts_begin_submission = float(raw_packet.frame_info.time_relative)
+
+                    begin_tpu_send_request = False
+                    beginning_of_return = False
+                    running_sess += 1
+
+
                 usb_timer.stamp_src_host(raw_packet)
-                    
-                if DEBUG:
-                    usb_array.append(custom_packet)
+                usb_array.append(custom_packet)
 
 
             elif (custom_packet.urb_type == "COMPLETE" 
                   and not data_is_present):
+
                 assert (custom_packet.src !=
                         "host"), "Complete packets should only be from device!"
 
@@ -595,46 +669,46 @@ def shark_capture_cont(op, cnt, edge_tpu_id, op_filesize):
                     usb_timer.stamp_begin_tpu_send_request(raw_packet)
                     begin_tpu_send_request = True
 
-                usb_timer.stamp_end_tpu_send_request(raw_packet)
+                if not beginning_of_return:
+                    usb_timer.stamp_end_tpu_send_request(raw_packet)
 
-                if DEBUG:
-                    usb_array.append(custom_packet)
+                usb_array.append(custom_packet)
 
             elif (custom_packet.urb_type == "COMPLETE" 
                     and data_is_present):
+
                 assert (custom_packet.src !=
                         "host"), "Complete packets should only be from device!"
 
-                if beginning_of_return == False:
+                if (beginning_of_return == False 
+                        and not custom_packet.verify_begin_return(raw_packet)):
+                    # print(f"Special Activated: USB number {len(usb_array) + 1}")
                     usb_timer.stamp_beginning_return(raw_packet)
                     beginning_of_return = True
 
                 if data_is_valid:
                     usb_timer.stamp_src_device(raw_packet)
 
-                if DEBUG:
-                    usb_array.append(custom_packet)
+                usb_array.append(custom_packet)
 
             else:
                 pass
 
         else: # CONTROL PACKETS
-            if end_of_comms == True:
-                end_of_capture = True
-
-                if DEBUG:
-                    usb_array.append(custom_packet)
+            usb_array.append(custom_packet)
 
 
-        if end_of_capture == True:
+        if END == True:
             if DEBUG:
                 from plot import validity_check
-                debug_stamps(usb_timer)
+                usb_timer_array.append(usb_timer)
+                debug_stamps(usb_timer_array)
                 debug_usb(usb_array)
-                export_analysis(usb_timer, op, cnt != 0, op_filesize)
-                validity_check(op, op_filesize)
+                export_analysis(usb_timer_array, op, cnt != 0, op_filesize)
+                validity_check(op, op_filesize, sessions)
             else:
-                export_analysis(usb_timer, op, cnt != 0, op_filesize)
+                usb_timer_array.append(usb_timer)
+                export_analysis(usb_timer_array, op, cnt != 0, op_filesize)
 
             break
 
@@ -681,15 +755,8 @@ def shark_manager(folder, count, edge_tpu_id):
     Characterizes the folder where the compiled edge tflite models are located.
     """
     import os
-    from multiprocessing import Process
-    from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy
-    from utils import retrieve_folder_path, extend_directory, deduce_operations_from_folder, deduce_filesize
+    from utils import retrieve_folder_path, deduce_operations_from_folder
     from plot import plot_manager
-
-    global usb_array
-
-    path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
-    docker_copy(path_to_tensorDSE, TO_DOCKER)
 
     models_info = deduce_operations_from_folder(folder,
                                                 beginning="quant_",
@@ -698,30 +765,9 @@ def shark_manager(folder, count, edge_tpu_id):
     cnt = int(count)
 
     for m_i in models_info:
-        for i in range(cnt):
-            filepath = m_i[0]
-            op = m_i[1]
-
-            filesize = deduce_filesize(filepath)
-
-            print(f"\nOperation {op}: {i+1}/{cnt}")
-            print("Begun capture.")
-
-            p_1 = Process(target=shark_capture_cont,
-                            args=(op, i, edge_tpu_id, filesize))
-
-            p_2 = Process(target=docker_exec, 
-                            args=("shark_single_edge_deploy", filepath,))
-
-            p_1.start()
-            p_2.start()
-
-            p_2.join()
-            p_1.join()
-    
-            print("Ended capture.")
-
-        print("\n")
+        filepath = m_i[0]
+        op = m_i[1]
+        shark_single_manager(filepath, cnt, edge_tpu_id)
 
     usb_results_folder = out_dir
     plot_manager(usb_results_folder)
@@ -745,6 +791,7 @@ def shark_single_manager(model, count, edge_tpu_id):
     Characterizes the folder where the compiled edge tflite models are located.
     """
     import os
+    import time
     import subprocess
     from multiprocessing import Process
     from docker import TO_DOCKER, FROM_DOCKER, HOME, docker_exec, docker_copy
@@ -760,6 +807,8 @@ def shark_single_manager(model, count, edge_tpu_id):
     op = deduce_operation_from_file(f"{filename}.tflite",
                                     beginning="quant_",
                                     ending="_edgetpu.tflite")
+
+    sessions = deduce_sessions_nr(op)
     edge_results = []
     out_dir = "results/usb/"
     cnt = int(count)
@@ -768,8 +817,8 @@ def shark_single_manager(model, count, edge_tpu_id):
         print(f"\nOperation {op}: {i+1}/{cnt}")
         print("Begun capture.")
 
-        p_1 = Process(target=shark_capture_cont,
-                        args=(op, i, edge_tpu_id, filesize))
+        p_1 = Process(target=shark_capture,
+                        args=(op, i, edge_tpu_id, filesize, sessions))
 
         p_2 = Process(target=docker_deploy_mgr, 
                         args=(model, op))
@@ -782,13 +831,14 @@ def shark_single_manager(model, count, edge_tpu_id):
 
         edge_results = integrate_edge_values(i, edge_results)
         print("Ended capture.")
+        time.sleep(5)
 
     print("\n")
 
     os.system("rm results/edge/tmp")
     usb_results_file = f"{out_dir}{op}_{filesize}/Results.csv"
     create_csv_file("results/edge/", op, edge_results)
-    plot_single_manager(usb_results_file)
+    plot_single_manager(usb_results_file, sessions)
 
 def shark_sm_wrapper(target, count, edge_tpu_id):
     from multiprocessing import Pool
@@ -850,11 +900,11 @@ if __name__ == '__main__':
         models_info = deduce_operations_from_folder(args.folder,
                                                     beginning="quant_",
                                                     ending="_edgetpu.tflite")
-
         for m_i in models_info:
             filename = m_i[1]
             filepath = m_i[0]
             filesize = deduce_filesize(filepath)
+            sessions = deduce_sessions_nr(filename)
 
             inp = input(f"Operation {m_i[1]}, Continue to Next? ")
             if inp == "":
@@ -863,7 +913,7 @@ if __name__ == '__main__':
                 print("End.")
                 break
             else:
-                shark_capture_cont(filename, 0, edge_tpu_id, filesize)
+                shark_capture(filename, 0, edge_tpu_id, filesize, sessions)
 
 
     else:

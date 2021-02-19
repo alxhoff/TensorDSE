@@ -45,30 +45,62 @@ class UsbTimes():
 
     def append_times(self, host_comms_time, host_submission_time, 
                             tpu_comms_time, tpu_return_time,
-                            inference_time, total_time):
+                            inference_time, total_time,
+                            sessions_nr):
 
-        self.host_comms_array.append(host_comms_time)
-        self.host_submission_array.append(host_submission_time)
+        if sessions_nr == 0:
+            self.host_comms_array.append(host_comms_time)
+            self.host_submission_array.append(host_submission_time)
+            self.tpu_comms_array.append(tpu_comms_time)
+            self.tpu_return_array.append(tpu_return_time)
+            self.inference_array.append(inference_time)
+            self.total_array.append(total_time)
+        else:
+            length = len(self.host_comms_array)
 
-        self.tpu_comms_array.append(tpu_comms_time)
-        self.tpu_return_array.append(tpu_return_time)
+            if length > 0:
+                tmp = self.host_comms_array[length - 1] 
+                self.host_comms_array[length -1] = [tmp, host_comms_time]
 
-        self.inference_array.append(inference_time)
-        self.total_array.append(total_time)
+                tmp = self.host_submission_array[length -1] 
+                self.host_submission_array[length -1] = [tmp, host_submission_time]
+
+                tmp = self.tpu_comms_array[length -1] 
+                self.tpu_comms_array[length -1] = [tmp, tpu_comms_time]
+
+                tmp = self.tpu_return_array[length -1] 
+                self.tpu_return_array[length -1] = [tmp, tpu_return_time]
+
+                tmp = self.inference_array[length -1] 
+                self.inference_array[length -1] = [tmp, inference_time]
+
+                tmp = self.total_array[length -1] 
+                self.total_array[length -1] = [tmp, total_time]
+
+            else:
+                tmp = " "
+                self.host_comms_array.append([tmp, host_comms_time])
+                self.host_submission_array.append([tmp, host_submission_time])
+                self.tpu_comms_array.append([tmp, tpu_comms_time])
+                self.tpu_return_array.append([tmp, tpu_return_time])
+                self.inference_array.append([tmp, inference_time])
+                self.total_array.append([tmp, total_time])
 
     def append_neg_times(self, host_comms_time, host_submission_time, 
                                 tpu_comms_time, tpu_return_time,
-                                inference_time, total_time):
+                                inference_time, total_time,
+                                session_nr):
 
         self.neg_values.append([host_comms_time, host_submission_time, 
                                 tpu_comms_time, tpu_return_time,
-                                inference_time, total_time])
+                                inference_time, total_time,
+                                session_nr])
 
     def print_neg_values(self):
         from tabulate import tabulate
         table = []
 
-        table.append(["HOST_COMMS", "HOST_SUB", "TPU_COMMS", "TPU_RET", "INFER", "TOTAL"])
+        table.append(["HOST_COMMS", "HOST_SUB", "TPU_COMMS", "TPU_RET", "INFER", "TOTAL", "SESSION"])
         for arr in self.neg_values:
             table.append([    
                 arr[0] if float(arr[0]) < 0 else "    ",
@@ -76,7 +108,8 @@ class UsbTimes():
                 arr[2] if float(arr[2]) < 0 else "    ",
                 arr[3] if float(arr[3]) < 0 else "    ",
                 arr[4] if float(arr[4]) < 0 else "    ",
-                arr[5] if float(arr[5]) < 0 else "    "
+                arr[5] if float(arr[5]) < 0 else "    ",
+                arr[6]
                 ])
             pass
 
@@ -164,7 +197,7 @@ def integrate_csv(usb_f, cpu_r, edge_r):
                         "mean", "stddev", "median"
                     ])
         fw.writerow([
-                        10**6*float(edge_r[0]), 10**6*float(edge_r[0]), 10**6*float(edge_r[0])
+                        10**6*float(edge_r[0]), 10**6*float(edge_r[1]), 10**6*float(edge_r[2])
                     ])
 
         fw.writerow([])
@@ -175,7 +208,7 @@ def integrate_csv(usb_f, cpu_r, edge_r):
                             "mean", "stddev", "median"
                         ])
             fw.writerow([
-                            10**6*float(cpu_r[0]), 10**6*float(cpu_r[0]), 10**6*float(cpu_r[0])
+                            10**6*float(cpu_r[0]), 10**6*float(cpu_r[1]), 10**6*float(cpu_r[2])
                         ])
 
 
@@ -209,13 +242,14 @@ def integrate_results(usb_results_file, op):
             integrate_csv(usb_results_file, cpu_results, edge_results)
 
 
-def read_timestamps(filename):
+def read_timestamps(filename, sessions):
     import os
     import sys
     import csv
     import logging
     assert (os.path.exists(filename)), "File doesnt exist."
 
+    usb_timer_arr = []
     usb_times = UsbTimes()
 
     log = logging.getLogger(__name__)
@@ -229,28 +263,36 @@ def read_timestamps(filename):
         for row in csv_reader:
             if not header:
                 cnt += 1
-                host_comms_time = float(float(row[1]) - float(row[0]))
-                host_submission_time = float(float(row[2]) - float(row[1]))
+                for i in range(sessions):
+                    expr = 6 * (i)
+                    host_comms_time = float(float(row[1 + expr]) - float(row[0 + expr]))
+                    host_submission_time = float(float(row[2 + expr]) - float(row[1 + expr]))
 
-                tpu_comms_time = float(float(row[4]) - float(row[3]))
-                tpu_return_time = float(float(row[5]) - float(row[4]))
+                    tpu_comms_time = float(float(row[4 + expr]) - float(row[3 + expr]))
+                    tpu_return_time = float(float(row[5 + expr]) - float(row[4 + expr]))
 
-                inference_time = float(float(row[5]) - float(row[2]))
-                total_time = float(float(row[5]) - float(row[0]))
+                    print(f"Sess: {i + 1} - Return Time {tpu_return_time}")
 
-                if (host_comms_time > 0 and host_submission_time > 0
-                    and tpu_comms_time > 0 and tpu_return_time > 0 
-                    and inference_time > 0):
+                    inference_time = float(float(row[5 + expr]) - float(row[2 + expr]))
+                    total_time = float(float(row[5 + expr]) - float(row[0 + expr]))
 
-                    v_cnt += 1
-                    usb_times.append_times(host_comms_time, host_submission_time, 
-                                            tpu_comms_time, tpu_return_time,
-                                            inference_time, total_time)
+                    if (host_comms_time > 0 and host_submission_time > 0
+                        and tpu_comms_time > 0 and tpu_return_time > 0 
+                        and inference_time > 0):
 
-                else:
-                    usb_times.append_neg_times(host_comms_time, host_submission_time, 
-                                            tpu_comms_time, tpu_return_time,
-                                            inference_time, total_time)
+                        v_cnt += 1
+                        usb_times.append_times(
+                                host_comms_time, host_submission_time, 
+                                tpu_comms_time, tpu_return_time,
+                                inference_time, total_time,
+                                i)
+
+                    else:
+                        usb_times.append_neg_times(
+                                host_comms_time, host_submission_time, 
+                                tpu_comms_time, tpu_return_time,
+                                inference_time, total_time, 
+                                i)
 
             header = False
 
@@ -263,43 +305,49 @@ def read_timestamps(filename):
     if v_cnt == 0: 
         sys.exit("NO VALID RESULTS FOUND.")
 
-    log.info(f"Valid: {v_cnt}/{cnt}")
-    return usb_times, f"{v_cnt}/{cnt}"
+    log.info(f"Valid: {v_cnt}/{cnt*sessions}")
+    return usb_times, f"{v_cnt}/{cnt*sessions}"
 
 
-def find_stats(values):
-    import statistics
+def find_stats(values, sessions):
+    import copy
+    from statistics import mean, stdev
 
-    usb_stats = UsbStats()
+    usb_stats_arr = []
+    for i in range(sessions):
+        usb_stats = UsbStats()
 
-    host_comms_avg = statistics.mean(values.host_comms_array)
-    host_comms_std = statistics.stdev(values.host_comms_array)
+        host_comms_avg = mean(values.host_comms_array[i])
+        host_comms_std = stdev(values.host_comms_array[i])
 
-    host_submission_avg = statistics.mean(values.host_submission_array)
-    host_submission_std = statistics.stdev(values.host_submission_array)
+        host_submission_avg = mean(values.host_submission_array[i])
+        host_submission_std = stdev(values.host_submission_array[i])
 
 
-    tpu_comms_avg = statistics.mean(values.tpu_comms_array)
-    tpu_comms_std = statistics.stdev(values.tpu_comms_array)
+        tpu_comms_avg = mean(values.tpu_comms_array[i])
+        tpu_comms_std = stdev(values.tpu_comms_array[i])
 
-    tpu_return_avg = statistics.mean(values.tpu_return_array)
-    tpu_return_std = statistics.stdev(values.tpu_return_array)
+        tpu_return_avg = mean(values.tpu_return_array[i])
+        tpu_return_std = stdev(values.tpu_return_array[i])
 
-    inference_avg = statistics.mean(values.inference_array)
-    inference_std = statistics.stdev(values.inference_array)
+        inference_avg = mean(values.inference_array[i])
+        inference_std = stdev(values.inference_array[i])
 
-    total_avg = statistics.mean(values.total_array)
-    total_std = statistics.stdev(values.total_array)
+        total_avg = mean(values.total_array[i])
+        total_std = stdev(values.total_array[i])
 
-    usb_stats.append_avgs(host_comms_avg, host_submission_avg, 
-                            tpu_comms_avg, tpu_return_avg,
-                            inference_avg, total_avg)
+        usb_stats.append_avgs(host_comms_avg, host_submission_avg, 
+                                tpu_comms_avg, tpu_return_avg,
+                                inference_avg, total_avg)
 
-    usb_stats.append_stds(host_comms_std, host_submission_std, 
-                            tpu_comms_std, tpu_return_std,
-                            inference_std, total_std)
+        usb_stats.append_stds(host_comms_std, host_submission_std, 
+                                tpu_comms_std, tpu_return_std,
+                                inference_std, total_std)
 
-    return usb_stats
+        tmp = copy.deepcopy(usb_stats)
+        usb_stats_arr.append(tmp)
+
+    return usb_stats_arr
 
 def find_python_stats(cpu_r, edge_r):
     import statistics
@@ -313,7 +361,7 @@ def find_python_stats(cpu_r, edge_r):
         return edge_r
 
 
-def store_stats(filename, stats, filesize, valid_str):
+def store_stats(filename, stats, filesize, valid_str, sessions):
     import os
     import csv
 
@@ -330,61 +378,66 @@ def store_stats(filename, stats, filesize, valid_str):
         fw.writerow(["Operation", filename])
         fw.writerow(["Data Size", filesize])
         fw.writerow(["valid", valid_str])
+        fw.writerow(["sessions", sessions])
 
         fw.writerow([])
 
-        fw.writerow(["host_comms_avg",
-                     "host_submission_avg", 
-                     "tpu_comms_avg",
-                     "tpu_return_avg", 
-                     "inference_avg",
-                     "total_avg"
-                     ])
+        for i in range(sessions):
+            fw.writerow([f"Session: {i+1}"])
+            fw.writerow(["host_comms_avg",
+                         "host_submission_avg", 
+                         "tpu_comms_avg",
+                         "tpu_return_avg", 
+                         "inference_avg",
+                         "total_avg"
+                         ])
 
-        fw.writerow([10**6 * float(stats.host_comms_avg), 
-                     10**6 * float(stats.host_submission_avg),
-                     10**6 * float(stats.tpu_comms_avg),
-                     10**6 * float(stats.tpu_return_avg),
-                     10**6 * float(stats.inference_avg),
-                     10**6 * float(stats.total_avg)
-                     ])
+            fw.writerow([10**6 * float(stats[i].host_comms_avg), 
+                         10**6 * float(stats[i].host_submission_avg),
+                         10**6 * float(stats[i].tpu_comms_avg),
+                         10**6 * float(stats[i].tpu_return_avg),
+                         10**6 * float(stats[i].inference_avg),
+                         10**6 * float(stats[i].total_avg)
+                         ])
 
-        fw.writerow([])
-        fw.writerow(["host_comms_std",
-                     "host_submission_std", 
-                     "tpu_comms_std",
-                     "tpu_return_std", 
-                     "inference_std",
-                     "total_std"
-                     ])
+            fw.writerow([])
+            fw.writerow(["host_comms_std",
+                         "host_submission_std", 
+                         "tpu_comms_std",
+                         "tpu_return_std", 
+                         "inference_std",
+                         "total_std"
+                         ])
 
-        fw.writerow([10**6 * float(stats.host_comms_std), 
-                     10**6 * float(stats.host_submission_std),
-                     10**6 * float(stats.tpu_comms_std),
-                     10**6 * float(stats.tpu_return_std),
-                     10**6 * float(stats.inference_std),
-                     10**6 * float(stats.total_std)
-                     ])
+            fw.writerow([10**6 * float(stats[i].host_comms_std), 
+                         10**6 * float(stats[i].host_submission_std),
+                         10**6 * float(stats[i].tpu_comms_std),
+                         10**6 * float(stats[i].tpu_return_std),
+                         10**6 * float(stats[i].inference_std),
+                         10**6 * float(stats[i].total_std)
+                         ])
 
-        fw.writerow([])
+            fw.writerow([])
 
     return csv_file
 
-def validity_check(model_name, model_size):
+def validity_check(model_name, model_size, sessions):
     filename = f"results/usb/{model_name}_{model_size}/Results.csv"
-    read_timestamps(filename)
+    read_timestamps(filename, sessions)
 
 
 def plot_manager(folder):
+    from shark import deduce_sessions_nr
     import os
     models_info = deduce_plot_ops(folder, "Results.csv")
 
     for model_info in models_info:
         op = model_info[0]
         filepath = model_info[1]
-        plot_single_manager(filepath, op)
+        sessions = deduce_sessions_nr(op)
+        plot_single_manager(filepath, sessions, op)
 
-def plot_single_manager(filepath, op=""):
+def plot_single_manager(filepath, sessions, op=""):
     import os
     import logging
     from utils import deduce_filename
@@ -399,9 +452,9 @@ def plot_single_manager(filepath, op=""):
     model_name = deduce_filename(filename_fdr, ending=None)
     filesize = deduce_plot_filesize(model_name)
 
-    times, valid_str = read_timestamps(filepath)
-    stats = find_stats(times)
-    usb_results_file = store_stats(model_name, stats, filesize, valid_str)
+    values, valid_str = read_timestamps(filepath, sessions)
+    stats = find_stats(values, sessions)
+    usb_results_file = store_stats(model_name, stats, filesize, valid_str, sessions)
 
     integrate_results(usb_results_file, filename_fdr)
 
