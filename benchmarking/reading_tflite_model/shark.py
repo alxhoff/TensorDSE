@@ -215,16 +215,32 @@ def debug_stamps(usb_timer_arr):
     sessions_nr = 0
     for usb_timer in usb_timer_arr:
         sessions_nr += 1
+        host_comms = float(float(usb_timer.ts_begin_submission) - float(usb_timer.ts_begin_host_send_request))
+        host_data = float(float(usb_timer.ts_end_submission) - float(usb_timer.ts_begin_submission))
+        tpu_comms = float(float(usb_timer.ts_begin_return) - float(usb_timer.ts_end_submission))
+        tpu_data = float(float(usb_timer.ts_end_return) - float(usb_timer.ts_begin_return))
+        inference = float(float(usb_timer.ts_begin_return) - float(usb_timer.ts_end_submission))
+        total_time = float(float(usb_timer.ts_end_return) - float(usb_timer.ts_begin_host_send_request))
+
         table = [
                     [   
                     f"INTERRUPT BEGIN / BEGIN of SESSION", 
                     f"{float(usb_timer.ts_absolute_begin)}" if (sessions_nr == 1) else f"{float(usb_timer.ts_begin_host_send_request)}", 
-                    f"{usb_timer.interrupt_begin_src} ---> {usb_timer.interrupt_begin_dst}" if (sessions_nr == 1) else " "
+                    "       "
                     ],
 
                     [
                     f"BEGIN OF REQUESTS (HOST)", 
-                    f"{float(usb_timer.ts_begin_host_send_request)}"
+                    f"{float(usb_timer.ts_begin_host_send_request)}",
+                    debug_color_text(
+                        f"{float(usb_timer.ts_begin_submission)} - {float(usb_timer.ts_begin_host_send_request)}", 
+                        "white", None),
+                    debug_color_text(
+                        f"HOST COMMS: {host_comms * 10**6} us", 
+                        "white", None),
+                    debug_color_text(
+                        f"{(host_comms / total_time) * 100} %", 
+                        "white", None)
                     ],
 
                     [
@@ -234,7 +250,16 @@ def debug_stamps(usb_timer_arr):
 
                     [
                     f"BEGIN OF HOST SENT DATA", 
-                    f"{float(usb_timer.ts_begin_submission)}"
+                    f"{float(usb_timer.ts_begin_submission)}",
+                    debug_color_text(
+                        f"{float(usb_timer.ts_end_submission)} - {float(usb_timer.ts_begin_submission)}", 
+                        "white", "on_red"),
+                    debug_color_text(
+                        f"HOST DATA: {host_data * 10**6} us", 
+                        "white", "on_red"),
+                    debug_color_text(
+                        f"{(host_data / total_time) * 100} %", 
+                        "white", "on_red")
                     ],
 
                     [
@@ -244,7 +269,16 @@ def debug_stamps(usb_timer_arr):
 
                     [
                     f"BEGIN OF REQUESTS (TPU)", 
-                    f"{float(usb_timer.ts_begin_tpu_send_request)}"
+                    f"{float(usb_timer.ts_begin_tpu_send_request)}",
+                    debug_color_text(
+                        f"{float(usb_timer.ts_begin_return)} - {float(usb_timer.ts_end_submission)}", 
+                        "blue", None),
+                    debug_color_text(
+                        f"TPU COMMS: {tpu_comms * 10**6} us", 
+                        "blue", None),
+                    debug_color_text(
+                        f"{(tpu_comms / total_time) * 100} %", 
+                        "blue", None)
                     ],
 
                     [
@@ -254,7 +288,16 @@ def debug_stamps(usb_timer_arr):
 
                     [
                     f"BEGIN OF SUBMISSION (TPU)", 
-                    f"{float(usb_timer.ts_begin_return)}"
+                    f"{float(usb_timer.ts_begin_return)}",
+                    debug_color_text(
+                        f"{float(usb_timer.ts_end_return)} - {float(usb_timer.ts_begin_return)}", 
+                        "white", "on_blue"),
+                    debug_color_text(
+                        f"TPU DATA: {tpu_data * 10**6} us", 
+                        "white", "on_blue"),
+                    debug_color_text(
+                        f"{(tpu_data / total_time) * 100} %", 
+                        "white", "on_blue")
                     ],
 
                     [
@@ -265,11 +308,35 @@ def debug_stamps(usb_timer_arr):
                     [
                     f"INTERRUPT END / END OF SESSION", 
                     f"{float(usb_timer.ts_absolute_end)}" if (length == sessions_nr) else f"{float(usb_timer.ts_end_return)}", 
-                    f"{usb_timer.interrupt_end_src} ---> {usb_timer.interrupt_end_dst}" if (length == sessions_nr) else " "
+                    "       "
                     ],
 
                     [
-                    f"TOTAL TIME: {1000 * (float(usb_timer.ts_end_return) - float(usb_timer.ts_begin_host_send_request))}ms"
+                    f"INFERENCE TIME", 
+                    "              ", 
+                    debug_color_text(
+                        f"{float(usb_timer.ts_begin_return)} - {float(usb_timer.ts_end_submission)}", 
+                        "red", "on_white"),
+                    debug_color_text(
+                        f"INF: {inference * 10**6} us", 
+                        "red", "on_white"),
+                    debug_color_text(
+                        f"{(inference / total_time) * 100} %", 
+                        "red", "on_white")
+                    ],
+
+                    [
+                    f"TOTAL TIME", 
+                    "              ", 
+                    debug_color_text(
+                        f"{float(usb_timer.ts_end_return)} - {float(usb_timer.ts_begin_host_send_request)}", 
+                        "blue", "on_white"),
+                    debug_color_text(
+                        f"TOT: {total_time * 10**6} us", 
+                        "blue", "on_white"),
+                    debug_color_text(
+                        f"100 %", 
+                        "blue", "on_white")
                     ]
                ]
 
@@ -337,14 +404,14 @@ def debug_usb(usb_array):
                 color = "white"
                 back = None
         else:
-            color = "white"
-            back = None
+            color = "black"
+            back = "on_magenta"
 
         tmp = [
                debug_color_text(f"USB ({i + 1})", color, back), 
                debug_color_text(f"{u.src} --> {u.dest}", color, back), 
                debug_color_text(f"{u.transfer_type} - {u.urb_type}", color, back),
-               debug_color_text(f"{u.ts}", color, back),
+               debug_color_text(f"{float(u.ts)}", color, back),
                debug_color_text(f"{u.data_presence}", color, back),
                debug_color_text(f"{u.valid_data_len}", color, back)
                ]
@@ -692,10 +759,12 @@ def shark_capture(op, cnt, edge_tpu_id, op_filesize, sessions):
                 usb_array.append(custom_packet)
 
             else:
-                pass
+                # Catching for inspection.
+                usb_array.append(custom_packet)
 
         else: # CONTROL PACKETS
-            usb_array.append(custom_packet)
+            if BEGIN:
+                usb_array.append(custom_packet)
 
 
         if END == True:
@@ -768,9 +837,6 @@ def shark_manager(folder, count, edge_tpu_id):
         filepath = m_i[0]
         op = m_i[1]
         shark_single_manager(filepath, cnt, edge_tpu_id)
-
-    usb_results_folder = out_dir
-    plot_manager(usb_results_folder)
 
 
 def shark_single_manager(model, count, edge_tpu_id):

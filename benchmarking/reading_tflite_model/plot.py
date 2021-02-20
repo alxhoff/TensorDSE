@@ -43,6 +43,19 @@ class UsbTimes():
 
         self.neg_values = []
 
+    def extend_array(self, array, value, cnt):
+        tmp = array[len(array) - 1]
+        eval_str = ""
+        for i in range(cnt):
+            if cnt > 1:
+                eval_str = f"{eval_str}tmp[{i}], "
+            else:
+                eval_str = f"tmp, "
+
+        eval_str = f"array[len(array) - 1] = [{eval_str} value]"
+        exec(eval_str)
+
+
     def append_times(self, host_comms_time, host_submission_time, 
                             tpu_comms_time, tpu_return_time,
                             inference_time, total_time,
@@ -59,23 +72,23 @@ class UsbTimes():
             length = len(self.host_comms_array)
 
             if length > 0:
-                tmp = self.host_comms_array[length - 1] 
-                self.host_comms_array[length -1] = [tmp, host_comms_time]
+                self.extend_array(
+                        self.host_comms_array, host_comms_time, sessions_nr)
 
-                tmp = self.host_submission_array[length -1] 
-                self.host_submission_array[length -1] = [tmp, host_submission_time]
+                self.extend_array(
+                        self.host_submission_array, host_submission_time, sessions_nr)
 
-                tmp = self.tpu_comms_array[length -1] 
-                self.tpu_comms_array[length -1] = [tmp, tpu_comms_time]
+                self.extend_array(
+                        self.tpu_comms_array, tpu_comms_time, sessions_nr)
 
-                tmp = self.tpu_return_array[length -1] 
-                self.tpu_return_array[length -1] = [tmp, tpu_return_time]
+                self.extend_array(
+                        self.tpu_return_array, tpu_return_time, sessions_nr)
 
-                tmp = self.inference_array[length -1] 
-                self.inference_array[length -1] = [tmp, inference_time]
+                self.extend_array(
+                        self.inference_array, inference_time, sessions_nr)
 
-                tmp = self.total_array[length -1] 
-                self.total_array[length -1] = [tmp, total_time]
+                self.extend_array(
+                        self.total_array, total_time, sessions_nr)
 
             else:
                 tmp = " "
@@ -271,8 +284,6 @@ def read_timestamps(filename, sessions):
                     tpu_comms_time = float(float(row[4 + expr]) - float(row[3 + expr]))
                     tpu_return_time = float(float(row[5 + expr]) - float(row[4 + expr]))
 
-                    print(f"Sess: {i + 1} - Return Time {tpu_return_time}")
-
                     inference_time = float(float(row[5 + expr]) - float(row[2 + expr]))
                     total_time = float(float(row[5 + expr]) - float(row[0 + expr]))
 
@@ -309,6 +320,17 @@ def read_timestamps(filename, sessions):
     return usb_times, f"{v_cnt}/{cnt*sessions}"
 
 
+def fetch_column_values(tuples, i, sessions):
+    arr = []
+    for val in tuples:
+        if sessions > 1:
+            arr.append(val[i])
+        else:
+            arr.append(val)
+
+    return arr
+
+
 def find_stats(values, sessions):
     import copy
     from statistics import mean, stdev
@@ -317,24 +339,35 @@ def find_stats(values, sessions):
     for i in range(sessions):
         usb_stats = UsbStats()
 
-        host_comms_avg = mean(values.host_comms_array[i])
-        host_comms_std = stdev(values.host_comms_array[i])
+        host_comms_avg = mean(
+                fetch_column_values(values.host_comms_array, i, sessions))
+        host_comms_std = stdev(
+                fetch_column_values(values.host_comms_array, i, sessions))
 
-        host_submission_avg = mean(values.host_submission_array[i])
-        host_submission_std = stdev(values.host_submission_array[i])
+        host_submission_avg = mean(
+                fetch_column_values(values.host_submission_array, i, sessions))
+        host_submission_std = stdev(
+                fetch_column_values(values.host_submission_array, i, sessions))
 
+        tpu_comms_avg = mean(
+                fetch_column_values(values.tpu_comms_array, i, sessions))
+        tpu_comms_std = stdev(
+                fetch_column_values(values.tpu_comms_array, i, sessions))
 
-        tpu_comms_avg = mean(values.tpu_comms_array[i])
-        tpu_comms_std = stdev(values.tpu_comms_array[i])
+        tpu_return_avg = mean(
+                fetch_column_values(values.tpu_return_array, i, sessions))
+        tpu_return_std = stdev(
+                fetch_column_values(values.tpu_return_array, i, sessions))
 
-        tpu_return_avg = mean(values.tpu_return_array[i])
-        tpu_return_std = stdev(values.tpu_return_array[i])
+        inference_avg = mean(
+                fetch_column_values(values.inference_array, i, sessions))
+        inference_std = stdev(
+                fetch_column_values(values.inference_array, i, sessions))
 
-        inference_avg = mean(values.inference_array[i])
-        inference_std = stdev(values.inference_array[i])
-
-        total_avg = mean(values.total_array[i])
-        total_std = stdev(values.total_array[i])
+        total_avg = mean(
+                fetch_column_values(values.total_array, i, sessions))
+        total_std = stdev(
+                fetch_column_values(values.total_array, i, sessions))
 
         usb_stats.append_avgs(host_comms_avg, host_submission_avg, 
                                 tpu_comms_avg, tpu_return_avg,
@@ -461,6 +494,7 @@ def plot_single_manager(filepath, sessions, op=""):
 
 if __name__ == '__main__':
     import os
+    from shark import deduce_sessions_nr
     from utils import deduce_filename
     import argparse
 
@@ -486,6 +520,8 @@ if __name__ == '__main__':
 
     elif (args.mode == "Single" and args.target != ""):
         filepath = args.target
-        plot_single_manager(filepath)
+        filename = deduce_filename(os.path.dirname(filepath))
+        sessions = deduce_sessions_nr(filename)
+        plot_single_manager(filepath, sessions)
     else:
         print("Invaild arguments.")

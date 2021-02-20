@@ -116,7 +116,7 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
         edge_results.append([i, inference_time])
-        print('Inference Time %.1fms' % (inference_time * 1000))
+        print('Inference Time %.1f us' % (inference_time * 10**6))
 
     if (log_performance == True):
         create_csv_file(EDGE_FOLDER, model_name, edge_results)
@@ -198,7 +198,7 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
         cpu_results.append([i, inference_time])
-        print('Inference Time %.1fms' % (inference_time * 1000))
+        print('Inference Time %.1f us' % (inference_time * 10**6))
 
     if (log_performance == True):
         create_csv_file(CPU_FOLDER, model_name, cpu_results)
