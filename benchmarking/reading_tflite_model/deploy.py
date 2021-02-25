@@ -317,12 +317,22 @@ if __name__ == '__main__':
             path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
             docker_copy(path_to_tensorDSE, TO_DOCKER)
 
-            for m_i in models_info:
+            length=len(models_info)
+            i=0
+            while True:
+                m_i = [models_info[i][0], models_info[i][1]]
                 inp = input(f"Operation {m_i[1]}, Continue to Next? ")
                 if inp == "":
+                    if i < length:
+                        i+=1 
+                    else: 
+                        i=0
                     continue
                 elif inp == "c":
-                    print("End.")
+                    if i < length:
+                        i+=1 
+                    else: 
+                        i=0
                     break
                 else:
                     inp = "NONE"
@@ -332,6 +342,7 @@ if __name__ == '__main__':
                         else:
                             docker_exec("shark_single_edge_deploy", m_i[0])
                         inp = input("Continue: ")
+
 
         else:
             print("INVALID delegate input.")

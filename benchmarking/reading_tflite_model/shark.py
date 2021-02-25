@@ -111,6 +111,7 @@ class UsbPacket:
 
     def __init__(self):
         self.data_presence = "Void"
+        self.foreign = False
 
     def timestamp(self, packet):
         self.ts = float(packet.frame_info.time_relative)
@@ -177,8 +178,11 @@ class UsbPacket:
 
     def find_data_length(self, packet):
         """Finds if the overloaded packet contains valid DATA being sent."""
-        len = float(packet.usb.data_len)
-        if len > 0:
+        urb = float(packet.usb.urb_len)
+        length = float(packet.usb.data_len)
+        self.urb_size=urb
+        self.data_size=length
+        if length > 0:
             self.valid_data_len = True
             return True
         else:
@@ -186,15 +190,16 @@ class UsbPacket:
             return False
 
     def verify_src(self, edge_tpu_id, string):
+        valid=f"{edge_tpu_id}.3"
         if string == "begin":
-            return True if ("host" == self.src and edge_tpu_id in self.dest) else False
+            return True if ("host" == self.src and valid == self.dest) else False
 
         elif string == "end":
-            return True if (edge_tpu_id in self.src and "host" == self.dest) else False
+            return True if (valid == self.src and "host" == self.dest) else False
 
         else: # both
-            return True if ((edge_tpu_id in self.src and "host" == self.dest) 
-                            or ("host" == self.src and edge_tpu_id in self.dest)) else False
+            return True if (((edge_tpu_id in self.src) and ("host" == self.dest))
+                            or (("host" == self.src) and (edge_tpu_id in self.dest))) else False
 
     def verify_begin_return(self, packet):
         endp = int(packet.usb.endpoint_address_number)
@@ -204,6 +209,9 @@ class UsbPacket:
         else:
             self.dubious_return = False
             return False
+
+    def mark_foreign(self):
+        self.foreign == True
 
 
 def debug_stamps(usb_timer_arr):
@@ -361,50 +369,56 @@ def debug_usb(usb_array):
                     f"Direction",
                     f"Types",
                     f"Timestamp",
+                    f"Data Size",
+                    f"URB Size",
                     f"Data Presence",
                     f"Data Validity"
                     ])
 
     table = []
     for u,i in zip(usb_array, range(len(usb_array))):
-        if u.transfer_type == "INTERRUPT":
-            color = "magenta"
-            back = None
-
-        elif ("BULK" in u.transfer_type):
-            if u.src == "host" and not u.data_presence:
-                color = "white"
+        if not u.foreign:
+            if u.transfer_type == "INTERRUPT":
+                color = "magenta"
                 back = None
 
-            elif (u.src == "host" and not u.valid_data_len):
-                color = "red"
-                back = "on_blue"
+            elif ("BULK" in u.transfer_type):
+                if u.src == "host" and not u.data_presence:
+                    color = "white"
+                    back = None
 
-            elif (u.src == "host" and u.data_presence and u.valid_data_len):
-                color = "white"
-                back = "on_red"
+                elif (u.src == "host" and not u.valid_data_len):
+                    color = "red"
+                    back = "on_blue"
 
-            elif (u.src != "host" and not u.data_presence):
-                color = "blue"
-                back = None
+                elif (u.src == "host" and u.data_presence and u.valid_data_len):
+                    color = "white"
+                    back = "on_red"
 
-            elif (u.src != "host" 
-                    and u.data_presence
-                    and u.valid_data_len):
-                color = "white"
-                back = "on_blue"
+                elif (u.src != "host" and not u.data_presence):
+                    color = "blue"
+                    back = None
 
-            elif (u.src != "host" 
-                    and u.data_presence
-                    and not u.valid_data_len):
-                color = "red"
-                back = None
+                elif (u.src != "host" 
+                        and u.data_presence
+                        and u.valid_data_len):
+                    color = "white"
+                    back = "on_blue"
 
+                elif (u.src != "host" 
+                        and u.data_presence
+                        and not u.valid_data_len):
+                    color = "red"
+                    back = None
+
+                else:
+                    color = "white"
+                    back = "on_magenta"
             else:
                 color = "white"
-                back = None
+                back = "on_magenta"
         else:
-            color = "black"
+            color = "white"
             back = "on_magenta"
 
         tmp = [
@@ -412,6 +426,8 @@ def debug_usb(usb_array):
                debug_color_text(f"{u.src} --> {u.dest}", color, back), 
                debug_color_text(f"{u.transfer_type} - {u.urb_type}", color, back),
                debug_color_text(f"{float(u.ts)}", color, back),
+               debug_color_text(f"{u.data_size}", color, back),
+               debug_color_text(f"{u.urb_size}", color, back),
                debug_color_text(f"{u.data_presence}", color, back),
                debug_color_text(f"{u.valid_data_len}", color, back)
                ]
@@ -659,6 +675,10 @@ def shark_capture(op, cnt, edge_tpu_id, op_filesize, sessions):
                 usb_array.append(custom_packet)
 
             elif (BEGIN == True
+                    and custom_packet.verify_src(edge_tpu_id, "begin")):
+                print("HERE")
+
+            elif (BEGIN == True
                     and custom_packet.verify_src(edge_tpu_id, "end")):
                 END = True
                 usb_timer.stamp_ending(raw_packet)
@@ -704,7 +724,6 @@ def shark_capture(op, cnt, edge_tpu_id, op_filesize, sessions):
                         and running_sess < sessions): # and host begins to send again
 
                     import copy
-                    # print(f"New Session: USB number {len(usb_array) + 1}")
                     last_usb_timer = copy.deepcopy(usb_timer)
                     usb_timer_array.append(last_usb_timer)
 
@@ -749,7 +768,6 @@ def shark_capture(op, cnt, edge_tpu_id, op_filesize, sessions):
 
                 if (beginning_of_return == False 
                         and not custom_packet.verify_begin_return(raw_packet)):
-                    # print(f"Special Activated: USB number {len(usb_array) + 1}")
                     usb_timer.stamp_beginning_return(raw_packet)
                     beginning_of_return = True
 
@@ -762,12 +780,14 @@ def shark_capture(op, cnt, edge_tpu_id, op_filesize, sessions):
                 # Catching for inspection.
                 usb_array.append(custom_packet)
 
-        else: # CONTROL PACKETS
-            if BEGIN:
+        else: # CONTROL PACKETS AND/OR UNEXPECTED PACKETS
+            if BEGIN and valid_comms:
+                custom_packet.mark_foreign
                 usb_array.append(custom_packet)
 
 
         if END == True:
+            print("Ended Capture.")
             if DEBUG:
                 from plot import validity_check
                 usb_timer_array.append(usb_timer)
@@ -781,9 +801,11 @@ def shark_capture(op, cnt, edge_tpu_id, op_filesize, sessions):
 
             break
 
+
 def docker_deploy_mgr(model, op):
     from docker import HOME, FROM_DOCKER
     from docker import docker_exec, docker_copy
+    import time
 
     path_to_results = "results/edge/tmp"
     path_to_docker_results = HOME + \
@@ -906,14 +928,6 @@ def shark_single_manager(model, count, edge_tpu_id):
     create_csv_file("results/edge/", op, edge_results)
     plot_single_manager(usb_results_file, sessions)
 
-def shark_sm_wrapper(target, count, edge_tpu_id):
-    from multiprocessing import Pool
-
-    pool = Pool(1)
-    pool.apply(shark_single_manager, args=(target, count, edge_tpu_id))
-    pool.close()
-    pool.join()
-
 
 if __name__ == '__main__':
     import argparse
@@ -949,6 +963,8 @@ if __name__ == '__main__':
         reset_ulimit()
 
     elif (args.mode == "Single"):
+        DEBUG=1
+
         shark_usbmon_init()
         prepare_ulimit()
         edge_tpu_id = lsusb_identify()
