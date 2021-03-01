@@ -195,7 +195,7 @@ def integrate_results(usb_results_file, op):
 
     # Basically cut the ending of the string that is preceded by a '_'
     # Which means cut the appended filesize to the op name.
-    op = (op.strip(op.split("_")[op.count("_")])).strip("_")
+    op = (op.rstrip(op.split("_")[op.count("_")])).strip("_")
 
     for dirs in listdir(edge_results_dir):
         if dirs == op:
@@ -400,38 +400,35 @@ def read_timestamps(filename, sessions):
         for row in csv_reader:
             if not header:
                 cnt += 1
-                if cnt > (1 * sessions):
-                    for i in range(sessions):
-                        expr = 6 * (i)
-                        host_comms_time = float(float(row[1 + expr]) - float(row[0 + expr]))
-                        host_submission_time = float(float(row[2 + expr]) - float(row[1 + expr]))
+                for i in range(sessions):
+                    expr = 6 * (i)
+                    host_comms_time = float(float(row[1 + expr]) - float(row[0 + expr]))
+                    host_submission_time = float(float(row[2 + expr]) - float(row[1 + expr]))
 
-                        tpu_comms_time = float(float(row[4 + expr]) - float(row[3 + expr]))
+                    tpu_comms_time = float(float(row[4 + expr]) - float(row[3 + expr]))
 
-                        tpu_return_time = float(float(row[5 + expr]) - float(row[4 + expr]))
-                        if tpu_return_time == 0:
-                            tpu_return_time = float(float(row[5 + expr]) - float(row[3 + expr]))
+                    tpu_return_time = float(float(row[5 + expr]) - float(row[4 + expr]))
 
-                        inference_time = float(float(row[4 + expr]) - float(row[2 + expr]))
-                        total_time = float(float(row[5 + expr]) - float(row[0 + expr]))
+                    inference_time = float(float(row[4 + expr]) - float(row[2 + expr]))
+                    total_time = float(float(row[5 + expr]) - float(row[0 + expr]))
 
-                        if (host_comms_time > 0 and host_submission_time > 0
-                            and tpu_comms_time > 0 and tpu_return_time > 0 
-                            and inference_time > 0):
+                    if (host_comms_time > 0 and host_submission_time > 0
+                        and tpu_comms_time > 0 and tpu_return_time > 0 
+                        and inference_time > 0):
 
-                            v_cnt += 1
-                            usb_times.append_times(
-                                    host_comms_time, host_submission_time, 
-                                    tpu_comms_time, tpu_return_time,
-                                    inference_time, total_time,
-                                    i)
+                        v_cnt += 1
+                        usb_times.append_times(
+                                host_comms_time, host_submission_time, 
+                                tpu_comms_time, tpu_return_time,
+                                inference_time, total_time,
+                                i)
 
-                        else:
-                            usb_times.append_neg_times(
-                                    host_comms_time, host_submission_time, 
-                                    tpu_comms_time, tpu_return_time,
-                                    inference_time, total_time, 
-                                    i)
+                    else:
+                        usb_times.append_neg_times(
+                                host_comms_time, host_submission_time, 
+                                tpu_comms_time, tpu_return_time,
+                                inference_time, total_time, 
+                                i)
 
             header = False
 
@@ -444,8 +441,8 @@ def read_timestamps(filename, sessions):
     if v_cnt == 0: 
         sys.exit("NO VALID RESULTS FOUND.")
 
-    log.info(f"Valid: {v_cnt}/{(cnt - 1)*sessions}")
-    return usb_times, f"{v_cnt}/{(cnt - 1)*sessions}"
+    log.info(f"Valid: {v_cnt}/{(cnt)*sessions}")
+    return usb_times, f"{v_cnt}/{(cnt)*sessions}"
 
 
 def fetch_column_values(tuples, i, sessions):

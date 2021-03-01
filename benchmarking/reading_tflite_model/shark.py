@@ -455,7 +455,6 @@ def debug_usb(usb_array):
     print(f"{tabulate(header)}")
     print(f"{tabulate(table)}")
 
-
 def export_analysis(op, filesize, sessions, usb_timer_arr):
     """Creates CSV file with the relevant usb transfer timestamps.
 
@@ -514,6 +513,18 @@ def export_analysis(op, filesize, sessions, usb_timer_arr):
                 row.append(usb_timer.ts_end_return)                 # End TPU Sub/Return
 
             fw.writerow(row)
+
+def process_results(tmp_results):
+    results = []
+    host_comms = 0
+    for res in tmp_results:
+        if host_comms == 0:
+            host_comms = float(res.ts_begin_submission - res.ts_begin_host_send_request)
+
+        results.append(res[1:])
+
+    return results
+
 
 
 def lsusb_identify():
@@ -634,7 +645,7 @@ def shark_analyze_stream(edge_tpu_id):
             break
 
 
-def shark_analyze_sessions(op, op_filesize, sessions, count, edge_tpu_id):
+def shark_analyze_sessions(op, op_filesize, sessions, edge_tpu_id, q):
     """Continuouly reads usb packet traffic and retreives the necessary
     timestamps within that cycle.
 
@@ -677,12 +688,10 @@ def shark_analyze_sessions(op, op_filesize, sessions, count, edge_tpu_id):
     beginning_invalid_return = False
 
     capture_filter = ""
-    # c_parameters = {"-l":""}
     capture = pyshark.LiveCapture(
         interface='usbmon0', display_filter=capture_filter,
-        only_summaries=True)
+        only_summaries=False)
 
-    rounds_nr = 0
     usb_timer = UsbTimer()
     for raw_packet in capture.sniff_continuously():
         custom_packet = UsbPacket()
@@ -811,7 +820,7 @@ def shark_analyze_sessions(op, op_filesize, sessions, count, edge_tpu_id):
                 debug_stamps(usb_timer_array, sessions)
             else:
                 usb_timer_array.append(usb_timer)
-                export_analysis(op, op_filesize, sessions, usb_timer_array)
+                q.put(usb_timer_array)
             break
 
 
@@ -835,11 +844,13 @@ def shark_single_manager(model, count, edge_tpu_id):
     import os
     import logging
     import subprocess
-    from multiprocessing import Process
+    from multiprocessing import Process, Queue
     from utils import retrieve_folder_path, extend_directory, deduce_operation_from_file
     from utils import create_csv_file, deduce_filename, deduce_filesize
     from utils import deduce_sessions_nr
     from plot import plot_manager
+
+    q = Queue()
 
     filename = deduce_filename(model)
     filesize = deduce_filesize(model)
@@ -851,20 +862,27 @@ def shark_single_manager(model, count, edge_tpu_id):
     log = logging.getLogger(__name__)
     logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
     log.info(f"Operation {op}: {count}x")
-    # assert count % 5 == 0, "Count must divisable by 5."
 
-    p_1 = Process(target=shark_analyze_sessions,
-                    args=(op, filesize, sessions, count, edge_tpu_id))
+    results = []
+    for i in range(count/5):
+        p_1 = Process(target=shark_analyze_sessions,
+                        args=(op, filesize, sessions, edge_tpu_id, q))
 
-    p_2 = Process(target=docker_deploy_sessions, 
-                    args=(model, op, count))
+        p_2 = Process(target=docker_deploy_sessions, 
+                        args=(model, op, 5))
 
-    p_1.start()
-    p_2.start()
+        p_1.start()
+        p_2.start()
 
-    p_2.join()
-    p_1.join()
+        tmp_results = q.get()
 
+        p_2.join()
+        p_1.join()
+
+        # results = process_results(tmp_results)
+
+
+    export_analysis(op, filesize, sessions, results)
     plot_manager(f"{op}_{filesize}", filesize, sessions)
 
 

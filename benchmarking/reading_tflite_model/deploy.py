@@ -105,7 +105,7 @@ def edge_tflite_deployment(count, model_file, model_name=None):
         log.info("EDGE DEPLOYMENT...")
 
     for i in range(count):
-        log.info(f"{model_name}: {i+1}/{count}")
+        log.info(f"{model_name}: {i+1}/{count - 1}")
 
         # INFERENCE TIME
 
@@ -192,7 +192,7 @@ def cpu_tflite_deployment(count, model_file, model_name=None):
         log.info("CPU DEPLOYMENT...")
 
     for i in range(count):
-        log.info(f"{model_name}: {i+1}/{count}")
+        log.info(f"{model_name}: {i+1}/{count - 1}")
 
         # INFERENCE TIME
         start = time.perf_counter()
