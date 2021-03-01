@@ -36,7 +36,7 @@ def make_interpreter(model_file):
                               experimental_delegates=experimental_delegates)
 
 
-def edge_group_tflite_deployment(models_folder, count=5, log_performance=True):
+def edge_group_tflite_deployment(models_folder, count=5):
     """Deploys a group/series of tflite models onto the tpu.
 
     Parameters
@@ -47,18 +47,15 @@ def edge_group_tflite_deployment(models_folder, count=5, log_performance=True):
 
     count : Integer
     Number of times each model will be deployed.
-
-    log_performance : Bool
-    Tells if the deployed edge models are to be timed or not.
     """
     from utils import deduce_operations_from_folder
 
     for model_info in deduce_operations_from_folder(models_folder, beginning="quant_", ending="_edgetpu.tflite"):
         edge_tflite_deployment(
-            model_info[0], model_info[1], count, log_performance)
+                count, model_info[0], model_info[1])
 
 
-def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
+def edge_tflite_deployment(count, model_file, model_name=None):
     """The actual deployment on the edge tpu of a single model.
 
     Parameters
@@ -72,15 +69,17 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
 
     count : Integer
     Number of times this model will be deployed.
-
-    log_performance : Bool
-    Tells if the deployed edge models are to be timed or not.
     """
     import time
+    import logging
     import numpy as np
-    from utils import create_csv_file
+    from utils import create_csv_file, deduce_filename, deduce_operation_from_file
 
     edge_results = []
+    if model_name == None:
+        model_name = deduce_operation_from_file(
+                        deduce_filename(model_file), 
+                        beginning="quant_", ending="_edgetpu")
 
     # Creates Interpreter Object.
     interpreter = make_interpreter(model_file)
@@ -99,11 +98,14 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
         input_shape), dtype=input_dtype)
     interpreter.set_tensor(input_details[0]['index'], input_data)
 
-    if count > 1:
-        print("EDGE DEPLOYMENT")
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
+    if count > 1: 
+        log.info("EDGE DEPLOYMENT...")
 
     for i in range(count):
-        print(f"{model_name}: {i+1}/{count}")
+        log.info(f"{model_name}: {i+1}/{count}")
 
         # INFERENCE TIME
 
@@ -116,13 +118,12 @@ def edge_tflite_deployment(model_file, model_name, count, log_performance=True):
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
         edge_results.append([i, inference_time])
-        print('Inference Time %.1f us' % (inference_time * 10**6))
+        # log.info('Inference Time %.1f us' % (inference_time * 10**6))
 
-    if (log_performance == True):
-        create_csv_file(EDGE_FOLDER, model_name, edge_results)
+    create_csv_file(EDGE_FOLDER, model_name, edge_results)
 
 
-def cpu_group_tflite_deployment(models_folder, count=5, log_performance=True):
+def cpu_group_tflite_deployment(models_folder, count=5):
     """Deploys a group/series of tflite models onto the cpu.
 
     Parameters
@@ -140,10 +141,10 @@ def cpu_group_tflite_deployment(models_folder, count=5, log_performance=True):
     from utils import deduce_operations_from_folder
 
     for model_info in deduce_operations_from_folder(models_folder, beginning=None, ending=".tflite"):
-        cpu_tflite_deployment(model_info[0], model_info[1], count)
+        cpu_tflite_deployment(count, model_info[0], model_info[1])
 
 
-def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
+def cpu_tflite_deployment(count, model_file, model_name=None):
     """The actual deployment on the cpu of a single model.
 
     Parameters
@@ -158,15 +159,17 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
     count : Integer
     Number of times each model will be deployed.
 
-    log_performance : Bool
-    Tells if the deployed edge models are to be timed or not.
     """
     import time
+    import logging
     import tensorflow as tf
     import numpy as np
-    from utils import create_csv_file
+    from utils import create_csv_file, deduce_filename, deduce_operation_from_file
 
     cpu_results = []
+    if model_name == None:
+        model_name = model_file.split("/")[model_file.count("/")]
+        model_name = deduce_operation_from_file(model_name, ending=".tflite")
 
     # Creates Interpreter Object.
     interpreter = tf.lite.Interpreter(model_path=model_file)
@@ -178,15 +181,18 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
     input_shape = input_details[0]['shape']
     input_dtype = input_details[0]['dtype']
 
-    input_data = np.array(np.random.random_sample(
-        input_shape), dtype=input_dtype)
+    input_data = np.array(
+            np.random.random_sample(input_shape), dtype=input_dtype)
+
     interpreter.set_tensor(input_details[0]['index'], input_data)
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
     if count > 1:
-        print("CPU DEPLOYMENT")
+        log.info("CPU DEPLOYMENT...")
 
     for i in range(count):
-        print(f"{model_name}: {i+1}/{count}")
+        log.info(f"{model_name}: {i+1}/{count}")
 
         # INFERENCE TIME
         start = time.perf_counter()
@@ -198,10 +204,9 @@ def cpu_tflite_deployment(model_file, model_name, count, log_performance=True):
         output_data = interpreter.get_tensor(output_details[0]['index'])
 
         cpu_results.append([i, inference_time])
-        print('Inference Time %.1f us' % (inference_time * 10**6))
+        # log.info('Inference Time %.1f us\n' % (inference_time * 10**6))
 
-    if (log_performance == True):
-        create_csv_file(CPU_FOLDER, model_name, cpu_results)
+    create_csv_file(CPU_FOLDER, model_name, cpu_results)
 
 
 def tflite_deployment(count=1000):
@@ -248,100 +253,96 @@ if __name__ == '__main__':
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('-d', '--delegate', default="",
-                        required=False, help='cpu or edge_tpu.')
+                        required=False, help='cpu or edge.')
 
-    parser.add_argument('-m', '--model',
+    parser.add_argument('-m', '--mode', default="Deploy",
+                        required=False, help='Group, Single, Debug.')
+
+    parser.add_argument('-t', '--target',
                         help='File path to the .tflite file.')
 
-    parser.add_argument('-n', '--name',
-                        help='Name of Model/Operation, needed to create corresponding folder name.')
+    parser.add_argument('-f', '--folder', default="models/compiled/",
+                        help='Path to folder where the group of models is located.')
 
     parser.add_argument('-c', '--count', type=int, default=1,
                         help='Number of times to run inference.')
 
-    parser.add_argument('-g', '--group', type=bool, default=False,
-                        help='Flag to determine if its a group deployment or single model deplyment.')
-
-    parser.add_argument('-l', '--log', type=bool, default=False,
-                        help='Flag to know if the user wishes to log the performance or not.')
-
-    parser.add_argument('-f', '--group_folder', default="models/compiled/",
-                        help='Path to folder where the group of models is located. Only accepted in group mode.')
-
-    parser.add_argument('-M', '--mode', default="Deploy",
-                        required=False, help='Debug or Deploy, should only be used with source==Host.')
-
-    parser.add_argument('-s', '--source', default="Docker",
-                        required=False, help='Host or Docker.')
-
     args = parser.parse_args()
 
-    if args.source == "Docker":
-        if ("cpu" in args.delegate):
-            if (args.group):
-                cpu_group_tflite_deployment(
-                    args.group_folder, count=args.count, log_performance=(not args.log))
-            else:
-                cpu_tflite_deployment(args.model, args.name, args.count, log_performance=(not args.log))
-
-        elif ("edge_tpu" in args.delegate):
-            if (args.group):
-                edge_group_tflite_deployment(
-                    args.group_folder, count=args.count, log_performance=(not args.log))
-            else:
-                if args.name == None:
-                    from utils import deduce_filename
-                    from plot import deduce_plot_filename
-                    args.name = (deduce_plot_filename(deduce_filename(args.model))).split(
-                                "quant_")[1]
-
-                edge_tflite_deployment(args.model, args.name,
-                                       args.count, log_performance=(not args.log))
+    if (args.mode == "Group"):
+        if (args.delegate == "cpu"):
+            cpu_group_tflite_deployment(args.folder, count=args.count)
         else:
-            print("INVALID delegate input.")
+            edge_group_tflite_deployment(args.folder, count=args.count)
 
-    else:
-        if args.mode == "All":
-            tflite_deployment(args.count)
+    elif (args.mode == "Single"):
+        if (args.delegate == "cpu"):
+            cpu_tflite_deployment(args.count, args.target)
+        else:
+            edge_tflite_deployment(args.count, args.target)
 
-        elif args.mode == "Debug":
-            import os
-            from utils import deduce_operations_from_folder, retrieve_folder_path
-            from docker import docker_start, docker_exec, docker_copy, TO_DOCKER
+    elif args.mode == "Deploy-Group":
+        import os
+        for model in os.listdir(args.folder):
+            if args.delegate == "cpu": target = f"{args.folder}{model}/{model}.tflite"
+            else: target = f"{args.folder}{model}"
+            os.system(
+            f"python deploy.py -m Deploy-Single -d {args.delegate} -t {target} -c {str(args.count)}")
 
-            docker_start()
-            models_info = deduce_operations_from_folder(args.group_folder,
-                                                        beginning="quant_",
-                                                        ending="_edgetpu.tflite")
 
-            path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
-            docker_copy(path_to_tensorDSE, TO_DOCKER)
+    elif args.mode == "Deploy-Single":
+        import os
+        from utils import retrieve_folder_path
+        from utils import deduce_operation_from_file, extend_directory
+        from docker import docker_exec, docker_copy, HOME, TO_DOCKER, FROM_DOCKER
 
-            length=len(models_info)
-            i=0
-            while True:
-                m_i = [models_info[i][0], models_info[i][1]]
-                inp = input(f"Operation {m_i[1]}, Continue to Next? ")
-                if inp == "":
-                    if i < length:
-                        i+=1 
-                    else: 
-                        i=0
-                    continue
-                elif inp == "c":
-                    if i < length:
-                        i+=1 
-                    else: 
-                        i=0
-                    break
-                else:
-                    inp = "NONE"
-                    while(inp != "" and inp != 'c'):
-                        if args.delegate == "cpu":
-                            docker_exec("cpu_single_deploy", m_i[0])
-                        else:
-                            docker_exec("shark_single_edge_deploy", m_i[0])
-                        inp = input("Continue: ")
+        path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
+        path_to_docker_results = HOME + \
+        "TensorDSE/benchmarking/reading_tflite_model/results/"
+
+        docker_copy(path_to_tensorDSE, TO_DOCKER)
+        op = args.target.split("/")[args.target.count("/")]
+        if args.delegate == "cpu":
+            op = deduce_operation_from_file(op, ending=".tflite")
+            extend_directory("results/cpu/", f"{op}")
+            path_to_results = f"results/cpu/{op}/"
+            docker_exec("cpu_single_deploy", args.target, args.count)
+            docker_copy(f"{path_to_docker_results}cpu/{op}/Results.csv",
+                            FROM_DOCKER, path_to_results)
+            docker_exec("remove", "TensorDSE")
+        else:
+            op = deduce_operation_from_file(op, beginning="quant_", ending="_edgetpu")
+            extend_directory("results/edge/", f"{op}")
+            path_to_results = f"results/edge/{op}/"
+            docker_exec("edge_single_deploy", args.target, args.count)
+            docker_copy(f"{path_to_docker_results}edge/{op}/Results.csv",
+                            FROM_DOCKER, path_to_results)
+            docker_exec("remove", "TensorDSE")
+
+    elif args.mode == "Debug":
+        import os
+        from utils import deduce_operations_from_folder, retrieve_folder_path
+        from docker import docker_start, docker_exec, docker_copy, TO_DOCKER
+
+        docker_start()
+        models_info = deduce_operations_from_folder(
+                args.folder, beginning="quant_",ending="_edgetpu.tflite")
+
+        path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
+        docker_copy(path_to_tensorDSE, TO_DOCKER)
+
+        for m_i in models_info:
+            inp = input(f"Operation {m_i[1]}, Continue to Next? ")
+            if inp == "": continue
+            elif inp == "c": break
+            else:
+                inp = "NONE"
+                while(inp != "" and inp != 'c'):
+                    if args.delegate == "cpu":
+                        docker_exec("cpu_single_deploy", m_i[0], args.count)
+                    else:
+                        docker_exec("edge_single_deploy", m_i[0], args.count)
+                    inp = input("Continue: ")
 
 
         else:

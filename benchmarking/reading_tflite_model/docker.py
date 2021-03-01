@@ -6,24 +6,6 @@ HOME = "/home/deb/"
 DOCKER = "debian-docker"
 LOCATION = "quant"
 
-count = 1000
-
-def set_docker_globals(cnt):
-    """Sets the value of the global variable count.
-    
-    Is necessary since the docker script's functions may be called from
-    different scripts that may need to set this variable to a wished value.
-
-    Parameters
-    ---------
-    cnt : Integer
-    Value used to set a count to a specific iteration, be that the number of
-    edge deployments or the number pyshark runs.
-    """
-    global count
-    count = cnt
-
-
 def docker_start():
     """Starts docker."""
     import logging
@@ -37,7 +19,7 @@ def docker_start():
     os.system(docker_start_cmd)
 
 
-def docker_exec(cmd_type, objct=""):
+def docker_exec(cmd_type, objct="", count=1):
     """Executes a command onto the docker.
 
     Is somewhat the center of docker.py, since compiling and deploying tflite
@@ -83,39 +65,35 @@ def docker_exec(cmd_type, objct=""):
 
     log = logging.getLogger(__name__)
     logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
-
     log.info(f"Executing command: '{cmd_type}' on Docker...")
     
     # Listing relevant command strings.
-    mkdir_prefix = f"[ -d {HOME}{objct} ] || "
-    docker_exec_prefix = f"docker exec -ti {DOCKER} sh -c "
-    edge_compiler_suffix = f"{objct} -o {HOME}/comp"
+    mkdir_prefix            = f"[ -d {HOME}{objct} ] || "
+    rm_prefix               = f"[ -d {HOME}{objct} ] && "
+    docker_exec_prefix      = f"docker exec -ti {DOCKER} sh -c "
+    edge_compiler_suffix    = f"{objct} -o {HOME}/comp"
 
-    cd_deploy_dir = f"cd {HOME}TensorDSE/benchmarking/reading_tflite_model/"
-    edge_deploy = f"sudo python3 deploy.py -g True -f models/compiled/ -d edge_tpu -c {count}"
-    shark_edge_deploy = f"sudo python3 deploy.py -g True -l False -f models/compiled/ -d edge_tpu -c {count}"
-    shark_single_edge_deploy = f"sudo python3 deploy.py -l False -d edge_tpu -c 1 -m {objct}"
-    shark_single_edge_deploy_log = f"sudo python3 deploy.py -d edge_tpu -c 1 -m {objct}"
-    cpu_deploy = f"sudo python3 deploy.py -g True -f models/layers/ -d cpu -c {count}"
-    cpu_single_deploy = f"sudo python3 deploy.py -l False -d cpu -c 1 -m {objct}"
+    cd_deploy_dir           = f"cd {HOME}TensorDSE/benchmarking/reading_tflite_model/"
+    edge_deploy             = f"sudo python3 deploy.py -m Group -f {objct} -d edge_tpu -c {count}"
+    cpu_deploy              = f"sudo python3 deploy.py -m Group -f {objct} -d cpu -c {count}"
+    edge_single_deploy      = f"sudo python3 deploy.py -m Single -d edge_tpu -c {count} -t {objct}"
+    cpu_single_deploy       = f"sudo python3 deploy.py -m Single -d cpu -c {count} -t {objct}"
 
     docker_exec_dict = {
-        "mkdir"                         : [docker_exec_prefix, place_within_quotes(f"{mkdir_prefix} mkdir {HOME}{objct}")],
-        "edgetpu_compiler"              : [docker_exec_prefix, place_within_quotes(f"edgetpu_compiler -s {edge_compiler_suffix}")],
-        "edge_python_deploy"            : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {edge_deploy}")],
-        "shark_edge_python_deploy"      : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {shark_edge_deploy}")],
-        "shark_single_edge_deploy"      : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {shark_single_edge_deploy}")],
-        "shark_single_edge_deploy_log"  : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {shark_single_edge_deploy_log}")],
-        "cpu_single_deploy"             : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {cpu_single_deploy}")],
-        "cpu_python_deploy"             : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {cpu_deploy}")],
-        ""                              : None
+        "mkdir"                 : [docker_exec_prefix, place_within_quotes(f"{mkdir_prefix} mkdir {HOME}{objct}")],
+        "remove"                : [docker_exec_prefix, place_within_quotes(f"{rm_prefix} sudo rm -rf {HOME}{objct}")],
+        "edge_compile"          : [docker_exec_prefix, place_within_quotes(f"edgetpu_compiler -s {edge_compiler_suffix}")],
+        "edge_deploy"           : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {edge_deploy}")],
+        "cpu_deploy"            : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {cpu_deploy}")],
+        "edge_single_deploy"    : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {edge_single_deploy}")],
+        "cpu_single_deploy"     : [docker_exec_prefix, place_within_quotes(f"{cd_deploy_dir} && {cpu_single_deploy}")],
+        ""                      : None
     }
 
     default = None
-
-    # Retreives the command arguments from dictionary.
     args = docker_exec_dict.get(cmd_type, default)
 
+    assert args != None, "Incorrect docker exec command given."
     if(args):
         # Concatenates arguments.
         docker_exec_cmd = concat_args(args)

@@ -210,13 +210,13 @@ if __name__ == '__main__':
                         default="cpu", 
                         help='Delegates: cpu or edge_tpu.')
 
-    parser.add_argument('-m', '--all', required=False, 
-                        default=True, 
+    parser.add_argument('-m', '--mode', required=False, 
+                        default="Group", 
                         help='Plot all hardware analysis.')
 
     args = parser.parse_args()
 
-    if (args.all):
+    if (args.mode == "Group"):
         cpu_op_classes = init_op_classes(results_folder + "cpu/")
         store_op_info(cpu_op_classes)
         retreive_stat_info_op(cpu_op_classes)

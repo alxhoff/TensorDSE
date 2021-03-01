@@ -38,6 +38,26 @@ def load_json(file_path):
         return model
 
 
+def prepare_ulimit(limit=4096):
+    import logging
+    import os
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+    log.info("Prepping ulimit...")
+
+    os.system(f"ulimit -n {limit}")
+
+
+def reset_ulimit():
+    import logging
+    import os
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
+    log.info("Resetting ulimit...")
+    os.system("ulimit -n 1024")
+
+
 def parse_csv(filename):
     import csv
 
@@ -56,16 +76,18 @@ def create_csv_file(path_file, folder_name, results):
     import os
     import csv
 
-    csv_dir = f"{path_file}{folder_name}/"
+    csv_dir = f"{path_file}{folder_name}"
     csv_file = f"{csv_dir}/Results.csv"
 
     if (os.path.exists(path_file)):
         if (not os.path.exists(csv_dir)):
-            mkdir_cmd = f"mkdir {csv_dir}"
+            mkdir_cmd = f"mkdir -p {csv_dir}"
             os.system(mkdir_cmd)
         else:
-            clean_up_cmd = f"rm -r {csv_dir}*"
+            clean_up_cmd = f"rm -r {csv_dir}"
             os.system(clean_up_cmd)
+            mkdir_cmd = f"mkdir {csv_dir}"
+            os.system(mkdir_cmd)
     else:
         raise NotImplementedError
 
@@ -75,6 +97,14 @@ def create_csv_file(path_file, folder_name, results):
 
         for i in range(len(results)):
             fw.writerow([results[i][0], results[i][1]])
+
+
+def deduce_sessions_nr(model_name):
+    num = 1
+    if "-" in model_name:
+        num = model_name.count("-")
+    
+    return num
 
 
 def deduce_filesize(filepath):
@@ -309,7 +339,3 @@ def tflite_conversion(op_dir, model_saved_dir, operation_name, input_place):
     open(edge_tf_model_filename, "wb").write(edge_tflite_model)
 
     clean_directory(model_saved_dir)
-
-def direct_tflite_conversion(op_dir, model_saved_dir, operation_name, input_place):
-    import tensorflow as tf
-    pass
