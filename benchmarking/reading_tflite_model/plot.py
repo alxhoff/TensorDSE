@@ -400,7 +400,7 @@ def read_timestamps(filename, sessions):
         for row in csv_reader:
             if not header:
                 cnt += 1
-                if cnt > 1:
+                if cnt > (1 * sessions):
                     for i in range(sessions):
                         expr = 6 * (i)
                         host_comms_time = float(float(row[1 + expr]) - float(row[0 + expr]))
@@ -412,7 +412,7 @@ def read_timestamps(filename, sessions):
                         if tpu_return_time == 0:
                             tpu_return_time = float(float(row[5 + expr]) - float(row[3 + expr]))
 
-                        inference_time = float(float(row[5 + expr]) - float(row[2 + expr]))
+                        inference_time = float(float(row[4 + expr]) - float(row[2 + expr]))
                         total_time = float(float(row[5 + expr]) - float(row[0 + expr]))
 
                         if (host_comms_time > 0 and host_submission_time > 0

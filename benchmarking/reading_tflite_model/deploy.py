@@ -77,9 +77,9 @@ def edge_tflite_deployment(count, model_file, model_name=None):
 
     edge_results = []
     if model_name == None:
+        model_name = model_file.split("/")[model_file.count("/")]
         model_name = deduce_operation_from_file(
-                        deduce_filename(model_file), 
-                        beginning="quant_", ending="_edgetpu")
+                model_name, beginning="quant_", ending="_edgetpu")
 
     # Creates Interpreter Object.
     interpreter = make_interpreter(model_file)

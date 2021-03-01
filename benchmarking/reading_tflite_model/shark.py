@@ -178,7 +178,7 @@ class UsbPacket:
         else:
             raise ValueError("Unknown data presence variable.")
 
-    def find_data_validity(self, packet):
+    def find_data_validity(self, packet, edge_tpu_id):
         """Finds if the overloaded packet contains valid DATA being sent."""
         self.urb_size = float(packet.usb.urb_len)
         self.data_size = float(packet.usb.data_len)
@@ -509,7 +509,7 @@ def export_analysis(op, filesize, sessions, usb_timer_arr):
                 row.append(usb_timer.ts_begin_host_send_request)    # Begin
                 row.append(usb_timer.ts_begin_submission)           # Begin Host Sub
                 row.append(usb_timer.ts_end_submission)             # End Host Sub
-                row.append(usb_timer.ts_end_submission)      # Begin TPU Request
+                row.append(usb_timer.ts_end_submission)             # Begin TPU Request
                 row.append(usb_timer.ts_begin_return)               # Begin TPU Return/ End TPU Request
                 row.append(usb_timer.ts_end_return)                 # End TPU Sub/Return
 
@@ -578,7 +578,6 @@ def docker_deploy_sessions(model, op, count):
     from utils import retrieve_folder_path, extend_directory
     import time
 
-    time.sleep(1)
     cnt = int(count)
 
     path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
@@ -681,7 +680,7 @@ def shark_analyze_sessions(op, op_filesize, sessions, count, edge_tpu_id):
     # c_parameters = {"-l":""}
     capture = pyshark.LiveCapture(
         interface='usbmon0', display_filter=capture_filter,
-        )
+        only_summaries=True)
 
     rounds_nr = 0
     usb_timer = UsbTimer()
@@ -696,7 +695,7 @@ def shark_analyze_sessions(op, op_filesize, sessions, count, edge_tpu_id):
 
         comms_is_valid = custom_packet.verify_src(edge_tpu_id, "all")
         data_is_present = custom_packet.find_data_presence(raw_packet)
-        data_is_valid = custom_packet.find_data_validity(raw_packet)
+        data_is_valid = custom_packet.find_data_validity(raw_packet, edge_tpu_id)
 
         if (custom_packet.transfer_type == "INTERRUPT"): # Interrupts mark beginning and end
             if (BEGUN == False and custom_packet.verify_src(edge_tpu_id, "begin")):
@@ -756,7 +755,8 @@ def shark_analyze_sessions(op, op_filesize, sessions, count, edge_tpu_id):
                         usb_timer.stamp_beginning_submission(raw_packet)
                         beginning_of_submission = True
 
-                    if data_is_valid:
+                    if (data_is_valid
+                            and beginning_of_submission):
                         custom_packet.mark_stamped()
                         usb_timer.stamp_src_host(raw_packet)
 
@@ -787,12 +787,14 @@ def shark_analyze_sessions(op, op_filesize, sessions, count, edge_tpu_id):
                         and custom_packet.urb_type == "COMPLETE"):
 
                     if (beginning_of_return == False # Stamp initial packets 
-                            and data_is_valid):
+                            and data_is_valid
+                            and custom_packet.src != f"{edge_tpu_id}.2"):
                         custom_packet.mark_stamped()
                         usb_timer.stamp_beginning_return(raw_packet)
                         beginning_of_return = True
 
-                    if data_is_valid:
+                    if (data_is_valid
+                        and beginning_of_return):
                         custom_packet.mark_stamped()
                         usb_timer.stamp_src_device(raw_packet)
 
@@ -807,7 +809,6 @@ def shark_analyze_sessions(op, op_filesize, sessions, count, edge_tpu_id):
                 usb_timer_array.append(usb_timer)
                 debug_usb(usb_array)
                 debug_stamps(usb_timer_array, sessions)
-                export_analysis(op, op_filesize, sessions, usb_timer_array)
             else:
                 usb_timer_array.append(usb_timer)
                 export_analysis(op, op_filesize, sessions, usb_timer_array)
@@ -850,6 +851,7 @@ def shark_single_manager(model, count, edge_tpu_id):
     log = logging.getLogger(__name__)
     logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
     log.info(f"Operation {op}: {count}x")
+    # assert count % 5 == 0, "Count must divisable by 5."
 
     p_1 = Process(target=shark_analyze_sessions,
                     args=(op, filesize, sessions, count, edge_tpu_id))
@@ -965,7 +967,8 @@ if __name__ == '__main__':
             if inp == "": continue
             elif inp == "c": break
             else:
-                shark_analyze_sessions(filename, filesize, sessions, edge_tpu_id)
+                shark_analyze_sessions(
+                        filename, filesize, sessions, int(args.count), edge_tpu_id)
 
     else:
         print("Invalid arguments.")
