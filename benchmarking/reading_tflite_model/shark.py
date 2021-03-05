@@ -455,7 +455,42 @@ def debug_usb(usb_array):
     print(f"{tabulate(header)}")
     print(f"{tabulate(table)}")
 
-def export_analysis(op, filesize, sessions, usb_timer_arr):
+def integrate_results(op, count):
+    import os
+    import csv
+    from utils import parse_csv
+
+    first_file = f"results/edge/{op}/Firsts.csv"
+    res_file = f"results/edge/{op}/Results.csv"
+    temp_file = f"results/edge/{op}/Temp.csv"
+
+    results = parse_csv(temp_file)
+    first_results = results[0]
+    if count:
+        flag = 'a+'
+        i = len(parse_csv(res_file))
+        j = len(parse_csv(first_file))
+    else:
+        flag = 'w'
+        i = 0
+        j = 0
+
+    with open(res_file, flag) as csvfile:
+        fw = csv.writer(csvfile, delimiter=',', quotechar='|',
+                        quoting=csv.QUOTE_MINIMAL)
+
+        for res in results[1:]:
+            fw.writerow([i, res])
+            i += 1
+
+    with open(first_file, flag) as csvfile:
+        fw = csv.writer(csvfile, delimiter=',', quotechar='|',
+                        quoting=csv.QUOTE_MINIMAL)
+
+        fw.writerow([j, first_results])
+    os.system(f"[ -f {temp_file} ] && rm {temp_file}")
+
+def export_analysis(op, filesize, sessions, first_results, results, comms):
     """Creates CSV file with the relevant usb transfer timestamps.
 
     The csv file will contain a header exposing the names of the variables
@@ -482,7 +517,10 @@ def export_analysis(op, filesize, sessions, usb_timer_arr):
 
     results_dir = "results/usb/"
     results_folder = f"{op}_{filesize}"
+
+    firsts_file = f"results/usb/{op}_{filesize}/Firsts.csv"
     results_file = f"results/usb/{op}_{filesize}/Results.csv"
+    comms_file = f"results/usb/{op}_{filesize}/Comms.csv"
 
     extend_directory(results_dir, results_folder)
 
@@ -494,36 +532,82 @@ def export_analysis(op, filesize, sessions, usb_timer_arr):
         fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                         quoting=csv.QUOTE_MINIMAL)
 
-        fw.writerow(["start",
-                     "end_host_comms",
-                     "end_host_submission",
-                     "start_tpu_comms",
-                     "start_tpu_return",
-                     "end_tpu_return"
+        fw.writerow(["Host_Submission",
+                     "Tpu_Comms",
+                     "Tpu_Return",
+                     "Inference",
+                     "Total"
                      ])
 
-        for usb_timer in usb_timer_arr:
+        for res in results:
             row = []
-            for _ in range(sessions):
-                row.append(usb_timer.ts_begin_host_send_request)    # Begin
-                row.append(usb_timer.ts_begin_submission)           # Begin Host Sub
-                row.append(usb_timer.ts_end_submission)             # End Host Sub
-                row.append(usb_timer.ts_end_submission)             # Begin TPU Request
-                row.append(usb_timer.ts_begin_return)               # Begin TPU Return/ End TPU Request
-                row.append(usb_timer.ts_end_return)                 # End TPU Sub/Return
+            for j in range(sessions):
+                row.append(res[0 + j*5])  # Host Submission
+                row.append(res[1 + j*5])  # Tpu Comms/Comms
+                row.append(res[2 + j*5])  # Tpu Return
+                row.append(res[3 + j*5])  # Inference
+                row.append(res[4 + j*5])  # Total
 
             fw.writerow(row)
 
-def process_results(tmp_results):
-    results = []
-    host_comms = 0
-    for res in tmp_results:
-        if host_comms == 0:
-            host_comms = float(res.ts_begin_submission - res.ts_begin_host_send_request)
+    with open(comms_file, 'w') as csvfile:
+        fw = csv.writer(csvfile, delimiter=',', quotechar='|',
+                        quoting=csv.QUOTE_MINIMAL)
+        i = 0
+        for comm in comms:
+            fw.writerow([i, comm])
+            i += 1
 
-        results.append(res[1:])
+    with open(firsts_file, 'w') as csvfile:
+        fw = csv.writer(csvfile, delimiter=',', quotechar='|',
+                        quoting=csv.QUOTE_MINIMAL)
 
-    return results
+        fw.writerow(["Host_Submission",
+                     "Tpu_Comms",
+                     "Tpu_Return",
+                     "Inference",
+                     "Total"
+                     ])
+        for res in first_results:
+            row = []
+            for j in range(sessions):
+                row.append(res[0 + j*5])  # Host Submission
+                row.append(res[1 + j*5])  # Tpu Comms/Comms
+                row.append(res[2 + j*5])  # Tpu Return
+                row.append(res[3 + j*5])  # Inference
+                row.append(res[4 + j*5])  # Total
+            fw.writerow(row)
+
+def process_usb_results(results, sessions):
+    p_results = []
+    p_comms = float(
+            results[0].ts_begin_submission - results[0].ts_begin_host_send_request)
+    i = 0
+    # results = results[1:]
+    while(i < len(results)):
+        tmp_arr = []
+        for s in range(sessions):
+            res = results[i]
+            host_submission = float(
+                    res.ts_end_submission - res.ts_begin_submission)
+            tpu_comms = float(
+                    res.ts_begin_return - res.ts_end_submission)
+            tpu_return = float(
+                    res.ts_end_return - res.ts_begin_return)
+            inference = float(
+                    res.ts_begin_return - res.ts_end_submission)
+            total_time = float(
+                    res.ts_end_return - res.ts_begin_submission)
+
+            tmp = [
+                host_submission, tpu_comms, tpu_return, inference, total_time
+                ]
+
+            tmp_arr += tmp
+            i += 1
+        p_results.append(tmp_arr)
+
+    return p_results[0], p_results[1:], p_comms
 
 
 
@@ -568,6 +652,7 @@ def lsusb_identify():
             device = int((output.split()[3]).split(":")[0])
             edge_tpu_id = f"{bus}.{device}"
         else:
+            os.system("[ -f temp ] && rm temp")
             raise ValueError(
                 "Unable to identify Google Coral Bus and Device address.")
 
@@ -582,7 +667,7 @@ def usbmon_init():
     os.system(usbmon_cmd)
 
 
-def docker_deploy_sessions(model, op, count):
+def docker_deploy_sessions(model, op, count, itr):
     import os
     from docker import HOME, FROM_DOCKER, TO_DOCKER
     from docker import docker_exec, docker_copy
@@ -590,18 +675,16 @@ def docker_deploy_sessions(model, op, count):
     import time
 
     cnt = int(count)
-
-    path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
-    path_to_results = f"results/edge/{op}/"
+    path_to_results = f"results/edge/{op}/Temp.csv"
     path_to_docker_results = HOME + \
         "TensorDSE/benchmarking/reading_tflite_model/results/"
 
-    extend_directory("results/edge/", f"{op}")
-    docker_copy(path_to_tensorDSE, TO_DOCKER)
+    if itr == 0:
+        extend_directory("results/edge/", f"{op}")
+
     docker_exec("edge_single_deploy", model, count)
     docker_copy(f"{path_to_docker_results}edge/{op}/Results.csv",
                 FROM_DOCKER, path_to_results)
-    docker_exec("remove", "TensorDSE")
 
 
 def shark_analyze_stream(edge_tpu_id):
@@ -645,7 +728,7 @@ def shark_analyze_stream(edge_tpu_id):
             break
 
 
-def shark_analyze_sessions(op, op_filesize, sessions, edge_tpu_id, q):
+def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
     """Continuouly reads usb packet traffic and retreives the necessary
     timestamps within that cycle.
 
@@ -692,6 +775,7 @@ def shark_analyze_sessions(op, op_filesize, sessions, edge_tpu_id, q):
         interface='usbmon0', display_filter=capture_filter,
         only_summaries=False)
 
+    sess = 0
     usb_timer = UsbTimer()
     for raw_packet in capture.sniff_continuously():
         custom_packet = UsbPacket()
@@ -706,15 +790,24 @@ def shark_analyze_sessions(op, op_filesize, sessions, edge_tpu_id, q):
         data_is_present = custom_packet.find_data_presence(raw_packet)
         data_is_valid = custom_packet.find_data_validity(raw_packet, edge_tpu_id)
 
-        if (custom_packet.transfer_type == "INTERRUPT"): # Interrupts mark beginning and end
+        if (not data_is_valid
+                and sess ==  itrs * sessions
+                and beginning_of_return
+                and beginning_of_submission):
+            ENDED = True
+            print("CAPTURE EARLY END")
+
+        elif (custom_packet.transfer_type == "INTERRUPT"): # Interrupts mark beginning and end
             if (BEGUN == False and custom_packet.verify_src(edge_tpu_id, "begin")):
                 BEGUN = True
+                print("CAPTURE BEGIN.")
                 custom_packet.mark_stamped()
                 usb_timer.stamp_beginning(raw_packet)
                 usb_array.append(custom_packet)
 
             elif (BEGUN == True and custom_packet.verify_src(edge_tpu_id, "end")):
                 ENDED = True
+                print("CAPTURE END.")
                 custom_packet.mark_stamped()
                 usb_timer.stamp_ending(raw_packet)
                 usb_array.append(custom_packet)
@@ -747,6 +840,7 @@ def shark_analyze_sessions(op, op_filesize, sessions, edge_tpu_id, q):
                         begin_tpu_send_request = False
 
                     if beginning_of_submission and beginning_of_return: # New Session
+                        sess += 1
                         custom_packet.mark_stamped()
                         last_usb_timer = copy.deepcopy(usb_timer)
                         usb_timer = UsbTimer()
@@ -803,7 +897,7 @@ def shark_analyze_sessions(op, op_filesize, sessions, edge_tpu_id, q):
                         beginning_of_return = True
 
                     if (data_is_valid
-                        and beginning_of_return):
+                            and beginning_of_return):
                         custom_packet.mark_stamped()
                         usb_timer.stamp_src_device(raw_packet)
 
@@ -842,6 +936,7 @@ def shark_single_manager(model, count, edge_tpu_id):
     Characterizes the folder where the compiled edge tflite models are located.
     """
     import os
+    import time
     import logging
     import subprocess
     from multiprocessing import Process, Queue
@@ -849,9 +944,12 @@ def shark_single_manager(model, count, edge_tpu_id):
     from utils import create_csv_file, deduce_filename, deduce_filesize
     from utils import deduce_sessions_nr
     from plot import plot_manager
+    from docker import copy_project, remove_project
+    from docker import copy_project, docker_exec, docker_copy, HOME, TO_DOCKER
+
+    copy_project()
 
     q = Queue()
-
     filename = deduce_filename(model)
     filesize = deduce_filesize(model)
     op = deduce_operation_from_file(
@@ -863,13 +961,15 @@ def shark_single_manager(model, count, edge_tpu_id):
     logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
     log.info(f"Operation {op}: {count}x")
 
+    first_results = []
     results = []
-    for i in range(count/5):
+    comms = []
+    for i in range(int(count)):
         p_1 = Process(target=shark_analyze_sessions,
-                        args=(op, filesize, sessions, edge_tpu_id, q))
+                        args=(op, filesize, count, sessions, edge_tpu_id, q))
 
         p_2 = Process(target=docker_deploy_sessions, 
-                        args=(model, op, 5))
+                        args=(model, op, 2, i))
 
         p_1.start()
         p_2.start()
@@ -879,11 +979,18 @@ def shark_single_manager(model, count, edge_tpu_id):
         p_2.join()
         p_1.join()
 
-        # results = process_results(tmp_results)
+        tmp_first, tmp_results, tmp_comms = process_usb_results(tmp_results, sessions)
 
+        results += tmp_results
+        first_results.append(tmp_first)
+        comms.append(tmp_comms)
 
-    export_analysis(op, filesize, sessions, results)
+        integrate_results(op, i)
+        time.sleep(1)
+
+    export_analysis(op, filesize, sessions, first_results, results, comms)
     plot_manager(f"{op}_{filesize}", filesize, sessions)
+    remove_project()
 
 
 def shark_manager(folder, count, edge_tpu_id):

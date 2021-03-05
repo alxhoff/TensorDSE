@@ -37,6 +37,19 @@ def load_json(file_path):
         model = json.load(f)
         return model
 
+def extend_array(array, value, cnt):
+    tmp = array[len(array) - 1]
+    eval_str = ""
+    for i in range(cnt):
+        if cnt > 1:
+            eval_str = f"{eval_str}tmp[{i}], "
+        else:
+            eval_str = f"tmp, "
+
+    eval_str = f"array[len(array) - 1] = [{eval_str} value]"
+    exec(eval_str)
+
+    return array
 
 def prepare_ulimit(limit=4096):
     import logging

@@ -105,7 +105,7 @@ def edge_tflite_deployment(count, model_file, model_name=None):
         log.info("EDGE DEPLOYMENT...")
 
     for i in range(count):
-        log.info(f"{model_name}: {i+1}/{count - 1}")
+        log.info(f"{model_name}: {i+1}/{count}")
 
         # INFERENCE TIME
 
@@ -192,7 +192,7 @@ def cpu_tflite_deployment(count, model_file, model_name=None):
         log.info("CPU DEPLOYMENT...")
 
     for i in range(count):
-        log.info(f"{model_name}: {i+1}/{count - 1}")
+        log.info(f"{model_name}: {i+1}/{count}")
 
         # INFERENCE TIME
         start = time.perf_counter()
@@ -344,6 +344,7 @@ if __name__ == '__main__':
                         docker_exec("edge_single_deploy", m_i[0], args.count)
                     inp = input("Continue: ")
 
+        docker_exec("remove", "TensorDSE")
 
-        else:
-            print("INVALID delegate input.")
+    else:
+        print("INVALID delegate input.")

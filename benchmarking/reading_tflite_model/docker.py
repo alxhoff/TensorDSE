@@ -156,3 +156,14 @@ def copy_compiled_files_from_dckr():
     docker_copy(HOME + "/comp", FROM_DOCKER, Location="models/compiled/")
     os.system("cp models/compiled/comp/*edgetpu.tflite models/compiled/")
     os.system("rm -r models/compiled/comp/")
+
+
+def copy_project():
+    import os
+    from utils import retrieve_folder_path
+
+    path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
+    docker_copy(path_to_tensorDSE, TO_DOCKER)
+
+def remove_project():
+    docker_exec("remove", "TensorDSE")
