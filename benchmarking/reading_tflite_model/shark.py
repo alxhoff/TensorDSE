@@ -122,7 +122,7 @@ class UsbPacket:
         """Method that stores the overloaded packet's flag denoting direction
         of usb transfer.
         """
-        self.direction = packet.usb.endpoint_address_direction
+        self.direction = packet.usb.endpoint_address_tree.direction
 
     def find_scr_dest(self, packet):
         """Stores source and destination values of overloaded packet."""
@@ -579,11 +579,14 @@ def export_analysis(op, filesize, sessions, first_results, results, comms):
             fw.writerow(row)
 
 def process_usb_results(results, sessions):
+    import logging
+    log = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+
     p_results = []
     p_comms = float(
             results[0].ts_begin_submission - results[0].ts_begin_host_send_request)
     i = 0
-    # results = results[1:]
     while(i < len(results)):
         tmp_arr = []
         for s in range(sessions):
@@ -607,6 +610,7 @@ def process_usb_results(results, sessions):
             i += 1
         p_results.append(tmp_arr)
 
+    log.info(f"Sessions {len(results)}/{sessions * 2}")
     return p_results[0], p_results[1:], p_comms
 
 
@@ -689,13 +693,15 @@ def docker_deploy_sessions(model, op, count, itr):
 
 def shark_analyze_stream(edge_tpu_id):
     import pyshark
+    import time
 
     usb_array = []
 
     BEGIN = False
     END = False
 
-    capture_filter = ""
+    addr = edge_tpu_id.split(".")[1]
+    capture_filter = f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
     capture = pyshark.LiveCapture(
         interface='usbmon0', display_filter=capture_filter)
 
@@ -709,18 +715,20 @@ def shark_analyze_stream(edge_tpu_id):
 
         comms_is_valid = custom_packet.verify_src(edge_tpu_id, "all")
         data_is_present = custom_packet.find_data_presence(raw_packet)
-        data_is_valid = custom_packet.find_data_validity(raw_packet)
+        data_is_valid = custom_packet.find_data_validity(raw_packet, edge_tpu_id)
 
         if (custom_packet.transfer_type == "INTERRUPT"):
             if (BEGIN == False and custom_packet.verify_src(edge_tpu_id, "begin")):
+                print("BEGIN")
                 BEGIN = True
-                usb_array.append(custom_packet)
 
             elif (BEGIN == True and custom_packet.verify_src(edge_tpu_id, "end")):
+                print("END")
                 END = True
-                usb_array.append(custom_packet)
 
-        elif comms_is_valid and BEGIN:
+            usb_array.append(custom_packet)
+
+        elif BEGIN and comms_is_valid:
             usb_array.append(custom_packet)
 
         if END:
@@ -769,13 +777,15 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
     beginning_of_return = False
 
     beginning_invalid_return = False
+    
+    addr = edge_tpu_id.split(".")[1]
+    # capture_filter = f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT"
+    capture_filter = f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
 
-    capture_filter = ""
     capture = pyshark.LiveCapture(
         interface='usbmon0', display_filter=capture_filter,
-        only_summaries=False)
+        use_json=True)
 
-    sess = 0
     usb_timer = UsbTimer()
     for raw_packet in capture.sniff_continuously():
         custom_packet = UsbPacket()
@@ -790,27 +800,22 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
         data_is_present = custom_packet.find_data_presence(raw_packet)
         data_is_valid = custom_packet.find_data_validity(raw_packet, edge_tpu_id)
 
-        if (not data_is_valid
-                and sess ==  itrs * sessions
-                and beginning_of_return
-                and beginning_of_submission):
-            ENDED = True
-            print("CAPTURE EARLY END")
-
-        elif (custom_packet.transfer_type == "INTERRUPT"): # Interrupts mark beginning and end
+        if (custom_packet.transfer_type == "INTERRUPT"): # Interrupts mark beginning and end
             if (BEGUN == False and custom_packet.verify_src(edge_tpu_id, "begin")):
                 BEGUN = True
-                print("CAPTURE BEGIN.")
                 custom_packet.mark_stamped()
                 usb_timer.stamp_beginning(raw_packet)
-                usb_array.append(custom_packet)
+
+                if DEBUG:
+                    usb_array.append(custom_packet)
 
             elif (BEGUN == True and custom_packet.verify_src(edge_tpu_id, "end")):
                 ENDED = True
-                print("CAPTURE END.")
                 custom_packet.mark_stamped()
                 usb_timer.stamp_ending(raw_packet)
-                usb_array.append(custom_packet)
+
+                if DEBUG:
+                    usb_array.append(custom_packet)
 
         elif comms_is_valid and BEGUN:
             if (custom_packet.transfer_type == "BULK OUT"):
@@ -829,7 +834,8 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
                         custom_packet.mark_stamped()
                         usb_timer.stamp_end_tpu_send_request(raw_packet)
 
-                    usb_array.append(custom_packet)
+                    if DEBUG:
+                        usb_array.append(custom_packet)
 
                 # Data packets from host
                 if (data_is_present
@@ -839,15 +845,15 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
                     if begin_tpu_send_request == True:
                         begin_tpu_send_request = False
 
-                    if beginning_of_submission and beginning_of_return: # New Session
-                        sess += 1
+                    # New Session
+                    if beginning_of_submission and beginning_of_return:
                         custom_packet.mark_stamped()
                         last_usb_timer = copy.deepcopy(usb_timer)
                         usb_timer = UsbTimer()
                         usb_timer_array.append(last_usb_timer)
 
                         usb_timer.ts_begin_host_send_request = last_usb_timer.ts_end_return
-                        usb_timer.ts_end_host_send_request = usb_array[-1].ts
+                        # usb_timer.ts_end_host_send_request = usb_array[-1].ts
 
                         beginning_of_submission = False
                         begin_tpu_send_request = False
@@ -863,7 +869,8 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
                         custom_packet.mark_stamped()
                         usb_timer.stamp_src_host(raw_packet)
 
-                    usb_array.append(custom_packet)
+                    if DEBUG:
+                        usb_array.append(custom_packet)
 
             # Data from edge and tokens/requests from host
             if (custom_packet.transfer_type == "BULK IN"):
@@ -882,7 +889,8 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
                         custom_packet.mark_stamped()
                         usb_timer.stamp_end_host_send_request(raw_packet)
 
-                    usb_array.append(custom_packet)
+                    if DEBUG:
+                        usb_array.append(custom_packet)
 
                 # Data packets from edge
                 if (data_is_present and 
@@ -901,11 +909,14 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
                         custom_packet.mark_stamped()
                         usb_timer.stamp_src_device(raw_packet)
 
-                    usb_array.append(custom_packet)
+                    if DEBUG:
+                        usb_array.append(custom_packet)
 
             else:
                 custom_packet.mark_foreign
-                usb_array.append(custom_packet)
+
+                if DEBUG:
+                    usb_array.append(custom_packet)
 
         if ENDED:
             if DEBUG:
@@ -916,6 +927,12 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
                 usb_timer_array.append(usb_timer)
                 q.put(usb_timer_array)
             break
+
+def shark_analyze_sessions_docker():
+    pass
+
+def shark_single_manager_docker(model, count, edge_tpu_id):
+    pass
 
 
 def shark_single_manager(model, count, edge_tpu_id):
@@ -986,7 +1003,6 @@ def shark_single_manager(model, count, edge_tpu_id):
         comms.append(tmp_comms)
 
         integrate_results(op, i)
-        time.sleep(1)
 
     export_analysis(op, filesize, sessions, first_results, results, comms)
     plot_manager(f"{op}_{filesize}", filesize, sessions)
@@ -1076,6 +1092,8 @@ if __name__ == '__main__':
         shark_analyze_stream(edge_tpu_id)
 
     elif (args.mode == "Debug"):
+        from multiprocessing import Queue
+        q = Queue()
         DEBUG = 1
         usbmon_init()
         edge_tpu_id = lsusb_identify()
@@ -1093,7 +1111,7 @@ if __name__ == '__main__':
             elif inp == "c": break
             else:
                 shark_analyze_sessions(
-                        filename, filesize, sessions, int(args.count), edge_tpu_id)
+                        filename, filesize, int(args.count), sessions, edge_tpu_id, q)
 
     else:
         print("Invalid arguments.")
