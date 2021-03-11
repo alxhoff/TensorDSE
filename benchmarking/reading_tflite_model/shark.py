@@ -122,7 +122,7 @@ class UsbPacket:
         """Method that stores the overloaded packet's flag denoting direction
         of usb transfer.
         """
-        self.direction = packet.usb.endpoint_address_tree.direction
+        self.direction = packet.usb.endpoint_address_direction
 
     def find_scr_dest(self, packet):
         """Stores source and destination values of overloaded packet."""
@@ -479,9 +479,12 @@ def integrate_results(op, count):
         fw = csv.writer(csvfile, delimiter=',', quotechar='|',
                         quoting=csv.QUOTE_MINIMAL)
 
-        for res in results[1:]:
-            fw.writerow([i, res])
-            i += 1
+        if len(results) > 1:
+            for res in results[1:]:
+                fw.writerow([i, res])
+                i += 1
+        else:
+            fw.writerow([i, results[0]])
 
     with open(first_file, flag) as csvfile:
         fw = csv.writer(csvfile, delimiter=',', quotechar='|',
@@ -602,6 +605,10 @@ def process_usb_results(results, sessions):
             total_time = float(
                     res.ts_end_return - res.ts_begin_submission)
 
+            # In case there is a single packet being returned
+            if tpu_return == 0:
+                tpu_return = res.ts_end_return - res.ts_end_tpu_send_request
+
             tmp = [
                 host_submission, tpu_comms, tpu_return, inference, total_time
                 ]
@@ -610,8 +617,11 @@ def process_usb_results(results, sessions):
             i += 1
         p_results.append(tmp_arr)
 
-    log.info(f"Sessions {len(results)}/{sessions * 2}")
-    return p_results[0], p_results[1:], p_comms
+
+    if len(p_results) == 1:
+        return p_results, p_results, p_comms
+    else:
+        return p_results[0], p_results[1:], p_comms
 
 
 
@@ -783,8 +793,7 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
     capture_filter = f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
 
     capture = pyshark.LiveCapture(
-        interface='usbmon0', display_filter=capture_filter,
-        use_json=True)
+        interface='usbmon0', display_filter=capture_filter)
 
     usb_timer = UsbTimer()
     for raw_packet in capture.sniff_continuously():
@@ -805,7 +814,6 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
                 BEGUN = True
                 custom_packet.mark_stamped()
                 usb_timer.stamp_beginning(raw_packet)
-
                 if DEBUG:
                     usb_array.append(custom_packet)
 
@@ -813,7 +821,6 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
                 ENDED = True
                 custom_packet.mark_stamped()
                 usb_timer.stamp_ending(raw_packet)
-
                 if DEBUG:
                     usb_array.append(custom_packet)
 
@@ -914,7 +921,6 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
 
             else:
                 custom_packet.mark_foreign
-
                 if DEBUG:
                     usb_array.append(custom_packet)
 
@@ -927,12 +933,6 @@ def shark_analyze_sessions(op, op_filesize, itrs, sessions, edge_tpu_id, q):
                 usb_timer_array.append(usb_timer)
                 q.put(usb_timer_array)
             break
-
-def shark_analyze_sessions_docker():
-    pass
-
-def shark_single_manager_docker(model, count, edge_tpu_id):
-    pass
 
 
 def shark_single_manager(model, count, edge_tpu_id):
@@ -978,6 +978,7 @@ def shark_single_manager(model, count, edge_tpu_id):
     logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
     log.info(f"Operation {op}: {count}x")
 
+    stream_nr = 2
     first_results = []
     results = []
     comms = []
@@ -986,7 +987,7 @@ def shark_single_manager(model, count, edge_tpu_id):
                         args=(op, filesize, count, sessions, edge_tpu_id, q))
 
         p_2 = Process(target=docker_deploy_sessions, 
-                        args=(model, op, 2, i))
+                        args=(model, op, stream_nr, i))
 
         p_1.start()
         p_2.start()
@@ -998,9 +999,10 @@ def shark_single_manager(model, count, edge_tpu_id):
 
         tmp_first, tmp_results, tmp_comms = process_usb_results(tmp_results, sessions)
 
-        results += tmp_results
-        first_results.append(tmp_first)
         comms.append(tmp_comms)
+        results += tmp_results
+        if stream_nr == 1: first_results += tmp_results
+        else: first_results.append(tmp_first)
 
         integrate_results(op, i)
 

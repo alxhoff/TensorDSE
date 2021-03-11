@@ -167,6 +167,38 @@ def store_usb_stats(
 
             fw.writerow([])
 
+            fw.writerow(["first_host_submission_std", 
+                         "first_tpu_comms_std",
+                         "first_tpu_return_std", 
+                         "first_inference_std",
+                         "first_total_std"
+                         ])
+
+            fw.writerow([10**6 * (float(first_usb_stats.host_data_stats[1 + s*3])),
+                         10**6 * (float(first_usb_stats.tpu_comms_stats[1 + s*3])),
+                         10**6 * (float(first_usb_stats.tpu_data_stats[1 + s*3])),
+                         10**6 * (float(first_usb_stats.infer_stats[1 + s*3])),
+                         10**6 * (float(first_usb_stats.total_stats[1 + s*3]))
+                         ])
+
+            fw.writerow([])
+
+            fw.writerow(["first_host_submission_med", 
+                         "first_tpu_comms_med",
+                         "first_tpu_return_med", 
+                         "first_inference_med",
+                         "first_total_med"
+                         ])
+
+            fw.writerow([10**6 * (float(first_usb_stats.host_data_stats[2 + s*3])),
+                         10**6 * (float(first_usb_stats.tpu_comms_stats[2 + s*3])),
+                         10**6 * (float(first_usb_stats.tpu_data_stats[2 + s*3])),
+                         10**6 * (float(first_usb_stats.infer_stats[2 + s*3])),
+                         10**6 * (float(first_usb_stats.total_stats[2 + s*3]))
+                         ])
+
+            fw.writerow([])
+
             fw.writerow(["host_submission_mean", 
                          "tpu_comms_mean",
                          "tpu_return_mean", 
@@ -271,6 +303,7 @@ def read_usb_results(filename, sessions):
                 tmp_total = []
                 for j in range(sessions):
                     i += 1
+
                     if (any(float(x) <= 0 for x in row)):
                         usb_times.append_negatives(
                                 row[0 + j*5],               # host submission
@@ -317,9 +350,9 @@ def plot_manager(op, filesize, sessions):
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
     log.info(f"Compiling plot results: {op}...")
 
-    results_file=f"results/usb/{op}/Results.csv"
-    firsts_file=f"results/usb/{op}/Firsts.csv"
-    comms_file=f"results/usb/{op}/Comms.csv"
+    results_file = f"results/usb/{op}/Results.csv"
+    firsts_file = f"results/usb/{op}/Firsts.csv"
+    comms_file = f"results/usb/{op}/Comms.csv"
 
     values, valid_str = read_usb_results(results_file, sessions)
     first_values, first_valid_str = read_usb_results(firsts_file, sessions)
