@@ -979,6 +979,7 @@ def shark_single_manager(model, count, edge_tpu_id):
     log.info(f"Operation {op}: {count}x")
 
     stream_nr = 2
+
     first_results = []
     results = []
     comms = []

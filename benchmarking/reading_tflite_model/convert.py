@@ -65,7 +65,7 @@ def process_CONV_2D(options, io):
     conv_dir = f"{MODELS_FOLDER}{op_name}/"
 
     # Retrieving operation relevant variables.
-    filter_count = 28
+    filter_count = 28 * 20
 
     input_shape = get_input_tensor_shape(io)
     test_input = np.array(np.random.random_sample(input_shape))
@@ -434,7 +434,7 @@ if __name__ == '__main__':
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('-t', '--target',
-                        default="models/source/MNIST_model.tflite",
+                        default="models/source/MNIST.tflite",
                         help='File path to the SOURCE .tflite file.')
 
     parser.add_argument('-c', '--count',
@@ -457,5 +457,5 @@ if __name__ == '__main__':
 
     split_tflite_model()
     tflite_compilation()
-    tflite_deployment(count=args.count)
-    tflite_results_analysis()
+    # tflite_deployment(count=args.count)
+    # tflite_results_analysis()
