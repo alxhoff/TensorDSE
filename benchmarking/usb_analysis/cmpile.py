@@ -71,7 +71,7 @@ def retrieve_quantized_tflites(ops, path_ops):
 
         if(os.path.exists(quantized_models_dir)):
             for q in listdir(quantized_models_dir):
-                if isfile(join(quantized_models_dir, q) 
+                if (isfile(join(quantized_models_dir, q)) 
                     and q.startswith(beginning) 
                     and q.endswith(ending)):
 
@@ -96,7 +96,7 @@ def compile_quantized_files_on_dckr(quant_targets):
     from docker import docker_exec
 
     for q in quant_targets:
-        docker_exec("edgetpu_compiler", q)
+        docker_exec("edge_compile", q)
 
 def create_folders_dckr():
     """Creates folders necessary for the compilation of the quantized tflite

@@ -716,7 +716,7 @@ def docker_deploy_sessions(model, op, count, itr):
     cnt = int(count)
     path_to_results = f"results/edge/{op}/Temp.csv"
     path_to_docker_results = HOME + \
-        "TensorDSE/benchmarking/reading_tflite_model/results/"
+        "TensorDSE/benchmarking/usb_analysis/results/"
 
     if itr == 0:
         extend_directory("results/edge/", f"{op}")

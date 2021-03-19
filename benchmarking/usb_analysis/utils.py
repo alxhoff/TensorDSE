@@ -380,12 +380,18 @@ def tflite_conversion(op_dir, model_saved_dir, operation_name, input_place):
     edge_converter = tflite_quantization(edge_converter)
     # Performs tflite conversion with it.
     tflite_model = converter.convert()
-    # Performs quantized tflite conversion with it.
-    edge_tflite_model = edge_converter.convert()
+
+    try:
+        # Performs quantized tflite conversion with it.
+        edge_tflite_model = edge_converter.convert()
+
+        # Writes Conversion to pre-defined tflite folder
+        open(edge_tf_model_filename, "wb").write(edge_tflite_model)
+
+    except ValueError:
+        print("Model input was not able to be quantized.")
 
     # Writes Conversion to pre-defined tflite folder.
     open(tf_model_filename, "wb").write(tflite_model)
-    # Writes Conversion to pre-defined tflite folder
-    open(edge_tf_model_filename, "wb").write(edge_tflite_model)
 
     clean_directory(model_saved_dir)

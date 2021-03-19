@@ -70,10 +70,10 @@ def docker_exec(cmd_type, objct="", count=1):
     # Listing relevant command strings.
     mkdir_prefix            = f"[ -d {HOME}{objct} ] || "
     rm_prefix               = f"[ -d {HOME}{objct} ] && "
-    docker_exec_prefix      = f"docker exec -ti {DOCKER} sh -c "
+    docker_exec_prefix      = f"docker exec -it {DOCKER} sh -c "
     edge_compiler_suffix    = f"{objct} -o {HOME}/comp"
 
-    cd_deploy_dir           = f"cd {HOME}TensorDSE/benchmarking/reading_tflite_model/"
+    cd_deploy_dir           = f"cd {HOME}TensorDSE/benchmarking/usb_analysis/"
     edge_deploy             = f"sudo python3 deploy.py -m Group -f {objct} -d edge_tpu -c {count}"
     cpu_deploy              = f"sudo python3 deploy.py -m Group -f {objct} -d cpu -c {count}"
     edge_single_deploy      = f"sudo python3 deploy.py -m Single -d edge_tpu -c {count} -t {objct}"
@@ -97,6 +97,7 @@ def docker_exec(cmd_type, objct="", count=1):
     if(args):
         # Concatenates arguments.
         docker_exec_cmd = concat_args(args)
+        log.info(f"Running '{docker_exec_cmd}' on Docker...")
         os.system(docker_exec_cmd)
 
 def docker_copy(File, direction_flag, Location=""):

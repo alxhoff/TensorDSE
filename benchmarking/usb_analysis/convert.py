@@ -437,6 +437,7 @@ if __name__ == '__main__':
     import argparse
     import tensorflow as tf
 
+    from docker import remove_project
     from deploy import tflite_deployment
     from cmpile import tflite_compilation
     from analyze import tflite_results_analysis
@@ -468,5 +469,6 @@ if __name__ == '__main__':
 
     split_tflite_model()
     tflite_compilation()
-    # tflite_deployment(count=args.count)
-    # tflite_results_analysis()
+    tflite_deployment("models/compiled/", "models/layers/", count=args.count)
+    tflite_results_analysis()
+    remove_project()

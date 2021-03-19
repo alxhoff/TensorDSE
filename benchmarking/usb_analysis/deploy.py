@@ -209,7 +209,7 @@ def cpu_tflite_deployment(count, model_file, model_name=None):
     create_csv_file(CPU_FOLDER, model_name, cpu_results)
 
 
-def tflite_deployment(count=1000):
+def tflite_deployment(quant_folder, tflite_folder, count=1000):
     """Manager function responsible for preping and executing the deployment
     of the compiled tflite models.
 
@@ -224,24 +224,22 @@ def tflite_deployment(count=1000):
     """
     import os
     import utils
-    from docker import set_docker_globals, docker_copy, docker_exec
+    from docker import docker_copy, docker_exec
     from docker import TO_DOCKER, FROM_DOCKER, HOME
 
     path_to_tensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
     path_to_docker_results = HOME + \
-        "TensorDSE/benchmarking/reading_tflite_model/results/"
+        "TensorDSE/benchmarking/usb_analysis/results/"
 
     path_to_results = "results/"
 
-    set_docker_globals(count)
-
     docker_copy(path_to_tensorDSE, TO_DOCKER)
 
-    docker_exec("edge_python_deploy")
+    docker_exec("edge_deploy", quant_folder, count)
     docker_copy(path_to_docker_results + "edge/",
                 FROM_DOCKER, path_to_results)
 
-    docker_exec("cpu_python_deploy")
+    docker_exec("cpu_deploy", tflite_folder, count)
     docker_copy(path_to_docker_results + "cpu/",
                        FROM_DOCKER, path_to_results)
 
@@ -326,7 +324,7 @@ if __name__ == '__main__':
 
         path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
         path_to_docker_results = HOME + \
-        "TensorDSE/benchmarking/reading_tflite_model/results/"
+        "TensorDSE/benchmarking/usb_analysis/results/"
 
         docker_copy(path_to_tensorDSE, TO_DOCKER)
         op = args.target.split("/")[args.target.count("/")]
