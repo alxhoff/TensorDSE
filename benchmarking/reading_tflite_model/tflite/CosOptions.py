@@ -26,3 +26,33 @@ class CosOptions(object):
 
 def CosOptionsStart(builder): builder.StartObject(0)
 def CosOptionsEnd(builder): return builder.EndObject()
+
+
+class CosOptionsT(object):
+
+    # CosOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        cosOptions = CosOptions()
+        cosOptions.Init(buf, pos)
+        return cls.InitFromObj(cosOptions)
+
+    @classmethod
+    def InitFromObj(cls, cosOptions):
+        x = CosOptionsT()
+        x._UnPack(cosOptions)
+        return x
+
+    # CosOptionsT
+    def _UnPack(self, cosOptions):
+        if cosOptions is None:
+            return
+
+    # CosOptionsT
+    def Pack(self, builder):
+        CosOptionsStart(builder)
+        cosOptions = CosOptionsEnd(builder)
+        return cosOptions

@@ -34,3 +34,35 @@ class SpaceToDepthOptions(object):
 def SpaceToDepthOptionsStart(builder): builder.StartObject(1)
 def SpaceToDepthOptionsAddBlockSize(builder, blockSize): builder.PrependInt32Slot(0, blockSize, 0)
 def SpaceToDepthOptionsEnd(builder): return builder.EndObject()
+
+
+class SpaceToDepthOptionsT(object):
+
+    # SpaceToDepthOptionsT
+    def __init__(self):
+        self.blockSize = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        spaceToDepthOptions = SpaceToDepthOptions()
+        spaceToDepthOptions.Init(buf, pos)
+        return cls.InitFromObj(spaceToDepthOptions)
+
+    @classmethod
+    def InitFromObj(cls, spaceToDepthOptions):
+        x = SpaceToDepthOptionsT()
+        x._UnPack(spaceToDepthOptions)
+        return x
+
+    # SpaceToDepthOptionsT
+    def _UnPack(self, spaceToDepthOptions):
+        if spaceToDepthOptions is None:
+            return
+        self.blockSize = spaceToDepthOptions.BlockSize()
+
+    # SpaceToDepthOptionsT
+    def Pack(self, builder):
+        SpaceToDepthOptionsStart(builder)
+        SpaceToDepthOptionsAddBlockSize(builder, self.blockSize)
+        spaceToDepthOptions = SpaceToDepthOptionsEnd(builder)
+        return spaceToDepthOptions

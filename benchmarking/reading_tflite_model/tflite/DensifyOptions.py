@@ -26,3 +26,33 @@ class DensifyOptions(object):
 
 def DensifyOptionsStart(builder): builder.StartObject(0)
 def DensifyOptionsEnd(builder): return builder.EndObject()
+
+
+class DensifyOptionsT(object):
+
+    # DensifyOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        densifyOptions = DensifyOptions()
+        densifyOptions.Init(buf, pos)
+        return cls.InitFromObj(densifyOptions)
+
+    @classmethod
+    def InitFromObj(cls, densifyOptions):
+        x = DensifyOptionsT()
+        x._UnPack(densifyOptions)
+        return x
+
+    # DensifyOptionsT
+    def _UnPack(self, densifyOptions):
+        if densifyOptions is None:
+            return
+
+    # DensifyOptionsT
+    def Pack(self, builder):
+        DensifyOptionsStart(builder)
+        densifyOptions = DensifyOptionsEnd(builder)
+        return densifyOptions

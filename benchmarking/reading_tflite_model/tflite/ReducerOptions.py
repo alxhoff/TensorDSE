@@ -34,3 +34,35 @@ class ReducerOptions(object):
 def ReducerOptionsStart(builder): builder.StartObject(1)
 def ReducerOptionsAddKeepDims(builder, keepDims): builder.PrependBoolSlot(0, keepDims, 0)
 def ReducerOptionsEnd(builder): return builder.EndObject()
+
+
+class ReducerOptionsT(object):
+
+    # ReducerOptionsT
+    def __init__(self):
+        self.keepDims = False  # type: bool
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        reducerOptions = ReducerOptions()
+        reducerOptions.Init(buf, pos)
+        return cls.InitFromObj(reducerOptions)
+
+    @classmethod
+    def InitFromObj(cls, reducerOptions):
+        x = ReducerOptionsT()
+        x._UnPack(reducerOptions)
+        return x
+
+    # ReducerOptionsT
+    def _UnPack(self, reducerOptions):
+        if reducerOptions is None:
+            return
+        self.keepDims = reducerOptions.KeepDims()
+
+    # ReducerOptionsT
+    def Pack(self, builder):
+        ReducerOptionsStart(builder)
+        ReducerOptionsAddKeepDims(builder, self.keepDims)
+        reducerOptions = ReducerOptionsEnd(builder)
+        return reducerOptions

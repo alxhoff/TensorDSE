@@ -26,3 +26,33 @@ class EqualOptions(object):
 
 def EqualOptionsStart(builder): builder.StartObject(0)
 def EqualOptionsEnd(builder): return builder.EndObject()
+
+
+class EqualOptionsT(object):
+
+    # EqualOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        equalOptions = EqualOptions()
+        equalOptions.Init(buf, pos)
+        return cls.InitFromObj(equalOptions)
+
+    @classmethod
+    def InitFromObj(cls, equalOptions):
+        x = EqualOptionsT()
+        x._UnPack(equalOptions)
+        return x
+
+    # EqualOptionsT
+    def _UnPack(self, equalOptions):
+        if equalOptions is None:
+            return
+
+    # EqualOptionsT
+    def Pack(self, builder):
+        EqualOptionsStart(builder)
+        equalOptions = EqualOptionsEnd(builder)
+        return equalOptions

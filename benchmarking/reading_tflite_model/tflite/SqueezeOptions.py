@@ -55,3 +55,54 @@ def SqueezeOptionsStart(builder): builder.StartObject(1)
 def SqueezeOptionsAddSqueezeDims(builder, squeezeDims): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(squeezeDims), 0)
 def SqueezeOptionsStartSqueezeDimsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def SqueezeOptionsEnd(builder): return builder.EndObject()
+
+try:
+    from typing import List
+except:
+    pass
+
+class SqueezeOptionsT(object):
+
+    # SqueezeOptionsT
+    def __init__(self):
+        self.squeezeDims = None  # type: List[int]
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        squeezeOptions = SqueezeOptions()
+        squeezeOptions.Init(buf, pos)
+        return cls.InitFromObj(squeezeOptions)
+
+    @classmethod
+    def InitFromObj(cls, squeezeOptions):
+        x = SqueezeOptionsT()
+        x._UnPack(squeezeOptions)
+        return x
+
+    # SqueezeOptionsT
+    def _UnPack(self, squeezeOptions):
+        if squeezeOptions is None:
+            return
+        if not squeezeOptions.SqueezeDimsIsNone():
+            if np is None:
+                self.squeezeDims = []
+                for i in range(squeezeOptions.SqueezeDimsLength()):
+                    self.squeezeDims.append(squeezeOptions.SqueezeDims(i))
+            else:
+                self.squeezeDims = squeezeOptions.SqueezeDimsAsNumpy()
+
+    # SqueezeOptionsT
+    def Pack(self, builder):
+        if self.squeezeDims is not None:
+            if np is not None and type(self.squeezeDims) is np.ndarray:
+                squeezeDims = builder.CreateNumpyVector(self.squeezeDims)
+            else:
+                SqueezeOptionsStartSqueezeDimsVector(builder, len(self.squeezeDims))
+                for i in reversed(range(len(self.squeezeDims))):
+                    builder.PrependInt32(self.squeezeDims[i])
+                squeezeDims = builder.EndVector(len(self.squeezeDims))
+        SqueezeOptionsStart(builder)
+        if self.squeezeDims is not None:
+            SqueezeOptionsAddSqueezeDims(builder, squeezeDims)
+        squeezeOptions = SqueezeOptionsEnd(builder)
+        return squeezeOptions

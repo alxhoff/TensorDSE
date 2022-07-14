@@ -26,3 +26,33 @@ class RangeOptions(object):
 
 def RangeOptionsStart(builder): builder.StartObject(0)
 def RangeOptionsEnd(builder): return builder.EndObject()
+
+
+class RangeOptionsT(object):
+
+    # RangeOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        rangeOptions = RangeOptions()
+        rangeOptions.Init(buf, pos)
+        return cls.InitFromObj(rangeOptions)
+
+    @classmethod
+    def InitFromObj(cls, rangeOptions):
+        x = RangeOptionsT()
+        x._UnPack(rangeOptions)
+        return x
+
+    # RangeOptionsT
+    def _UnPack(self, rangeOptions):
+        if rangeOptions is None:
+            return
+
+    # RangeOptionsT
+    def Pack(self, builder):
+        RangeOptionsStart(builder)
+        rangeOptions = RangeOptionsEnd(builder)
+        return rangeOptions

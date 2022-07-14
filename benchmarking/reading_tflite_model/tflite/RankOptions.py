@@ -26,3 +26,33 @@ class RankOptions(object):
 
 def RankOptionsStart(builder): builder.StartObject(0)
 def RankOptionsEnd(builder): return builder.EndObject()
+
+
+class RankOptionsT(object):
+
+    # RankOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        rankOptions = RankOptions()
+        rankOptions.Init(buf, pos)
+        return cls.InitFromObj(rankOptions)
+
+    @classmethod
+    def InitFromObj(cls, rankOptions):
+        x = RankOptionsT()
+        x._UnPack(rankOptions)
+        return x
+
+    # RankOptionsT
+    def _UnPack(self, rankOptions):
+        if rankOptions is None:
+            return
+
+    # RankOptionsT
+    def Pack(self, builder):
+        RankOptionsStart(builder)
+        rankOptions = RankOptionsEnd(builder)
+        return rankOptions

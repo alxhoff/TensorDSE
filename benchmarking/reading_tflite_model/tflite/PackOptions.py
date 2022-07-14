@@ -42,3 +42,38 @@ def PackOptionsStart(builder): builder.StartObject(2)
 def PackOptionsAddValuesCount(builder, valuesCount): builder.PrependInt32Slot(0, valuesCount, 0)
 def PackOptionsAddAxis(builder, axis): builder.PrependInt32Slot(1, axis, 0)
 def PackOptionsEnd(builder): return builder.EndObject()
+
+
+class PackOptionsT(object):
+
+    # PackOptionsT
+    def __init__(self):
+        self.valuesCount = 0  # type: int
+        self.axis = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        packOptions = PackOptions()
+        packOptions.Init(buf, pos)
+        return cls.InitFromObj(packOptions)
+
+    @classmethod
+    def InitFromObj(cls, packOptions):
+        x = PackOptionsT()
+        x._UnPack(packOptions)
+        return x
+
+    # PackOptionsT
+    def _UnPack(self, packOptions):
+        if packOptions is None:
+            return
+        self.valuesCount = packOptions.ValuesCount()
+        self.axis = packOptions.Axis()
+
+    # PackOptionsT
+    def Pack(self, builder):
+        PackOptionsStart(builder)
+        PackOptionsAddValuesCount(builder, self.valuesCount)
+        PackOptionsAddAxis(builder, self.axis)
+        packOptions = PackOptionsEnd(builder)
+        return packOptions

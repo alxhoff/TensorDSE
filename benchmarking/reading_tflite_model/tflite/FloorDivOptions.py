@@ -26,3 +26,33 @@ class FloorDivOptions(object):
 
 def FloorDivOptionsStart(builder): builder.StartObject(0)
 def FloorDivOptionsEnd(builder): return builder.EndObject()
+
+
+class FloorDivOptionsT(object):
+
+    # FloorDivOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        floorDivOptions = FloorDivOptions()
+        floorDivOptions.Init(buf, pos)
+        return cls.InitFromObj(floorDivOptions)
+
+    @classmethod
+    def InitFromObj(cls, floorDivOptions):
+        x = FloorDivOptionsT()
+        x._UnPack(floorDivOptions)
+        return x
+
+    # FloorDivOptionsT
+    def _UnPack(self, floorDivOptions):
+        if floorDivOptions is None:
+            return
+
+    # FloorDivOptionsT
+    def Pack(self, builder):
+        FloorDivOptionsStart(builder)
+        floorDivOptions = FloorDivOptionsEnd(builder)
+        return floorDivOptions

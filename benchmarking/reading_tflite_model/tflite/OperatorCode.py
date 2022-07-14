@@ -50,3 +50,44 @@ def OperatorCodeAddBuiltinCode(builder, builtinCode): builder.PrependInt8Slot(0,
 def OperatorCodeAddCustomCode(builder, customCode): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(customCode), 0)
 def OperatorCodeAddVersion(builder, version): builder.PrependInt32Slot(2, version, 1)
 def OperatorCodeEnd(builder): return builder.EndObject()
+
+
+class OperatorCodeT(object):
+
+    # OperatorCodeT
+    def __init__(self):
+        self.builtinCode = 0  # type: int
+        self.customCode = None  # type: str
+        self.version = 1  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        operatorCode = OperatorCode()
+        operatorCode.Init(buf, pos)
+        return cls.InitFromObj(operatorCode)
+
+    @classmethod
+    def InitFromObj(cls, operatorCode):
+        x = OperatorCodeT()
+        x._UnPack(operatorCode)
+        return x
+
+    # OperatorCodeT
+    def _UnPack(self, operatorCode):
+        if operatorCode is None:
+            return
+        self.builtinCode = operatorCode.BuiltinCode()
+        self.customCode = operatorCode.CustomCode()
+        self.version = operatorCode.Version()
+
+    # OperatorCodeT
+    def Pack(self, builder):
+        if self.customCode is not None:
+            customCode = builder.CreateString(self.customCode)
+        OperatorCodeStart(builder)
+        OperatorCodeAddBuiltinCode(builder, self.builtinCode)
+        if self.customCode is not None:
+            OperatorCodeAddCustomCode(builder, customCode)
+        OperatorCodeAddVersion(builder, self.version)
+        operatorCode = OperatorCodeEnd(builder)
+        return operatorCode

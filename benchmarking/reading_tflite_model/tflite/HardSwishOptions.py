@@ -26,3 +26,33 @@ class HardSwishOptions(object):
 
 def HardSwishOptionsStart(builder): builder.StartObject(0)
 def HardSwishOptionsEnd(builder): return builder.EndObject()
+
+
+class HardSwishOptionsT(object):
+
+    # HardSwishOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        hardSwishOptions = HardSwishOptions()
+        hardSwishOptions.Init(buf, pos)
+        return cls.InitFromObj(hardSwishOptions)
+
+    @classmethod
+    def InitFromObj(cls, hardSwishOptions):
+        x = HardSwishOptionsT()
+        x._UnPack(hardSwishOptions)
+        return x
+
+    # HardSwishOptionsT
+    def _UnPack(self, hardSwishOptions):
+        if hardSwishOptions is None:
+            return
+
+    # HardSwishOptionsT
+    def Pack(self, builder):
+        HardSwishOptionsStart(builder)
+        hardSwishOptions = HardSwishOptionsEnd(builder)
+        return hardSwishOptions

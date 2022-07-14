@@ -26,3 +26,33 @@ class ExpandDimsOptions(object):
 
 def ExpandDimsOptionsStart(builder): builder.StartObject(0)
 def ExpandDimsOptionsEnd(builder): return builder.EndObject()
+
+
+class ExpandDimsOptionsT(object):
+
+    # ExpandDimsOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        expandDimsOptions = ExpandDimsOptions()
+        expandDimsOptions.Init(buf, pos)
+        return cls.InitFromObj(expandDimsOptions)
+
+    @classmethod
+    def InitFromObj(cls, expandDimsOptions):
+        x = ExpandDimsOptionsT()
+        x._UnPack(expandDimsOptions)
+        return x
+
+    # ExpandDimsOptionsT
+    def _UnPack(self, expandDimsOptions):
+        if expandDimsOptions is None:
+            return
+
+    # ExpandDimsOptionsT
+    def Pack(self, builder):
+        ExpandDimsOptionsStart(builder)
+        expandDimsOptions = ExpandDimsOptionsEnd(builder)
+        return expandDimsOptions

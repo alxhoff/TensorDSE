@@ -26,3 +26,33 @@ class TransposeOptions(object):
 
 def TransposeOptionsStart(builder): builder.StartObject(0)
 def TransposeOptionsEnd(builder): return builder.EndObject()
+
+
+class TransposeOptionsT(object):
+
+    # TransposeOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        transposeOptions = TransposeOptions()
+        transposeOptions.Init(buf, pos)
+        return cls.InitFromObj(transposeOptions)
+
+    @classmethod
+    def InitFromObj(cls, transposeOptions):
+        x = TransposeOptionsT()
+        x._UnPack(transposeOptions)
+        return x
+
+    # TransposeOptionsT
+    def _UnPack(self, transposeOptions):
+        if transposeOptions is None:
+            return
+
+    # TransposeOptionsT
+    def Pack(self, builder):
+        TransposeOptionsStart(builder)
+        transposeOptions = TransposeOptionsEnd(builder)
+        return transposeOptions

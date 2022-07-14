@@ -26,3 +26,33 @@ class TileOptions(object):
 
 def TileOptionsStart(builder): builder.StartObject(0)
 def TileOptionsEnd(builder): return builder.EndObject()
+
+
+class TileOptionsT(object):
+
+    # TileOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        tileOptions = TileOptions()
+        tileOptions.Init(buf, pos)
+        return cls.InitFromObj(tileOptions)
+
+    @classmethod
+    def InitFromObj(cls, tileOptions):
+        x = TileOptionsT()
+        x._UnPack(tileOptions)
+        return x
+
+    # TileOptionsT
+    def _UnPack(self, tileOptions):
+        if tileOptions is None:
+            return
+
+    # TileOptionsT
+    def Pack(self, builder):
+        TileOptionsStart(builder)
+        tileOptions = TileOptionsEnd(builder)
+        return tileOptions

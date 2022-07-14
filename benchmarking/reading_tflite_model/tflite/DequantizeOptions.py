@@ -26,3 +26,33 @@ class DequantizeOptions(object):
 
 def DequantizeOptionsStart(builder): builder.StartObject(0)
 def DequantizeOptionsEnd(builder): return builder.EndObject()
+
+
+class DequantizeOptionsT(object):
+
+    # DequantizeOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        dequantizeOptions = DequantizeOptions()
+        dequantizeOptions.Init(buf, pos)
+        return cls.InitFromObj(dequantizeOptions)
+
+    @classmethod
+    def InitFromObj(cls, dequantizeOptions):
+        x = DequantizeOptionsT()
+        x._UnPack(dequantizeOptions)
+        return x
+
+    # DequantizeOptionsT
+    def _UnPack(self, dequantizeOptions):
+        if dequantizeOptions is None:
+            return
+
+    # DequantizeOptionsT
+    def Pack(self, builder):
+        DequantizeOptionsStart(builder)
+        dequantizeOptions = DequantizeOptionsEnd(builder)
+        return dequantizeOptions

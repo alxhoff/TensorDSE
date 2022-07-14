@@ -26,3 +26,33 @@ class MatrixSetDiagOptions(object):
 
 def MatrixSetDiagOptionsStart(builder): builder.StartObject(0)
 def MatrixSetDiagOptionsEnd(builder): return builder.EndObject()
+
+
+class MatrixSetDiagOptionsT(object):
+
+    # MatrixSetDiagOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        matrixSetDiagOptions = MatrixSetDiagOptions()
+        matrixSetDiagOptions.Init(buf, pos)
+        return cls.InitFromObj(matrixSetDiagOptions)
+
+    @classmethod
+    def InitFromObj(cls, matrixSetDiagOptions):
+        x = MatrixSetDiagOptionsT()
+        x._UnPack(matrixSetDiagOptions)
+        return x
+
+    # MatrixSetDiagOptionsT
+    def _UnPack(self, matrixSetDiagOptions):
+        if matrixSetDiagOptions is None:
+            return
+
+    # MatrixSetDiagOptionsT
+    def Pack(self, builder):
+        MatrixSetDiagOptionsStart(builder)
+        matrixSetDiagOptions = MatrixSetDiagOptionsEnd(builder)
+        return matrixSetDiagOptions

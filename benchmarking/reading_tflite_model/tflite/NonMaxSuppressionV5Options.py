@@ -26,3 +26,33 @@ class NonMaxSuppressionV5Options(object):
 
 def NonMaxSuppressionV5OptionsStart(builder): builder.StartObject(0)
 def NonMaxSuppressionV5OptionsEnd(builder): return builder.EndObject()
+
+
+class NonMaxSuppressionV5OptionsT(object):
+
+    # NonMaxSuppressionV5OptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        nonMaxSuppressionV5Options = NonMaxSuppressionV5Options()
+        nonMaxSuppressionV5Options.Init(buf, pos)
+        return cls.InitFromObj(nonMaxSuppressionV5Options)
+
+    @classmethod
+    def InitFromObj(cls, nonMaxSuppressionV5Options):
+        x = NonMaxSuppressionV5OptionsT()
+        x._UnPack(nonMaxSuppressionV5Options)
+        return x
+
+    # NonMaxSuppressionV5OptionsT
+    def _UnPack(self, nonMaxSuppressionV5Options):
+        if nonMaxSuppressionV5Options is None:
+            return
+
+    # NonMaxSuppressionV5OptionsT
+    def Pack(self, builder):
+        NonMaxSuppressionV5OptionsStart(builder)
+        nonMaxSuppressionV5Options = NonMaxSuppressionV5OptionsEnd(builder)
+        return nonMaxSuppressionV5Options

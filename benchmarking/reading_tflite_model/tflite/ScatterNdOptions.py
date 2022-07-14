@@ -26,3 +26,33 @@ class ScatterNdOptions(object):
 
 def ScatterNdOptionsStart(builder): builder.StartObject(0)
 def ScatterNdOptionsEnd(builder): return builder.EndObject()
+
+
+class ScatterNdOptionsT(object):
+
+    # ScatterNdOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        scatterNdOptions = ScatterNdOptions()
+        scatterNdOptions.Init(buf, pos)
+        return cls.InitFromObj(scatterNdOptions)
+
+    @classmethod
+    def InitFromObj(cls, scatterNdOptions):
+        x = ScatterNdOptionsT()
+        x._UnPack(scatterNdOptions)
+        return x
+
+    # ScatterNdOptionsT
+    def _UnPack(self, scatterNdOptions):
+        if scatterNdOptions is None:
+            return
+
+    # ScatterNdOptionsT
+    def Pack(self, builder):
+        ScatterNdOptionsStart(builder)
+        scatterNdOptions = ScatterNdOptionsEnd(builder)
+        return scatterNdOptions

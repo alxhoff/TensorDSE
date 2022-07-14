@@ -55,3 +55,54 @@ def ReshapeOptionsStart(builder): builder.StartObject(1)
 def ReshapeOptionsAddNewShape(builder, newShape): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(newShape), 0)
 def ReshapeOptionsStartNewShapeVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def ReshapeOptionsEnd(builder): return builder.EndObject()
+
+try:
+    from typing import List
+except:
+    pass
+
+class ReshapeOptionsT(object):
+
+    # ReshapeOptionsT
+    def __init__(self):
+        self.newShape = None  # type: List[int]
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        reshapeOptions = ReshapeOptions()
+        reshapeOptions.Init(buf, pos)
+        return cls.InitFromObj(reshapeOptions)
+
+    @classmethod
+    def InitFromObj(cls, reshapeOptions):
+        x = ReshapeOptionsT()
+        x._UnPack(reshapeOptions)
+        return x
+
+    # ReshapeOptionsT
+    def _UnPack(self, reshapeOptions):
+        if reshapeOptions is None:
+            return
+        if not reshapeOptions.NewShapeIsNone():
+            if np is None:
+                self.newShape = []
+                for i in range(reshapeOptions.NewShapeLength()):
+                    self.newShape.append(reshapeOptions.NewShape(i))
+            else:
+                self.newShape = reshapeOptions.NewShapeAsNumpy()
+
+    # ReshapeOptionsT
+    def Pack(self, builder):
+        if self.newShape is not None:
+            if np is not None and type(self.newShape) is np.ndarray:
+                newShape = builder.CreateNumpyVector(self.newShape)
+            else:
+                ReshapeOptionsStartNewShapeVector(builder, len(self.newShape))
+                for i in reversed(range(len(self.newShape))):
+                    builder.PrependInt32(self.newShape[i])
+                newShape = builder.EndVector(len(self.newShape))
+        ReshapeOptionsStart(builder)
+        if self.newShape is not None:
+            ReshapeOptionsAddNewShape(builder, newShape)
+        reshapeOptions = ReshapeOptionsEnd(builder)
+        return reshapeOptions

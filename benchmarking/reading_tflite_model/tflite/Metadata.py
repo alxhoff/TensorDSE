@@ -42,3 +42,41 @@ def MetadataStart(builder): builder.StartObject(2)
 def MetadataAddName(builder, name): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(name), 0)
 def MetadataAddBuffer(builder, buffer): builder.PrependUint32Slot(1, buffer, 0)
 def MetadataEnd(builder): return builder.EndObject()
+
+
+class MetadataT(object):
+
+    # MetadataT
+    def __init__(self):
+        self.name = None  # type: str
+        self.buffer = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        metadata = Metadata()
+        metadata.Init(buf, pos)
+        return cls.InitFromObj(metadata)
+
+    @classmethod
+    def InitFromObj(cls, metadata):
+        x = MetadataT()
+        x._UnPack(metadata)
+        return x
+
+    # MetadataT
+    def _UnPack(self, metadata):
+        if metadata is None:
+            return
+        self.name = metadata.Name()
+        self.buffer = metadata.Buffer()
+
+    # MetadataT
+    def Pack(self, builder):
+        if self.name is not None:
+            name = builder.CreateString(self.name)
+        MetadataStart(builder)
+        if self.name is not None:
+            MetadataAddName(builder, name)
+        MetadataAddBuffer(builder, self.buffer)
+        metadata = MetadataEnd(builder)
+        return metadata

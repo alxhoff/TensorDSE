@@ -26,3 +26,33 @@ class NonMaxSuppressionV4Options(object):
 
 def NonMaxSuppressionV4OptionsStart(builder): builder.StartObject(0)
 def NonMaxSuppressionV4OptionsEnd(builder): return builder.EndObject()
+
+
+class NonMaxSuppressionV4OptionsT(object):
+
+    # NonMaxSuppressionV4OptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        nonMaxSuppressionV4Options = NonMaxSuppressionV4Options()
+        nonMaxSuppressionV4Options.Init(buf, pos)
+        return cls.InitFromObj(nonMaxSuppressionV4Options)
+
+    @classmethod
+    def InitFromObj(cls, nonMaxSuppressionV4Options):
+        x = NonMaxSuppressionV4OptionsT()
+        x._UnPack(nonMaxSuppressionV4Options)
+        return x
+
+    # NonMaxSuppressionV4OptionsT
+    def _UnPack(self, nonMaxSuppressionV4Options):
+        if nonMaxSuppressionV4Options is None:
+            return
+
+    # NonMaxSuppressionV4OptionsT
+    def Pack(self, builder):
+        NonMaxSuppressionV4OptionsStart(builder)
+        nonMaxSuppressionV4Options = NonMaxSuppressionV4OptionsEnd(builder)
+        return nonMaxSuppressionV4Options

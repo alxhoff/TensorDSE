@@ -26,3 +26,33 @@ class QuantizeOptions(object):
 
 def QuantizeOptionsStart(builder): builder.StartObject(0)
 def QuantizeOptionsEnd(builder): return builder.EndObject()
+
+
+class QuantizeOptionsT(object):
+
+    # QuantizeOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        quantizeOptions = QuantizeOptions()
+        quantizeOptions.Init(buf, pos)
+        return cls.InitFromObj(quantizeOptions)
+
+    @classmethod
+    def InitFromObj(cls, quantizeOptions):
+        x = QuantizeOptionsT()
+        x._UnPack(quantizeOptions)
+        return x
+
+    # QuantizeOptionsT
+    def _UnPack(self, quantizeOptions):
+        if quantizeOptions is None:
+            return
+
+    # QuantizeOptionsT
+    def Pack(self, builder):
+        QuantizeOptionsStart(builder)
+        quantizeOptions = QuantizeOptionsEnd(builder)
+        return quantizeOptions

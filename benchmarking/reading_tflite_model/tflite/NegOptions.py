@@ -26,3 +26,33 @@ class NegOptions(object):
 
 def NegOptionsStart(builder): builder.StartObject(0)
 def NegOptionsEnd(builder): return builder.EndObject()
+
+
+class NegOptionsT(object):
+
+    # NegOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        negOptions = NegOptions()
+        negOptions.Init(buf, pos)
+        return cls.InitFromObj(negOptions)
+
+    @classmethod
+    def InitFromObj(cls, negOptions):
+        x = NegOptionsT()
+        x._UnPack(negOptions)
+        return x
+
+    # NegOptionsT
+    def _UnPack(self, negOptions):
+        if negOptions is None:
+            return
+
+    # NegOptionsT
+    def Pack(self, builder):
+        NegOptionsStart(builder)
+        negOptions = NegOptionsEnd(builder)
+        return negOptions

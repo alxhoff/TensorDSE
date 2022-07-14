@@ -42,3 +42,38 @@ def ConcatenationOptionsStart(builder): builder.StartObject(2)
 def ConcatenationOptionsAddAxis(builder, axis): builder.PrependInt32Slot(0, axis, 0)
 def ConcatenationOptionsAddFusedActivationFunction(builder, fusedActivationFunction): builder.PrependInt8Slot(1, fusedActivationFunction, 0)
 def ConcatenationOptionsEnd(builder): return builder.EndObject()
+
+
+class ConcatenationOptionsT(object):
+
+    # ConcatenationOptionsT
+    def __init__(self):
+        self.axis = 0  # type: int
+        self.fusedActivationFunction = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        concatenationOptions = ConcatenationOptions()
+        concatenationOptions.Init(buf, pos)
+        return cls.InitFromObj(concatenationOptions)
+
+    @classmethod
+    def InitFromObj(cls, concatenationOptions):
+        x = ConcatenationOptionsT()
+        x._UnPack(concatenationOptions)
+        return x
+
+    # ConcatenationOptionsT
+    def _UnPack(self, concatenationOptions):
+        if concatenationOptions is None:
+            return
+        self.axis = concatenationOptions.Axis()
+        self.fusedActivationFunction = concatenationOptions.FusedActivationFunction()
+
+    # ConcatenationOptionsT
+    def Pack(self, builder):
+        ConcatenationOptionsStart(builder)
+        ConcatenationOptionsAddAxis(builder, self.axis)
+        ConcatenationOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        concatenationOptions = ConcatenationOptionsEnd(builder)
+        return concatenationOptions

@@ -58,3 +58,44 @@ def FakeQuantOptionsAddMax(builder, max): builder.PrependFloat32Slot(1, max, 0.0
 def FakeQuantOptionsAddNumBits(builder, numBits): builder.PrependInt32Slot(2, numBits, 0)
 def FakeQuantOptionsAddNarrowRange(builder, narrowRange): builder.PrependBoolSlot(3, narrowRange, 0)
 def FakeQuantOptionsEnd(builder): return builder.EndObject()
+
+
+class FakeQuantOptionsT(object):
+
+    # FakeQuantOptionsT
+    def __init__(self):
+        self.min = 0.0  # type: float
+        self.max = 0.0  # type: float
+        self.numBits = 0  # type: int
+        self.narrowRange = False  # type: bool
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        fakeQuantOptions = FakeQuantOptions()
+        fakeQuantOptions.Init(buf, pos)
+        return cls.InitFromObj(fakeQuantOptions)
+
+    @classmethod
+    def InitFromObj(cls, fakeQuantOptions):
+        x = FakeQuantOptionsT()
+        x._UnPack(fakeQuantOptions)
+        return x
+
+    # FakeQuantOptionsT
+    def _UnPack(self, fakeQuantOptions):
+        if fakeQuantOptions is None:
+            return
+        self.min = fakeQuantOptions.Min()
+        self.max = fakeQuantOptions.Max()
+        self.numBits = fakeQuantOptions.NumBits()
+        self.narrowRange = fakeQuantOptions.NarrowRange()
+
+    # FakeQuantOptionsT
+    def Pack(self, builder):
+        FakeQuantOptionsStart(builder)
+        FakeQuantOptionsAddMin(builder, self.min)
+        FakeQuantOptionsAddMax(builder, self.max)
+        FakeQuantOptionsAddNumBits(builder, self.numBits)
+        FakeQuantOptionsAddNarrowRange(builder, self.narrowRange)
+        fakeQuantOptions = FakeQuantOptionsEnd(builder)
+        return fakeQuantOptions

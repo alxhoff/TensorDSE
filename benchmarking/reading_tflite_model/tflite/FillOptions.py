@@ -26,3 +26,33 @@ class FillOptions(object):
 
 def FillOptionsStart(builder): builder.StartObject(0)
 def FillOptionsEnd(builder): return builder.EndObject()
+
+
+class FillOptionsT(object):
+
+    # FillOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        fillOptions = FillOptions()
+        fillOptions.Init(buf, pos)
+        return cls.InitFromObj(fillOptions)
+
+    @classmethod
+    def InitFromObj(cls, fillOptions):
+        x = FillOptionsT()
+        x._UnPack(fillOptions)
+        return x
+
+    # FillOptionsT
+    def _UnPack(self, fillOptions):
+        if fillOptions is None:
+            return
+
+    # FillOptionsT
+    def Pack(self, builder):
+        FillOptionsStart(builder)
+        fillOptions = FillOptionsEnd(builder)
+        return fillOptions

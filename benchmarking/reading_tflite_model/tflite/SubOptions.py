@@ -34,3 +34,35 @@ class SubOptions(object):
 def SubOptionsStart(builder): builder.StartObject(1)
 def SubOptionsAddFusedActivationFunction(builder, fusedActivationFunction): builder.PrependInt8Slot(0, fusedActivationFunction, 0)
 def SubOptionsEnd(builder): return builder.EndObject()
+
+
+class SubOptionsT(object):
+
+    # SubOptionsT
+    def __init__(self):
+        self.fusedActivationFunction = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        subOptions = SubOptions()
+        subOptions.Init(buf, pos)
+        return cls.InitFromObj(subOptions)
+
+    @classmethod
+    def InitFromObj(cls, subOptions):
+        x = SubOptionsT()
+        x._UnPack(subOptions)
+        return x
+
+    # SubOptionsT
+    def _UnPack(self, subOptions):
+        if subOptions is None:
+            return
+        self.fusedActivationFunction = subOptions.FusedActivationFunction()
+
+    # SubOptionsT
+    def Pack(self, builder):
+        SubOptionsStart(builder)
+        SubOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        subOptions = SubOptionsEnd(builder)
+        return subOptions

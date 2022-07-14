@@ -34,3 +34,35 @@ class ArgMaxOptions(object):
 def ArgMaxOptionsStart(builder): builder.StartObject(1)
 def ArgMaxOptionsAddOutputType(builder, outputType): builder.PrependInt8Slot(0, outputType, 0)
 def ArgMaxOptionsEnd(builder): return builder.EndObject()
+
+
+class ArgMaxOptionsT(object):
+
+    # ArgMaxOptionsT
+    def __init__(self):
+        self.outputType = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        argMaxOptions = ArgMaxOptions()
+        argMaxOptions.Init(buf, pos)
+        return cls.InitFromObj(argMaxOptions)
+
+    @classmethod
+    def InitFromObj(cls, argMaxOptions):
+        x = ArgMaxOptionsT()
+        x._UnPack(argMaxOptions)
+        return x
+
+    # ArgMaxOptionsT
+    def _UnPack(self, argMaxOptions):
+        if argMaxOptions is None:
+            return
+        self.outputType = argMaxOptions.OutputType()
+
+    # ArgMaxOptionsT
+    def Pack(self, builder):
+        ArgMaxOptionsStart(builder)
+        ArgMaxOptionsAddOutputType(builder, self.outputType)
+        argMaxOptions = ArgMaxOptionsEnd(builder)
+        return argMaxOptions

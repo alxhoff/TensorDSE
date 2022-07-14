@@ -42,3 +42,38 @@ def UnpackOptionsStart(builder): builder.StartObject(2)
 def UnpackOptionsAddNum(builder, num): builder.PrependInt32Slot(0, num, 0)
 def UnpackOptionsAddAxis(builder, axis): builder.PrependInt32Slot(1, axis, 0)
 def UnpackOptionsEnd(builder): return builder.EndObject()
+
+
+class UnpackOptionsT(object):
+
+    # UnpackOptionsT
+    def __init__(self):
+        self.num = 0  # type: int
+        self.axis = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        unpackOptions = UnpackOptions()
+        unpackOptions.Init(buf, pos)
+        return cls.InitFromObj(unpackOptions)
+
+    @classmethod
+    def InitFromObj(cls, unpackOptions):
+        x = UnpackOptionsT()
+        x._UnPack(unpackOptions)
+        return x
+
+    # UnpackOptionsT
+    def _UnPack(self, unpackOptions):
+        if unpackOptions is None:
+            return
+        self.num = unpackOptions.Num()
+        self.axis = unpackOptions.Axis()
+
+    # UnpackOptionsT
+    def Pack(self, builder):
+        UnpackOptionsStart(builder)
+        UnpackOptionsAddNum(builder, self.num)
+        UnpackOptionsAddAxis(builder, self.axis)
+        unpackOptions = UnpackOptionsEnd(builder)
+        return unpackOptions

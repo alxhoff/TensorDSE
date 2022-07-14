@@ -34,3 +34,35 @@ class ShapeOptions(object):
 def ShapeOptionsStart(builder): builder.StartObject(1)
 def ShapeOptionsAddOutType(builder, outType): builder.PrependInt8Slot(0, outType, 0)
 def ShapeOptionsEnd(builder): return builder.EndObject()
+
+
+class ShapeOptionsT(object):
+
+    # ShapeOptionsT
+    def __init__(self):
+        self.outType = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        shapeOptions = ShapeOptions()
+        shapeOptions.Init(buf, pos)
+        return cls.InitFromObj(shapeOptions)
+
+    @classmethod
+    def InitFromObj(cls, shapeOptions):
+        x = ShapeOptionsT()
+        x._UnPack(shapeOptions)
+        return x
+
+    # ShapeOptionsT
+    def _UnPack(self, shapeOptions):
+        if shapeOptions is None:
+            return
+        self.outType = shapeOptions.OutType()
+
+    # ShapeOptionsT
+    def Pack(self, builder):
+        ShapeOptionsStart(builder)
+        ShapeOptionsAddOutType(builder, self.outType)
+        shapeOptions = ShapeOptionsEnd(builder)
+        return shapeOptions

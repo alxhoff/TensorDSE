@@ -1,0 +1,9 @@
+,task_name,task_type,task_inputs,output_tensor_shape
+0,const,Const,  ,  ()
+1,b,Const,  ,  ()
+2,b/read,Identity,  b,  ()
+3,c,Const,  ,  ()
+4,c/read,Identity,  c,  ()
+5,d,Add,  b/read| c/read,  ()
+6,e,Add,  c/read| const,  ()
+7,output_1,Mul,  d| e,  ()

@@ -34,3 +34,35 @@ class OneHotOptions(object):
 def OneHotOptionsStart(builder): builder.StartObject(1)
 def OneHotOptionsAddAxis(builder, axis): builder.PrependInt32Slot(0, axis, 0)
 def OneHotOptionsEnd(builder): return builder.EndObject()
+
+
+class OneHotOptionsT(object):
+
+    # OneHotOptionsT
+    def __init__(self):
+        self.axis = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        oneHotOptions = OneHotOptions()
+        oneHotOptions.Init(buf, pos)
+        return cls.InitFromObj(oneHotOptions)
+
+    @classmethod
+    def InitFromObj(cls, oneHotOptions):
+        x = OneHotOptionsT()
+        x._UnPack(oneHotOptions)
+        return x
+
+    # OneHotOptionsT
+    def _UnPack(self, oneHotOptions):
+        if oneHotOptions is None:
+            return
+        self.axis = oneHotOptions.Axis()
+
+    # OneHotOptionsT
+    def Pack(self, builder):
+        OneHotOptionsStart(builder)
+        OneHotOptionsAddAxis(builder, self.axis)
+        oneHotOptions = OneHotOptionsEnd(builder)
+        return oneHotOptions

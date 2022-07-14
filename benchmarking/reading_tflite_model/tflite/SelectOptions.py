@@ -26,3 +26,33 @@ class SelectOptions(object):
 
 def SelectOptionsStart(builder): builder.StartObject(0)
 def SelectOptionsEnd(builder): return builder.EndObject()
+
+
+class SelectOptionsT(object):
+
+    # SelectOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        selectOptions = SelectOptions()
+        selectOptions.Init(buf, pos)
+        return cls.InitFromObj(selectOptions)
+
+    @classmethod
+    def InitFromObj(cls, selectOptions):
+        x = SelectOptionsT()
+        x._UnPack(selectOptions)
+        return x
+
+    # SelectOptionsT
+    def _UnPack(self, selectOptions):
+        if selectOptions is None:
+            return
+
+    # SelectOptionsT
+    def Pack(self, builder):
+        SelectOptionsStart(builder)
+        selectOptions = SelectOptionsEnd(builder)
+        return selectOptions

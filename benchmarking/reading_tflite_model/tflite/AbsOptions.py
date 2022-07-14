@@ -26,3 +26,33 @@ class AbsOptions(object):
 
 def AbsOptionsStart(builder): builder.StartObject(0)
 def AbsOptionsEnd(builder): return builder.EndObject()
+
+
+class AbsOptionsT(object):
+
+    # AbsOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        absOptions = AbsOptions()
+        absOptions.Init(buf, pos)
+        return cls.InitFromObj(absOptions)
+
+    @classmethod
+    def InitFromObj(cls, absOptions):
+        x = AbsOptionsT()
+        x._UnPack(absOptions)
+        return x
+
+    # AbsOptionsT
+    def _UnPack(self, absOptions):
+        if absOptions is None:
+            return
+
+    # AbsOptionsT
+    def Pack(self, builder):
+        AbsOptionsStart(builder)
+        absOptions = AbsOptionsEnd(builder)
+        return absOptions

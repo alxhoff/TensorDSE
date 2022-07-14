@@ -34,3 +34,35 @@ class ResizeNearestNeighborOptions(object):
 def ResizeNearestNeighborOptionsStart(builder): builder.StartObject(1)
 def ResizeNearestNeighborOptionsAddAlignCorners(builder, alignCorners): builder.PrependBoolSlot(0, alignCorners, 0)
 def ResizeNearestNeighborOptionsEnd(builder): return builder.EndObject()
+
+
+class ResizeNearestNeighborOptionsT(object):
+
+    # ResizeNearestNeighborOptionsT
+    def __init__(self):
+        self.alignCorners = False  # type: bool
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        resizeNearestNeighborOptions = ResizeNearestNeighborOptions()
+        resizeNearestNeighborOptions.Init(buf, pos)
+        return cls.InitFromObj(resizeNearestNeighborOptions)
+
+    @classmethod
+    def InitFromObj(cls, resizeNearestNeighborOptions):
+        x = ResizeNearestNeighborOptionsT()
+        x._UnPack(resizeNearestNeighborOptions)
+        return x
+
+    # ResizeNearestNeighborOptionsT
+    def _UnPack(self, resizeNearestNeighborOptions):
+        if resizeNearestNeighborOptions is None:
+            return
+        self.alignCorners = resizeNearestNeighborOptions.AlignCorners()
+
+    # ResizeNearestNeighborOptionsT
+    def Pack(self, builder):
+        ResizeNearestNeighborOptionsStart(builder)
+        ResizeNearestNeighborOptionsAddAlignCorners(builder, self.alignCorners)
+        resizeNearestNeighborOptions = ResizeNearestNeighborOptionsEnd(builder)
+        return resizeNearestNeighborOptions

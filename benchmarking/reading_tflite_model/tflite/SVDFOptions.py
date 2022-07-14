@@ -42,3 +42,38 @@ def SVDFOptionsStart(builder): builder.StartObject(2)
 def SVDFOptionsAddRank(builder, rank): builder.PrependInt32Slot(0, rank, 0)
 def SVDFOptionsAddFusedActivationFunction(builder, fusedActivationFunction): builder.PrependInt8Slot(1, fusedActivationFunction, 0)
 def SVDFOptionsEnd(builder): return builder.EndObject()
+
+
+class SVDFOptionsT(object):
+
+    # SVDFOptionsT
+    def __init__(self):
+        self.rank = 0  # type: int
+        self.fusedActivationFunction = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        sVDFOptions = SVDFOptions()
+        sVDFOptions.Init(buf, pos)
+        return cls.InitFromObj(sVDFOptions)
+
+    @classmethod
+    def InitFromObj(cls, sVDFOptions):
+        x = SVDFOptionsT()
+        x._UnPack(sVDFOptions)
+        return x
+
+    # SVDFOptionsT
+    def _UnPack(self, sVDFOptions):
+        if sVDFOptions is None:
+            return
+        self.rank = sVDFOptions.Rank()
+        self.fusedActivationFunction = sVDFOptions.FusedActivationFunction()
+
+    # SVDFOptionsT
+    def Pack(self, builder):
+        SVDFOptionsStart(builder)
+        SVDFOptionsAddRank(builder, self.rank)
+        SVDFOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        sVDFOptions = SVDFOptionsEnd(builder)
+        return sVDFOptions

@@ -111,3 +111,85 @@ def TensorAddQuantization(builder, quantization): builder.PrependUOffsetTRelativ
 def TensorAddIsVariable(builder, isVariable): builder.PrependBoolSlot(5, isVariable, 0)
 def TensorAddSparsity(builder, sparsity): builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(sparsity), 0)
 def TensorEnd(builder): return builder.EndObject()
+
+import tflite.QuantizationParameters
+import tflite.SparsityParameters
+try:
+    from typing import List, Optional
+except:
+    pass
+
+class TensorT(object):
+
+    # TensorT
+    def __init__(self):
+        self.shape = None  # type: List[int]
+        self.type = 0  # type: int
+        self.buffer = 0  # type: int
+        self.name = None  # type: str
+        self.quantization = None  # type: Optional[tflite.QuantizationParameters.QuantizationParametersT]
+        self.isVariable = False  # type: bool
+        self.sparsity = None  # type: Optional[tflite.SparsityParameters.SparsityParametersT]
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        tensor = Tensor()
+        tensor.Init(buf, pos)
+        return cls.InitFromObj(tensor)
+
+    @classmethod
+    def InitFromObj(cls, tensor):
+        x = TensorT()
+        x._UnPack(tensor)
+        return x
+
+    # TensorT
+    def _UnPack(self, tensor):
+        if tensor is None:
+            return
+        if not tensor.ShapeIsNone():
+            if np is None:
+                self.shape = []
+                for i in range(tensor.ShapeLength()):
+                    self.shape.append(tensor.Shape(i))
+            else:
+                self.shape = tensor.ShapeAsNumpy()
+        self.type = tensor.Type()
+        self.buffer = tensor.Buffer()
+        self.name = tensor.Name()
+        if tensor.Quantization() is not None:
+            self.quantization = tflite.QuantizationParameters.QuantizationParametersT.InitFromObj(tensor.Quantization())
+        self.isVariable = tensor.IsVariable()
+        if tensor.Sparsity() is not None:
+            self.sparsity = tflite.SparsityParameters.SparsityParametersT.InitFromObj(tensor.Sparsity())
+
+    # TensorT
+    def Pack(self, builder):
+        if self.shape is not None:
+            if np is not None and type(self.shape) is np.ndarray:
+                shape = builder.CreateNumpyVector(self.shape)
+            else:
+                TensorStartShapeVector(builder, len(self.shape))
+                for i in reversed(range(len(self.shape))):
+                    builder.PrependInt32(self.shape[i])
+                shape = builder.EndVector(len(self.shape))
+        if self.name is not None:
+            name = builder.CreateString(self.name)
+        if self.quantization is not None:
+            quantization = self.quantization.Pack(builder)
+        if self.sparsity is not None:
+            sparsity = self.sparsity.Pack(builder)
+        TensorStart(builder)
+        if self.shape is not None:
+            TensorAddShape(builder, shape)
+        TensorAddType(builder, self.type)
+        TensorAddBuffer(builder, self.buffer)
+        if self.name is not None:
+            TensorAddName(builder, name)
+        if self.quantization is not None:
+            TensorAddQuantization(builder, quantization)
+        TensorAddIsVariable(builder, self.isVariable)
+        if self.sparsity is not None:
+            TensorAddSparsity(builder, sparsity)
+        tensor = TensorEnd(builder)
+        return tensor

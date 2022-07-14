@@ -34,3 +34,35 @@ class UniqueOptions(object):
 def UniqueOptionsStart(builder): builder.StartObject(1)
 def UniqueOptionsAddIdxOutType(builder, idxOutType): builder.PrependInt8Slot(0, idxOutType, 2)
 def UniqueOptionsEnd(builder): return builder.EndObject()
+
+
+class UniqueOptionsT(object):
+
+    # UniqueOptionsT
+    def __init__(self):
+        self.idxOutType = 2  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        uniqueOptions = UniqueOptions()
+        uniqueOptions.Init(buf, pos)
+        return cls.InitFromObj(uniqueOptions)
+
+    @classmethod
+    def InitFromObj(cls, uniqueOptions):
+        x = UniqueOptionsT()
+        x._UnPack(uniqueOptions)
+        return x
+
+    # UniqueOptionsT
+    def _UnPack(self, uniqueOptions):
+        if uniqueOptions is None:
+            return
+        self.idxOutType = uniqueOptions.IdxOutType()
+
+    # UniqueOptionsT
+    def Pack(self, builder):
+        UniqueOptionsStart(builder)
+        UniqueOptionsAddIdxOutType(builder, self.idxOutType)
+        uniqueOptions = UniqueOptionsEnd(builder)
+        return uniqueOptions

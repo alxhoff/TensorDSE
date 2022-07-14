@@ -34,3 +34,35 @@ class RNNOptions(object):
 def RNNOptionsStart(builder): builder.StartObject(1)
 def RNNOptionsAddFusedActivationFunction(builder, fusedActivationFunction): builder.PrependInt8Slot(0, fusedActivationFunction, 0)
 def RNNOptionsEnd(builder): return builder.EndObject()
+
+
+class RNNOptionsT(object):
+
+    # RNNOptionsT
+    def __init__(self):
+        self.fusedActivationFunction = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        rNNOptions = RNNOptions()
+        rNNOptions.Init(buf, pos)
+        return cls.InitFromObj(rNNOptions)
+
+    @classmethod
+    def InitFromObj(cls, rNNOptions):
+        x = RNNOptionsT()
+        x._UnPack(rNNOptions)
+        return x
+
+    # RNNOptionsT
+    def _UnPack(self, rNNOptions):
+        if rNNOptions is None:
+            return
+        self.fusedActivationFunction = rNNOptions.FusedActivationFunction()
+
+    # RNNOptionsT
+    def Pack(self, builder):
+        RNNOptionsStart(builder)
+        RNNOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        rNNOptions = RNNOptionsEnd(builder)
+        return rNNOptions

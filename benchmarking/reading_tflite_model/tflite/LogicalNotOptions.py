@@ -26,3 +26,33 @@ class LogicalNotOptions(object):
 
 def LogicalNotOptionsStart(builder): builder.StartObject(0)
 def LogicalNotOptionsEnd(builder): return builder.EndObject()
+
+
+class LogicalNotOptionsT(object):
+
+    # LogicalNotOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        logicalNotOptions = LogicalNotOptions()
+        logicalNotOptions.Init(buf, pos)
+        return cls.InitFromObj(logicalNotOptions)
+
+    @classmethod
+    def InitFromObj(cls, logicalNotOptions):
+        x = LogicalNotOptionsT()
+        x._UnPack(logicalNotOptions)
+        return x
+
+    # LogicalNotOptionsT
+    def _UnPack(self, logicalNotOptions):
+        if logicalNotOptions is None:
+            return
+
+    # LogicalNotOptionsT
+    def Pack(self, builder):
+        LogicalNotOptionsStart(builder)
+        logicalNotOptions = LogicalNotOptionsEnd(builder)
+        return logicalNotOptions

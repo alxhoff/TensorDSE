@@ -74,3 +74,50 @@ def Pool2DOptionsAddFilterWidth(builder, filterWidth): builder.PrependInt32Slot(
 def Pool2DOptionsAddFilterHeight(builder, filterHeight): builder.PrependInt32Slot(4, filterHeight, 0)
 def Pool2DOptionsAddFusedActivationFunction(builder, fusedActivationFunction): builder.PrependInt8Slot(5, fusedActivationFunction, 0)
 def Pool2DOptionsEnd(builder): return builder.EndObject()
+
+
+class Pool2DOptionsT(object):
+
+    # Pool2DOptionsT
+    def __init__(self):
+        self.padding = 0  # type: int
+        self.strideW = 0  # type: int
+        self.strideH = 0  # type: int
+        self.filterWidth = 0  # type: int
+        self.filterHeight = 0  # type: int
+        self.fusedActivationFunction = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        pool2DOptions = Pool2DOptions()
+        pool2DOptions.Init(buf, pos)
+        return cls.InitFromObj(pool2DOptions)
+
+    @classmethod
+    def InitFromObj(cls, pool2DOptions):
+        x = Pool2DOptionsT()
+        x._UnPack(pool2DOptions)
+        return x
+
+    # Pool2DOptionsT
+    def _UnPack(self, pool2DOptions):
+        if pool2DOptions is None:
+            return
+        self.padding = pool2DOptions.Padding()
+        self.strideW = pool2DOptions.StrideW()
+        self.strideH = pool2DOptions.StrideH()
+        self.filterWidth = pool2DOptions.FilterWidth()
+        self.filterHeight = pool2DOptions.FilterHeight()
+        self.fusedActivationFunction = pool2DOptions.FusedActivationFunction()
+
+    # Pool2DOptionsT
+    def Pack(self, builder):
+        Pool2DOptionsStart(builder)
+        Pool2DOptionsAddPadding(builder, self.padding)
+        Pool2DOptionsAddStrideW(builder, self.strideW)
+        Pool2DOptionsAddStrideH(builder, self.strideH)
+        Pool2DOptionsAddFilterWidth(builder, self.filterWidth)
+        Pool2DOptionsAddFilterHeight(builder, self.filterHeight)
+        Pool2DOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        pool2DOptions = Pool2DOptionsEnd(builder)
+        return pool2DOptions

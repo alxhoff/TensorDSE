@@ -26,3 +26,33 @@ class TopKV2Options(object):
 
 def TopKV2OptionsStart(builder): builder.StartObject(0)
 def TopKV2OptionsEnd(builder): return builder.EndObject()
+
+
+class TopKV2OptionsT(object):
+
+    # TopKV2OptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        topKV2Options = TopKV2Options()
+        topKV2Options.Init(buf, pos)
+        return cls.InitFromObj(topKV2Options)
+
+    @classmethod
+    def InitFromObj(cls, topKV2Options):
+        x = TopKV2OptionsT()
+        x._UnPack(topKV2Options)
+        return x
+
+    # TopKV2OptionsT
+    def _UnPack(self, topKV2Options):
+        if topKV2Options is None:
+            return
+
+    # TopKV2OptionsT
+    def Pack(self, builder):
+        TopKV2OptionsStart(builder)
+        topKV2Options = TopKV2OptionsEnd(builder)
+        return topKV2Options

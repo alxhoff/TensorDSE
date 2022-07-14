@@ -34,3 +34,35 @@ class MirrorPadOptions(object):
 def MirrorPadOptionsStart(builder): builder.StartObject(1)
 def MirrorPadOptionsAddMode(builder, mode): builder.PrependInt8Slot(0, mode, 0)
 def MirrorPadOptionsEnd(builder): return builder.EndObject()
+
+
+class MirrorPadOptionsT(object):
+
+    # MirrorPadOptionsT
+    def __init__(self):
+        self.mode = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        mirrorPadOptions = MirrorPadOptions()
+        mirrorPadOptions.Init(buf, pos)
+        return cls.InitFromObj(mirrorPadOptions)
+
+    @classmethod
+    def InitFromObj(cls, mirrorPadOptions):
+        x = MirrorPadOptionsT()
+        x._UnPack(mirrorPadOptions)
+        return x
+
+    # MirrorPadOptionsT
+    def _UnPack(self, mirrorPadOptions):
+        if mirrorPadOptions is None:
+            return
+        self.mode = mirrorPadOptions.Mode()
+
+    # MirrorPadOptionsT
+    def Pack(self, builder):
+        MirrorPadOptionsStart(builder)
+        MirrorPadOptionsAddMode(builder, self.mode)
+        mirrorPadOptions = MirrorPadOptionsEnd(builder)
+        return mirrorPadOptions

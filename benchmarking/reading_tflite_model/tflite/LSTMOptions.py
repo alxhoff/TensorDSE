@@ -58,3 +58,44 @@ def LSTMOptionsAddCellClip(builder, cellClip): builder.PrependFloat32Slot(1, cel
 def LSTMOptionsAddProjClip(builder, projClip): builder.PrependFloat32Slot(2, projClip, 0.0)
 def LSTMOptionsAddKernelType(builder, kernelType): builder.PrependInt8Slot(3, kernelType, 0)
 def LSTMOptionsEnd(builder): return builder.EndObject()
+
+
+class LSTMOptionsT(object):
+
+    # LSTMOptionsT
+    def __init__(self):
+        self.fusedActivationFunction = 0  # type: int
+        self.cellClip = 0.0  # type: float
+        self.projClip = 0.0  # type: float
+        self.kernelType = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        lSTMOptions = LSTMOptions()
+        lSTMOptions.Init(buf, pos)
+        return cls.InitFromObj(lSTMOptions)
+
+    @classmethod
+    def InitFromObj(cls, lSTMOptions):
+        x = LSTMOptionsT()
+        x._UnPack(lSTMOptions)
+        return x
+
+    # LSTMOptionsT
+    def _UnPack(self, lSTMOptions):
+        if lSTMOptions is None:
+            return
+        self.fusedActivationFunction = lSTMOptions.FusedActivationFunction()
+        self.cellClip = lSTMOptions.CellClip()
+        self.projClip = lSTMOptions.ProjClip()
+        self.kernelType = lSTMOptions.KernelType()
+
+    # LSTMOptionsT
+    def Pack(self, builder):
+        LSTMOptionsStart(builder)
+        LSTMOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        LSTMOptionsAddCellClip(builder, self.cellClip)
+        LSTMOptionsAddProjClip(builder, self.projClip)
+        LSTMOptionsAddKernelType(builder, self.kernelType)
+        lSTMOptions = LSTMOptionsEnd(builder)
+        return lSTMOptions

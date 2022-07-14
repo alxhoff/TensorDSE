@@ -26,3 +26,33 @@ class ZerosLikeOptions(object):
 
 def ZerosLikeOptionsStart(builder): builder.StartObject(0)
 def ZerosLikeOptionsEnd(builder): return builder.EndObject()
+
+
+class ZerosLikeOptionsT(object):
+
+    # ZerosLikeOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        zerosLikeOptions = ZerosLikeOptions()
+        zerosLikeOptions.Init(buf, pos)
+        return cls.InitFromObj(zerosLikeOptions)
+
+    @classmethod
+    def InitFromObj(cls, zerosLikeOptions):
+        x = ZerosLikeOptionsT()
+        x._UnPack(zerosLikeOptions)
+        return x
+
+    # ZerosLikeOptionsT
+    def _UnPack(self, zerosLikeOptions):
+        if zerosLikeOptions is None:
+            return
+
+    # ZerosLikeOptionsT
+    def Pack(self, builder):
+        ZerosLikeOptionsStart(builder)
+        zerosLikeOptions = ZerosLikeOptionsEnd(builder)
+        return zerosLikeOptions

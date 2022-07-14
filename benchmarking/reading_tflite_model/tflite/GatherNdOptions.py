@@ -26,3 +26,33 @@ class GatherNdOptions(object):
 
 def GatherNdOptionsStart(builder): builder.StartObject(0)
 def GatherNdOptionsEnd(builder): return builder.EndObject()
+
+
+class GatherNdOptionsT(object):
+
+    # GatherNdOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        gatherNdOptions = GatherNdOptions()
+        gatherNdOptions.Init(buf, pos)
+        return cls.InitFromObj(gatherNdOptions)
+
+    @classmethod
+    def InitFromObj(cls, gatherNdOptions):
+        x = GatherNdOptionsT()
+        x._UnPack(gatherNdOptions)
+        return x
+
+    # GatherNdOptionsT
+    def _UnPack(self, gatherNdOptions):
+        if gatherNdOptions is None:
+            return
+
+    # GatherNdOptionsT
+    def Pack(self, builder):
+        GatherNdOptionsStart(builder)
+        gatherNdOptions = GatherNdOptionsEnd(builder)
+        return gatherNdOptions

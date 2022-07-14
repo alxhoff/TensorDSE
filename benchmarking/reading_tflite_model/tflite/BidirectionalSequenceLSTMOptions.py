@@ -66,3 +66,47 @@ def BidirectionalSequenceLSTMOptionsAddProjClip(builder, projClip): builder.Prep
 def BidirectionalSequenceLSTMOptionsAddMergeOutputs(builder, mergeOutputs): builder.PrependBoolSlot(3, mergeOutputs, 0)
 def BidirectionalSequenceLSTMOptionsAddTimeMajor(builder, timeMajor): builder.PrependBoolSlot(4, timeMajor, 1)
 def BidirectionalSequenceLSTMOptionsEnd(builder): return builder.EndObject()
+
+
+class BidirectionalSequenceLSTMOptionsT(object):
+
+    # BidirectionalSequenceLSTMOptionsT
+    def __init__(self):
+        self.fusedActivationFunction = 0  # type: int
+        self.cellClip = 0.0  # type: float
+        self.projClip = 0.0  # type: float
+        self.mergeOutputs = False  # type: bool
+        self.timeMajor = True  # type: bool
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        bidirectionalSequenceLSTMOptions = BidirectionalSequenceLSTMOptions()
+        bidirectionalSequenceLSTMOptions.Init(buf, pos)
+        return cls.InitFromObj(bidirectionalSequenceLSTMOptions)
+
+    @classmethod
+    def InitFromObj(cls, bidirectionalSequenceLSTMOptions):
+        x = BidirectionalSequenceLSTMOptionsT()
+        x._UnPack(bidirectionalSequenceLSTMOptions)
+        return x
+
+    # BidirectionalSequenceLSTMOptionsT
+    def _UnPack(self, bidirectionalSequenceLSTMOptions):
+        if bidirectionalSequenceLSTMOptions is None:
+            return
+        self.fusedActivationFunction = bidirectionalSequenceLSTMOptions.FusedActivationFunction()
+        self.cellClip = bidirectionalSequenceLSTMOptions.CellClip()
+        self.projClip = bidirectionalSequenceLSTMOptions.ProjClip()
+        self.mergeOutputs = bidirectionalSequenceLSTMOptions.MergeOutputs()
+        self.timeMajor = bidirectionalSequenceLSTMOptions.TimeMajor()
+
+    # BidirectionalSequenceLSTMOptionsT
+    def Pack(self, builder):
+        BidirectionalSequenceLSTMOptionsStart(builder)
+        BidirectionalSequenceLSTMOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        BidirectionalSequenceLSTMOptionsAddCellClip(builder, self.cellClip)
+        BidirectionalSequenceLSTMOptionsAddProjClip(builder, self.projClip)
+        BidirectionalSequenceLSTMOptionsAddMergeOutputs(builder, self.mergeOutputs)
+        BidirectionalSequenceLSTMOptionsAddTimeMajor(builder, self.timeMajor)
+        bidirectionalSequenceLSTMOptions = BidirectionalSequenceLSTMOptionsEnd(builder)
+        return bidirectionalSequenceLSTMOptions

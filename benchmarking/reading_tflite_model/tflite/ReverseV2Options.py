@@ -26,3 +26,33 @@ class ReverseV2Options(object):
 
 def ReverseV2OptionsStart(builder): builder.StartObject(0)
 def ReverseV2OptionsEnd(builder): return builder.EndObject()
+
+
+class ReverseV2OptionsT(object):
+
+    # ReverseV2OptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        reverseV2Options = ReverseV2Options()
+        reverseV2Options.Init(buf, pos)
+        return cls.InitFromObj(reverseV2Options)
+
+    @classmethod
+    def InitFromObj(cls, reverseV2Options):
+        x = ReverseV2OptionsT()
+        x._UnPack(reverseV2Options)
+        return x
+
+    # ReverseV2OptionsT
+    def _UnPack(self, reverseV2Options):
+        if reverseV2Options is None:
+            return
+
+    # ReverseV2OptionsT
+    def Pack(self, builder):
+        ReverseV2OptionsStart(builder)
+        reverseV2Options = ReverseV2OptionsEnd(builder)
+        return reverseV2Options

@@ -26,3 +26,33 @@ class BatchToSpaceNDOptions(object):
 
 def BatchToSpaceNDOptionsStart(builder): builder.StartObject(0)
 def BatchToSpaceNDOptionsEnd(builder): return builder.EndObject()
+
+
+class BatchToSpaceNDOptionsT(object):
+
+    # BatchToSpaceNDOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        batchToSpaceNDOptions = BatchToSpaceNDOptions()
+        batchToSpaceNDOptions.Init(buf, pos)
+        return cls.InitFromObj(batchToSpaceNDOptions)
+
+    @classmethod
+    def InitFromObj(cls, batchToSpaceNDOptions):
+        x = BatchToSpaceNDOptionsT()
+        x._UnPack(batchToSpaceNDOptions)
+        return x
+
+    # BatchToSpaceNDOptionsT
+    def _UnPack(self, batchToSpaceNDOptions):
+        if batchToSpaceNDOptions is None:
+            return
+
+    # BatchToSpaceNDOptionsT
+    def Pack(self, builder):
+        BatchToSpaceNDOptionsStart(builder)
+        batchToSpaceNDOptions = BatchToSpaceNDOptionsEnd(builder)
+        return batchToSpaceNDOptions

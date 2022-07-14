@@ -26,3 +26,33 @@ class LogicalAndOptions(object):
 
 def LogicalAndOptionsStart(builder): builder.StartObject(0)
 def LogicalAndOptionsEnd(builder): return builder.EndObject()
+
+
+class LogicalAndOptionsT(object):
+
+    # LogicalAndOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        logicalAndOptions = LogicalAndOptions()
+        logicalAndOptions.Init(buf, pos)
+        return cls.InitFromObj(logicalAndOptions)
+
+    @classmethod
+    def InitFromObj(cls, logicalAndOptions):
+        x = LogicalAndOptionsT()
+        x._UnPack(logicalAndOptions)
+        return x
+
+    # LogicalAndOptionsT
+    def _UnPack(self, logicalAndOptions):
+        if logicalAndOptions is None:
+            return
+
+    # LogicalAndOptionsT
+    def Pack(self, builder):
+        LogicalAndOptionsStart(builder)
+        logicalAndOptions = LogicalAndOptionsEnd(builder)
+        return logicalAndOptions

@@ -26,3 +26,33 @@ class LogicalOrOptions(object):
 
 def LogicalOrOptionsStart(builder): builder.StartObject(0)
 def LogicalOrOptionsEnd(builder): return builder.EndObject()
+
+
+class LogicalOrOptionsT(object):
+
+    # LogicalOrOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        logicalOrOptions = LogicalOrOptions()
+        logicalOrOptions.Init(buf, pos)
+        return cls.InitFromObj(logicalOrOptions)
+
+    @classmethod
+    def InitFromObj(cls, logicalOrOptions):
+        x = LogicalOrOptionsT()
+        x._UnPack(logicalOrOptions)
+        return x
+
+    # LogicalOrOptionsT
+    def _UnPack(self, logicalOrOptions):
+        if logicalOrOptions is None:
+            return
+
+    # LogicalOrOptionsT
+    def Pack(self, builder):
+        LogicalOrOptionsStart(builder)
+        logicalOrOptions = LogicalOrOptionsEnd(builder)
+        return logicalOrOptions

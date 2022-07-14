@@ -55,3 +55,54 @@ def BufferStart(builder): builder.StartObject(1)
 def BufferAddData(builder, data): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
 def BufferStartDataVector(builder, numElems): return builder.StartVector(1, numElems, 1)
 def BufferEnd(builder): return builder.EndObject()
+
+try:
+    from typing import List
+except:
+    pass
+
+class BufferT(object):
+
+    # BufferT
+    def __init__(self):
+        self.data = None  # type: List[int]
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        buffer = Buffer()
+        buffer.Init(buf, pos)
+        return cls.InitFromObj(buffer)
+
+    @classmethod
+    def InitFromObj(cls, buffer):
+        x = BufferT()
+        x._UnPack(buffer)
+        return x
+
+    # BufferT
+    def _UnPack(self, buffer):
+        if buffer is None:
+            return
+        if not buffer.DataIsNone():
+            if np is None:
+                self.data = []
+                for i in range(buffer.DataLength()):
+                    self.data.append(buffer.Data(i))
+            else:
+                self.data = buffer.DataAsNumpy()
+
+    # BufferT
+    def Pack(self, builder):
+        if self.data is not None:
+            if np is not None and type(self.data) is np.ndarray:
+                data = builder.CreateNumpyVector(self.data)
+            else:
+                BufferStartDataVector(builder, len(self.data))
+                for i in reversed(range(len(self.data))):
+                    builder.PrependUint8(self.data[i])
+                data = builder.EndVector(len(self.data))
+        BufferStart(builder)
+        if self.data is not None:
+            BufferAddData(builder, data)
+        buffer = BufferEnd(builder)
+        return buffer

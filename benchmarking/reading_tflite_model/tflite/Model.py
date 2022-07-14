@@ -179,3 +179,143 @@ def ModelStartMetadataBufferVector(builder, numElems): return builder.StartVecto
 def ModelAddMetadata(builder, metadata): builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(metadata), 0)
 def ModelStartMetadataVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def ModelEnd(builder): return builder.EndObject()
+
+import tflite.Buffer
+import tflite.Metadata
+import tflite.OperatorCode
+import tflite.SubGraph
+try:
+    from typing import List
+except:
+    pass
+
+class ModelT(object):
+
+    # ModelT
+    def __init__(self):
+        self.version = 0  # type: int
+        self.operatorCodes = None  # type: List[tflite.OperatorCode.OperatorCodeT]
+        self.subgraphs = None  # type: List[tflite.SubGraph.SubGraphT]
+        self.description = None  # type: str
+        self.buffers = None  # type: List[tflite.Buffer.BufferT]
+        self.metadataBuffer = None  # type: List[int]
+        self.metadata = None  # type: List[tflite.Metadata.MetadataT]
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        model = Model()
+        model.Init(buf, pos)
+        return cls.InitFromObj(model)
+
+    @classmethod
+    def InitFromObj(cls, model):
+        x = ModelT()
+        x._UnPack(model)
+        return x
+
+    # ModelT
+    def _UnPack(self, model):
+        if model is None:
+            return
+        self.version = model.Version()
+        if not model.OperatorCodesIsNone():
+            self.operatorCodes = []
+            for i in range(model.OperatorCodesLength()):
+                if model.OperatorCodes(i) is None:
+                    self.operatorCodes.append(None)
+                else:
+                    operatorCode_ = tflite.OperatorCode.OperatorCodeT.InitFromObj(model.OperatorCodes(i))
+                    self.operatorCodes.append(operatorCode_)
+        if not model.SubgraphsIsNone():
+            self.subgraphs = []
+            for i in range(model.SubgraphsLength()):
+                if model.Subgraphs(i) is None:
+                    self.subgraphs.append(None)
+                else:
+                    subGraph_ = tflite.SubGraph.SubGraphT.InitFromObj(model.Subgraphs(i))
+                    self.subgraphs.append(subGraph_)
+        self.description = model.Description()
+        if not model.BuffersIsNone():
+            self.buffers = []
+            for i in range(model.BuffersLength()):
+                if model.Buffers(i) is None:
+                    self.buffers.append(None)
+                else:
+                    buffer_ = tflite.Buffer.BufferT.InitFromObj(model.Buffers(i))
+                    self.buffers.append(buffer_)
+        if not model.MetadataBufferIsNone():
+            if np is None:
+                self.metadataBuffer = []
+                for i in range(model.MetadataBufferLength()):
+                    self.metadataBuffer.append(model.MetadataBuffer(i))
+            else:
+                self.metadataBuffer = model.MetadataBufferAsNumpy()
+        if not model.MetadataIsNone():
+            self.metadata = []
+            for i in range(model.MetadataLength()):
+                if model.Metadata(i) is None:
+                    self.metadata.append(None)
+                else:
+                    metadata_ = tflite.Metadata.MetadataT.InitFromObj(model.Metadata(i))
+                    self.metadata.append(metadata_)
+
+    # ModelT
+    def Pack(self, builder):
+        if self.operatorCodes is not None:
+            operatorCodeslist = []
+            for i in range(len(self.operatorCodes)):
+                operatorCodeslist.append(self.operatorCodes[i].Pack(builder))
+            ModelStartOperatorCodesVector(builder, len(self.operatorCodes))
+            for i in reversed(range(len(self.operatorCodes))):
+                builder.PrependUOffsetTRelative(operatorCodeslist[i])
+            operatorCodes = builder.EndVector(len(self.operatorCodes))
+        if self.subgraphs is not None:
+            subgraphslist = []
+            for i in range(len(self.subgraphs)):
+                subgraphslist.append(self.subgraphs[i].Pack(builder))
+            ModelStartSubgraphsVector(builder, len(self.subgraphs))
+            for i in reversed(range(len(self.subgraphs))):
+                builder.PrependUOffsetTRelative(subgraphslist[i])
+            subgraphs = builder.EndVector(len(self.subgraphs))
+        if self.description is not None:
+            description = builder.CreateString(self.description)
+        if self.buffers is not None:
+            bufferslist = []
+            for i in range(len(self.buffers)):
+                bufferslist.append(self.buffers[i].Pack(builder))
+            ModelStartBuffersVector(builder, len(self.buffers))
+            for i in reversed(range(len(self.buffers))):
+                builder.PrependUOffsetTRelative(bufferslist[i])
+            buffers = builder.EndVector(len(self.buffers))
+        if self.metadataBuffer is not None:
+            if np is not None and type(self.metadataBuffer) is np.ndarray:
+                metadataBuffer = builder.CreateNumpyVector(self.metadataBuffer)
+            else:
+                ModelStartMetadataBufferVector(builder, len(self.metadataBuffer))
+                for i in reversed(range(len(self.metadataBuffer))):
+                    builder.PrependInt32(self.metadataBuffer[i])
+                metadataBuffer = builder.EndVector(len(self.metadataBuffer))
+        if self.metadata is not None:
+            metadatalist = []
+            for i in range(len(self.metadata)):
+                metadatalist.append(self.metadata[i].Pack(builder))
+            ModelStartMetadataVector(builder, len(self.metadata))
+            for i in reversed(range(len(self.metadata))):
+                builder.PrependUOffsetTRelative(metadatalist[i])
+            metadata = builder.EndVector(len(self.metadata))
+        ModelStart(builder)
+        ModelAddVersion(builder, self.version)
+        if self.operatorCodes is not None:
+            ModelAddOperatorCodes(builder, operatorCodes)
+        if self.subgraphs is not None:
+            ModelAddSubgraphs(builder, subgraphs)
+        if self.description is not None:
+            ModelAddDescription(builder, description)
+        if self.buffers is not None:
+            ModelAddBuffers(builder, buffers)
+        if self.metadataBuffer is not None:
+            ModelAddMetadataBuffer(builder, metadataBuffer)
+        if self.metadata is not None:
+            ModelAddMetadata(builder, metadata)
+        model = ModelEnd(builder)
+        return model

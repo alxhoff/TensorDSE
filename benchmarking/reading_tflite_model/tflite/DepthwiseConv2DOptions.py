@@ -82,3 +82,53 @@ def DepthwiseConv2DOptionsAddFusedActivationFunction(builder, fusedActivationFun
 def DepthwiseConv2DOptionsAddDilationWFactor(builder, dilationWFactor): builder.PrependInt32Slot(5, dilationWFactor, 1)
 def DepthwiseConv2DOptionsAddDilationHFactor(builder, dilationHFactor): builder.PrependInt32Slot(6, dilationHFactor, 1)
 def DepthwiseConv2DOptionsEnd(builder): return builder.EndObject()
+
+
+class DepthwiseConv2DOptionsT(object):
+
+    # DepthwiseConv2DOptionsT
+    def __init__(self):
+        self.padding = 0  # type: int
+        self.strideW = 0  # type: int
+        self.strideH = 0  # type: int
+        self.depthMultiplier = 0  # type: int
+        self.fusedActivationFunction = 0  # type: int
+        self.dilationWFactor = 1  # type: int
+        self.dilationHFactor = 1  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        depthwiseConv2DOptions = DepthwiseConv2DOptions()
+        depthwiseConv2DOptions.Init(buf, pos)
+        return cls.InitFromObj(depthwiseConv2DOptions)
+
+    @classmethod
+    def InitFromObj(cls, depthwiseConv2DOptions):
+        x = DepthwiseConv2DOptionsT()
+        x._UnPack(depthwiseConv2DOptions)
+        return x
+
+    # DepthwiseConv2DOptionsT
+    def _UnPack(self, depthwiseConv2DOptions):
+        if depthwiseConv2DOptions is None:
+            return
+        self.padding = depthwiseConv2DOptions.Padding()
+        self.strideW = depthwiseConv2DOptions.StrideW()
+        self.strideH = depthwiseConv2DOptions.StrideH()
+        self.depthMultiplier = depthwiseConv2DOptions.DepthMultiplier()
+        self.fusedActivationFunction = depthwiseConv2DOptions.FusedActivationFunction()
+        self.dilationWFactor = depthwiseConv2DOptions.DilationWFactor()
+        self.dilationHFactor = depthwiseConv2DOptions.DilationHFactor()
+
+    # DepthwiseConv2DOptionsT
+    def Pack(self, builder):
+        DepthwiseConv2DOptionsStart(builder)
+        DepthwiseConv2DOptionsAddPadding(builder, self.padding)
+        DepthwiseConv2DOptionsAddStrideW(builder, self.strideW)
+        DepthwiseConv2DOptionsAddStrideH(builder, self.strideH)
+        DepthwiseConv2DOptionsAddDepthMultiplier(builder, self.depthMultiplier)
+        DepthwiseConv2DOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        DepthwiseConv2DOptionsAddDilationWFactor(builder, self.dilationWFactor)
+        DepthwiseConv2DOptionsAddDilationHFactor(builder, self.dilationHFactor)
+        depthwiseConv2DOptions = DepthwiseConv2DOptionsEnd(builder)
+        return depthwiseConv2DOptions

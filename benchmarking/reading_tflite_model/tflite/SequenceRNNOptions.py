@@ -42,3 +42,38 @@ def SequenceRNNOptionsStart(builder): builder.StartObject(2)
 def SequenceRNNOptionsAddTimeMajor(builder, timeMajor): builder.PrependBoolSlot(0, timeMajor, 0)
 def SequenceRNNOptionsAddFusedActivationFunction(builder, fusedActivationFunction): builder.PrependInt8Slot(1, fusedActivationFunction, 0)
 def SequenceRNNOptionsEnd(builder): return builder.EndObject()
+
+
+class SequenceRNNOptionsT(object):
+
+    # SequenceRNNOptionsT
+    def __init__(self):
+        self.timeMajor = False  # type: bool
+        self.fusedActivationFunction = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        sequenceRNNOptions = SequenceRNNOptions()
+        sequenceRNNOptions.Init(buf, pos)
+        return cls.InitFromObj(sequenceRNNOptions)
+
+    @classmethod
+    def InitFromObj(cls, sequenceRNNOptions):
+        x = SequenceRNNOptionsT()
+        x._UnPack(sequenceRNNOptions)
+        return x
+
+    # SequenceRNNOptionsT
+    def _UnPack(self, sequenceRNNOptions):
+        if sequenceRNNOptions is None:
+            return
+        self.timeMajor = sequenceRNNOptions.TimeMajor()
+        self.fusedActivationFunction = sequenceRNNOptions.FusedActivationFunction()
+
+    # SequenceRNNOptionsT
+    def Pack(self, builder):
+        SequenceRNNOptionsStart(builder)
+        SequenceRNNOptionsAddTimeMajor(builder, self.timeMajor)
+        SequenceRNNOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        sequenceRNNOptions = SequenceRNNOptionsEnd(builder)
+        return sequenceRNNOptions

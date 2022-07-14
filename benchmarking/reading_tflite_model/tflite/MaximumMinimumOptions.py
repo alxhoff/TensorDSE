@@ -26,3 +26,33 @@ class MaximumMinimumOptions(object):
 
 def MaximumMinimumOptionsStart(builder): builder.StartObject(0)
 def MaximumMinimumOptionsEnd(builder): return builder.EndObject()
+
+
+class MaximumMinimumOptionsT(object):
+
+    # MaximumMinimumOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        maximumMinimumOptions = MaximumMinimumOptions()
+        maximumMinimumOptions.Init(buf, pos)
+        return cls.InitFromObj(maximumMinimumOptions)
+
+    @classmethod
+    def InitFromObj(cls, maximumMinimumOptions):
+        x = MaximumMinimumOptionsT()
+        x._UnPack(maximumMinimumOptions)
+        return x
+
+    # MaximumMinimumOptionsT
+    def _UnPack(self, maximumMinimumOptions):
+        if maximumMinimumOptions is None:
+            return
+
+    # MaximumMinimumOptionsT
+    def Pack(self, builder):
+        MaximumMinimumOptionsStart(builder)
+        maximumMinimumOptions = MaximumMinimumOptionsEnd(builder)
+        return maximumMinimumOptions

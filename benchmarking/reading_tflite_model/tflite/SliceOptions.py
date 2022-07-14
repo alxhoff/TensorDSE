@@ -26,3 +26,33 @@ class SliceOptions(object):
 
 def SliceOptionsStart(builder): builder.StartObject(0)
 def SliceOptionsEnd(builder): return builder.EndObject()
+
+
+class SliceOptionsT(object):
+
+    # SliceOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        sliceOptions = SliceOptions()
+        sliceOptions.Init(buf, pos)
+        return cls.InitFromObj(sliceOptions)
+
+    @classmethod
+    def InitFromObj(cls, sliceOptions):
+        x = SliceOptionsT()
+        x._UnPack(sliceOptions)
+        return x
+
+    # SliceOptionsT
+    def _UnPack(self, sliceOptions):
+        if sliceOptions is None:
+            return
+
+    # SliceOptionsT
+    def Pack(self, builder):
+        SliceOptionsStart(builder)
+        sliceOptions = SliceOptionsEnd(builder)
+        return sliceOptions

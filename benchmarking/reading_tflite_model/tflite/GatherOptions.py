@@ -34,3 +34,35 @@ class GatherOptions(object):
 def GatherOptionsStart(builder): builder.StartObject(1)
 def GatherOptionsAddAxis(builder, axis): builder.PrependInt32Slot(0, axis, 0)
 def GatherOptionsEnd(builder): return builder.EndObject()
+
+
+class GatherOptionsT(object):
+
+    # GatherOptionsT
+    def __init__(self):
+        self.axis = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        gatherOptions = GatherOptions()
+        gatherOptions.Init(buf, pos)
+        return cls.InitFromObj(gatherOptions)
+
+    @classmethod
+    def InitFromObj(cls, gatherOptions):
+        x = GatherOptionsT()
+        x._UnPack(gatherOptions)
+        return x
+
+    # GatherOptionsT
+    def _UnPack(self, gatherOptions):
+        if gatherOptions is None:
+            return
+        self.axis = gatherOptions.Axis()
+
+    # GatherOptionsT
+    def Pack(self, builder):
+        GatherOptionsStart(builder)
+        GatherOptionsAddAxis(builder, self.axis)
+        gatherOptions = GatherOptionsEnd(builder)
+        return gatherOptions

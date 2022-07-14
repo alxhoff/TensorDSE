@@ -26,3 +26,33 @@ class PowOptions(object):
 
 def PowOptionsStart(builder): builder.StartObject(0)
 def PowOptionsEnd(builder): return builder.EndObject()
+
+
+class PowOptionsT(object):
+
+    # PowOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        powOptions = PowOptions()
+        powOptions.Init(buf, pos)
+        return cls.InitFromObj(powOptions)
+
+    @classmethod
+    def InitFromObj(cls, powOptions):
+        x = PowOptionsT()
+        x._UnPack(powOptions)
+        return x
+
+    # PowOptionsT
+    def _UnPack(self, powOptions):
+        if powOptions is None:
+            return
+
+    # PowOptionsT
+    def Pack(self, builder):
+        PowOptionsStart(builder)
+        powOptions = PowOptionsEnd(builder)
+        return powOptions

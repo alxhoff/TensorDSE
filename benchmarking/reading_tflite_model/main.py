@@ -211,6 +211,8 @@ def main():
 
         graph = model.Subgraphs(0)
 
+        ops = graph.Operators(0).BuiltinOptionsType()
+
         for i in range(graph.OperatorsLength()):
             process_operation(model, graph, graph.Operators(i))
 

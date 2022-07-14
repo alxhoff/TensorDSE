@@ -26,3 +26,33 @@ class PadV2Options(object):
 
 def PadV2OptionsStart(builder): builder.StartObject(0)
 def PadV2OptionsEnd(builder): return builder.EndObject()
+
+
+class PadV2OptionsT(object):
+
+    # PadV2OptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        padV2Options = PadV2Options()
+        padV2Options.Init(buf, pos)
+        return cls.InitFromObj(padV2Options)
+
+    @classmethod
+    def InitFromObj(cls, padV2Options):
+        x = PadV2OptionsT()
+        x._UnPack(padV2Options)
+        return x
+
+    # PadV2OptionsT
+    def _UnPack(self, padV2Options):
+        if padV2Options is None:
+            return
+
+    # PadV2OptionsT
+    def Pack(self, builder):
+        PadV2OptionsStart(builder)
+        padV2Options = PadV2OptionsEnd(builder)
+        return padV2Options

@@ -26,3 +26,33 @@ class LessEqualOptions(object):
 
 def LessEqualOptionsStart(builder): builder.StartObject(0)
 def LessEqualOptionsEnd(builder): return builder.EndObject()
+
+
+class LessEqualOptionsT(object):
+
+    # LessEqualOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        lessEqualOptions = LessEqualOptions()
+        lessEqualOptions.Init(buf, pos)
+        return cls.InitFromObj(lessEqualOptions)
+
+    @classmethod
+    def InitFromObj(cls, lessEqualOptions):
+        x = LessEqualOptionsT()
+        x._UnPack(lessEqualOptions)
+        return x
+
+    # LessEqualOptionsT
+    def _UnPack(self, lessEqualOptions):
+        if lessEqualOptions is None:
+            return
+
+    # LessEqualOptionsT
+    def Pack(self, builder):
+        LessEqualOptionsStart(builder)
+        lessEqualOptions = LessEqualOptionsEnd(builder)
+        return lessEqualOptions

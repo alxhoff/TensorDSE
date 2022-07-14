@@ -26,3 +26,33 @@ class PadOptions(object):
 
 def PadOptionsStart(builder): builder.StartObject(0)
 def PadOptionsEnd(builder): return builder.EndObject()
+
+
+class PadOptionsT(object):
+
+    # PadOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        padOptions = PadOptions()
+        padOptions.Init(buf, pos)
+        return cls.InitFromObj(padOptions)
+
+    @classmethod
+    def InitFromObj(cls, padOptions):
+        x = PadOptionsT()
+        x._UnPack(padOptions)
+        return x
+
+    # PadOptionsT
+    def _UnPack(self, padOptions):
+        if padOptions is None:
+            return
+
+    # PadOptionsT
+    def Pack(self, builder):
+        PadOptionsStart(builder)
+        padOptions = PadOptionsEnd(builder)
+        return padOptions

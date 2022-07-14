@@ -50,3 +50,41 @@ def SkipGramOptionsAddNgramSize(builder, ngramSize): builder.PrependInt32Slot(0,
 def SkipGramOptionsAddMaxSkipSize(builder, maxSkipSize): builder.PrependInt32Slot(1, maxSkipSize, 0)
 def SkipGramOptionsAddIncludeAllNgrams(builder, includeAllNgrams): builder.PrependBoolSlot(2, includeAllNgrams, 0)
 def SkipGramOptionsEnd(builder): return builder.EndObject()
+
+
+class SkipGramOptionsT(object):
+
+    # SkipGramOptionsT
+    def __init__(self):
+        self.ngramSize = 0  # type: int
+        self.maxSkipSize = 0  # type: int
+        self.includeAllNgrams = False  # type: bool
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        skipGramOptions = SkipGramOptions()
+        skipGramOptions.Init(buf, pos)
+        return cls.InitFromObj(skipGramOptions)
+
+    @classmethod
+    def InitFromObj(cls, skipGramOptions):
+        x = SkipGramOptionsT()
+        x._UnPack(skipGramOptions)
+        return x
+
+    # SkipGramOptionsT
+    def _UnPack(self, skipGramOptions):
+        if skipGramOptions is None:
+            return
+        self.ngramSize = skipGramOptions.NgramSize()
+        self.maxSkipSize = skipGramOptions.MaxSkipSize()
+        self.includeAllNgrams = skipGramOptions.IncludeAllNgrams()
+
+    # SkipGramOptionsT
+    def Pack(self, builder):
+        SkipGramOptionsStart(builder)
+        SkipGramOptionsAddNgramSize(builder, self.ngramSize)
+        SkipGramOptionsAddMaxSkipSize(builder, self.maxSkipSize)
+        SkipGramOptionsAddIncludeAllNgrams(builder, self.includeAllNgrams)
+        skipGramOptions = SkipGramOptionsEnd(builder)
+        return skipGramOptions

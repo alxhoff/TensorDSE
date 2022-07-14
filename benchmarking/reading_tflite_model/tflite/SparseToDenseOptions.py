@@ -34,3 +34,35 @@ class SparseToDenseOptions(object):
 def SparseToDenseOptionsStart(builder): builder.StartObject(1)
 def SparseToDenseOptionsAddValidateIndices(builder, validateIndices): builder.PrependBoolSlot(0, validateIndices, 0)
 def SparseToDenseOptionsEnd(builder): return builder.EndObject()
+
+
+class SparseToDenseOptionsT(object):
+
+    # SparseToDenseOptionsT
+    def __init__(self):
+        self.validateIndices = False  # type: bool
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        sparseToDenseOptions = SparseToDenseOptions()
+        sparseToDenseOptions.Init(buf, pos)
+        return cls.InitFromObj(sparseToDenseOptions)
+
+    @classmethod
+    def InitFromObj(cls, sparseToDenseOptions):
+        x = SparseToDenseOptionsT()
+        x._UnPack(sparseToDenseOptions)
+        return x
+
+    # SparseToDenseOptionsT
+    def _UnPack(self, sparseToDenseOptions):
+        if sparseToDenseOptions is None:
+            return
+        self.validateIndices = sparseToDenseOptions.ValidateIndices()
+
+    # SparseToDenseOptionsT
+    def Pack(self, builder):
+        SparseToDenseOptionsStart(builder)
+        SparseToDenseOptionsAddValidateIndices(builder, self.validateIndices)
+        sparseToDenseOptions = SparseToDenseOptionsEnd(builder)
+        return sparseToDenseOptions

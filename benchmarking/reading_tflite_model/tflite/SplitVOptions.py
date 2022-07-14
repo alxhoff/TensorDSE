@@ -34,3 +34,35 @@ class SplitVOptions(object):
 def SplitVOptionsStart(builder): builder.StartObject(1)
 def SplitVOptionsAddNumSplits(builder, numSplits): builder.PrependInt32Slot(0, numSplits, 0)
 def SplitVOptionsEnd(builder): return builder.EndObject()
+
+
+class SplitVOptionsT(object):
+
+    # SplitVOptionsT
+    def __init__(self):
+        self.numSplits = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        splitVOptions = SplitVOptions()
+        splitVOptions.Init(buf, pos)
+        return cls.InitFromObj(splitVOptions)
+
+    @classmethod
+    def InitFromObj(cls, splitVOptions):
+        x = SplitVOptionsT()
+        x._UnPack(splitVOptions)
+        return x
+
+    # SplitVOptionsT
+    def _UnPack(self, splitVOptions):
+        if splitVOptions is None:
+            return
+        self.numSplits = splitVOptions.NumSplits()
+
+    # SplitVOptionsT
+    def Pack(self, builder):
+        SplitVOptionsStart(builder)
+        SplitVOptionsAddNumSplits(builder, self.numSplits)
+        splitVOptions = SplitVOptionsEnd(builder)
+        return splitVOptions

@@ -55,3 +55,54 @@ def CustomQuantizationStart(builder): builder.StartObject(1)
 def CustomQuantizationAddCustom(builder, custom): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(custom), 0)
 def CustomQuantizationStartCustomVector(builder, numElems): return builder.StartVector(1, numElems, 1)
 def CustomQuantizationEnd(builder): return builder.EndObject()
+
+try:
+    from typing import List
+except:
+    pass
+
+class CustomQuantizationT(object):
+
+    # CustomQuantizationT
+    def __init__(self):
+        self.custom = None  # type: List[int]
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        customQuantization = CustomQuantization()
+        customQuantization.Init(buf, pos)
+        return cls.InitFromObj(customQuantization)
+
+    @classmethod
+    def InitFromObj(cls, customQuantization):
+        x = CustomQuantizationT()
+        x._UnPack(customQuantization)
+        return x
+
+    # CustomQuantizationT
+    def _UnPack(self, customQuantization):
+        if customQuantization is None:
+            return
+        if not customQuantization.CustomIsNone():
+            if np is None:
+                self.custom = []
+                for i in range(customQuantization.CustomLength()):
+                    self.custom.append(customQuantization.Custom(i))
+            else:
+                self.custom = customQuantization.CustomAsNumpy()
+
+    # CustomQuantizationT
+    def Pack(self, builder):
+        if self.custom is not None:
+            if np is not None and type(self.custom) is np.ndarray:
+                custom = builder.CreateNumpyVector(self.custom)
+            else:
+                CustomQuantizationStartCustomVector(builder, len(self.custom))
+                for i in reversed(range(len(self.custom))):
+                    builder.PrependUint8(self.custom[i])
+                custom = builder.EndVector(len(self.custom))
+        CustomQuantizationStart(builder)
+        if self.custom is not None:
+            CustomQuantizationAddCustom(builder, custom)
+        customQuantization = CustomQuantizationEnd(builder)
+        return customQuantization

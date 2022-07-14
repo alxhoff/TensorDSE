@@ -26,3 +26,33 @@ class SelectV2Options(object):
 
 def SelectV2OptionsStart(builder): builder.StartObject(0)
 def SelectV2OptionsEnd(builder): return builder.EndObject()
+
+
+class SelectV2OptionsT(object):
+
+    # SelectV2OptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        selectV2Options = SelectV2Options()
+        selectV2Options.Init(buf, pos)
+        return cls.InitFromObj(selectV2Options)
+
+    @classmethod
+    def InitFromObj(cls, selectV2Options):
+        x = SelectV2OptionsT()
+        x._UnPack(selectV2Options)
+        return x
+
+    # SelectV2OptionsT
+    def _UnPack(self, selectV2Options):
+        if selectV2Options is None:
+            return
+
+    # SelectV2OptionsT
+    def Pack(self, builder):
+        SelectV2OptionsStart(builder)
+        selectV2Options = SelectV2OptionsEnd(builder)
+        return selectV2Options

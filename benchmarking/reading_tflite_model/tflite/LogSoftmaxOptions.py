@@ -26,3 +26,33 @@ class LogSoftmaxOptions(object):
 
 def LogSoftmaxOptionsStart(builder): builder.StartObject(0)
 def LogSoftmaxOptionsEnd(builder): return builder.EndObject()
+
+
+class LogSoftmaxOptionsT(object):
+
+    # LogSoftmaxOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        logSoftmaxOptions = LogSoftmaxOptions()
+        logSoftmaxOptions.Init(buf, pos)
+        return cls.InitFromObj(logSoftmaxOptions)
+
+    @classmethod
+    def InitFromObj(cls, logSoftmaxOptions):
+        x = LogSoftmaxOptionsT()
+        x._UnPack(logSoftmaxOptions)
+        return x
+
+    # LogSoftmaxOptionsT
+    def _UnPack(self, logSoftmaxOptions):
+        if logSoftmaxOptions is None:
+            return
+
+    # LogSoftmaxOptionsT
+    def Pack(self, builder):
+        LogSoftmaxOptionsStart(builder)
+        logSoftmaxOptions = LogSoftmaxOptionsEnd(builder)
+        return logSoftmaxOptions

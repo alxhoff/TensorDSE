@@ -26,3 +26,33 @@ class NotEqualOptions(object):
 
 def NotEqualOptionsStart(builder): builder.StartObject(0)
 def NotEqualOptionsEnd(builder): return builder.EndObject()
+
+
+class NotEqualOptionsT(object):
+
+    # NotEqualOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        notEqualOptions = NotEqualOptions()
+        notEqualOptions.Init(buf, pos)
+        return cls.InitFromObj(notEqualOptions)
+
+    @classmethod
+    def InitFromObj(cls, notEqualOptions):
+        x = NotEqualOptionsT()
+        x._UnPack(notEqualOptions)
+        return x
+
+    # NotEqualOptionsT
+    def _UnPack(self, notEqualOptions):
+        if notEqualOptions is None:
+            return
+
+    # NotEqualOptionsT
+    def Pack(self, builder):
+        NotEqualOptionsStart(builder)
+        notEqualOptions = NotEqualOptionsEnd(builder)
+        return notEqualOptions

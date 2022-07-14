@@ -34,3 +34,35 @@ class LSHProjectionOptions(object):
 def LSHProjectionOptionsStart(builder): builder.StartObject(1)
 def LSHProjectionOptionsAddType(builder, type): builder.PrependInt8Slot(0, type, 0)
 def LSHProjectionOptionsEnd(builder): return builder.EndObject()
+
+
+class LSHProjectionOptionsT(object):
+
+    # LSHProjectionOptionsT
+    def __init__(self):
+        self.type = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        lSHProjectionOptions = LSHProjectionOptions()
+        lSHProjectionOptions.Init(buf, pos)
+        return cls.InitFromObj(lSHProjectionOptions)
+
+    @classmethod
+    def InitFromObj(cls, lSHProjectionOptions):
+        x = LSHProjectionOptionsT()
+        x._UnPack(lSHProjectionOptions)
+        return x
+
+    # LSHProjectionOptionsT
+    def _UnPack(self, lSHProjectionOptions):
+        if lSHProjectionOptions is None:
+            return
+        self.type = lSHProjectionOptions.Type()
+
+    # LSHProjectionOptionsT
+    def Pack(self, builder):
+        LSHProjectionOptionsStart(builder)
+        LSHProjectionOptionsAddType(builder, self.type)
+        lSHProjectionOptions = LSHProjectionOptionsEnd(builder)
+        return lSHProjectionOptions

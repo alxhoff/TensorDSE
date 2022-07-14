@@ -26,3 +26,33 @@ class LessOptions(object):
 
 def LessOptionsStart(builder): builder.StartObject(0)
 def LessOptionsEnd(builder): return builder.EndObject()
+
+
+class LessOptionsT(object):
+
+    # LessOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        lessOptions = LessOptions()
+        lessOptions.Init(buf, pos)
+        return cls.InitFromObj(lessOptions)
+
+    @classmethod
+    def InitFromObj(cls, lessOptions):
+        x = LessOptionsT()
+        x._UnPack(lessOptions)
+        return x
+
+    # LessOptionsT
+    def _UnPack(self, lessOptions):
+        if lessOptions is None:
+            return
+
+    # LessOptionsT
+    def Pack(self, builder):
+        LessOptionsStart(builder)
+        lessOptions = LessOptionsEnd(builder)
+        return lessOptions

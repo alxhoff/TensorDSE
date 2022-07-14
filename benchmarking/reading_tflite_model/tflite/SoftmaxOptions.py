@@ -34,3 +34,35 @@ class SoftmaxOptions(object):
 def SoftmaxOptionsStart(builder): builder.StartObject(1)
 def SoftmaxOptionsAddBeta(builder, beta): builder.PrependFloat32Slot(0, beta, 0.0)
 def SoftmaxOptionsEnd(builder): return builder.EndObject()
+
+
+class SoftmaxOptionsT(object):
+
+    # SoftmaxOptionsT
+    def __init__(self):
+        self.beta = 0.0  # type: float
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        softmaxOptions = SoftmaxOptions()
+        softmaxOptions.Init(buf, pos)
+        return cls.InitFromObj(softmaxOptions)
+
+    @classmethod
+    def InitFromObj(cls, softmaxOptions):
+        x = SoftmaxOptionsT()
+        x._UnPack(softmaxOptions)
+        return x
+
+    # SoftmaxOptionsT
+    def _UnPack(self, softmaxOptions):
+        if softmaxOptions is None:
+            return
+        self.beta = softmaxOptions.Beta()
+
+    # SoftmaxOptionsT
+    def Pack(self, builder):
+        SoftmaxOptionsStart(builder)
+        SoftmaxOptionsAddBeta(builder, self.beta)
+        softmaxOptions = SoftmaxOptionsEnd(builder)
+        return softmaxOptions

@@ -34,3 +34,35 @@ class LeakyReluOptions(object):
 def LeakyReluOptionsStart(builder): builder.StartObject(1)
 def LeakyReluOptionsAddAlpha(builder, alpha): builder.PrependFloat32Slot(0, alpha, 0.0)
 def LeakyReluOptionsEnd(builder): return builder.EndObject()
+
+
+class LeakyReluOptionsT(object):
+
+    # LeakyReluOptionsT
+    def __init__(self):
+        self.alpha = 0.0  # type: float
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        leakyReluOptions = LeakyReluOptions()
+        leakyReluOptions.Init(buf, pos)
+        return cls.InitFromObj(leakyReluOptions)
+
+    @classmethod
+    def InitFromObj(cls, leakyReluOptions):
+        x = LeakyReluOptionsT()
+        x._UnPack(leakyReluOptions)
+        return x
+
+    # LeakyReluOptionsT
+    def _UnPack(self, leakyReluOptions):
+        if leakyReluOptions is None:
+            return
+        self.alpha = leakyReluOptions.Alpha()
+
+    # LeakyReluOptionsT
+    def Pack(self, builder):
+        LeakyReluOptionsStart(builder)
+        LeakyReluOptionsAddAlpha(builder, self.alpha)
+        leakyReluOptions = LeakyReluOptionsEnd(builder)
+        return leakyReluOptions

@@ -26,3 +26,33 @@ class AddNOptions(object):
 
 def AddNOptionsStart(builder): builder.StartObject(0)
 def AddNOptionsEnd(builder): return builder.EndObject()
+
+
+class AddNOptionsT(object):
+
+    # AddNOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        addNOptions = AddNOptions()
+        addNOptions.Init(buf, pos)
+        return cls.InitFromObj(addNOptions)
+
+    @classmethod
+    def InitFromObj(cls, addNOptions):
+        x = AddNOptionsT()
+        x._UnPack(addNOptions)
+        return x
+
+    # AddNOptionsT
+    def _UnPack(self, addNOptions):
+        if addNOptions is None:
+            return
+
+    # AddNOptionsT
+    def Pack(self, builder):
+        AddNOptionsStart(builder)
+        addNOptions = AddNOptionsEnd(builder)
+        return addNOptions

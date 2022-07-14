@@ -34,3 +34,35 @@ class EmbeddingLookupSparseOptions(object):
 def EmbeddingLookupSparseOptionsStart(builder): builder.StartObject(1)
 def EmbeddingLookupSparseOptionsAddCombiner(builder, combiner): builder.PrependInt8Slot(0, combiner, 0)
 def EmbeddingLookupSparseOptionsEnd(builder): return builder.EndObject()
+
+
+class EmbeddingLookupSparseOptionsT(object):
+
+    # EmbeddingLookupSparseOptionsT
+    def __init__(self):
+        self.combiner = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        embeddingLookupSparseOptions = EmbeddingLookupSparseOptions()
+        embeddingLookupSparseOptions.Init(buf, pos)
+        return cls.InitFromObj(embeddingLookupSparseOptions)
+
+    @classmethod
+    def InitFromObj(cls, embeddingLookupSparseOptions):
+        x = EmbeddingLookupSparseOptionsT()
+        x._UnPack(embeddingLookupSparseOptions)
+        return x
+
+    # EmbeddingLookupSparseOptionsT
+    def _UnPack(self, embeddingLookupSparseOptions):
+        if embeddingLookupSparseOptions is None:
+            return
+        self.combiner = embeddingLookupSparseOptions.Combiner()
+
+    # EmbeddingLookupSparseOptionsT
+    def Pack(self, builder):
+        EmbeddingLookupSparseOptionsStart(builder)
+        EmbeddingLookupSparseOptionsAddCombiner(builder, self.combiner)
+        embeddingLookupSparseOptions = EmbeddingLookupSparseOptionsEnd(builder)
+        return embeddingLookupSparseOptions

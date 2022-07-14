@@ -34,3 +34,35 @@ class CallOptions(object):
 def CallOptionsStart(builder): builder.StartObject(1)
 def CallOptionsAddSubgraph(builder, subgraph): builder.PrependUint32Slot(0, subgraph, 0)
 def CallOptionsEnd(builder): return builder.EndObject()
+
+
+class CallOptionsT(object):
+
+    # CallOptionsT
+    def __init__(self):
+        self.subgraph = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        callOptions = CallOptions()
+        callOptions.Init(buf, pos)
+        return cls.InitFromObj(callOptions)
+
+    @classmethod
+    def InitFromObj(cls, callOptions):
+        x = CallOptionsT()
+        x._UnPack(callOptions)
+        return x
+
+    # CallOptionsT
+    def _UnPack(self, callOptions):
+        if callOptions is None:
+            return
+        self.subgraph = callOptions.Subgraph()
+
+    # CallOptionsT
+    def Pack(self, builder):
+        CallOptionsStart(builder)
+        CallOptionsAddSubgraph(builder, self.subgraph)
+        callOptions = CallOptionsEnd(builder)
+        return callOptions

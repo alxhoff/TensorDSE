@@ -26,3 +26,33 @@ class GreaterEqualOptions(object):
 
 def GreaterEqualOptionsStart(builder): builder.StartObject(0)
 def GreaterEqualOptionsEnd(builder): return builder.EndObject()
+
+
+class GreaterEqualOptionsT(object):
+
+    # GreaterEqualOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        greaterEqualOptions = GreaterEqualOptions()
+        greaterEqualOptions.Init(buf, pos)
+        return cls.InitFromObj(greaterEqualOptions)
+
+    @classmethod
+    def InitFromObj(cls, greaterEqualOptions):
+        x = GreaterEqualOptionsT()
+        x._UnPack(greaterEqualOptions)
+        return x
+
+    # GreaterEqualOptionsT
+    def _UnPack(self, greaterEqualOptions):
+        if greaterEqualOptions is None:
+            return
+
+    # GreaterEqualOptionsT
+    def Pack(self, builder):
+        GreaterEqualOptionsStart(builder)
+        greaterEqualOptions = GreaterEqualOptionsEnd(builder)
+        return greaterEqualOptions

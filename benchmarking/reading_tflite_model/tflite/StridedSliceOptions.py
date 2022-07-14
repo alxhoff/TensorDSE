@@ -66,3 +66,47 @@ def StridedSliceOptionsAddEllipsisMask(builder, ellipsisMask): builder.PrependIn
 def StridedSliceOptionsAddNewAxisMask(builder, newAxisMask): builder.PrependInt32Slot(3, newAxisMask, 0)
 def StridedSliceOptionsAddShrinkAxisMask(builder, shrinkAxisMask): builder.PrependInt32Slot(4, shrinkAxisMask, 0)
 def StridedSliceOptionsEnd(builder): return builder.EndObject()
+
+
+class StridedSliceOptionsT(object):
+
+    # StridedSliceOptionsT
+    def __init__(self):
+        self.beginMask = 0  # type: int
+        self.endMask = 0  # type: int
+        self.ellipsisMask = 0  # type: int
+        self.newAxisMask = 0  # type: int
+        self.shrinkAxisMask = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        stridedSliceOptions = StridedSliceOptions()
+        stridedSliceOptions.Init(buf, pos)
+        return cls.InitFromObj(stridedSliceOptions)
+
+    @classmethod
+    def InitFromObj(cls, stridedSliceOptions):
+        x = StridedSliceOptionsT()
+        x._UnPack(stridedSliceOptions)
+        return x
+
+    # StridedSliceOptionsT
+    def _UnPack(self, stridedSliceOptions):
+        if stridedSliceOptions is None:
+            return
+        self.beginMask = stridedSliceOptions.BeginMask()
+        self.endMask = stridedSliceOptions.EndMask()
+        self.ellipsisMask = stridedSliceOptions.EllipsisMask()
+        self.newAxisMask = stridedSliceOptions.NewAxisMask()
+        self.shrinkAxisMask = stridedSliceOptions.ShrinkAxisMask()
+
+    # StridedSliceOptionsT
+    def Pack(self, builder):
+        StridedSliceOptionsStart(builder)
+        StridedSliceOptionsAddBeginMask(builder, self.beginMask)
+        StridedSliceOptionsAddEndMask(builder, self.endMask)
+        StridedSliceOptionsAddEllipsisMask(builder, self.ellipsisMask)
+        StridedSliceOptionsAddNewAxisMask(builder, self.newAxisMask)
+        StridedSliceOptionsAddShrinkAxisMask(builder, self.shrinkAxisMask)
+        stridedSliceOptions = StridedSliceOptionsEnd(builder)
+        return stridedSliceOptions

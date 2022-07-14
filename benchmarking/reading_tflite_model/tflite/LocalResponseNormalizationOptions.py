@@ -58,3 +58,44 @@ def LocalResponseNormalizationOptionsAddBias(builder, bias): builder.PrependFloa
 def LocalResponseNormalizationOptionsAddAlpha(builder, alpha): builder.PrependFloat32Slot(2, alpha, 0.0)
 def LocalResponseNormalizationOptionsAddBeta(builder, beta): builder.PrependFloat32Slot(3, beta, 0.0)
 def LocalResponseNormalizationOptionsEnd(builder): return builder.EndObject()
+
+
+class LocalResponseNormalizationOptionsT(object):
+
+    # LocalResponseNormalizationOptionsT
+    def __init__(self):
+        self.radius = 0  # type: int
+        self.bias = 0.0  # type: float
+        self.alpha = 0.0  # type: float
+        self.beta = 0.0  # type: float
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        localResponseNormalizationOptions = LocalResponseNormalizationOptions()
+        localResponseNormalizationOptions.Init(buf, pos)
+        return cls.InitFromObj(localResponseNormalizationOptions)
+
+    @classmethod
+    def InitFromObj(cls, localResponseNormalizationOptions):
+        x = LocalResponseNormalizationOptionsT()
+        x._UnPack(localResponseNormalizationOptions)
+        return x
+
+    # LocalResponseNormalizationOptionsT
+    def _UnPack(self, localResponseNormalizationOptions):
+        if localResponseNormalizationOptions is None:
+            return
+        self.radius = localResponseNormalizationOptions.Radius()
+        self.bias = localResponseNormalizationOptions.Bias()
+        self.alpha = localResponseNormalizationOptions.Alpha()
+        self.beta = localResponseNormalizationOptions.Beta()
+
+    # LocalResponseNormalizationOptionsT
+    def Pack(self, builder):
+        LocalResponseNormalizationOptionsStart(builder)
+        LocalResponseNormalizationOptionsAddRadius(builder, self.radius)
+        LocalResponseNormalizationOptionsAddBias(builder, self.bias)
+        LocalResponseNormalizationOptionsAddAlpha(builder, self.alpha)
+        LocalResponseNormalizationOptionsAddBeta(builder, self.beta)
+        localResponseNormalizationOptions = LocalResponseNormalizationOptionsEnd(builder)
+        return localResponseNormalizationOptions

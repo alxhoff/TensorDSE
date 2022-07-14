@@ -26,3 +26,33 @@ class WhereOptions(object):
 
 def WhereOptionsStart(builder): builder.StartObject(0)
 def WhereOptionsEnd(builder): return builder.EndObject()
+
+
+class WhereOptionsT(object):
+
+    # WhereOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        whereOptions = WhereOptions()
+        whereOptions.Init(buf, pos)
+        return cls.InitFromObj(whereOptions)
+
+    @classmethod
+    def InitFromObj(cls, whereOptions):
+        x = WhereOptionsT()
+        x._UnPack(whereOptions)
+        return x
+
+    # WhereOptionsT
+    def _UnPack(self, whereOptions):
+        if whereOptions is None:
+            return
+
+    # WhereOptionsT
+    def Pack(self, builder):
+        WhereOptionsStart(builder)
+        whereOptions = WhereOptionsEnd(builder)
+        return whereOptions

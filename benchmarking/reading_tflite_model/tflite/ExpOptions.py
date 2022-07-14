@@ -26,3 +26,33 @@ class ExpOptions(object):
 
 def ExpOptionsStart(builder): builder.StartObject(0)
 def ExpOptionsEnd(builder): return builder.EndObject()
+
+
+class ExpOptionsT(object):
+
+    # ExpOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        expOptions = ExpOptions()
+        expOptions.Init(buf, pos)
+        return cls.InitFromObj(expOptions)
+
+    @classmethod
+    def InitFromObj(cls, expOptions):
+        x = ExpOptionsT()
+        x._UnPack(expOptions)
+        return x
+
+    # ExpOptionsT
+    def _UnPack(self, expOptions):
+        if expOptions is None:
+            return
+
+    # ExpOptionsT
+    def Pack(self, builder):
+        ExpOptionsStart(builder)
+        expOptions = ExpOptionsEnd(builder)
+        return expOptions

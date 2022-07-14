@@ -50,3 +50,41 @@ def FullyConnectedOptionsAddFusedActivationFunction(builder, fusedActivationFunc
 def FullyConnectedOptionsAddWeightsFormat(builder, weightsFormat): builder.PrependInt8Slot(1, weightsFormat, 0)
 def FullyConnectedOptionsAddKeepNumDims(builder, keepNumDims): builder.PrependBoolSlot(2, keepNumDims, 0)
 def FullyConnectedOptionsEnd(builder): return builder.EndObject()
+
+
+class FullyConnectedOptionsT(object):
+
+    # FullyConnectedOptionsT
+    def __init__(self):
+        self.fusedActivationFunction = 0  # type: int
+        self.weightsFormat = 0  # type: int
+        self.keepNumDims = False  # type: bool
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        fullyConnectedOptions = FullyConnectedOptions()
+        fullyConnectedOptions.Init(buf, pos)
+        return cls.InitFromObj(fullyConnectedOptions)
+
+    @classmethod
+    def InitFromObj(cls, fullyConnectedOptions):
+        x = FullyConnectedOptionsT()
+        x._UnPack(fullyConnectedOptions)
+        return x
+
+    # FullyConnectedOptionsT
+    def _UnPack(self, fullyConnectedOptions):
+        if fullyConnectedOptions is None:
+            return
+        self.fusedActivationFunction = fullyConnectedOptions.FusedActivationFunction()
+        self.weightsFormat = fullyConnectedOptions.WeightsFormat()
+        self.keepNumDims = fullyConnectedOptions.KeepNumDims()
+
+    # FullyConnectedOptionsT
+    def Pack(self, builder):
+        FullyConnectedOptionsStart(builder)
+        FullyConnectedOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        FullyConnectedOptionsAddWeightsFormat(builder, self.weightsFormat)
+        FullyConnectedOptionsAddKeepNumDims(builder, self.keepNumDims)
+        fullyConnectedOptions = FullyConnectedOptionsEnd(builder)
+        return fullyConnectedOptions

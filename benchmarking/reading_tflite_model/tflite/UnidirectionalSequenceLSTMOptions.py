@@ -58,3 +58,44 @@ def UnidirectionalSequenceLSTMOptionsAddCellClip(builder, cellClip): builder.Pre
 def UnidirectionalSequenceLSTMOptionsAddProjClip(builder, projClip): builder.PrependFloat32Slot(2, projClip, 0.0)
 def UnidirectionalSequenceLSTMOptionsAddTimeMajor(builder, timeMajor): builder.PrependBoolSlot(3, timeMajor, 0)
 def UnidirectionalSequenceLSTMOptionsEnd(builder): return builder.EndObject()
+
+
+class UnidirectionalSequenceLSTMOptionsT(object):
+
+    # UnidirectionalSequenceLSTMOptionsT
+    def __init__(self):
+        self.fusedActivationFunction = 0  # type: int
+        self.cellClip = 0.0  # type: float
+        self.projClip = 0.0  # type: float
+        self.timeMajor = False  # type: bool
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        unidirectionalSequenceLSTMOptions = UnidirectionalSequenceLSTMOptions()
+        unidirectionalSequenceLSTMOptions.Init(buf, pos)
+        return cls.InitFromObj(unidirectionalSequenceLSTMOptions)
+
+    @classmethod
+    def InitFromObj(cls, unidirectionalSequenceLSTMOptions):
+        x = UnidirectionalSequenceLSTMOptionsT()
+        x._UnPack(unidirectionalSequenceLSTMOptions)
+        return x
+
+    # UnidirectionalSequenceLSTMOptionsT
+    def _UnPack(self, unidirectionalSequenceLSTMOptions):
+        if unidirectionalSequenceLSTMOptions is None:
+            return
+        self.fusedActivationFunction = unidirectionalSequenceLSTMOptions.FusedActivationFunction()
+        self.cellClip = unidirectionalSequenceLSTMOptions.CellClip()
+        self.projClip = unidirectionalSequenceLSTMOptions.ProjClip()
+        self.timeMajor = unidirectionalSequenceLSTMOptions.TimeMajor()
+
+    # UnidirectionalSequenceLSTMOptionsT
+    def Pack(self, builder):
+        UnidirectionalSequenceLSTMOptionsStart(builder)
+        UnidirectionalSequenceLSTMOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        UnidirectionalSequenceLSTMOptionsAddCellClip(builder, self.cellClip)
+        UnidirectionalSequenceLSTMOptionsAddProjClip(builder, self.projClip)
+        UnidirectionalSequenceLSTMOptionsAddTimeMajor(builder, self.timeMajor)
+        unidirectionalSequenceLSTMOptions = UnidirectionalSequenceLSTMOptionsEnd(builder)
+        return unidirectionalSequenceLSTMOptions

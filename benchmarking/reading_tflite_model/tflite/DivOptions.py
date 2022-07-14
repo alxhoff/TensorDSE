@@ -34,3 +34,35 @@ class DivOptions(object):
 def DivOptionsStart(builder): builder.StartObject(1)
 def DivOptionsAddFusedActivationFunction(builder, fusedActivationFunction): builder.PrependInt8Slot(0, fusedActivationFunction, 0)
 def DivOptionsEnd(builder): return builder.EndObject()
+
+
+class DivOptionsT(object):
+
+    # DivOptionsT
+    def __init__(self):
+        self.fusedActivationFunction = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        divOptions = DivOptions()
+        divOptions.Init(buf, pos)
+        return cls.InitFromObj(divOptions)
+
+    @classmethod
+    def InitFromObj(cls, divOptions):
+        x = DivOptionsT()
+        x._UnPack(divOptions)
+        return x
+
+    # DivOptionsT
+    def _UnPack(self, divOptions):
+        if divOptions is None:
+            return
+        self.fusedActivationFunction = divOptions.FusedActivationFunction()
+
+    # DivOptionsT
+    def Pack(self, builder):
+        DivOptionsStart(builder)
+        DivOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        divOptions = DivOptionsEnd(builder)
+        return divOptions

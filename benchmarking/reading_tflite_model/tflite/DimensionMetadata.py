@@ -100,3 +100,78 @@ def DimensionMetadataStartArraySegmentsVector(builder, numElems): return builder
 def DimensionMetadataAddArrayIndices(builder, arrayIndices): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(arrayIndices), 0)
 def DimensionMetadataStartArrayIndicesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def DimensionMetadataEnd(builder): return builder.EndObject()
+
+try:
+    from typing import List
+except:
+    pass
+
+class DimensionMetadataT(object):
+
+    # DimensionMetadataT
+    def __init__(self):
+        self.format = 0  # type: int
+        self.denseSize = 0  # type: int
+        self.arraySegments = None  # type: List[int]
+        self.arrayIndices = None  # type: List[int]
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        dimensionMetadata = DimensionMetadata()
+        dimensionMetadata.Init(buf, pos)
+        return cls.InitFromObj(dimensionMetadata)
+
+    @classmethod
+    def InitFromObj(cls, dimensionMetadata):
+        x = DimensionMetadataT()
+        x._UnPack(dimensionMetadata)
+        return x
+
+    # DimensionMetadataT
+    def _UnPack(self, dimensionMetadata):
+        if dimensionMetadata is None:
+            return
+        self.format = dimensionMetadata.Format()
+        self.denseSize = dimensionMetadata.DenseSize()
+        if not dimensionMetadata.ArraySegmentsIsNone():
+            if np is None:
+                self.arraySegments = []
+                for i in range(dimensionMetadata.ArraySegmentsLength()):
+                    self.arraySegments.append(dimensionMetadata.ArraySegments(i))
+            else:
+                self.arraySegments = dimensionMetadata.ArraySegmentsAsNumpy()
+        if not dimensionMetadata.ArrayIndicesIsNone():
+            if np is None:
+                self.arrayIndices = []
+                for i in range(dimensionMetadata.ArrayIndicesLength()):
+                    self.arrayIndices.append(dimensionMetadata.ArrayIndices(i))
+            else:
+                self.arrayIndices = dimensionMetadata.ArrayIndicesAsNumpy()
+
+    # DimensionMetadataT
+    def Pack(self, builder):
+        if self.arraySegments is not None:
+            if np is not None and type(self.arraySegments) is np.ndarray:
+                arraySegments = builder.CreateNumpyVector(self.arraySegments)
+            else:
+                DimensionMetadataStartArraySegmentsVector(builder, len(self.arraySegments))
+                for i in reversed(range(len(self.arraySegments))):
+                    builder.PrependInt32(self.arraySegments[i])
+                arraySegments = builder.EndVector(len(self.arraySegments))
+        if self.arrayIndices is not None:
+            if np is not None and type(self.arrayIndices) is np.ndarray:
+                arrayIndices = builder.CreateNumpyVector(self.arrayIndices)
+            else:
+                DimensionMetadataStartArrayIndicesVector(builder, len(self.arrayIndices))
+                for i in reversed(range(len(self.arrayIndices))):
+                    builder.PrependInt32(self.arrayIndices[i])
+                arrayIndices = builder.EndVector(len(self.arrayIndices))
+        DimensionMetadataStart(builder)
+        DimensionMetadataAddFormat(builder, self.format)
+        DimensionMetadataAddDenseSize(builder, self.denseSize)
+        if self.arraySegments is not None:
+            DimensionMetadataAddArraySegments(builder, arraySegments)
+        if self.arrayIndices is not None:
+            DimensionMetadataAddArrayIndices(builder, arrayIndices)
+        dimensionMetadata = DimensionMetadataEnd(builder)
+        return dimensionMetadata

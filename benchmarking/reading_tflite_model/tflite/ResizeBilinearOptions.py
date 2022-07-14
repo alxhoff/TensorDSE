@@ -42,3 +42,38 @@ def ResizeBilinearOptionsStart(builder): builder.StartObject(4)
 def ResizeBilinearOptionsAddAlignCorners(builder, alignCorners): builder.PrependBoolSlot(2, alignCorners, 0)
 def ResizeBilinearOptionsAddHalfPixelCenters(builder, halfPixelCenters): builder.PrependBoolSlot(3, halfPixelCenters, 0)
 def ResizeBilinearOptionsEnd(builder): return builder.EndObject()
+
+
+class ResizeBilinearOptionsT(object):
+
+    # ResizeBilinearOptionsT
+    def __init__(self):
+        self.alignCorners = False  # type: bool
+        self.halfPixelCenters = False  # type: bool
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        resizeBilinearOptions = ResizeBilinearOptions()
+        resizeBilinearOptions.Init(buf, pos)
+        return cls.InitFromObj(resizeBilinearOptions)
+
+    @classmethod
+    def InitFromObj(cls, resizeBilinearOptions):
+        x = ResizeBilinearOptionsT()
+        x._UnPack(resizeBilinearOptions)
+        return x
+
+    # ResizeBilinearOptionsT
+    def _UnPack(self, resizeBilinearOptions):
+        if resizeBilinearOptions is None:
+            return
+        self.alignCorners = resizeBilinearOptions.AlignCorners()
+        self.halfPixelCenters = resizeBilinearOptions.HalfPixelCenters()
+
+    # ResizeBilinearOptionsT
+    def Pack(self, builder):
+        ResizeBilinearOptionsStart(builder)
+        ResizeBilinearOptionsAddAlignCorners(builder, self.alignCorners)
+        ResizeBilinearOptionsAddHalfPixelCenters(builder, self.halfPixelCenters)
+        resizeBilinearOptions = ResizeBilinearOptionsEnd(builder)
+        return resizeBilinearOptions

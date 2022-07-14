@@ -34,3 +34,35 @@ class AddOptions(object):
 def AddOptionsStart(builder): builder.StartObject(1)
 def AddOptionsAddFusedActivationFunction(builder, fusedActivationFunction): builder.PrependInt8Slot(0, fusedActivationFunction, 0)
 def AddOptionsEnd(builder): return builder.EndObject()
+
+
+class AddOptionsT(object):
+
+    # AddOptionsT
+    def __init__(self):
+        self.fusedActivationFunction = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        addOptions = AddOptions()
+        addOptions.Init(buf, pos)
+        return cls.InitFromObj(addOptions)
+
+    @classmethod
+    def InitFromObj(cls, addOptions):
+        x = AddOptionsT()
+        x._UnPack(addOptions)
+        return x
+
+    # AddOptionsT
+    def _UnPack(self, addOptions):
+        if addOptions is None:
+            return
+        self.fusedActivationFunction = addOptions.FusedActivationFunction()
+
+    # AddOptionsT
+    def Pack(self, builder):
+        AddOptionsStart(builder)
+        AddOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        addOptions = AddOptionsEnd(builder)
+        return addOptions

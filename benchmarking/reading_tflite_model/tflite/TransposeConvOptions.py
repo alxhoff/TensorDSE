@@ -50,3 +50,41 @@ def TransposeConvOptionsAddPadding(builder, padding): builder.PrependInt8Slot(0,
 def TransposeConvOptionsAddStrideW(builder, strideW): builder.PrependInt32Slot(1, strideW, 0)
 def TransposeConvOptionsAddStrideH(builder, strideH): builder.PrependInt32Slot(2, strideH, 0)
 def TransposeConvOptionsEnd(builder): return builder.EndObject()
+
+
+class TransposeConvOptionsT(object):
+
+    # TransposeConvOptionsT
+    def __init__(self):
+        self.padding = 0  # type: int
+        self.strideW = 0  # type: int
+        self.strideH = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        transposeConvOptions = TransposeConvOptions()
+        transposeConvOptions.Init(buf, pos)
+        return cls.InitFromObj(transposeConvOptions)
+
+    @classmethod
+    def InitFromObj(cls, transposeConvOptions):
+        x = TransposeConvOptionsT()
+        x._UnPack(transposeConvOptions)
+        return x
+
+    # TransposeConvOptionsT
+    def _UnPack(self, transposeConvOptions):
+        if transposeConvOptions is None:
+            return
+        self.padding = transposeConvOptions.Padding()
+        self.strideW = transposeConvOptions.StrideW()
+        self.strideH = transposeConvOptions.StrideH()
+
+    # TransposeConvOptionsT
+    def Pack(self, builder):
+        TransposeConvOptionsStart(builder)
+        TransposeConvOptionsAddPadding(builder, self.padding)
+        TransposeConvOptionsAddStrideW(builder, self.strideW)
+        TransposeConvOptionsAddStrideH(builder, self.strideH)
+        transposeConvOptions = TransposeConvOptionsEnd(builder)
+        return transposeConvOptions

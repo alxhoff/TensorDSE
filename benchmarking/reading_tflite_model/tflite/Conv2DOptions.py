@@ -74,3 +74,50 @@ def Conv2DOptionsAddFusedActivationFunction(builder, fusedActivationFunction): b
 def Conv2DOptionsAddDilationWFactor(builder, dilationWFactor): builder.PrependInt32Slot(4, dilationWFactor, 1)
 def Conv2DOptionsAddDilationHFactor(builder, dilationHFactor): builder.PrependInt32Slot(5, dilationHFactor, 1)
 def Conv2DOptionsEnd(builder): return builder.EndObject()
+
+
+class Conv2DOptionsT(object):
+
+    # Conv2DOptionsT
+    def __init__(self):
+        self.padding = 0  # type: int
+        self.strideW = 0  # type: int
+        self.strideH = 0  # type: int
+        self.fusedActivationFunction = 0  # type: int
+        self.dilationWFactor = 1  # type: int
+        self.dilationHFactor = 1  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        conv2DOptions = Conv2DOptions()
+        conv2DOptions.Init(buf, pos)
+        return cls.InitFromObj(conv2DOptions)
+
+    @classmethod
+    def InitFromObj(cls, conv2DOptions):
+        x = Conv2DOptionsT()
+        x._UnPack(conv2DOptions)
+        return x
+
+    # Conv2DOptionsT
+    def _UnPack(self, conv2DOptions):
+        if conv2DOptions is None:
+            return
+        self.padding = conv2DOptions.Padding()
+        self.strideW = conv2DOptions.StrideW()
+        self.strideH = conv2DOptions.StrideH()
+        self.fusedActivationFunction = conv2DOptions.FusedActivationFunction()
+        self.dilationWFactor = conv2DOptions.DilationWFactor()
+        self.dilationHFactor = conv2DOptions.DilationHFactor()
+
+    # Conv2DOptionsT
+    def Pack(self, builder):
+        Conv2DOptionsStart(builder)
+        Conv2DOptionsAddPadding(builder, self.padding)
+        Conv2DOptionsAddStrideW(builder, self.strideW)
+        Conv2DOptionsAddStrideH(builder, self.strideH)
+        Conv2DOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        Conv2DOptionsAddDilationWFactor(builder, self.dilationWFactor)
+        Conv2DOptionsAddDilationHFactor(builder, self.dilationHFactor)
+        conv2DOptions = Conv2DOptionsEnd(builder)
+        return conv2DOptions

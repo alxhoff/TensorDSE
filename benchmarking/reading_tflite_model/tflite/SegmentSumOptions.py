@@ -26,3 +26,33 @@ class SegmentSumOptions(object):
 
 def SegmentSumOptionsStart(builder): builder.StartObject(0)
 def SegmentSumOptionsEnd(builder): return builder.EndObject()
+
+
+class SegmentSumOptionsT(object):
+
+    # SegmentSumOptionsT
+    def __init__(self):
+        pass
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        segmentSumOptions = SegmentSumOptions()
+        segmentSumOptions.Init(buf, pos)
+        return cls.InitFromObj(segmentSumOptions)
+
+    @classmethod
+    def InitFromObj(cls, segmentSumOptions):
+        x = SegmentSumOptionsT()
+        x._UnPack(segmentSumOptions)
+        return x
+
+    # SegmentSumOptionsT
+    def _UnPack(self, segmentSumOptions):
+        if segmentSumOptions is None:
+            return
+
+    # SegmentSumOptionsT
+    def Pack(self, builder):
+        SegmentSumOptionsStart(builder)
+        segmentSumOptions = SegmentSumOptionsEnd(builder)
+        return segmentSumOptions

@@ -34,3 +34,35 @@ class ArgMinOptions(object):
 def ArgMinOptionsStart(builder): builder.StartObject(1)
 def ArgMinOptionsAddOutputType(builder, outputType): builder.PrependInt8Slot(0, outputType, 0)
 def ArgMinOptionsEnd(builder): return builder.EndObject()
+
+
+class ArgMinOptionsT(object):
+
+    # ArgMinOptionsT
+    def __init__(self):
+        self.outputType = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        argMinOptions = ArgMinOptions()
+        argMinOptions.Init(buf, pos)
+        return cls.InitFromObj(argMinOptions)
+
+    @classmethod
+    def InitFromObj(cls, argMinOptions):
+        x = ArgMinOptionsT()
+        x._UnPack(argMinOptions)
+        return x
+
+    # ArgMinOptionsT
+    def _UnPack(self, argMinOptions):
+        if argMinOptions is None:
+            return
+        self.outputType = argMinOptions.OutputType()
+
+    # ArgMinOptionsT
+    def Pack(self, builder):
+        ArgMinOptionsStart(builder)
+        ArgMinOptionsAddOutputType(builder, self.outputType)
+        argMinOptions = ArgMinOptionsEnd(builder)
+        return argMinOptions

@@ -34,3 +34,35 @@ class SplitOptions(object):
 def SplitOptionsStart(builder): builder.StartObject(1)
 def SplitOptionsAddNumSplits(builder, numSplits): builder.PrependInt32Slot(0, numSplits, 0)
 def SplitOptionsEnd(builder): return builder.EndObject()
+
+
+class SplitOptionsT(object):
+
+    # SplitOptionsT
+    def __init__(self):
+        self.numSplits = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        splitOptions = SplitOptions()
+        splitOptions.Init(buf, pos)
+        return cls.InitFromObj(splitOptions)
+
+    @classmethod
+    def InitFromObj(cls, splitOptions):
+        x = SplitOptionsT()
+        x._UnPack(splitOptions)
+        return x
+
+    # SplitOptionsT
+    def _UnPack(self, splitOptions):
+        if splitOptions is None:
+            return
+        self.numSplits = splitOptions.NumSplits()
+
+    # SplitOptionsT
+    def Pack(self, builder):
+        SplitOptionsStart(builder)
+        SplitOptionsAddNumSplits(builder, self.numSplits)
+        splitOptions = SplitOptionsEnd(builder)
+        return splitOptions

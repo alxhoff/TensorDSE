@@ -42,3 +42,38 @@ def ReverseSequenceOptionsStart(builder): builder.StartObject(2)
 def ReverseSequenceOptionsAddSeqDim(builder, seqDim): builder.PrependInt32Slot(0, seqDim, 0)
 def ReverseSequenceOptionsAddBatchDim(builder, batchDim): builder.PrependInt32Slot(1, batchDim, 0)
 def ReverseSequenceOptionsEnd(builder): return builder.EndObject()
+
+
+class ReverseSequenceOptionsT(object):
+
+    # ReverseSequenceOptionsT
+    def __init__(self):
+        self.seqDim = 0  # type: int
+        self.batchDim = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        reverseSequenceOptions = ReverseSequenceOptions()
+        reverseSequenceOptions.Init(buf, pos)
+        return cls.InitFromObj(reverseSequenceOptions)
+
+    @classmethod
+    def InitFromObj(cls, reverseSequenceOptions):
+        x = ReverseSequenceOptionsT()
+        x._UnPack(reverseSequenceOptions)
+        return x
+
+    # ReverseSequenceOptionsT
+    def _UnPack(self, reverseSequenceOptions):
+        if reverseSequenceOptions is None:
+            return
+        self.seqDim = reverseSequenceOptions.SeqDim()
+        self.batchDim = reverseSequenceOptions.BatchDim()
+
+    # ReverseSequenceOptionsT
+    def Pack(self, builder):
+        ReverseSequenceOptionsStart(builder)
+        ReverseSequenceOptionsAddSeqDim(builder, self.seqDim)
+        ReverseSequenceOptionsAddBatchDim(builder, self.batchDim)
+        reverseSequenceOptions = ReverseSequenceOptionsEnd(builder)
+        return reverseSequenceOptions

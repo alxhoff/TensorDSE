@@ -50,3 +50,41 @@ def BidirectionalSequenceRNNOptionsAddTimeMajor(builder, timeMajor): builder.Pre
 def BidirectionalSequenceRNNOptionsAddFusedActivationFunction(builder, fusedActivationFunction): builder.PrependInt8Slot(1, fusedActivationFunction, 0)
 def BidirectionalSequenceRNNOptionsAddMergeOutputs(builder, mergeOutputs): builder.PrependBoolSlot(2, mergeOutputs, 0)
 def BidirectionalSequenceRNNOptionsEnd(builder): return builder.EndObject()
+
+
+class BidirectionalSequenceRNNOptionsT(object):
+
+    # BidirectionalSequenceRNNOptionsT
+    def __init__(self):
+        self.timeMajor = False  # type: bool
+        self.fusedActivationFunction = 0  # type: int
+        self.mergeOutputs = False  # type: bool
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        bidirectionalSequenceRNNOptions = BidirectionalSequenceRNNOptions()
+        bidirectionalSequenceRNNOptions.Init(buf, pos)
+        return cls.InitFromObj(bidirectionalSequenceRNNOptions)
+
+    @classmethod
+    def InitFromObj(cls, bidirectionalSequenceRNNOptions):
+        x = BidirectionalSequenceRNNOptionsT()
+        x._UnPack(bidirectionalSequenceRNNOptions)
+        return x
+
+    # BidirectionalSequenceRNNOptionsT
+    def _UnPack(self, bidirectionalSequenceRNNOptions):
+        if bidirectionalSequenceRNNOptions is None:
+            return
+        self.timeMajor = bidirectionalSequenceRNNOptions.TimeMajor()
+        self.fusedActivationFunction = bidirectionalSequenceRNNOptions.FusedActivationFunction()
+        self.mergeOutputs = bidirectionalSequenceRNNOptions.MergeOutputs()
+
+    # BidirectionalSequenceRNNOptionsT
+    def Pack(self, builder):
+        BidirectionalSequenceRNNOptionsStart(builder)
+        BidirectionalSequenceRNNOptionsAddTimeMajor(builder, self.timeMajor)
+        BidirectionalSequenceRNNOptionsAddFusedActivationFunction(builder, self.fusedActivationFunction)
+        BidirectionalSequenceRNNOptionsAddMergeOutputs(builder, self.mergeOutputs)
+        bidirectionalSequenceRNNOptions = BidirectionalSequenceRNNOptionsEnd(builder)
+        return bidirectionalSequenceRNNOptions

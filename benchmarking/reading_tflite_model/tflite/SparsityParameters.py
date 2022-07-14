@@ -111,3 +111,92 @@ def SparsityParametersStartBlockMapVector(builder, numElems): return builder.Sta
 def SparsityParametersAddDimMetadata(builder, dimMetadata): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(dimMetadata), 0)
 def SparsityParametersStartDimMetadataVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def SparsityParametersEnd(builder): return builder.EndObject()
+
+import tflite.DimensionMetadata
+try:
+    from typing import List
+except:
+    pass
+
+class SparsityParametersT(object):
+
+    # SparsityParametersT
+    def __init__(self):
+        self.traversalOrder = None  # type: List[int]
+        self.blockMap = None  # type: List[int]
+        self.dimMetadata = None  # type: List[tflite.DimensionMetadata.DimensionMetadataT]
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        sparsityParameters = SparsityParameters()
+        sparsityParameters.Init(buf, pos)
+        return cls.InitFromObj(sparsityParameters)
+
+    @classmethod
+    def InitFromObj(cls, sparsityParameters):
+        x = SparsityParametersT()
+        x._UnPack(sparsityParameters)
+        return x
+
+    # SparsityParametersT
+    def _UnPack(self, sparsityParameters):
+        if sparsityParameters is None:
+            return
+        if not sparsityParameters.TraversalOrderIsNone():
+            if np is None:
+                self.traversalOrder = []
+                for i in range(sparsityParameters.TraversalOrderLength()):
+                    self.traversalOrder.append(sparsityParameters.TraversalOrder(i))
+            else:
+                self.traversalOrder = sparsityParameters.TraversalOrderAsNumpy()
+        if not sparsityParameters.BlockMapIsNone():
+            if np is None:
+                self.blockMap = []
+                for i in range(sparsityParameters.BlockMapLength()):
+                    self.blockMap.append(sparsityParameters.BlockMap(i))
+            else:
+                self.blockMap = sparsityParameters.BlockMapAsNumpy()
+        if not sparsityParameters.DimMetadataIsNone():
+            self.dimMetadata = []
+            for i in range(sparsityParameters.DimMetadataLength()):
+                if sparsityParameters.DimMetadata(i) is None:
+                    self.dimMetadata.append(None)
+                else:
+                    dimensionMetadata_ = tflite.DimensionMetadata.DimensionMetadataT.InitFromObj(sparsityParameters.DimMetadata(i))
+                    self.dimMetadata.append(dimensionMetadata_)
+
+    # SparsityParametersT
+    def Pack(self, builder):
+        if self.traversalOrder is not None:
+            if np is not None and type(self.traversalOrder) is np.ndarray:
+                traversalOrder = builder.CreateNumpyVector(self.traversalOrder)
+            else:
+                SparsityParametersStartTraversalOrderVector(builder, len(self.traversalOrder))
+                for i in reversed(range(len(self.traversalOrder))):
+                    builder.PrependInt32(self.traversalOrder[i])
+                traversalOrder = builder.EndVector(len(self.traversalOrder))
+        if self.blockMap is not None:
+            if np is not None and type(self.blockMap) is np.ndarray:
+                blockMap = builder.CreateNumpyVector(self.blockMap)
+            else:
+                SparsityParametersStartBlockMapVector(builder, len(self.blockMap))
+                for i in reversed(range(len(self.blockMap))):
+                    builder.PrependInt32(self.blockMap[i])
+                blockMap = builder.EndVector(len(self.blockMap))
+        if self.dimMetadata is not None:
+            dimMetadatalist = []
+            for i in range(len(self.dimMetadata)):
+                dimMetadatalist.append(self.dimMetadata[i].Pack(builder))
+            SparsityParametersStartDimMetadataVector(builder, len(self.dimMetadata))
+            for i in reversed(range(len(self.dimMetadata))):
+                builder.PrependUOffsetTRelative(dimMetadatalist[i])
+            dimMetadata = builder.EndVector(len(self.dimMetadata))
+        SparsityParametersStart(builder)
+        if self.traversalOrder is not None:
+            SparsityParametersAddTraversalOrder(builder, traversalOrder)
+        if self.blockMap is not None:
+            SparsityParametersAddBlockMap(builder, blockMap)
+        if self.dimMetadata is not None:
+            SparsityParametersAddDimMetadata(builder, dimMetadata)
+        sparsityParameters = SparsityParametersEnd(builder)
+        return sparsityParameters
