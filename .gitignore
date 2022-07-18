@@ -1,0 +1,15 @@
+tags
+./venv
+venv
+*.tags
+*.tags/
+*.tags/*
+single_layer_models/**
+single_layer_models/*
+results/*
+benchmarking/reading_tflite_model/results/*
+shark/*.pcapng
+shark/*.cap
+
+__pycache__
+
