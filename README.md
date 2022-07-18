@@ -2,7 +2,7 @@
 
 TensorDSE aims to provide a complete from that allows for a user to map a trained Tensorflow model onto a hardware platform comprised of multiple types of execution units, eg. CPU, GPU and TPU. 
 
-The idea was originally undertaken by Ines Ben Hmidda in her master's thesis at TUM,
+The idea was originally undertaken by Ines Ben Hmidda in her [master's thesis](https://raw.githubusercontent.com/wiki/alxhoff/TensorDSE/thesis_report_inesbenhmida.pdf) at TUM,
 
 **Abstract:**
 _In recent years, machine learning methods have proven their efficiency and applicability in a_
