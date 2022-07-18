@@ -5,8 +5,8 @@ import csv
 
 def read_op_mapping(csv_file_path: str):
     with open(csv_file_path, newline='') as f:
-        reader = csv.reader(f)
-        data = [list(map(int,rec)) for rec in csv.reader(f, delimiter=',')]
+        reader = csv.reader(f, delimiter=',')
+        data = [list(map(int,rec)) for rec in reader]
         return data
 
 def load_json_model(file_path: str):
@@ -26,7 +26,7 @@ def load_source_model(log: logging.Logger, file_dir_path: str, main_dir_path: st
         tflite_file_dir_path = os.path.join(file_dir_path,"tflite")
         for file in os.listdir(tflite_file_dir_path):
             if file.endswith(".tflite"):
-                file_path_tflite = os.path.join(tflite_file_dir_path, file)
+                #file_path_tflite = os.path.join(tflite_file_dir_path, file)
                 tflite_file_name = file
                 tflite_file_exists = True
         
@@ -34,7 +34,7 @@ def load_source_model(log: logging.Logger, file_dir_path: str, main_dir_path: st
         for file in os.listdir(json_file_dir_path):
             if file.endswith(".json"):
                 file_path_json = os.path.join(json_file_dir_path, file)
-                json_file_name = file
+                #json_file_name = file
                 json_file_exists = True
     
         if tflite_file_exists:
