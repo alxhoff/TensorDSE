@@ -1,0 +1,8 @@
+include 'opendse-model'
+include 'opendse-optimization'
+include 'opendse-io'
+include 'opendse-visualization'
+include 'opendse-tutorial'
+include 'opendse-generator'
+include 'opendse-realtime'
+include 'InesDSE'
