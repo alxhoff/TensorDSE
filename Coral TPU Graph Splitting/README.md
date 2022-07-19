@@ -192,7 +192,7 @@ flatc -b <path/to/schema.fbs> <path/to/model.json>
 ## Setup
 ```
 git clone <repository_link>
-cd Compiling-ML-Ops-for-Coral-Edge-TPU-HW-Acc
+cd TensorDSE/Coral TPU Graph Splitting/
 ```
 After cloning the repository, make sure to provide the operation mapping in the form of a CSV file and place in in the 
 `mappings/` directory.
