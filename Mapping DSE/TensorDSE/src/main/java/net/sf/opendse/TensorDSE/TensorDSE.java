@@ -1,7 +1,4 @@
-package TensorDSE;
-
-/* import net.sf.opendse.tensordse.FullSpecDef; */
-/* import net.sf.opendse.tensordse.OpCosts; */
+package net.sf.opendse.TensorDSE;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -14,11 +11,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
+
 import org.opt4j.core.Individual;
 import org.opt4j.core.optimizer.Archive;
 import org.opt4j.core.start.Opt4JModule;
 import org.opt4j.core.start.Opt4JTask;
 import org.opt4j.optimizers.ea.EvolutionaryAlgorithmModule;
+import org.opt4j.optimizers.ea.SelectorDefault;
 import org.opt4j.viewer.ViewerModule;
 import org.opt4j.core.Objective;
 import org.opt4j.core.Objectives;
@@ -42,141 +45,160 @@ import net.sf.opendse.optimization.ImplementationWrapper;
 
 /**
  * Entry point for this project
- * @author z0040rwx Ines Ben Hmida 
+ * 
+ * @author z0040rwx Ines Ben Hmida
  *
  */
 
 public class TensorDSE {
-	
+
 	public static void main(String[] args) throws IOException {
-        if (args.length == 0){
-            System.out.println("You need to specify a path!");
-            return;
-	    } else {
-            if (args[0] == null || args[0].trim().isEmpty()) {
-            /* if (1==0) { */
-                System.out.println("You need to specify a path!");
-                return;
-            }
-            System.out.println("hello world");
-	    	
-	    	String modelsummaryString = args[0];
-	    	String folderSolutions = args[1];
-	    	String csvresult_file = args[2];
-	    	int runs = Integer.parseInt(args[3]);
-	    	int genN = Integer.parseInt(args[4]);
-	    	int alpha = Integer.parseInt(args[5]); 
-	    	int Mu = Integer.parseInt(args[6]);
-	    	int Lambda = Integer.parseInt(args[7]);
-	    	double crossRate = Double.parseDouble(args[8]);
-	    	
-	    	
-	    	//System.out.println(args[0]+ args[1]);
-	    	/*
-	    	String modelsummaryString = "src/main/resources/models_summaries/mgen_summary.csv";
-	    	String folderSolutions = "src/main/resources/mobilnet_test";
-	    	int runs = 2;
-	    	int genN = 100;
-	    	int alpha =50; 
-	    	int Mu = 25;
-	    	int Lambda = 25;
-	    	double crossRate = 0.95;
-	    	*/
-	    	double[] objectiveVals = new double[runs]; 
-	    	File file = new File(folderSolutions);
-			file.mkdir();
-	    	FileWriter csvWriter = new FileWriter(csvresult_file, true);
-			//FileWriter csvWriter = new FileWriter(folderSolutions + "\\results_" + Double.toString(runs) + ".csv");
-	    	//csvWriter.append("Iteration,");
-	    	//csvWriter.append("solution_name,");
-	    	//csvWriter.append("generations,");
-	    	//csvWriter.append("alpha,");
-	    	//csvWriter.append("Mu,");
-	    	//csvWriter.append("Lambda,");
-	    	//csvWriter.append("Crossover_rate,");
-	    	//csvWriter.append("Cost_of_mapping");
-	    	
-	    	//FileWriter csvWriter2 = new FileWriter("src/main/resources/p_100.csv");
-	    	//csvWriter2.append("Cost_of_mapping");
-	    	
-	    	//csvWriter2.append("\n");
+		ArgumentParser parser = ArgumentParsers
+				.newFor("TensorDSE")
+				.build()
+				.defaultHelp(true)
+				.description("Find Y-graph mapping");
 
-	    	for(int itRun= 0; itRun <runs; itRun ++) {
-	    		FullSpecDef fullspecdef = new FullSpecDef(modelsummaryString);
-	    		
-				EvolutionaryAlgorithmModule ea = new EvolutionaryAlgorithmModule();
-				ea.setGenerations(genN);
-				ea.setPopulationSize(alpha);
-				ea.setParentsPerGeneration(Mu);
-				ea.setOffspringsPerGeneration(Lambda);
-				ea.setCrossoverRate(crossRate);
-					
-				
-				Module specModule = new Opt4JModule() {
+		parser.addArgument("-c", "--crossover").setDefault(0.9).type(Double.class).help("Cross over rate of the EA");
+		parser.addArgument("-s", "--populationsize").setDefault(100).type(int.class).help("Pupulation size for the EA");
+		parser.addArgument("-p", "--parentspergeneration").setDefault(50).type(int.class)
+				.help("Number of parents per generation in the EA");
+		parser.addArgument("-g", "--generations").setDefault(500).type(int.class)
+				.help("Number of generations in the EA");
+		parser.addArgument("-r", "--runs").setDefault(1000).type(int.class).help("Number of runs");
+		parser.addArgument("-o", "--offspringspergeneration").setDefault(50).type(int.class)
+				.help("Number of offsprings per generation");
+		parser.addArgument("-m", "--modelsummary").setDefault("TensorDSE/src/main/resources/model_summaries/example_summary.csv")
+				.type(String.class).help("Location of model summary CSV");
+		parser.addArgument("-d", "--costfile").setDefault("TensorDSE/src/main/resources/costfiles/examplecosts.csv")
+				.type(String.class).help("Directory containing cost files");
+		parser.addArgument("-f", "--resultsfile").setDefault("results.csv").type(String.class)
+				.help("Results file name");
 
-					@Override
-					protected void config() {
-						SpecificationWrapperInstance sw = new SpecificationWrapperInstance(fullspecdef.getSpecification());
-						bind(SpecificationWrapper.class).toInstance(sw);
-						String objectives_s = "cost_of_mapping";
-						ExternalEvaluator evaluator = new ExternalEvaluator(objectives_s);
-						
-						Multibinder<ImplementationEvaluator> multibinder = Multibinder.newSetBinder(binder(),
-								ImplementationEvaluator.class);
-						multibinder.addBinding().toInstance(evaluator);
-						
-					}
-				};
+		Namespace ns = null;
 
-				OptimizationModule opt = new OptimizationModule();
+		try {
+			ns = parser.parseArgs(args);
+		} catch (ArgumentParserException e) {
+			parser.handleError(e);
+		}
 
-				Collection<Module> modules = new ArrayList<Module>();
-				modules.add(ea);
-				modules.add(opt);
-				modules.add(specModule);
+		Double crossover_rate = ns.getDouble("crossover");
+		int population_size = ns.getInt("populationsize");
+		int parents_per_generation = ns.getInt("parentspergeneration");
+		int generations = ns.getInt("generations");
+		int test_runs = ns.getInt("runs");
+		int offsprings_per_generation = ns.getInt("offspringspergeneration");
+		String model_summary_loc = ns.getString("modelsummary");
+		String cost_directory = ns.getString("costfile");
+		String results_file = ns.getString("resultsfile");
 
-				Opt4JTask task = new Opt4JTask(false);
-				task.init(modules);
-				System.out.println("start of opt");
+		System.out.printf("Crossover Rate: %.2f\n", crossover_rate);
+		System.out.printf("Population Size: %d\n", population_size);
+		System.out.printf("Parents Per Generation: %d\n", parents_per_generation);
+		System.out.printf("Generations: %d\n", generations);
+		System.out.printf("Runs: %d\n", test_runs);
+		System.out.printf("Offsprings Per Generations: %d\n", offsprings_per_generation);
+		System.out.printf("Model Summary: %s\n", model_summary_loc);
+		System.out.printf("Cost Directory: %s\n", cost_directory);
+		System.out.printf("Results File: %s\n", results_file);
 
-				try {
-					task.execute();
-					Archive archive = task.getInstance(Archive.class);
-					
-					for (Individual individual : archive) {
-						Specification impl = ((ImplementationWrapper) individual.getPhenotype()).getImplementation();
-						//individual.getObjectives();
-						//System.out.println("objectives " + individual.getObjectives().getValues());
-						//objectiveVals[itRun] = individual.getObjectives().getValues();
-						SpecificationWriter writer = new SpecificationWriter();
-						String nameSolution = new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
-						writer.write(impl, folderSolutions + "/" + nameSolution + "_solution.xml");
-						objectiveVals[itRun] = individual.getObjectives().getValues().iterator().next().getDouble();
-						System.out.println(objectiveVals[itRun]);
-						csvWriter.append("\n");
-						csvWriter.append(String.join(",", Integer.toString(itRun), nameSolution, Integer.toString(genN), Integer.toString(alpha), Integer.toString(Mu) , Integer.toString(Lambda), Double.toString(crossRate), Double.toString(objectiveVals[itRun])));
-					
-						
-						for(Mapping<Task,Resource> m: impl.getMappings()) {
-							System.out.println(m.getSource().getId() + " type "+ m.getSource().getAttribute("type") + " HW " + m.getTarget().getId() +  " number of shaves : " + m.getTarget().getAttribute("num_of_shaves"));
-						}
-						
-					}
+		if (model_summary_loc == null) {
+			System.out.println("You need to provide the model summary file");
+			return;
+		}
+		if (cost_directory == null) {
+			System.out.println("You need to provide the cost files directory");
+			return;
+		}
 
-				} catch (Exception e) {
-					e.printStackTrace();
-				} finally {
-					task.close();
-					}
-	    		
-	    	}
-	    csvWriter.flush();
-	    csvWriter.close();
-			
-	    }	
-	
+		double[] objectiveVals = new double[test_runs];
+		File file = new File(cost_directory);
+		file.mkdir();
+		FileWriter csvWriter = new FileWriter(results_file, true);
+
+		for (int itRun = 0; itRun < test_runs; itRun++) {
+			FullSpecDef fullspecdef = new FullSpecDef(model_summary_loc, cost_directory);
+
+			// EvolutionaryAlgorithmModule ea = new EvolutionaryAlgorithmModule();
+			// ea.setGenerations(generations);
+			// ea.setPopulationSize(population_size);
+			// ea.setParentsPerGeneration(parents_per_generation);
+			// ea.setOffspringsPerGeneration(offsprings_per_generation);
+			// ea.setCrossoverRate(crossover_rate);
+
+			// Module specModule = new Opt4JModule() {
+
+			// @Override
+			// protected void config() {
+			// SpecificationWrapperInstance sw = new
+			// SpecificationWrapperInstance(fullspecdef.getSpecification());
+			// bind(SpecificationWrapper.class).toInstance(sw);
+			// String objectives_s = "cost_of_mapping";
+			// ExternalEvaluator evaluator = new ExternalEvaluator(objectives_s);
+
+			// Multibinder<ImplementationEvaluator> multibinder =
+			// Multibinder.newSetBinder(binder(),
+			// ImplementationEvaluator.class);
+			// multibinder.addBinding().toInstance(evaluator);
+
+			// }
+			// };
+
+			// OptimizationModule opt = new OptimizationModule();
+
+			// Collection<Module> modules = new ArrayList<Module>();
+			// modules.add(ea);
+			// modules.add(opt);
+			// modules.add(specModule);
+
+			// Opt4JTask task = new Opt4JTask(false);
+			// task.init(modules);
+			// System.out.println("start of opt");
+
+			// try {
+			// task.execute();
+			// Archive archive = task.getInstance(Archive.class);
+
+			// for (Individual individual : archive) {
+			// Specification impl = ((ImplementationWrapper)
+			// individual.getPhenotype()).getImplementation();
+			// // individual.getObjectives();
+			// // System.out.println("objectives " +
+			// individual.getObjectives().getValues());
+			// // objectiveVals[itRun] = individual.getObjectives().getValues();
+			// SpecificationWriter writer = new SpecificationWriter();
+			// String nameSolution = new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new
+			// Date());
+			// writer.write(impl, cost_directory + "/" + nameSolution + "_solution.xml");
+			// objectiveVals[itRun] =
+			// individual.getObjectives().getValues().iterator().next().getDouble();
+			// System.out.println(objectiveVals[itRun]);
+			// csvWriter.append("\n");
+			// csvWriter.append(String.join(",", Integer.toString(itRun), nameSolution,
+			// Integer.toString(generations), Integer.toString(population_size),
+			// Integer.toString(parents_per_generation),
+			// Integer.toString(offsprings_per_generation),
+			// Double.toString(crossover_rate), Double.toString(objectiveVals[itRun])));
+
+			// for (Mapping<Task, Resource> m : impl.getMappings()) {
+			// System.out.println(m.getSource().getId() + " type " +
+			// m.getSource().getAttribute("type")
+			// + " HW " + m.getTarget().getId() + " number of shaves : "
+			// + m.getTarget().getAttribute("num_of_shaves"));
+			// }
+
+			// }
+
+			// } catch (Exception ex) {
+			// ex.printStackTrace();
+			// } finally {
+			// task.close();
+			// }
+
+			// csvWriter.flush();
+			// csvWriter.close();
+		}
+
 	}
-
-	
-
 }

@@ -1,6 +1,8 @@
 import org.apache.tools.ant.filters.*
 import java.util.regex.*
 
+apply plugin: 'application'
+
 dependencies {	
 	compile project(':opendse-model')
 	compile project(':opendse-io')
@@ -12,6 +14,9 @@ dependencies {
     implementation 'com.github.SDARG.opt4j:opt4j-satdecoding:-SNAPSHOT'
     implementation 'com.github.SDARG.opt4j:opt4j-optimizers:-SNAPSHOT'
     implementation 'com.github.SDARG.opt4j:opt4j-viewer:-SNAPSHOT'
+
+    implementation 'net.sourceforge.argparse4j:argparse4j:0.9.0'
+    implementation 'org.javatuples:javatuples:1.2'
 }
 
 task filterSources(type: Copy) {
@@ -69,5 +74,5 @@ task copyWebsite(type: Copy, dependsOn: [filterSources, filterXML]) {
 	into 'build/website/documentation/'+version
 }
 
-// mainClassName = 'net.sf.opendse.TensorDSE.TensorDSE'
-mainClassName = 'TensorDSE.TensorDSE'
+mainClassName = 'net.sf.opendse.TensorDSE.TensorDSE'
+// mainClassName = 'TensorDSE'
