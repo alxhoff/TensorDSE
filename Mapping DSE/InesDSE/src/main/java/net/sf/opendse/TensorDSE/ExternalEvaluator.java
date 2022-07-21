@@ -1,4 +1,4 @@
-package TensorDSE;
+package net.sf.opendse.TensorDSE;
 
 import java.io.FileWriter;
 import java.io.IOException;

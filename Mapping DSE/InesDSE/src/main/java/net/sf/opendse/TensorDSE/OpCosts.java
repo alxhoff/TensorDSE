@@ -1,4 +1,4 @@
-package TensorDSE;
+package net.sf.opendse.TensorDSE;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;

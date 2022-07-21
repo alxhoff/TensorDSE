@@ -1,4 +1,4 @@
-package TensorDSE;
+package net.sf.opendse.TensorDSE;
 
 /* import net.sf.opendse.tensordse.FullSpecDef; */
 /* import net.sf.opendse.tensordse.OpCosts; */
