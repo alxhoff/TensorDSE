@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Hashtable;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.javatuples.Pair;
 
@@ -18,7 +20,8 @@ import org.javatuples.Pair;
  *                     results obtained from benchmarks and tests
  * 
  * 
- * @author z0040rwx
+ * @author Ines Ben Hmida
+ * @author Alex Hoffman
  *
  */
 
@@ -30,7 +33,7 @@ import org.javatuples.Pair;
 public class OpCosts {
 
     public Hashtable<String, Pair<Double, Hashtable<String, Hashtable<String, Hashtable<String, Double[]>>>>> OpCost;
-    public Double[] comCost;
+    public List<Double> comCost;
 
     public Hashtable CreateEmptyMap() {
         return new Hashtable<String, Pair<Double, Hashtable<String, Hashtable<String, Hashtable<String, Double[]>>>>>();
@@ -78,6 +81,7 @@ public class OpCosts {
     }
 
     public OpCosts(String costsfilepath) {
+        this.comCost = new ArrayList();
         this.OpCost = this.CreateEmptyMap();
         BufferedReader csvReader = null;
         try {
@@ -120,21 +124,23 @@ public class OpCosts {
                     this.SetOpMin(device_type, b);
             }
 
-
-            //Now that we have the minimum values for each device this value should be subtracted from each b value in OpCosts
+            // Now that we have the minimum values for each device this value should be
+            // subtracted from each b value in OpCosts
             this.OpCost.forEach((device_type, min_sum_op_map) -> {
                 Double device_min = this.GetOpMin(device_type);
+                this.comCost.add(device_min);
                 min_sum_op_map.getValue1().forEach((operation_type, type_map) -> {
                     type_map.forEach((data_type, shave_map) -> {
                         shave_map.forEach((index, coefficients) -> {
-                            Double new_val = this.GetOpCoeffucuentB(device_type, operation_type, data_type, index) - device_min;
-                            this.OpCost.get(device_type).getValue1().get(operation_type).get(data_type).get(index)[1] = new_val;
+                            Double new_val = this.GetOpCoeffucuentB(device_type, operation_type, data_type, index)
+                                    - device_min;
+                            this.OpCost.get(device_type).getValue1().get(operation_type).get(data_type)
+                                    .get(index)[1] = new_val;
                         });
                     });
                 });
             });
 
-            // this.comCost = new Double[] { this.OpCost, min_coral };
 
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
