@@ -1,0 +1,2 @@
+model_checkpoint_path: "graphrelu6_20_uint8.ckpt"
+all_model_checkpoint_paths: "graphrelu6_20_uint8.ckpt"

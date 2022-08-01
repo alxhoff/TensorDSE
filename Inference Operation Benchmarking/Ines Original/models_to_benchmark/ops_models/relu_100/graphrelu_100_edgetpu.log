@@ -1,0 +1,7 @@
+Edge TPU Compiler version 1.0.249710469
+Input: /benchmark_tool/models_to_benchmark/ops_models/relu_100/graphrelu_100.tflite
+Output: /benchmark_tool/models_to_benchmark/ops_models/relu_100/graphrelu_100_edgetpu.tflite
+
+Operator                       Count      Status
+
+RELU                           1          Mapped to Edge TPU

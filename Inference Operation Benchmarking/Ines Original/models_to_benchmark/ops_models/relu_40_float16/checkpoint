@@ -1,0 +1,2 @@
+model_checkpoint_path: "graphrelu_40_float16.ckpt"
+all_model_checkpoint_paths: "graphrelu_40_float16.ckpt"

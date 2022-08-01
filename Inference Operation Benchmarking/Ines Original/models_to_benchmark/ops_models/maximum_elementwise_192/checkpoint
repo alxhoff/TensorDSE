@@ -1,0 +1,2 @@
+model_checkpoint_path: "graphmaximum_elementwise_192:0.ckpt"
+all_model_checkpoint_paths: "graphmaximum_elementwise_192:0.ckpt"
