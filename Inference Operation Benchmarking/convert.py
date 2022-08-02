@@ -64,13 +64,18 @@ def get_activation_id(activ_func):
     return options_dict.get(activ_func, default)
 
 
-def process_CONV_2D(operator_name, out_dir, options, io_tensors):
+def process_CONV_2D(operator_name, out_dir, options, input_tensors, output_tensors):
     """Processes the overloaded arguments to recreate the wished Conv 2D model."""
     import numpy as np
     from utils import tflite_conversion, save_session
 
+    # The input tensors for a Conv2D layer are as follows:
+    # [0] : The input shape to the Conv2D layer
+    # [1] : The filter shape, ie. no of filters x kernel width x kernel height x kernel depth
+    # [2] : The number of filters
+
     # Retrieving operation relevant variables.
-    filter_count = 28
+    filter_count = input_tensors[2][0][0]
 
     input_shape = get_input_tensor_shape(io_tensors)
     test_input = np.array(np.random.random_sample(input_shape))
@@ -344,10 +349,10 @@ def ProcessIO(operator, graph):
     return inputs, outputs
 
 
-def ProcessLayer(layer_name, options, io_tensors) -> None:
+def ProcessLayer(layer_name, options, input_tensors, output_tensors) -> None:
 
     out_dir = f"{MODELS_FOLDER}{layer_name}/"
-    eval("process_" + layer_name)(layer_name, out_dir, options, io_tensors)
+    eval("process_" + layer_name)(layer_name, out_dir, options, input_tensors, output_tensors)
 
 
 def ProcessOperation(model, graph, operator) -> None:
@@ -388,7 +393,7 @@ def ProcessOperation(model, graph, operator) -> None:
     operator_options = ProcessOptions(operator=operator)
     input_tensors, output_tensors = ProcessIO(operator=operator, graph=graph)
 
-    ProcessLayer(operator_name, operator_options, (input_tensors, output_tensors))
+    ProcessLayer(operator_name, operator_options, input_tensors, output_tensors)
 
 
 def split_tflite_model(model) -> None:
