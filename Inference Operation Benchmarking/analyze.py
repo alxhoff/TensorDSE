@@ -180,7 +180,7 @@ def init_op_classes(models_folder):
     return op_classes
 
 
-def tflite_results_analysis():
+def AnalyzeModelResults():
     import logging
     import matplotlib
     matplotlib.rcParams['figure.figsize'] = (16.0, 12.0)

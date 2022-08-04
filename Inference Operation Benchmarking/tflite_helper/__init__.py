@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def GetTFLiteClass(cls):
 
     """The automatically generated schema helper modules and the classes contained within are
@@ -134,5 +137,149 @@ def GetOptions(options_class) -> dict:
     return opts
 
 
-def GetOperatorInputOutputLengths(op):
-    return (op.InputsLength(), op.OutputsLength())
+def GetOperatorInputOutputLengths(operator):
+
+    """Description
+    :type operator:
+    :param operator:
+
+    :raises:
+
+    :rtype:
+    """
+    return (operator.InputsLength(), operator.OutputsLength())
+
+
+def GetInputShape(input_tensors) -> np.ndarray:
+
+    """Description
+    :type input_tensors:
+    :param input_tensors:
+
+    :raises:
+
+    :rtype:
+    """
+    return input_tensors[0][0]
+
+
+def GetOutputShape(output_tensors) -> np.ndarray:
+
+    """Description
+    :type output_tensors:
+    :param output_tensors:
+
+    :raises:
+
+    :rtype:
+    """
+    return output_tensors[0][0]
+
+
+def GetStrides(options) -> list:
+
+    """Description
+    :type options:
+    :param options:
+
+    :raises:
+
+    :rtype:
+    """
+    return [1, options["StrideH"], options["StrideW"], 1]
+
+
+def GetPadding(options) -> str:
+
+    """Description
+    :type options:
+    :param options:
+
+    :raises:
+
+    :rtype:
+    """
+    return ClassCodeToName(GetTFLiteClass("Padding"), options["Padding"])
+
+
+def GetActivationFunction(options):
+
+    """Description
+    :type options:
+    :param options:
+
+    :raises:
+
+    :rtype:
+    """
+
+    funcs = {"RELU": "relu", "SOFTMAX": "softmax", "DROPOUT": None}
+
+    return funcs.get(
+        ClassCodeToName(
+            GetTFLiteClass("ActivationFunctionType"),
+            options["FusedActivationFunction"],
+        ),
+        None,
+    )
+
+
+def GetWeightsFormat(options):
+
+    """Description
+    :type options:
+    :param options:
+
+    :raises:
+
+    :rtype:
+    """
+    return options["WeightsFormat"]
+
+
+def GetTensorType(tensor) -> type:
+
+    """Description
+    :type tensor:
+    :param tensor:
+
+    :raises:
+
+    :rtype:
+    """
+    import tensorflow as tf
+
+    type_str = tensor[1]
+
+    if type_str == "FLOAT32":
+        return tf.float32
+    elif type_str == "FLOAT16":
+        return tf.float16
+    elif type_str == "INT32":
+        return tf.int32
+    elif type_str == "UINT8":
+        return tf.uint8
+    elif type_str == "INT64":
+        return tf.int64
+    elif type_str == "INT16":
+        return tf.int16
+    elif type_str == "INT8":
+        return tf.int8
+    else:
+        raise Exception(TypeError)
+
+
+def GetInputType(input_tensors) -> type:
+
+    """Description
+    :type input_tensors:
+    :param input_tensors:
+
+    :raises:
+
+    :rtype:
+    """
+    import tensorflow as tf
+    from tflite_helper import GetTensorType
+
+    return GetTensorType(input_tensors[0])

@@ -267,7 +267,7 @@ def generator():
         yield [input_data]
 
 
-def save_session(session, operation_name, operation, op_dir, input_place):
+def SaveSession(session, operation_name, operation, op_dir, input_placeholder):
     """Quantizes a converter object so that the compilation on the edge tpu is
     made possible.
 
@@ -296,18 +296,18 @@ def save_session(session, operation_name, operation, op_dir, input_place):
     import tensorflow as tf
 
     # Clears saved model directory.
-    tmp_model_saved_dir = extend_directory(op_dir, "tmp")
+    export_dir = extend_directory(op_dir, "tmp")
 
     # Saving Model into the saved model directory.
     tf.compat.v1.saved_model.simple_save(session,
-                                         tmp_model_saved_dir,
+                                         export_dir,
                                          inputs={operation_name +
-                                                 "_input": input_place},
+                                                 "_input": input_placeholder},
                                          outputs={operation_name+"_op": operation})
-    return tmp_model_saved_dir
+    return export_dir
 
 
-def tflite_quantization(converter):
+def TFLiteQuantization(converter):
     """Quantizes a converter object so that the compilation on the edge tpu is
     made possible.
 
@@ -342,7 +342,7 @@ def tflite_quantization(converter):
     return converter
 
 
-def tflite_conversion(op_dir, model_saved_dir, operation_name, input_place):
+def TFLiteConverte(op_dir, model_saved_dir, operation_name, input_place):
     """Manager function responsible for converting a tensorflow session into a
     tflite model.
 
@@ -377,7 +377,7 @@ def tflite_conversion(op_dir, model_saved_dir, operation_name, input_place):
     # Creates another Converter Object.
     edge_converter = tf.lite.TFLiteConverter.from_saved_model(model_saved_dir)
     # Quanitzation of tflite model, necessary for edge
-    edge_converter = tflite_quantization(edge_converter)
+    edge_converter = TFLiteQuantization(edge_converter)
     # Performs tflite conversion with it.
     tflite_model = converter.convert()
 

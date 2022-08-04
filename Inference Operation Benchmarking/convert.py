@@ -1,4 +1,5 @@
 import argparse
+from array import array
 from ast import operator
 import logging
 from typing import Dict
@@ -10,268 +11,6 @@ logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
 COMPILED_MODELS_FOLDER = "models/compiled/"
 MODELS_FOLDER = "models/layers/"
-
-# Functions with the format get_'object' simply retreive said object given a
-# overloaded variable.
-
-
-def get_strides(options):
-    return [1, options["StrideH"], options["StrideW"], 1]
-
-
-def get_padding(options):
-
-    return ClassCodeToName(GetTFLiteClass("Padding"), options["Padding"])
-
-
-def get_filter(options):
-    # Pool Size
-    return [options["StrideH"], options["StrideW"]]
-
-
-def get_input_tensor_shape(io):
-    return io[0][0][0]
-
-
-def get_kernel_shape(io):
-    return io[0][1][0][1:]
-
-
-def get_output_tensor_shape(io):
-    return io[1][0]
-
-
-def get_activation_function(options):
-    return ClassCodeToName(
-        GetTFLiteClass("ActivationFunctionType"),
-        options["FusedActivationFunction"],
-    )
-
-
-def get_num_dims(options):
-    return options["KeepNumDims"]
-
-
-def get_weights_format(options):
-    return options["WeightsFormat"]
-
-
-def get_activation_id(activ_func):
-
-    options_dict = {"RELU": "relu", "SOFTMAX": "softmax", "DROPOUT": None}
-
-    default = None
-    return options_dict.get(activ_func, default)
-
-
-def process_CONV_2D(operator_name, out_dir, options, input_tensors, output_tensors):
-    """Processes the overloaded arguments to recreate the wished Conv 2D model."""
-    import numpy as np
-    from utils import tflite_conversion, save_session
-
-    # The input tensors for a Conv2D layer are as follows:
-    # [0] : The input shape to the Conv2D layer
-    # [1] : The filter shape, ie. no of filters x kernel width x kernel height x kernel depth
-    # [2] : The number of filters
-
-    # Retrieving operation relevant variables.
-    filter_count = input_tensors[2][0][0]
-
-    input_shape = get_input_tensor_shape(io_tensors)
-    test_input = np.array(np.random.random_sample(input_shape))
-
-    kernel_shape = get_kernel_shape(io_tensors)
-
-    padding = get_padding(options)
-    strides = get_strides(options)
-    activ_func = get_activation_function(options)
-
-    conv_graph = tf.Graph()
-    with conv_graph.as_default(), tf.compat.v1.Session() as sess:
-
-        kernel_place = tf.Variable(
-            tf.random.normal([3, 3, 1, filter_count], dtype="float32"), dtype=tf.float32
-        )
-
-        input_place = tf.raw_ops.Placeholder(
-            dtype=tf.float32, shape=input_shape, name=operator_name + "_input"
-        )
-
-        conv_2d = tf.nn.conv2d(
-            input_place,
-            filters=kernel_place,
-            strides=strides,
-            padding=padding,
-            name=operator_name + "_op",
-        )
-
-        init = tf.compat.v1.global_variables_initializer()
-        sess.run(init)
-
-        output_place = tf.identity(conv_2d, name=operator_name + "_output")
-        output_place = sess.run(conv_2d, feed_dict={input_place: test_input})
-
-        tmp_model_saved_dir = save_session(
-            sess, operator_name, conv_2d, out_dir, input_place
-        )
-
-    tflite_conversion(out_dir, tmp_model_saved_dir, operator_name, input_place)
-
-
-def process_MAX_POOL_2D(options, io):
-    """Processes the overloaded arguments to recreate the wished Max Pool 2D model."""
-    import numpy as np
-    from utils import tflite_conversion, save_session
-
-    op_name = "MAX_POOL_2D"
-    pool_dir = f"{MODELS_FOLDER}{op_name}/"
-
-    pool_size = get_filter(options)
-    padding = get_padding(options)
-    strides = get_strides(options)
-    activ_func = get_activation_function(options)
-
-    input_shape = get_input_tensor_shape(io)
-    test_input = np.array(np.random.random_sample(input_shape))
-
-    pool_2d = tf.Graph()
-
-    with pool_2d.as_default(), tf.compat.v1.Session() as sess:
-
-        input_place = tf.raw_ops.Placeholder(
-            dtype=tf.float32, shape=input_shape, name=op_name + "_input"
-        )
-
-        pool_2d = tf.nn.max_pool2d(
-            input_place, 2, strides, padding, data_format="NHWC", name=op_name + "_op"
-        )
-
-        init = tf.compat.v1.global_variables_initializer()
-        sess.run(init)
-
-        output_place = tf.identity(pool_2d, name=op_name + "_output")
-        output_place = sess.run(pool_2d, feed_dict={input_place: test_input})
-
-        tmp_model_saved_dir = save_session(
-            sess, op_name, pool_2d, pool_dir, input_place
-        )
-
-    tflite_conversion(pool_dir, tmp_model_saved_dir, op_name, input_place)
-
-
-def process_RESHAPE(options, io):
-    """Processes the overloaded arguments to recreate the wished Reshape model."""
-    import numpy as np
-    from utils import tflite_conversion, save_session
-
-    op_name = "RESHAPE"
-    reshape_dir = f"{MODELS_FOLDER}{op_name}/"
-
-    input_shape = get_input_tensor_shape(io)
-    test_input = np.array(np.random.random_sample(input_shape), dtype=np.int32)
-
-    output_shape = get_output_tensor_shape(io)
-
-    reshape_graph = tf.Graph()
-    with reshape_graph.as_default(), tf.compat.v1.Session() as sess:
-
-        input_place = tf.raw_ops.Placeholder(
-            dtype=tf.int32, shape=input_shape, name=op_name + "_input"
-        )
-
-        init = tf.compat.v1.global_variables_initializer()
-        sess.run(init)
-
-        reshape = tf.reshape(
-            input_place, (output_shape[0][0], output_shape[0][1]), name=op_name + "_op"
-        )
-
-        output_place = tf.identity(reshape, name=op_name + "_output")
-        output_place = sess.run(reshape, feed_dict={input_place: test_input})
-
-        tmp_model_saved_dir = save_session(
-            sess, op_name, reshape, reshape_dir, input_place
-        )
-
-    tflite_conversion(reshape_dir, tmp_model_saved_dir, op_name, input_place)
-
-
-def process_FULLY_CONNECTED(options, io):
-    """Processes the overloaded arguments to recreate the wished FC model."""
-    import numpy as np
-    from utils import tflite_conversion, save_session
-
-    activ_func = get_activation_function(options)
-    activ_func = get_activation_id(activ_func)
-
-    op_name = "FULLY_CONNECTED_" + activ_func if activ_func else "FULLY_CONNECTED"
-    fcl_dir = f"{MODELS_FOLDER}{op_name}/"
-
-    input_shape = get_input_tensor_shape(io)
-    test_input = np.array(np.random.random_sample(input_shape))
-
-    output_shape = get_output_tensor_shape(io)
-    units = output_shape[0][1]
-
-    weights_format = get_weights_format(options)
-
-    keep_num_dim = get_num_dims(options)
-
-    fully_connected_graph = tf.Graph()
-
-    with fully_connected_graph.as_default(), tf.compat.v1.Session() as sess:
-
-        input_place = tf.raw_ops.Placeholder(
-            dtype=tf.float32, shape=input_shape, name=op_name + "_input"
-        )
-
-        fcl = tf.compat.v1.layers.dense(
-            input_place, units, activ_func, use_bias=keep_num_dim, name=op_name + "_op"
-        )
-
-        init = tf.compat.v1.global_variables_initializer()
-        sess.run(init)
-
-        output_place = tf.identity(fcl, name=op_name + "_output")
-        output_place = sess.run(fcl, feed_dict={input_place: test_input})
-
-        tmp_model_saved_dir = save_session(sess, op_name, fcl, fcl_dir, input_place)
-
-    tflite_conversion(fcl_dir, tmp_model_saved_dir, op_name, input_place)
-
-
-def process_SOFTMAX(options, io):
-    """Processes the overloaded arguments to recreate the wished softmax model."""
-    import numpy as np
-    from utils import tflite_conversion, save_session
-
-    op_name = "SOFTMAX"
-    softmx_dir = f"{MODELS_FOLDER}{op_name}/"
-
-    input_shape = get_input_tensor_shape(io)
-    test_input = np.array(np.random.random_sample(input_shape))
-
-    output_shape = get_output_tensor_shape(io)
-    units = output_shape[0][1]
-
-    softmx_graph = tf.Graph()
-    with softmx_graph.as_default(), tf.compat.v1.Session() as sess:
-
-        input_place = tf.raw_ops.Placeholder(
-            dtype=tf.float32, shape=input_shape, name=op_name + "_input"
-        )
-
-        Soft = tf.nn.softmax(input_place, None, op_name + "_op")
-
-        init = tf.compat.v1.global_variables_initializer()
-        sess.run(init)
-
-        output_place = tf.identity(Soft, name=op_name + "_output")
-        output_place = sess.run(Soft, feed_dict={input_place: test_input})
-
-        tmp_model_saved_dir = save_session(sess, op_name, Soft, softmx_dir, input_place)
-
-    tflite_conversion(softmx_dir, tmp_model_saved_dir, op_name, input_place)
 
 
 def print_options(options):
@@ -338,7 +77,18 @@ def _ProcessTensorID(id, graph):
 
 
 def ProcessIO(operator, graph):
-    """Processes the overloaded arguments to recreate the wished operation's model."""
+
+    """Returns a tuple of lists containing the input and output tensors, resolved into Numpy arrays
+    :type operator: tflite.Operator.Operator
+    :param operator: Operator who's input and output tensors should be retrieved
+
+    :type graph: tflite.SubGraph.SubGraph
+    :param graph: Graph from which the operator should be retrieved
+
+    :raises:
+
+    :rtype: tuple
+    """
     input_tensor_count, output_tensor_count = GetOperatorInputOutputLengths(operator)
     inputs, outputs = [], []
     for i in range(input_tensor_count):
@@ -350,9 +100,29 @@ def ProcessIO(operator, graph):
 
 
 def ProcessLayer(layer_name, options, input_tensors, output_tensors) -> None:
+    import tflite_helper.process_layers as pl
 
+    """ Calls the appropriate 'process_$LAYER_NAME' function
+    :type layer_name: str
+    :param layer_name: Name of the layer to be processed, eg. CONV_2D
+
+    :type options: Class containing the layers options
+    :param options: Options class for the layer of interest
+
+    :type input_tensors: array
+    :param input_tensors: Array of all the input tensors
+
+    :type output_tensors: array
+    :param output_tensors: Array of all the output tensors
+
+    :raises:
+
+    :rtype: None
+    """
     out_dir = f"{MODELS_FOLDER}{layer_name}/"
-    eval("process_" + layer_name)(layer_name, out_dir, options, input_tensors, output_tensors)
+    eval("pl.process_" + layer_name)(
+        layer_name, out_dir, options, input_tensors, output_tensors
+    )
 
 
 def ProcessOperation(model, graph, operator) -> None:
@@ -396,7 +166,7 @@ def ProcessOperation(model, graph, operator) -> None:
     ProcessLayer(operator_name, operator_options, input_tensors, output_tensors)
 
 
-def split_tflite_model(model) -> None:
+def SplitTFLiteModel(model) -> None:
 
     """Splits/Processes the given as input tflite model into its individual operations.
 
@@ -409,11 +179,11 @@ def split_tflite_model(model) -> None:
         model = GetTFLiteClass("Model").GetRootAsModel(f.read(), 0)
         graph = model.Subgraphs(0)
 
-        for op in [graph.Operators(i) for i in range(graph.OperatorsLength())]:
-            ProcessOperation(model, graph, op)
+        for operator in [graph.Operators(i) for i in range(graph.OperatorsLength())]:
+            ProcessOperation(model, graph, operator)
 
 
-def args() -> argparse.Namespace:
+def GetArgs() -> argparse.Namespace:
 
     """Argument parser, returns the Namespace containing all of the arguments.
     :raises: None
@@ -444,7 +214,7 @@ def args() -> argparse.Namespace:
     return args
 
 
-def import_tflite_modules() -> None:
+def ImportTFLiteModules() -> None:
 
     """The automatically generated schema helper modules, generated by the flatc flatbuffer compiler,
     need to be imported. As they sit together in the `tflite` folder one must import all modules found
@@ -492,17 +262,25 @@ if __name__ == "__main__":
         With count it is set the number of deployments done.
     """
 
-    # from docker import remove_project
-    # from deploy import tflite_deployment
-    # from cmpile import tflite_compilation
-    # from analyze import tflite_results_analysis
+    from docker import CleanUpProject
+    from deploy import DeloyModels
+    from compile import CompileTFLiteModelsForCoral
+    from analyze import AnalyzeModelResults
 
-    args = args()
-    import_tflite_modules()
+    GetArgs = GetArgs()
+    # Imports modules found in the tflite folder, generated from the fattbuffer compiler
+    ImportTFLiteModules()
 
-    split_tflite_model(model=args.model)
+    # Create single operation models from the operations in the provided model
+    SplitTFLiteModel(model=GetArgs.model)
 
-    tflite_compilation()
-    tflite_deployment("models/compiled/", "models/layers/", count=args.count)
-    tflite_results_analysis()
-    remove_project()
+    # Compiles created models into Coral models for execution
+    CompileTFLiteModelsForCoral()
+
+    # Deploy the generated models onto the target test hardware using docker
+    DeloyModels("models/compiled/", "models/layers/", count=GetArgs.count)
+
+    # Process results
+    AnalyzeModelResults()
+
+    CleanUpProject()
