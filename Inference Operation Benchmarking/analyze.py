@@ -1,3 +1,5 @@
+import argparse
+
 results_folder = "results/"
 
 class Operation:
@@ -165,11 +167,23 @@ def store_op_info(op_classes):
 
 
 def init_op_classes(models_folder):
+
+    """ Description
+    :type models_folder:
+    :param models_folder:
+
+    :raises:
+
+    :rtype:
+    """
     import os
     from os import listdir
-    from os.path import isfile,isdir,join
+    from os.path import isdir
 
     op_classes = []
+
+    if not os.path.exists(models_folder):
+        os.makedirs(models_folder)
 
     for f in listdir(models_folder):
         f_path = models_folder + f
@@ -201,9 +215,13 @@ def AnalyzeModelResults():
     retreive_stat_info_op(edge_op_classes)
     log_pdfs(edge_op_classes)
 
-if __name__ == '__main__':
-    import argparse
+def GetArgs() -> argparse.Namespace:
 
+    """ Description
+    :raises:
+
+    :rtype:
+    """
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('-d', '--delegate', required=False, 
@@ -215,6 +233,13 @@ if __name__ == '__main__':
                         help='Plot all hardware analysis.')
 
     args = parser.parse_args()
+
+    return args
+    
+if __name__ == '__main__':
+
+
+    args = GetArgs()
 
     if (args.mode == "Group"):
         cpu_op_classes = init_op_classes(results_folder + "cpu/")

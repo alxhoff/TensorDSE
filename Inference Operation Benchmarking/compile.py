@@ -1,8 +1,4 @@
-def retrieve_converted_operations():
-    import os
-    from docker import CONVERTED_MODELS_DIR
-    from os import listdir
-    from os.path import isfile, isdir, join, exists
+def GetOperationsAndPaths():
 
     """From the folder containing all converted-to-tflite models retreives the paths
     to these files and also the corresponding operation names.
@@ -18,20 +14,25 @@ def retrieve_converted_operations():
     path_ops : array of strings
     Containing the paths to these converted tflite models directories.
     """
+    import os
+    from docker import CONVERTED_MODELS_DIR
+    from os import listdir
+    from os.path import isdir, join
 
-    ops = []
-    path_ops = []
+    operations = []
+    operation_paths = []
 
     for d in listdir(CONVERTED_MODELS_DIR):
         if isdir(join(CONVERTED_MODELS_DIR, d)):
             path_to_dir = join(CONVERTED_MODELS_DIR, d)
-            path_ops.append(path_to_dir)
-            ops.append(d)
+            operation_paths.append(path_to_dir)
+            operations.append(d)
 
-    return ops, path_ops
+    return operations, operation_paths
 
 
-def retrieve_quantized_tflites(ops, path_ops):
+def GetModelCopyPaths(ops, path_ops):
+
     """Retreives the path to the quantized tflite models on host and their
     future paths on the docker to be used for copying and compilation.
 
@@ -85,7 +86,8 @@ def retrieve_quantized_tflites(ops, path_ops):
     return quant_sources, quant_targets
 
 
-def compile_quantized_files_on_dckr(quant_targets):
+def DockersCompileQuantizedModels(quant_targets):
+
     """Compiles the quantized tflite models onto the docker.
 
     Loops through the array of paths to the existent quantized tflite files and
@@ -97,40 +99,42 @@ def compile_quantized_files_on_dckr(quant_targets):
     Array of strings containing the paths to each quantized tflite model located
     on the Docker.
     """
-    from docker import docker_exec
+    from docker import DockerExec
 
     for q in quant_targets:
-        docker_exec("edge_compile", q)
+        DockerExec("edge_compile", q)
 
 
-def create_folders_dckr():
+def DockerCreateCompilationDirs():
+
     """Creates folders necessary for the compilation of the quantized tflite
     models.
 
     Creates a 'quant' and a 'comp' folder onto the $HOME path of the used
     docker.
     """
-    from docker import docker_exec
+    from docker import DockerExec
 
-    docker_exec("mkdir", "quant")
-    docker_exec("mkdir", "comp")
+    DockerExec("mkdir", "quant")
+    DockerExec("mkdir", "comp")
 
 
 def single_tflite_compilation(target, target_filename):
     """"""
     from docker import HOME
     from docker import TO_DOCKER, FROM_DOCKER
-    from docker import docker_exec, docker_copy
+    from docker import DockerExec, DockerCopyFileToDocker
 
     docker_compiled_file = f"{HOME}comp/{target_filename}"
     docker_copied_file = f"{HOME}{target_filename}"
 
-    docker_copy(target, TO_DOCKER)
-    docker_exec("edgetpu_compiler", docker_copied_file)
-    docker_copy(docker_compiled_file, FROM_DOCKER, "models/compiled/")
+    DockerCopyFileToDocker(target, TO_DOCKER)
+    DockerExec("edgetpu_compiler", docker_copied_file)
+    DockerCopyFileToDocker(docker_compiled_file, FROM_DOCKER, "models/compiled/")
 
 
 def CompileTFLiteModelsForCoral():
+
     """Manager function responsible for preping and executing the compilation
     of the quantized tflite models.
 
@@ -138,21 +142,22 @@ def CompileTFLiteModelsForCoral():
     tflite models, creates necessary folders on the docker, copies quantized
     tflite models from host to docker, compiles them and copies them back.
     """
-    from docker import docker_start
-    from docker import copy_quantized_files_to_dckr, copy_compiled_files_from_dckr
+    from docker import DockerStart
+    from docker import DockerCopyQuanModelsToDocker, DockerCopyCompiledModelsFromDocker
 
-    docker_start()
+    DockerStart()
 
-    ops, path_ops = retrieve_converted_operations()
-    quant_sources, quant_targets = retrieve_quantized_tflites(ops, path_ops)
+    operations, operation_paths = GetOperationsAndPaths()
+    quant_sources, quant_targets = GetModelCopyPaths(operations, operation_paths)
 
-    create_folders_dckr()
-    copy_quantized_files_to_dckr(quant_sources)
-    compile_quantized_files_on_dckr(quant_targets)
-    copy_compiled_files_from_dckr()
+    DockerCreateCompilationDirs()
+    DockerCopyQuanModelsToDocker(quant_sources)
+    DockersCompileQuantizedModels(quant_targets)
+    DockerCopyCompiledModelsFromDocker()
 
 
 if __name__ == "__main__":
+
     """Entry point to execute this script.
 
     Flags

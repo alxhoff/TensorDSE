@@ -3,11 +3,11 @@ TO_DOCKER = 1
 FROM_DOCKER = 0
 
 HOME = "/home/deb/"
-DOCKER = "debian-docker"
 LOCATION = "quant"
 
 
-def docker_start():
+def DockerStart(docker="debian-docker"):
+    
     """Starts docker."""
     import logging
     import os
@@ -16,11 +16,11 @@ def docker_start():
     logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
     log.info("Starting docker...")
-    docker_start_cmd = f"docker start {DOCKER} > /dev/null"
+    docker_start_cmd = f"docker start {docker} > /dev/null"
     os.system(docker_start_cmd)
 
 
-def docker_exec(cmd_type, objct="", count=1):
+def DockerExec(cmd_type, objct="", count=1, docker="debian-docker"):
     """Executes a command onto the docker.
 
     Is somewhat the center of docker.py, since compiling and deploying tflite
@@ -71,7 +71,7 @@ def docker_exec(cmd_type, objct="", count=1):
     # Listing relevant command strings.
     mkdir_prefix = f"[ -d {HOME}{objct} ] || "
     rm_prefix = f"[ -d {HOME}{objct} ] && "
-    docker_exec_prefix = f"docker exec -it {DOCKER} sh -c "
+    docker_exec_prefix = f"docker exec -it {docker} sh -c "
     edge_compiler_suffix = f"{objct} -o {HOME}/comp"
 
     cd_deploy_dir = f"cd {HOME}TensorDSE/benchmarking/usb_analysis/"
@@ -125,7 +125,7 @@ def docker_exec(cmd_type, objct="", count=1):
         os.system(docker_exec_cmd)
 
 
-def docker_copy(File, direction_flag, Location=""):
+def DockerCopyFileToDocker(file, direction_flag, Location="", docker="debian-docker"):
     """Copys files/folders to and from the docker.
 
     Is necessary since the docker script's functions may be called from
@@ -133,7 +133,7 @@ def docker_copy(File, direction_flag, Location=""):
 
     Parameters
     ---------
-    File : String
+    file : String
     File or Folder path.
 
     direction_flag : Integer (0 or 1)
@@ -150,17 +150,17 @@ def docker_copy(File, direction_flag, Location=""):
     log = logging.getLogger(__name__)
     logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
-    log.info(f"Docker-Copying file {File} onto Location: {Location}...")
+    log.info(f"Docker-Copying file {file} onto Location: {Location}...")
 
     if direction_flag:
-        docker_copy_cmd = f"docker cp {File} {DOCKER}:{HOME}{Location}"
+        docker_copy_cmd = f"docker cp {file} {docker}:{HOME}{Location}"
     else:
-        docker_copy_cmd = f"docker cp {DOCKER}:{File} {os.getcwd()}/{Location}"
+        docker_copy_cmd = f"docker cp {docker}:{file} {os.getcwd()}/{Location}"
 
     os.system(docker_copy_cmd)
 
 
-def copy_quantized_files_to_dckr(quant_sources):
+def DockerCopyQuanModelsToDocker(quant_sources):
     """Copys quantized tflite models/files to the docker.
 
     This is done as a pre-step to compiling these quantized files onto the
@@ -173,14 +173,14 @@ def copy_quantized_files_to_dckr(quant_sources):
     [ path_to_quantized_tflite_file_1, path_to_quantized_tflite_file_2, .. ]
     """
     for q in quant_sources:
-        docker_copy(q, TO_DOCKER, Location=LOCATION + "/")
+        DockerCopyFileToDocker(q, TO_DOCKER, Location=LOCATION + "/")
 
 
-def copy_compiled_files_from_dckr():
+def DockerCopyCompiledModelsFromDocker():
     """Copys edge compiled tflite models/files from docker to the host."""
     import os
 
-    docker_copy(HOME + "/comp", FROM_DOCKER, Location="models/compiled/")
+    DockerCopyFileToDocker(HOME + "/comp", FROM_DOCKER, Location="models/compiled/")
     os.system("cp models/compiled/comp/*edgetpu.tflite models/compiled/")
     os.system("rm -r models/compiled/comp/")
 
@@ -191,9 +191,9 @@ def copy_project():
     from utils import retrieve_folder_path
 
     path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
-    docker_copy(path_to_tensorDSE, TO_DOCKER)
+    DockerCopyFileToDocker(path_to_tensorDSE, TO_DOCKER)
 
 
 def CleanUpProject():
     """Removes project from docker."""
-    docker_exec("remove", "TensorDSE")
+    DockerExec("remove", "TensorDSE")

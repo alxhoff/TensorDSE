@@ -229,7 +229,7 @@ def DeloyModels(quant_folder, tflite_folder, count=1000):
     """
     import os
     import utils
-    from docker import docker_copy, docker_exec
+    from docker import DockerCopyFileToDocker, DockerExec
     from docker import TO_DOCKER, FROM_DOCKER, HOME
 
     path_to_tensorDSE = utils.retrieve_folder_path(os.getcwd(), "TensorDSE")
@@ -237,13 +237,13 @@ def DeloyModels(quant_folder, tflite_folder, count=1000):
 
     path_to_results = "results/"
 
-    docker_copy(path_to_tensorDSE, TO_DOCKER)
+    DockerCopyFileToDocker(path_to_tensorDSE, TO_DOCKER)
 
-    docker_exec("edge_deploy", quant_folder, count)
-    docker_copy(path_to_docker_results + "edge/", FROM_DOCKER, path_to_results)
+    DockerExec("edge_deploy", quant_folder, count)
+    DockerCopyFileToDocker(path_to_docker_results + "edge/", FROM_DOCKER, path_to_results)
 
-    docker_exec("cpu_deploy", tflite_folder, count)
-    docker_copy(path_to_docker_results + "cpu/", FROM_DOCKER, path_to_results)
+    DockerExec("cpu_deploy", tflite_folder, count)
+    DockerCopyFileToDocker(path_to_docker_results + "cpu/", FROM_DOCKER, path_to_results)
 
 
 if __name__ == "__main__":
@@ -332,48 +332,48 @@ if __name__ == "__main__":
         import os
         from utils import retrieve_folder_path
         from utils import deduce_operation_from_file, extend_directory
-        from docker import docker_exec, docker_copy, HOME, TO_DOCKER, FROM_DOCKER
+        from docker import DockerExec, DockerCopyFileToDocker, HOME, TO_DOCKER, FROM_DOCKER
 
         path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
         path_to_docker_results = HOME + "TensorDSE/benchmarking/usb_analysis/results/"
 
-        docker_copy(path_to_tensorDSE, TO_DOCKER)
+        DockerCopyFileToDocker(path_to_tensorDSE, TO_DOCKER)
         op = args.target.split("/")[args.target.count("/")]
         if args.delegate == "cpu":
             op = deduce_operation_from_file(op, ending=".tflite")
             extend_directory("results/cpu/", f"{op}")
             path_to_results = f"results/cpu/{op}/"
-            docker_exec("cpu_single_deploy", args.target, args.count)
-            docker_copy(
+            DockerExec("cpu_single_deploy", args.target, args.count)
+            DockerCopyFileToDocker(
                 f"{path_to_docker_results}cpu/{op}/Results.csv",
                 FROM_DOCKER,
                 path_to_results,
             )
-            docker_exec("remove", "TensorDSE")
+            DockerExec("remove", "TensorDSE")
         else:
             op = deduce_operation_from_file(op, beginning="quant_", ending="_edgetpu")
             extend_directory("results/edge/", f"{op}")
             path_to_results = f"results/edge/{op}/"
-            docker_exec("edge_single_deploy", args.target, args.count)
-            docker_copy(
+            DockerExec("edge_single_deploy", args.target, args.count)
+            DockerCopyFileToDocker(
                 f"{path_to_docker_results}edge/{op}/Results.csv",
                 FROM_DOCKER,
                 path_to_results,
             )
-            docker_exec("remove", "TensorDSE")
+            DockerExec("remove", "TensorDSE")
 
     elif args.mode == "Debug":
         import os
         from utils import deduce_operations_from_folder, retrieve_folder_path
-        from docker import docker_start, docker_exec, docker_copy, TO_DOCKER
+        from docker import DockerStart, docker_exec, docker_copy, TO_DOCKER
 
-        docker_start()
+        DockerStart()
         models_info = deduce_operations_from_folder(
             args.folder, beginning="quant_", ending="_edgetpu.tflite"
         )
 
         path_to_tensorDSE = retrieve_folder_path(os.getcwd(), "TensorDSE")
-        docker_copy(path_to_tensorDSE, TO_DOCKER)
+        DockerCopyFileToDocker(path_to_tensorDSE, TO_DOCKER)
 
         for m_i in models_info:
             inp = input(f"Operation {m_i[1]}, Continue to Next? ")
@@ -385,12 +385,12 @@ if __name__ == "__main__":
                 inp = "NONE"
                 while inp != "" and inp != "c":
                     if args.delegate == "cpu":
-                        docker_exec("cpu_single_deploy", m_i[0], args.count)
+                        DockerExec("cpu_single_deploy", m_i[0], args.count)
                     else:
-                        docker_exec("edge_single_deploy", m_i[0], args.count)
+                        DockerExec("edge_single_deploy", m_i[0], args.count)
                     inp = input("Continue: ")
 
-        docker_exec("remove", "TensorDSE")
+        DockerExec("remove", "TensorDSE")
 
     else:
         print("INVALID delegate input.")
