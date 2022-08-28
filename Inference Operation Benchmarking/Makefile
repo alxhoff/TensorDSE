@@ -1,57 +1,80 @@
 SHELL := /bin/bash
 FILE := $(lastword $(MAKEFILE_LIST))
 
-TAG := foobar-template
-REPO := foobar-ubuntu-20.04
-NAME := foobar-example
-REGEX := foobar-example
-DISPLAY := ${DISPLAY}
-XAUTH := ${HOME}/.Xauthority
+TAG := coral-docker
+REPO := coral-ubuntu-20.04
+NAME := coral-environment
+REGEX := coral
+
+VOLUME := $(shell pwd)
+DEBUG := 0
 
 exist-docker-image = $(shell docker image ls | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
-exist-docker-running = $(shell docker ps -a | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
-ip-address = $(shell hostname -i | cut -d ' ' -f1)
+is-docker-running = $(shell docker ps -a | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
+filter-docker = $(shell docker images --filter=reference="*${REGEX}*" -q)
 
-all:
+all: build
 
-.PHONY: build
+info:
+	@printf "%s\n" "DOCKER IMAGES:"
+	@docker image ls
+	@printf "\n"
+	@printf "%s\n" "RUNNING DOCKERS:"
+	@docker ps -a
+
 build:
-	@echo "## Building Docker ##"
+	@$(info "Grab a coffee, building will take some time...")
+	@sleep 1s
 	@docker build . -t ${TAG}:${REPO}
 
-.PHONY: run
 run: $(if $(call exist-docker-image),,build)
-	@echo "## Running Docker ##"
-	@if [ -n "$(call exist-docker-running)" ]; then \
+	@if [ -n "$(call is-docker-running)" ]; then \
 		echo "Docker already exists, run make clean to run new docker instance"; \
 	else \
-		if ! [ -e ${XAUTH} ]; then \
-			touch ${XAUTH}; \
-		fi; \
 		docker run --name ${NAME} \
 				   --rm \
-				   --network=host \
-				   -e DISPLAY=${DISPLAY} \
-				   -v ${XAUTH}:/root/.Xauthority \
+				   --privileged \
+				   --env DEBUG=${DEBUG} \
+				   -v /dev/bus/usb:/dev/bus/usb \
+				   -v "${VOLUME}":/home/tensorDSE \
 				   --detach-keys="ctrl-@" \
 				   -it ${TAG}:${REPO}; \
 	fi
-	@ # docker option -p 8080:8080  is not needed when using host network
 
-.PHONY: clean
-clean:
-	@echo "## Removing Docker ##"
-	@if [ -n "$(call exist-docker-running)" ]; then \
+stop:
+	@if [ -n "$(call is-docker-running)" ]; then \
 		docker rm ${NAME}; \
 	fi
 
-.PHONY: clean-img
-clean-img:
-	@echo "## Removing Docker Image ##"
+rm:
 	@if [ -n "$(call exist-docker-image)" ]; then \
 		docker rmi $(shell docker images --filter=reference="*${REGEX}*" -q); \
 	fi
 
-.PHONY: reset
-reset: clean clean-img
-	@echo "## Finished Resetting Docker Environment ##"
+# for debugging purposes only
+stop-all:
+	@docker ps -a | \
+	awk '{print $$1}'| \
+	tail -n+2 | \
+	xargs -I % docker rm %
+
+# for debugging purposes only
+rm-all:
+	@docker images | \
+	tail -n+2 | \
+	grep none | \
+	awk '{print $$3}' | \
+	xargs -I % docker rmi %
+
+clean: stop rm
+
+clean-all: stop-all rm-all clean
+
+.PHONY: info \
+		build \
+		run \
+		stop \
+		rm \
+		stop-all \
+		rm-all \
+		clean-all
