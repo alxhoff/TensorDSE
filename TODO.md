@@ -11,11 +11,22 @@
   - [ ] implement feature
   - [ ] test it out on remote machine
 
+### Questions :question:
+1. Currently the python packages installed are `tensorflow`, `pyshark` and `pycoral`, maybe look at a way
+   to read in the requirements within a file automagically and pass it to the `Dockerfile` as it is being
+   built. But seems to be enough for now.
+
 ## USB Analysis
 * [ ] Remove docker code, bring changes (Dockerfile, Makefile) from `Benchmarking` over
 
 - [ ] Reevaluate USB logic, reassure correctness
   - [ ] change output to `JSON`
+
+### Questions :question:
+1. Should usb analysis be just a module callable from within `Benchmarking`?
+  - That way, docker workflow is the same for everything python related
+  - Maybe consider the same for Ala's OP splitting
+
 
 ## Integration of python parts
 - [ ] Just do it
