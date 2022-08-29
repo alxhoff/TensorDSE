@@ -14,7 +14,7 @@ RUN apt-get update \
     && apt-get install -y \
     build-essential sudo locales wget curl gnupg \
     python3 python3-pip \
-    git neovim nano \
+    git vim nano \
     && apt-get clean \
     && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen && update-locale
 
@@ -26,7 +26,7 @@ RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
     | sudo apt-key add -
 
 RUN sudo apt-get update
-RUN sudo apt-get install -y libedgetpu1-std
+RUN sudo apt-get install -y libedgetpu1-std edgetpu-compiler
 
 # Python
 RUN pip3 install pyshark tensorflow
@@ -43,9 +43,6 @@ ENV LC_ALL en_US.UTF-8
 ENV DEBUG 0
 
 # Work
-# COPY entry.sh /home/entry.sh
-# RUN chmod +x /home/entry.sh
-
 RUN mkdir /home/tensorDSE
 WORKDIR /home/tensorDSE
 ENTRYPOINT [ "/home/tensorDSE/entry.sh" ]
