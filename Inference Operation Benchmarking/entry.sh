@@ -24,9 +24,12 @@ coral_hello_world() {
 }
 
 main() {
-    coral_hello_world
     printf "DEBUG VALUE: %s\n" "${DEBUG}"
-    # bash
+    if [ "$DEBUG" -eq 1 ]; then
+        bash
+    else
+        coral_hello_world
+    fi
 }
 
 main "$@"

@@ -41,6 +41,9 @@ run: $(if $(call exist-docker-image),,build)
 				   -it ${TAG}:${REPO}; \
 	fi
 
+debug:
+	$(MAKE) -f ${FILE} run DEBUG=1
+
 stop:
 	@if [ -n "$(call is-docker-running)" ]; then \
 		docker rm ${NAME}; \
