@@ -26,7 +26,7 @@ coral_hello_world() {
 main() {
     printf "DEBUG VALUE: %s\n" "${DEBUG}"
     if [ "$DEBUG" -eq 1 ]; then
-        bash
+        ipbd3 main.py
     else
         coral_hello_world
     fi

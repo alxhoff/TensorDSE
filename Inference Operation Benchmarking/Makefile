@@ -69,9 +69,24 @@ rm-all:
 	awk '{print $$3}' | \
 	xargs -I % docker rmi %
 
-clean: stop rm
 
-clean-all: stop-all rm-all clean
+clean:
+	mv models/layers/.gitignore tmp
+	sudo rm -rvf models/layers/*
+	mv tmp models/layers/.gitignore
+	touch models/layers/.gitkeep
+	sudo rm -rvf models/compiled/*
+	touch models/compiled/.gitkeep
+	sudo rm -rvf results/cpu/*
+	sudo rm -rvf results/gpu/*
+	sudo rm -rvf results/tpu/*
+	touch results/cpu/.gitkeep
+	touch results/gpu/.gitkeep
+	touch results/tpu/.gitkeep
+
+purge: stop rm
+
+purge-all: stop-all rm-all purge
 
 .PHONY: info \
 		build \
@@ -80,4 +95,6 @@ clean-all: stop-all rm-all clean
 		rm \
 		stop-all \
 		rm-all \
-		clean-all
+		purge \
+		purge-all \
+		clean

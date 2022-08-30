@@ -29,6 +29,7 @@ RUN sudo apt-get update
 RUN sudo apt-get install -y libedgetpu1-std edgetpu-compiler
 
 # Python
+# Pillow?
 RUN pip3 install pyshark tensorflow
 RUN pip3 install --upgrade pip
 RUN sudo apt-get install -y python3-pycoral python3-ipdb
@@ -45,4 +46,4 @@ ENV DEBUG 0
 # Work
 RUN mkdir /home/tensorDSE
 WORKDIR /home/tensorDSE
-ENTRYPOINT [ "/home/tensorDSE/entry.sh" ]
+ENTRYPOINT [ "/home/tensorDSE/scripts/entry.sh" ]
