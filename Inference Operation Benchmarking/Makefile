@@ -71,18 +71,18 @@ rm-all:
 
 
 clean:
-	mv models/layers/.gitignore tmp
-	sudo rm -rvf models/layers/*
-	mv tmp models/layers/.gitignore
-	touch models/layers/.gitkeep
-	sudo rm -rvf models/compiled/*
-	touch models/compiled/.gitkeep
-	sudo rm -rvf results/cpu/*
-	sudo rm -rvf results/gpu/*
-	sudo rm -rvf results/tpu/*
-	touch results/cpu/.gitkeep
-	touch results/gpu/.gitkeep
-	touch results/tpu/.gitkeep
+	@mv models/layers/.gitignore tmp
+	@sudo rm -rvf models/layers/*
+	@mv tmp models/layers/.gitignore
+	@touch models/layers/.gitkeep
+	@sudo rm -rvf models/compiled/*
+	@touch models/compiled/.gitkeep
+	@sudo rm -rvf results/cpu/*
+	@sudo rm -rvf results/gpu/*
+	@sudo rm -rvf results/tpu/*
+	@touch results/cpu/.gitkeep
+	@touch results/gpu/.gitkeep
+	@touch results/tpu/.gitkeep
 
 purge: stop rm
 
