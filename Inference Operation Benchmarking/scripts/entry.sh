@@ -28,10 +28,14 @@ run() {
                     -c 1000
 }
 
+debug() {
+    ipdb3 main.py -m models/source/MNIST.tflite \
+                  -c 1000
+}
+
 main() {
-    printf "DEBUG VALUE: %s\n" "${DEBUG}"
     if [ "$DEBUG" -eq 1 ]; then
-        ipbd3 main.py
+        debug
     else
         # coral_hello_world
         run
