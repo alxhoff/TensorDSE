@@ -1,8 +1,13 @@
 import argparse
 import logging
+import tensorflow
 
 log = logging.getLogger(__name__)
-logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO, filename="debug.log")
+logging.basicConfig(format="%(levelname)s:%(message)s",
+                    level=logging.INFO,
+                    force = True,
+                    filemode='w',
+                    filename="debug.log")
 
 MODELS_FOLDER = "models/source/"
 LAYERS_FOLDER = "models/layers/"
