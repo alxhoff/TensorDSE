@@ -4,7 +4,6 @@ import logging
 log = logging.getLogger(__name__)
 logging.basicConfig(format="%(levelname)s:%(message)s",
                     level=logging.INFO,
-                    force = True,
                     filemode='w',
                     filename="debug.log")
 
@@ -12,11 +11,22 @@ MODELS_FOLDER = "models/source/"
 LAYERS_FOLDER = "models/layers/"
 COMPILED_MODELS_FOLDER = "models/compiled/"
 
+def DisableTFlogging() -> None:
+    """Disable the most annoying logging known to mankind
+    """
+    import os
+
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    os.environ['KMP_WARNINGS'] = '0'
+
+    import tensorflow as tf
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
+
 def BenchmarkModel(model:str, count:int):
     from deploy import DeployModels
     from convert import ImportTFLiteModules, SplitTFLiteModel
     from compile import CompileTFLiteModelsForCoral
-    from analysis.analyze import AnalyzeModelResults
 
     log.info(f"Benchmarking {model} for {count} time(s)")
 
@@ -83,4 +93,5 @@ if __name__ == "__main__":
     """
 
     args = GetArgs()
+    DisableTFlogging()
     BenchmarkModel(args.model, args.count)
