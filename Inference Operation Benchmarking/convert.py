@@ -124,7 +124,7 @@ def ProcessLayer(layer_name, options, input_tensors, output_tensors) -> None:
     }
 
     out_dir = join(LAYERS_FOLDER, layer_name)
-    p = processors.get(layer_name, None)
+    p = processors.get(layer_name, None) # returns None if no matching key in dict
 
     if p:
         p(layer_name, out_dir, options, input_tensors, output_tensors)
