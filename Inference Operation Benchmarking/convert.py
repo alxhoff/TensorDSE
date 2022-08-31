@@ -41,7 +41,7 @@ def ProcessOptions(operator) -> Dict:
         )
 
         return GetOptions(options_class)
-    return None
+    return {}
 
 
 def _ProcessTensorID(id, graph):
@@ -146,12 +146,14 @@ def ProcessOperation(model, graph, operator) -> None:
 
     :rtype: None
     """
+    from main import log
+
     operator_name = GetOpNameFromOperator(model=model, operator=operator)
-    log.info(f"Processing the operation: {operator_name}")
 
     operator_options = ProcessOptions(operator=operator)
     input_tensors, output_tensors = ProcessIO(operator=operator, graph=graph)
 
+    log.info(f"Processing the operation: {operator_name}")
     ProcessLayer(operator_name, operator_options, input_tensors, output_tensors)
 
 
@@ -163,10 +165,12 @@ def SplitTFLiteModel(model) -> None:
     eventually recreates the operation overloaded onto 'process_operation(...)'
     as 'graph.Operators(i)'.
     """
+    from main import log
     with open(model, "rb") as f:
         # Load our model from file and create the flatbuffer parser object for the root node
         model = GetTFLiteClass("Model").GetRootAsModel(f.read(), 0)
         graph = model.Subgraphs(0)
+        log.info(f"Model subdivided into {graph.OperatorsLength()} operators")
 
         for operator in [graph.Operators(i) for i in range(graph.OperatorsLength())]:
             ProcessOperation(model, graph, operator)
@@ -186,7 +190,7 @@ def ImportTFLiteModules() -> None:
 
     tflite_path = os.path.join(os.path.dirname(__file__), "tflite")
 
-    log.info("Importing flatbuffers API...")
+    log.info("Importing flatbuffers API")
 
     # For each .py stripped file in the tflite folder
     for py in [
