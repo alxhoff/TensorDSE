@@ -64,7 +64,7 @@ def SaveSession(session, operation_name, operation, op_dir, input_placeholder):
     converter : tf.lite.TFLiteConverter.from_saved_model()
     """
     import tensorflow as tf
-    from utils import extend_directory
+    from utils.utils import extend_directory
 
     # Clears saved model directory.
     export_dir = extend_directory(op_dir, "tmp")
@@ -136,7 +136,7 @@ def TFLiteConverter(op_dir, model_saved_dir, operation_name, input_place):
     to be produced tflite model.
     """
     import tensorflow as tf
-    from utils import extend_directory, remove_directory
+    from utils.utils import extend_directory, remove_directory
 
     generator_init(operation_name, input_place)
 
