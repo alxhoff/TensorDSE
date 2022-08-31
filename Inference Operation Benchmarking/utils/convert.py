@@ -1,3 +1,5 @@
+import tensorflow as tf
+
 # Global variables needed to generate the correct values
 # for the freezing of each model.
 OP_NAME     = ""
@@ -9,6 +11,10 @@ def generator_init(op_name, input_place):
     import numpy as np
 
     tf_type = str(input_place.dtype).split(" '")[1].split("'>")[0]
+
+    global OP_NAME
+    global OP_IN_SHAPE
+    global OP_IN_TYPE
 
     OP_IN_SHAPE = []
     OP_NAME     = op_name
@@ -25,7 +31,6 @@ def generator():
     """Generates input samples to possibilitate quantization before conversion
     and compilation for the edge TPU.
     """
-    import tensorflow as tf
     import numpy as np
 
     for _ in range(100):
@@ -63,7 +68,6 @@ def SaveSession(session, operation_name, operation, op_dir, input_placeholder):
     -------
     converter : tf.lite.TFLiteConverter.from_saved_model()
     """
-    import tensorflow as tf
     from utils.utils import extend_directory
 
     # Clears saved model directory.
@@ -92,7 +96,6 @@ def TFLiteQuantization(converter):
     -------
     converter : tf.lite.TFLiteConverter.from_saved_model()
     """
-    import tensorflow as tf
 
     converter.experimental_new_converter = False
 
@@ -135,7 +138,6 @@ def TFLiteConverter(op_dir, model_saved_dir, operation_name, input_place):
     Shape and type of input tenosr necessary to generate samples to quantize the
     to be produced tflite model.
     """
-    import tensorflow as tf
     from utils.utils import extend_directory, remove_directory
 
     generator_init(operation_name, input_place)
