@@ -15,12 +15,8 @@ def DisableTFlogging() -> None:
     """Disable the most annoying logging known to mankind
     """
     import os
-
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    os.environ['KMP_WARNINGS'] = '0'
-
-    import tensorflow as tf
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4' # only report errors
+    os.environ['KMP_WARNINGS'] = '0'         # disables warnings
 
 
 def BenchmarkModel(model:str, count:int):
