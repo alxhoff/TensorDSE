@@ -124,10 +124,10 @@ def ProcessLayer(layer_name, options, input_tensors, output_tensors) -> None:
     }
 
     out_dir = join(LAYERS_FOLDER, layer_name)
-    processor = processors.get(layer_name, None)
+    p = processors.get(layer_name, None)
 
-    if processor:
-        processor(layer_name, out_dir, options, input_tensors, output_tensors)
+    if p:
+        p(layer_name, out_dir, options, input_tensors, output_tensors)
         return
 
     log.error(f"{layer_name} DOES NOT HAVE CORRESPONDING LAYER PROCESSING FUNCTION!")
