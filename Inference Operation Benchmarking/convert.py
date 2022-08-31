@@ -106,9 +106,9 @@ def ProcessLayer(layer_name, options, input_tensors, output_tensors) -> None:
     :rtype: None
     """
     import tflite_helper.process_layers as pl
-    from main import MODELS_FOLDER
+    from main import LAYERS_FOLDER
 
-    out_dir = f"{MODELS_FOLDER}{layer_name}/"
+    out_dir = f"{LAYERS_FOLDER}{layer_name}/"
     eval("pl.process_" + layer_name)(
         layer_name, out_dir, options, input_tensors, output_tensors
     )
