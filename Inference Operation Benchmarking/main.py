@@ -5,7 +5,7 @@ log = logging.getLogger(__name__)
 logging.basicConfig(format="%(levelname)s:%(message)s",
                     level=logging.INFO,
                     filemode='w',
-                    filename="debug.log")
+                    filename="info.log")
 
 MODELS_FOLDER = "models/source/"
 LAYERS_FOLDER = "models/layers/"
