@@ -23,12 +23,18 @@ coral_hello_world() {
     --input test_data/parrot.jpg
 }
 
+run() {
+    python3 main.py -m models/source/MNIST.tflite \
+                    -c 1000
+}
+
 main() {
     printf "DEBUG VALUE: %s\n" "${DEBUG}"
     if [ "$DEBUG" -eq 1 ]; then
         ipbd3 main.py
     else
-        coral_hello_world
+        # coral_hello_world
+        run
     fi
 }
 
