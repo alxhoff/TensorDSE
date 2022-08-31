@@ -4,14 +4,17 @@ import logging
 log = logging.getLogger(__name__)
 logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO, filename="debug.log")
 
-MODELS_FOLDER = "models/layers/"
+MODELS_FOLDER = "models/source/"
+LAYERS_FOLDER = "models/layers/"
 COMPILED_MODELS_FOLDER = "models/compiled/"
 
 def BenchmarkModel(model:str, count:int):
     from deploy import DeployModels
     from convert import ImportTFLiteModules, SplitTFLiteModel
-    from utils.compile import CompileTFLiteModelsForCoral
+    from compile import CompileTFLiteModelsForCoral
     from analysis.analyze import AnalyzeModelResults
+
+    log.info(f"Benchmarking {model} for {count} time(s)")
 
     # Imports modules found in the tflite folder, generated from the fattbuffer compiler
     ImportTFLiteModules()
@@ -20,13 +23,13 @@ def BenchmarkModel(model:str, count:int):
     SplitTFLiteModel(model=model)
 
     # Compiles created models into Coral models for execution
-    CompileTFLiteModelsForCoral(log)
+    CompileTFLiteModelsForCoral()
 
     # Deploy the generated models onto the target test hardware using docker
     DeployModels(count=count)
 
     # Process results
-    AnalyzeModelResults()
+    # AnalyzeModelResults()
 
 
 def GetArgs() -> argparse.Namespace:

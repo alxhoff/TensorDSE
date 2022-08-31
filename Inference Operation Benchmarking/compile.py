@@ -4,7 +4,7 @@ def CompileTFLiteModelsForCoral():
 
     """
     from main import log
-    from main import MODELS_FOLDER, COMPILED_MODELS_FOLDER
+    from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
 
     from os import listdir, system
     from os.path import isfile, isdir, join, exists
@@ -12,9 +12,9 @@ def CompileTFLiteModelsForCoral():
     op_names = []
     op_paths = []
 
-    for i in listdir(MODELS_FOLDER):
-        if isdir(join(MODELS_FOLDER, i)):
-            path = join(MODELS_FOLDER, i, "quant")
+    for i in listdir(LAYERS_FOLDER):
+        if isdir(join(LAYERS_FOLDER, i)):
+            path = join(LAYERS_FOLDER, i, "quant")
             if exists(path):
                 for j in listdir(path):
                     if (isfile(join(path, j))
@@ -28,5 +28,5 @@ def CompileTFLiteModelsForCoral():
         if ret == 0:
             log.info(f"Operation: {op} compiled for the edgetpu successfully")
         else:
-            log.error(f"Operation: {op} faulty compilation with return value: {ret}")
+            raise Exception(f"Error during compilation of {op}")
 
