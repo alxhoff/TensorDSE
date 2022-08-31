@@ -110,13 +110,27 @@ def ProcessLayer(layer_name, options, input_tensors, output_tensors) -> None:
 
     :rtype: None
     """
+    from os.path import join
     import tflite_helper.process_layers as pl
-    from main import LAYERS_FOLDER
 
-    out_dir = f"{LAYERS_FOLDER}{layer_name}/"
-    eval("pl.process_" + layer_name)(
-        layer_name, out_dir, options, input_tensors, output_tensors
-    )
+    from main import log, LAYERS_FOLDER
+
+    processors = {
+            "CONV_2D"           : pl.process_CONV_2D,
+            "FULLY_CONNECTED"   : pl.process_FULLY_CONNECTED,
+            "MAX_POOL_2D"       : pl.process_MAX_POOL_2D,
+            "RESHAPE"           : pl.process_RESHAPE,
+            "SOFTMAX"           : pl.process_SOFTMAX,
+    }
+
+    out_dir = join(LAYERS_FOLDER, layer_name)
+    processor = processors.get(layer_name, None)
+
+    if processor:
+        processor(layer_name, out_dir, options, input_tensors, output_tensors)
+        return
+
+    log.error(f"{layer_name} DOES NOT HAVE CORRESPONDING LAYER PROCESSING FUNCTION!")
 
 
 def ProcessOperation(model, graph, operator) -> None:
