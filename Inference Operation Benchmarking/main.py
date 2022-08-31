@@ -1,6 +1,5 @@
 import argparse
 import logging
-import tensorflow
 
 log = logging.getLogger(__name__)
 logging.basicConfig(format="%(levelname)s:%(message)s",
