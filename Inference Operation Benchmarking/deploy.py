@@ -4,16 +4,16 @@ class Model:
     def __init__(self, file:str, delegate:str):
         self.file = file
         self.delegate = delegate
-        self._get_model_name(file)
+        self.op_name = self._get_model_name(file)
         self.results = []
 
-    def  _get_model_name (self, file:str):
-        file = file.split("/")[file.count("/")]
+    def  _get_model_name (self, file_path:str) -> str:
+        file = file_path.split("/")[file_path.count("/")]
         if (not file.startswith("quant_") or
             not file.endswith(".tflite")):
-               raise Exception("")
-
-        self.op_name = (
+               raise Exception(
+                       f"File: {file_path} not a tflite file")
+        return (
          file.split("quant_")[1]
         ).split("_edgetpu.tflite"
            if self.delegate == "tpu"
@@ -137,7 +137,28 @@ def DeployModels(count=1000)  -> None:
     Indicates the number of times each model will be deplyed.
     """
     import os
-    from main import MODELS_FOLDER, COMPILED_MODELS_FOLDER
+    from os import listdir
+    from os.path import join, isdir, isfile
+    from main import log
+    from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
+
+    # regular quantized tflite files for cpu/gpu
+    for d in listdir(LAYERS_FOLDER):
+        if isdir(d):
+            name = d
+            path = join(os.getcwd(), LAYERS_FOLDER, d, "quant", f"quant_{name}.tflite")
+            CPUDeploy(Model(path, "cpu"), count)
+            log.info(f"Deploying layer/operation {name} onto the cpu")
+
+            GPUDeploy(Model(path, "gpu"), count)
+            log.info(f"Deploying layer/operation {name} onto the gpu")
+
+    for f in listdir(COMPILED_MODELS_FOLDER):
+        if isfile(f) and f.endswith(".tflite"):
+            name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
+            path = join(os.getcwd(), COMPILED_MODELS_FOLDER, f)
+            TPUDeploy(Model(path, "tpu"), count)
+            log.info(f"Deploying layer/operation {name} onto the cpu")
 
 
 def GetArgs() -> argparse.Namespace:
@@ -196,6 +217,8 @@ if __name__ == "__main__":
         or the single target (Depends on mode).
     """
 
+    from main import  LAYERS_FOLDER, COMPILED_MODELS_FOLDER
+
     args = GetArgs()
 
     delegators = {
@@ -210,8 +233,28 @@ if __name__ == "__main__":
             delegator(Model(args.target, args.delegate), args.count)
 
     if args.mode == "Group":
+        import os
         from os import listdir
-        from os.path import join
+        from os.path import join, isdir, isfile
+
+        delegator = delegators.get(args.delegate, None)
+        if args.delegate == "tpu":
+            if delegator:
+                for f in listdir(COMPILED_MODELS_FOLDER):
+                    if isfile(f) and f.endswith(".tflite"):
+                        name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
+                        path = join(os.getcwd(), COMPILED_MODELS_FOLDER, f)
+                        delegator(Model(path, "tpu"), args.count)
+        else:
+            if delegator:
+                for d in listdir(LAYERS_FOLDER):
+                    if isdir(d):
+                        name = d
+                        path = join(os.getcwd(),
+                                    d,
+                                    "quant",
+                                    f"quant_{name}.tflite")
+                        delegator(Model(path, args.delegate), args.count)
 
     else:
         raise Exception(f"Invalid mode: {args.mode}")
