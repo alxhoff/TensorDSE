@@ -97,9 +97,14 @@ def TFLiteQuantization(converter):
     converter : tf.lite.TFLiteConverter.from_saved_model()
     """
 
-    # True enables MLIR-based conversion and will cause
-    # the logger to not be polluted with deprecated warnings
-    converter.experimental_new_converter = False
+    # True enables MLIR-based conversion
+    # Pro of turning on/True:
+    #   - faster execution
+    #   - less warning to stdout
+    #   - no polluting of logger with warnings from tf
+    # Pro of turning on/True:
+    #   - I dont know if thats what we want
+    converter.experimental_new_converter = True
 
     # This enables Quantization
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
