@@ -1,25 +1,23 @@
 import argparse
+from typing import Dict
 
-class Model:
-    def __init__(self, file:str, delegate:str):
-        self.file = file
-        self.delegate = delegate
-        self.op_name = self._get_model_name(file)
-        self.results = []
+from utils.model import Model
 
-    def  _get_model_name (self, file_path:str) -> str:
-        file = file_path.split("/")[file_path.count("/")]
-        if (not file.startswith("quant_") or
-            not file.endswith(".tflite")):
-               raise Exception(
-                       f"File: {file_path} not a tflite file")
-        return (
-         file.split("quant_")[1]
-        ).split("_edgetpu.tflite"
-           if self.delegate == "tpu"
-           else ".tflite" )[0]
+def isCPUavailable() -> bool:
+    return True
 
-def make_interpreter(model_file:str, library:str):
+def isTPUavailable() -> bool:
+    import os
+
+    pattern = "Global Unichip Corp."
+    os.system(f"lsusb | grep {pattern}")
+
+    return False
+
+def isGPUavailable() -> bool:
+    return False
+
+def MakeInterpreter(model_file:str, library:str):
     """Creates the interpreter object needed to deploy a model onto the tpu.
 
     Parameters
@@ -50,7 +48,7 @@ def make_interpreter(model_file:str, library:str):
     )
 
 
-def TPUDeploy(m:Model, count:int) -> None:
+def TPUDeploy(m:Model, count:int) -> Model:
     import time
     import logging
     import numpy as np
@@ -64,7 +62,7 @@ def TPUDeploy(m:Model, count:int) -> None:
         "Windows": "edgetpu.dll",
     }[platform.system()]
 
-    interpreter = make_interpreter(m.file, TPU_LIBRARY)
+    interpreter = MakeInterpreter(m.model_path, TPU_LIBRARY)
     interpreter.allocate_tensors()
 
     input_details = interpreter.get_input_details()
@@ -86,12 +84,13 @@ def TPUDeploy(m:Model, count:int) -> None:
         results.append([i, inference_time])
 
     m.results = results
+    return m
 
 
-def GPUDeploy(m:Model, count:int) -> None:
-    pass
+def GPUDeploy(m:Model, count:int) -> Model:
+    return m
 
-def CPUDeploy(m:Model, count:int) -> None:
+def CPUDeploy(m:Model, count:int) -> Model:
     import time
     import logging
     import tensorflow as tf
@@ -100,7 +99,7 @@ def CPUDeploy(m:Model, count:int) -> None:
     results = []
 
     # Interpreter Object.
-    interpreter = tf.lite.Interpreter(model_path=m.file)
+    interpreter = tf.lite.Interpreter(model_path=m.model_path)
     interpreter.allocate_tensors()
 
     input_details = interpreter.get_input_details()
@@ -122,8 +121,9 @@ def CPUDeploy(m:Model, count:int) -> None:
         results.append([i, inference_time])
 
     m.results = results
+    return m
 
-def DeployModels(count=1000)  -> None:
+def DeployModels(parent_model:str, count=1000)  -> Dict:
     """Manager function responsible for preping and executing the deployment
     of the compiled tflite models.
 
@@ -142,23 +142,52 @@ def DeployModels(count=1000)  -> None:
     from main import log
     from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
 
-    # regular quantized tflite files for cpu/gpu
-    for d in listdir(LAYERS_FOLDER):
-        if isdir(d):
-            name = d
-            path = join(os.getcwd(), LAYERS_FOLDER, d, "quant", f"quant_{name}.tflite")
-            CPUDeploy(Model(path, "cpu"), count)
-            log.info(f"Deploying layer/operation {name} onto the cpu")
+    models = {}
+    models["cpu"] = []
+    models["gpu"] = []
+    models["tpu"] = []
 
-            GPUDeploy(Model(path, "gpu"), count)
-            log.info(f"Deploying layer/operation {name} onto the gpu")
+    # regular quantized tflite files for cpu
+    if not isCPUavailable():
+        log.info(f"CPU is not available on this machine!")
+    else:
+        for d in listdir(LAYERS_FOLDER):
+            if isdir(d):
+                    model_name = d
+                    model_path = join(os.getcwd(), LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite")
+                    log.info(f"Deploying layer/operation {model_name} onto the cpu")
 
-    for f in listdir(COMPILED_MODELS_FOLDER):
-        if isfile(f) and f.endswith(".tflite"):
-            name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
-            path = join(os.getcwd(), COMPILED_MODELS_FOLDER, f)
-            TPUDeploy(Model(path, "tpu"), count)
-            log.info(f"Deploying layer/operation {name} onto the cpu")
+                    m = CPUDeploy(Model(model_path, "cpu", parent_model), count)
+                    models["cpu"].append(m)
+
+
+    # regular quantized tflite files for gpu
+    if not isGPUavailable():
+        log.info(f"GPU is not available on this machine!")
+    else:
+        for d in listdir(LAYERS_FOLDER):
+            if isdir(d):
+                model_name = d
+                model_path = join(os.getcwd(), LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite")
+                log.info(f"Deploying layer/operation {model_name} onto the gpu")
+
+                m = GPUDeploy(Model(model_path, "gpu", parent_model), count)
+                models["gpu"].append(m)
+
+    # edge compiled quantized tflite files tpu
+    if not isTPUavailable():
+        log.info(f"TPU is not available on this machine!")
+    else:
+        for f in listdir(COMPILED_MODELS_FOLDER):
+            if isfile(f) and f.endswith(".tflite"):
+                model_name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
+                model_path = join(os.getcwd(), COMPILED_MODELS_FOLDER, f)
+                log.info(f"Deploying layer/operation {model_name} onto the cpu")
+
+                m = TPUDeploy(Model(model_path, "tpu", parent_model), count)
+                models["tpu"].append(m)
+
+    return models
 
 
 def GetArgs() -> argparse.Namespace:
@@ -174,7 +203,7 @@ def GetArgs() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "-m", "--mode", default="Deploy", required=False, help="Single, Group."
+        "-f", "--form", default="Deploy", required=False, help="Single or Group."
     )
 
     parser.add_argument(
@@ -182,7 +211,7 @@ def GetArgs() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        " -t", "--target", help="File path to the .tflite file.")
+        " -m", "--model", help="File path to the .tflite file.")
 
     parser.add_argument(
         "-c", "--count", type=int, default=1, help="Number of times to run inference."
@@ -198,23 +227,23 @@ if __name__ == "__main__":
 
     Flags
     ---------
-    -m or --mode
-    Mode in which the script should run. Group, Single or Debug.
+    -f or --form
+    Form in which the script should run. Group or Single
         Single deploys a single model.
         Group is supposed to be used to deploy a group of models in sequence.
 
     -d or --delegate
         Specifies which hardware should be used to delegate a model.
             cpu => cpu
-            edge => edgetpu
+            gpu => gpu
+            tpu => edgetpu
 
-    -t or --target
-        Should be used in conjunction with the 'Single' mode, where -t must be followed
-        by the path to the model (target) that will be deployed.
+    -m or --model
+        Should be used in conjunction with the 'Single' form.
 
     -c or --count
         Should be followed by the number of times one wishes to deploy the group of models
-        or the single target (Depends on mode).
+        or a single model (Depends on form).
     """
 
     from main import  LAYERS_FOLDER, COMPILED_MODELS_FOLDER
@@ -227,12 +256,12 @@ if __name__ == "__main__":
         "tpu"   : TPUDeploy,
     }
 
-    if args.mode == "Single":
+    if args.form == "Single":
         delegator = delegators.get(args.delegate, None)
         if not (delegator == None):
-            delegator(Model(args.target, args.delegate), args.count)
+            delegator(Model(args.model, args.delegate), args.count)
 
-    if args.mode == "Group":
+    if args.form == "Group":
         import os
         from os import listdir
         from os.path import join, isdir, isfile
@@ -242,19 +271,19 @@ if __name__ == "__main__":
             if delegator:
                 for f in listdir(COMPILED_MODELS_FOLDER):
                     if isfile(f) and f.endswith(".tflite"):
-                        name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
-                        path = join(os.getcwd(), COMPILED_MODELS_FOLDER, f)
-                        delegator(Model(path, "tpu"), args.count)
+                        model_name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
+                        model_path = join(os.getcwd(), COMPILED_MODELS_FOLDER, f)
+                        delegator(Model(model_path, "tpu"), args.count)
         else:
             if delegator:
                 for d in listdir(LAYERS_FOLDER):
                     if isdir(d):
-                        name = d
-                        path = join(os.getcwd(),
+                        model_name = d
+                        model_path = join(os.getcwd(),
                                     d,
                                     "quant",
-                                    f"quant_{name}.tflite")
-                        delegator(Model(path, args.delegate), args.count)
+                                    f"quant_{model_name}.tflite")
+                        delegator(Model(model_path, args.delegate), args.count)
 
     else:
         raise Exception(f"Invalid mode: {args.mode}")

@@ -5,41 +5,47 @@ log = logging.getLogger(__name__)
 logging.basicConfig(format="%(levelname)s:%(message)s",
                     level=logging.INFO,
                     filemode='w',
-                    filename="info.log")
+                    filename="results/info.log")
 
-MODELS_FOLDER = "models/source/"
-LAYERS_FOLDER = "models/layers/"
-COMPILED_MODELS_FOLDER = "models/compiled/"
+MODELS_FOLDER           = "models/source/"
+LAYERS_FOLDER           = "models/layers/"
+COMPILED_MODELS_FOLDER  = "models/compiled/"
+RESULTS_FOLDER          = "results/"
 
 def DisableTFlogging() -> None:
     """Disable the most annoying logging known to mankind
     """
     import os
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4' # only report errors
-    os.environ['KMP_WARNINGS'] = '0'         # disables warnings
+    os.environ['KMP_WARNINGS'] = '0'         # disable warnings
 
 
 def BenchmarkModel(model:str, count:int):
     from deploy import DeployModels
     from convert import ImportTFLiteModules, SplitTFLiteModel
     from compile import CompileTFLiteModelsForCoral
+    from analysis import AnalyzeModelResults
 
-    log.info(f"Benchmarking {model} for {count} time(s)")
+    if not model.endswith(".tflite"):
+        raise Exception(f"File: {model} is not a tflite file!")
+
+    model_name = (model.split("/")[model.count("/")]).split(".tflite")[0]
+    log.info(f"Benchmarking {model_name} for {count} time(s)")
 
     # Imports modules found in the tflite folder, generated from the fattbuffer compiler
     ImportTFLiteModules()
 
-    # Create single operation models from the operations in the provided model
+    # Create single operation models/layers from the operations in the provided model
     SplitTFLiteModel(model=model)
 
-    # Compiles created models into Coral models for execution
+    # Compiles created models/layers into Coral models for execution
     CompileTFLiteModelsForCoral()
 
-    # Deploy the generated models onto the target test hardware using docker
-    DeployModels(count=count)
+    # Deploy the generated models/layers onto the target test hardware using docker
+    ret = DeployModels(model_name, count=count)
 
     # Process results
-    # AnalyzeModelResults()
+    AnalyzeModelResults(model_name, ret)
 
 
 def GetArgs() -> argparse.Namespace:
