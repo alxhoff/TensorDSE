@@ -1,6 +1,6 @@
 # ToDo's
 
-### 1. Tflite Convertsion
+### 1. Tflite Conversion
 #### Questions :question:
 1. Activation functions for tflite conversions? TODO?
 2. I changed a flag concerning `experimental_new_converter`, double check Alex
@@ -8,9 +8,15 @@
 ### 2. Merging/Finishing Benchmarking + Analysis
 * [X] create and implement working Dockerfile (w Makefile) for a reproducible containerized environment
 * [X] make adjustments to code according to new docker workflow
-* [ ] change output to `JSON`
+* [X] change output to `JSON`
 * [ ] implement **NEW ANALYSIS** as merger between yours and Ines
 
+Future Ideas:
+- [ ] suppress stdout of unnecessary commands like the conversion itself, pollutes stdout
+- [ ] at some point, instead of pip installing libraries in dockerfile, maybe use requirements.txt
+
+#### Questions :question:
+1. Should the parent model (entire model) also be benchmarked or only its ops?
 
 ### 3. Implement GPU Deployment
 - [ ] Implement Function
