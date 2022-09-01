@@ -30,7 +30,7 @@ RUN sudo apt-get install -y libedgetpu1-std edgetpu-compiler
 
 # Python
 # Pillow?
-RUN pip3 install pyshark tensorflow
+RUN pip3 install pyshark tensorflow matplotlib scipy numpy pandas
 RUN pip3 install --upgrade pip
 RUN sudo apt-get install -y python3-pycoral python3-ipdb
 

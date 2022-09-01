@@ -77,12 +77,8 @@ clean:
 	@touch models/layers/.gitkeep
 	@sudo rm -rvf models/compiled/*
 	@touch models/compiled/.gitkeep
-	@sudo rm -rvf results/cpu/*
-	@sudo rm -rvf results/gpu/*
-	@sudo rm -rvf results/tpu/*
-	@touch results/cpu/.gitkeep
-	@touch results/gpu/.gitkeep
-	@touch results/tpu/.gitkeep
+	@sudo rm -rvf results/*
+	@touch  results/.gitkeep
 
 purge: stop rm
 
