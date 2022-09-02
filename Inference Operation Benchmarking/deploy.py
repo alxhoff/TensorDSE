@@ -10,7 +10,7 @@ def isTPUavailable() -> bool:
     import os
 
     pattern = "Global Unichip Corp."
-    os.system(f"lsusb | grep {pattern}")
+    # os.system(f"lsusb | grep {pattern}")
 
     return False
 
@@ -152,13 +152,13 @@ def DeployModels(parent_model:str, count=1000)  -> Dict:
         log.info(f"CPU is not available on this machine!")
     else:
         for d in listdir(LAYERS_FOLDER):
-            if isdir(d):
-                    model_name = d
-                    model_path = join(os.getcwd(), LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite")
-                    log.info(f"Deploying layer/operation {model_name} onto the cpu")
+            if isdir(join(LAYERS_FOLDER, d)):
+                model_name = d
+                model_path = join(LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite")
+                log.info(f"Deploying layer/operation {model_name} onto the cpu")
 
-                    m = CPUDeploy(Model(model_path, "cpu", parent_model), count)
-                    models["cpu"].append(m)
+                m = CPUDeploy(Model(model_path, "cpu", parent_model), count)
+                models["cpu"].append(m)
 
 
     # regular quantized tflite files for gpu
@@ -168,7 +168,7 @@ def DeployModels(parent_model:str, count=1000)  -> Dict:
         for d in listdir(LAYERS_FOLDER):
             if isdir(d):
                 model_name = d
-                model_path = join(os.getcwd(), LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite")
+                model_path = join(LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite")
                 log.info(f"Deploying layer/operation {model_name} onto the gpu")
 
                 m = GPUDeploy(Model(model_path, "gpu", parent_model), count)
@@ -181,7 +181,7 @@ def DeployModels(parent_model:str, count=1000)  -> Dict:
         for f in listdir(COMPILED_MODELS_FOLDER):
             if isfile(f) and f.endswith(".tflite"):
                 model_name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
-                model_path = join(os.getcwd(), COMPILED_MODELS_FOLDER, f)
+                model_path = join(COMPILED_MODELS_FOLDER, f)
                 log.info(f"Deploying layer/operation {model_name} onto the cpu")
 
                 m = TPUDeploy(Model(model_path, "tpu", parent_model), count)
