@@ -14,9 +14,17 @@ class Analyzer:
         self.median         = 0.0
         self.std_deviation  = 0.0
 
+    def _get_data(self):
+        data = []
+        # results are organized as [iteration, inference time of current iteration]
+        for r in self.results:
+            data.append(r[1])
+
+        return data
+
     def get_basic_statistics(self):
         from statistics import mean, median, stdev
-        data = self.results
+        data = self._get_data()
         self.mean           = mean(data)
         self.median         = median(data)
         self.std_deviation  = stdev(data)
@@ -25,7 +33,7 @@ class Analyzer:
         """Model data by finding best fit distribution to data"""
         import warnings
 
-        data = self.results
+        data = self._get_data()
 
         # Get histogram of original data
         y, x = np.histogram(data, bins=bins, density=True)
@@ -113,7 +121,7 @@ class Analyzer:
 
         matplotlib.rcParams['figure.figsize'] = (16.0, 12.0)
 
-        data = self.results
+        data = self._get_data()
 
         plt.hist(data, bins = bins)
         plt.savefig(os.path.join("results/", f"{self.model_name}_hist.png"))
