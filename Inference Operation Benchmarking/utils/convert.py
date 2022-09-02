@@ -146,10 +146,11 @@ def TFLiteConverter(op_dir, model_saved_dir, operation_name, input_place):
     to be produced tflite model.
     """
     from utils.utils import extend_directory, remove_directory
+    from os.path import join
 
     generator_init(operation_name, input_place)
 
-    tf_model_filename = op_dir + operation_name + ".tflite"
+    tf_model_filename = join(op_dir, operation_name + ".tflite")
     edge_tf_model_filename = extend_directory(op_dir, "quant") + \
                              "quant_" + operation_name + ".tflite"
 
@@ -170,7 +171,7 @@ def TFLiteConverter(op_dir, model_saved_dir, operation_name, input_place):
         open(edge_tf_model_filename, "wb").write(edge_tflite_model)
 
     except ValueError:
-        print(f"Model {operation_name}'s input was not able to be quantized.")
+        print(f"Model: {operation_name}'s input was not able to be quantized.")
 
     # Writes Conversion to pre-defined tflite folder.
     open(tf_model_filename, "wb").write(tflite_model)
