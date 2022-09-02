@@ -31,7 +31,7 @@ def AnalyzeModelResults(parent_model:str, models:Dict):
             a.get_basic_statistics()
             a.get_distribution()
 
-            if not data[parent_model]["layers"][m.model_name]:
+            if not m.model_name in  data[parent_model]["layers"].keys():
                 l = {
                     "name"                  : m.model_name,
                     "path"                  : m.model_path,
@@ -48,7 +48,7 @@ def AnalyzeModelResults(parent_model:str, models:Dict):
                 data[parent_model]["layers"][m.model_name] = l
                 continue
 
-            if not data[parent_model]["layers"][m.model_name]["delegates"][m.delegate]:
+            if not m.delegate in  data[parent_model]["layers"][m.model_name]["delegates"].keys():
                 data[parent_model]["layers"][m.model_name]["delegates"][m.delegate] = {
                             "mean time"             : a.mean,
                             "median"                : a.median,
