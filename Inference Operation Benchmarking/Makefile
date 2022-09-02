@@ -79,6 +79,7 @@ clean:
 	@touch models/compiled/.gitkeep
 	@sudo rm -rvf results/*
 	@touch  results/.gitkeep
+	@sudo rm -rvf __pycache__/
 
 purge: stop rm
 
