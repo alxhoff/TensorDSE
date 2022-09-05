@@ -1,48 +1,92 @@
 # ToDo's
 
-### 1. Tflite Conversion
-#### Questions :question:
-1. Activation functions for tflite conversions? TODO?
-2. I changed a flag concerning `experimental_new_converter`, double check Alex
-
-### 2. Merging/Finishing Benchmarking + Analysis
+### 1. Benchmarking
 * [X] create and implement working Dockerfile (w Makefile) for a reproducible containerized environment
 * [X] make adjustments to code according to new docker workflow
 * [X] change output to `JSON`
-* [ ] implement **NEW ANALYSIS** as merger between yours and Ines,
-      ines uses linear regression to obtain cost parameters
+* [ ] implement **NEW ANALYSIS** as merger between yours and Ines, cost values?
 
-Future Ideas:
-- [ ] suppress stdout of unnecessary commands like the conversion itself, pollutes stdout
-- [ ] at some point, instead of pip installing libraries in dockerfile, maybe use requirements.txt
+<details closed>
+<summary>
+<b> Questions </b>
+</summary>
 
-#### Questions :question:
-1. Should the parent model (entire model) also be benchmarked or only its ops?
+- [X] Should the parent model (entire model) also be benchmarked or only its ops?
+</details>
 
-### 3. Implement GPU Deployment
-- [ ] Implement Function
-- [ ] Test it ssh server
+<details closed>
+<summary>
+<b> Ideas </b>
+</summary>
 
-#### Questions :question:
-1. Maybe GPU can only be deployed onto mobile GPU's like Android and IOS
+- [ ] suppress stdout of unnecessary commands like the conversion itself
+- [ ] use requirements.txt instead pip install
+</details>
 
-links that support this statement:
+### 2. Implement GPU Deployment
+- [X] Implement Function
+- [ ] Adapt Dockerfile
+- [ ] Test it out ssh server
+
+<details closed>
+<summary>
+<b> Issues </b>
+</summary>
+
+* Pro:
+[1](https://github.com/tensorflow/tensorflow/issues/52155#issuecomment-931498450)
+* Cons:
 [1](https://www.tensorflow.org/lite/performance/delegates)
 [2](https://github.com/tensorflow/tensorflow/issues/40706#issuecomment-648456999)
 [3](https://github.com/tensorflow/tensorflow/issues/34536#issuecomment-565632906)
 [4](https://github.com/tensorflow/tensorflow/issues/31377#issuecomment-519331496)
+</details>
 
-possible hacky workaround:
-[1](https://github.com/tensorflow/tensorflow/issues/52155#issuecomment-931498450)
+<details closed>
+<summary>
+<b> Questions </b>
+</summary>
 
-### 4. USB
+- [X] Should the parent model (entire model) also be benchmarked or only its ops?
+</details>
+
+<details closed>
+<summary>
+<b> Ideas </b>
+</summary>
+</details>
+
+
+### 3. USB
 - [ ] Reevaluate USB logic, reassure correctness
 - [X] change output to `JSON`
-- [ ] merge with analysis
+- [ ] merge with analysis/cost calculations done in benchmarking
 
-### Questions :question:
+<details closed>
+<summary>
+<b> Questions </b>
+</summary>
+</details>
 
-### 5. Java DSE
+<details closed>
+<summary>
+<b> Ideas </b>
+</summary>
+</details>
+
+### 5. DSE
 * [ ] Clean up/Make Generic Ine‘s java code that generates mapping
 * [ ] Add in comm costs (USB) to architecture graph
+* [ ] Adapt to new JSON format
 
+<details closed>
+<summary>
+<b> Questions </b>
+</summary>
+</details>
+
+<details closed>
+<summary>
+<b> Ideas </b>
+</summary>
+</details>
