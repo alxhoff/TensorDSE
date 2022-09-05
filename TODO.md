@@ -9,7 +9,8 @@
 * [X] create and implement working Dockerfile (w Makefile) for a reproducible containerized environment
 * [X] make adjustments to code according to new docker workflow
 * [X] change output to `JSON`
-* [ ] implement **NEW ANALYSIS** as merger between yours and Ines
+* [ ] implement **NEW ANALYSIS** as merger between yours and Ines,
+      ines uses linear regression to obtain cost parameters
 
 Future Ideas:
 - [ ] suppress stdout of unnecessary commands like the conversion itself, pollutes stdout
@@ -36,7 +37,7 @@ possible hacky workaround:
 
 ### 4. USB
 - [ ] Reevaluate USB logic, reassure correctness
-- [ ] change output to `JSON`
+- [X] change output to `JSON`
 - [ ] merge with analysis
 
 ### Questions :question:
