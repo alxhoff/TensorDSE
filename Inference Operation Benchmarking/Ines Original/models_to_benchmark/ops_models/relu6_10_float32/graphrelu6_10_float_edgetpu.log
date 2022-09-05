@@ -1,7 +1,0 @@
-Edge TPU Compiler version 1.0.249710469
-Input: /benchmark_tool/models_to_benchmark/ops_models_4/relu6_10_float32/graphrelu6_10_float.tflite
-Output: /benchmark_tool/models_to_benchmark/ops_models_4/relu6_10_float32/graphrelu6_10_float_edgetpu.tflite
-
-Operator                       Count      Status
-
-RELU6                          1          Mapped to Edge TPU
