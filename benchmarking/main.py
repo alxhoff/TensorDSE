@@ -2,7 +2,7 @@ import argparse
 from utils.log import Log
 
 # custom logger to separate TF logs and Ours
-log = Log("results/info.log")
+log = Log("results/journal.log")
 
 MODELS_FOLDER           = "models/source/"
 LAYERS_FOLDER           = "models/layers/"
@@ -33,16 +33,18 @@ def BenchmarkModel(model:str, count:int):
     ImportTFLiteModules()
 
     # Create single operation models/layers from the operations in the provided model
-    SplitTFLiteModel(model=model)
+    layers = SplitTFLiteModel(model=model)
+    # array of strings, each entry is one of the layers that compose the
+    # to-be-benchmarked model
 
     # Compiles created models/layers into Coral models for execution
-    CompileTFLiteModelsForCoral()
+    CompileTFLiteModelsForCoral(layers)
 
     # Deploy the generated models/layers onto the target test hardware using docker
-    ret = DeployModels(model_name, count=count)
+    results_dict = DeployModels(model_name, layers, count=count)
 
     # Process results
-    AnalyzeModelResults(model_name, ret)
+    AnalyzeModelResults(model_name, results_dict)
 
 
 def GetArgs() -> argparse.Namespace:
