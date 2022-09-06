@@ -7,12 +7,10 @@ def isCPUavailable() -> bool:
     return True
 
 def isTPUavailable() -> bool:
-    import os
-
-    pattern = "Global Unichip Corp."
-    # os.system(f"lsusb | grep {pattern}")
-
-    return False
+    # https://github.com/ultralytics/yolov5/issues/5709
+    # from pycoral.utils import edgetpu
+    # return (edgetpu.list_edge_tpus() == None)
+    return True
 
 def isGPUavailable() -> bool:
     return False
@@ -31,17 +29,19 @@ def MakeInterpreter(model_file:str, library:str):
     -------
     tflite.Interpreter Object
     """
-    import tflite_runtime.interpreter as tflite
+    # https://github.com/ultralytics/yolov5/issues/5709
+    # import tflite_runtime.interpreter as tflite
+    import tensorflow as tf
 
     model_file, *device = model_file.split("@")
 
     device = {"device": device[0]} if device else {}
     shared_library = library
     experimental_delegates = [
-        tflite.load_delegate(shared_library, device)
+        tf.lite.experimental.load_delegate(shared_library, device)
     ]
 
-    return tflite.Interpreter(
+    return tf.lite.Interpreter(
         model_path=model_file,
         model_content=None,
         experimental_delegates=experimental_delegates,
@@ -50,17 +50,15 @@ def MakeInterpreter(model_file:str, library:str):
 
 def TPUDeploy(m:Model, count:int) -> Model:
     import time
-    import logging
     import numpy as np
     import platform
-
-    results = []
 
     TPU_LIBRARY = {
         "Linux": "libedgetpu.so.1",
         "Darwin": "libedgetpu.1.dylib",
         "Windows": "edgetpu.dll",
     }[platform.system()]
+    results = []
 
     interpreter = MakeInterpreter(m.model_path, TPU_LIBRARY)
     interpreter.allocate_tensors()
@@ -88,11 +86,39 @@ def TPUDeploy(m:Model, count:int) -> Model:
 
 
 def GPUDeploy(m:Model, count:int) -> Model:
+    import time
+    import tensorflow as tf
+    import numpy as np
+
+    GPU_LIBRARY = ""
+    results = []
+
+    interpreter = MakeInterpreter(m.model_path, GPU_LIBRARY)
+    interpreter.allocate_tensors()
+
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    input_data = np.array(
+            np.random.random_sample(
+                input_details[0]["shape"]),         # input shape
+                dtype=input_details[0]["dtype"])    # input dtype
+
+    interpreter.set_tensor(input_details[0]["index"], input_data)
+
+    for i in range(count):
+        start = time.perf_counter()                     # START
+        interpreter.invoke()                            # RUNS
+        inference_time = time.perf_counter() - start    # END
+
+        _ = interpreter.get_tensor(output_details[0]["index"])  # output data
+        results.append([i, inference_time])
+
+    m.results = results
     return m
 
 def CPUDeploy(m:Model, count:int) -> Model:
     import time
-    import logging
     import tensorflow as tf
     import numpy as np
 
@@ -123,7 +149,7 @@ def CPUDeploy(m:Model, count:int) -> Model:
     m.results = results
     return m
 
-def DeployModels(parent_model:str, count=1000)  -> Dict:
+def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
     """Manager function responsible for preping and executing the deployment
     of the compiled tflite models.
 
@@ -143,16 +169,18 @@ def DeployModels(parent_model:str, count=1000)  -> Dict:
     from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
 
     models = {}
-    models["cpu"] = []
-    models["gpu"] = []
-    models["tpu"] = []
+    models["cpu"]   = []
+    models["gpu"]   = []
+    models["tpu"]   = []
+    models["count"] = count
 
     # regular quantized tflite files for cpu
     if not isCPUavailable():
-        log.info(f"CPU is not available on this machine!")
+        log.info(f"CPU is NOT available on this machine!")
     else:
+        log.info(f"CPU is available on this machine!")
         for d in listdir(LAYERS_FOLDER):
-            if isdir(join(LAYERS_FOLDER, d)):
+            if isdir(join(LAYERS_FOLDER, d)) and (d in layers):
                 model_name = d
                 model_path = join(LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite")
                 log.info(f"Deploying layer/operation {model_name} onto the cpu")
@@ -163,10 +191,11 @@ def DeployModels(parent_model:str, count=1000)  -> Dict:
 
     # regular quantized tflite files for gpu
     if not isGPUavailable():
-        log.info(f"GPU is not available on this machine!")
+        log.info(f"GPU is NOT available on this machine!")
     else:
+        log.info(f"GPU is available on this machine!")
         for d in listdir(LAYERS_FOLDER):
-            if isdir(d):
+            if isdir(join(LAYERS_FOLDER, d)) and (d in layers):
                 model_name = d
                 model_path = join(LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite")
                 log.info(f"Deploying layer/operation {model_name} onto the gpu")
@@ -176,13 +205,16 @@ def DeployModels(parent_model:str, count=1000)  -> Dict:
 
     # edge compiled quantized tflite files tpu
     if not isTPUavailable():
-        log.info(f"TPU is not available on this machine!")
+        log.info(f"TPU is NOT available on this machine!")
     else:
+        log.info(f"TPU is available on this machine!")
         for f in listdir(COMPILED_MODELS_FOLDER):
-            if isfile(f) and f.endswith(".tflite"):
-                model_name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
+            if isfile(join(COMPILED_MODELS_FOLDER, f)) and f.endswith(".tflite"):
+                model_name = (f.split("quant_")[1]).split("_edgetpu.tflite")[0]
+                if model_name not in layers:
+                    continue # skip this iteration
                 model_path = join(COMPILED_MODELS_FOLDER, f)
-                log.info(f"Deploying layer/operation {model_name} onto the cpu")
+                log.info(f"Deploying layer/operation {model_name} onto the tpu")
 
                 m = TPUDeploy(Model(model_path, "tpu", parent_model), count)
                 models["tpu"].append(m)
