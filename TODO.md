@@ -4,14 +4,18 @@
 * [X] create and implement working Dockerfile (w Makefile) for a reproducible containerized environment
 * [X] make adjustments to code according to new docker workflow
 * [X] change output to `JSON`
-* [ ] implement **NEW ANALYSIS** as merger between yours and Ines, cost values?
+* [ ] Merge analysis between yours and Ines, cost values?
 
-<details closed>
+<details open>
 <summary>
 <b> Questions </b>
 </summary>
 
 - [X] Should the parent model (entire model) also be benchmarked or only its ops?
+- [ ] isTPUAvailable, isCPUAvailable and isGPUAvailable, check with alex, bit tricky
+- [ ] **Similar issue to isTPUAvailable, had to refactor and switch tflite_runtime for tf.lite**
+  - [Link](https://github.com/ultralytics/yolov5/issues/5709)
+
 </details>
 
 <details closed>
@@ -46,8 +50,6 @@
 <summary>
 <b> Questions </b>
 </summary>
-
-- [X] Should the parent model (entire model) also be benchmarked or only its ops?
 </details>
 
 <details closed>
@@ -74,7 +76,7 @@
 </summary>
 </details>
 
-### 5. DSE
+### 4. DSE
 * [ ] Clean up/Make Generic Ine‘s java code that generates mapping
 * [ ] Add in comm costs (USB) to architecture graph
 * [ ] Adapt to new JSON format
@@ -90,3 +92,6 @@
 <b> Ideas </b>
 </summary>
 </details>
+
+### 5. EXTRA
+* [ ] Setup `Doxygen` documentation and "website"
