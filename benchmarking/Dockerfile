@@ -15,6 +15,7 @@ RUN apt-get update \
     build-essential sudo locales wget curl gnupg \
     python3 python3-pip \
     git vim nano \
+    usbutils \
     && apt-get clean \
     && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen && update-locale
 
