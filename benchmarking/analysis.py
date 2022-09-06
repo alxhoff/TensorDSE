@@ -4,14 +4,14 @@ from typing import Dict
 from utils.model import Model
 from utils.analysis import Analyzer
 
-def AnalyzeModelResults(parent_model:str, models:Dict):
+def AnalyzeModelResults(parent_model:str, models_dict:Dict):
     import json
     from os.path import join, isdir
     from main import log, RESULTS_FOLDER
 
     data = {
             parent_model: {
-                "name"   : parent_model,
+                "count"  : models_dict["count"],
                 "layers" : {}
         }
     }
@@ -21,11 +21,11 @@ def AnalyzeModelResults(parent_model:str, models:Dict):
             log.error(f"{RESULTS_FOLDER} is not a valid folder to store results!")
             break
 
-        if not models[delegate]:
+        if not models_dict[delegate]:
             log.info(f"Models dictionary does not contain results for delegate: {delegate}")
             continue
 
-        for m in models[delegate]:
+        for m in models_dict[delegate]:
             log.info(f"Analyzing results of operation: {m.model_name} ran on {delegate}")
             a = Analyzer(m)
             a.get_basic_statistics()
@@ -34,7 +34,7 @@ def AnalyzeModelResults(parent_model:str, models:Dict):
             if not m.model_name in  data[parent_model]["layers"].keys():
                 l = {
                     "name"                  : m.model_name,
-                    "path"                  : m.model_path,
+                    "path"                  : [ m.model_path ],
                     "delegates"             : {
                         m.delegate: {
                             "mean time"             : a.mean,
@@ -49,6 +49,9 @@ def AnalyzeModelResults(parent_model:str, models:Dict):
                 continue
 
             if not m.delegate in  data[parent_model]["layers"][m.model_name]["delegates"].keys():
+                if m.model_path != data[parent_model]["layers"][m.model_name]["path"]:
+                    data[parent_model]["layers"][m.model_name]["path"].append(m.model_path)
+
                 data[parent_model]["layers"][m.model_name]["delegates"][m.delegate] = {
                             "mean time"             : a.mean,
                             "median"                : a.median,
@@ -60,10 +63,9 @@ def AnalyzeModelResults(parent_model:str, models:Dict):
             raise Exception(f"Apparently attempt to overwrite data from model: {m.model_name} run on: {delegate}!")
 
 
-    with open(join(RESULTS_FOLDER, f"results_{parent_model}.json"), "w") as json_file:
-        json_data = json.dumps(data)
+    with open(join(RESULTS_FOLDER, f"{parent_model}.json"), "w") as json_file:
+        json_data = data
         json.dump(json_data, json_file, indent=4)
-
 
 
 def GetArgs() -> argparse.Namespace:
