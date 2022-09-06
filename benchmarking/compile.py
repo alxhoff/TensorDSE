@@ -1,4 +1,4 @@
-def CompileTFLiteModelsForCoral():
+def CompileTFLiteModelsForCoral(layers:list):
     """Function responsible for executing the compilation
     of the quantized tflite models.
 
@@ -13,7 +13,7 @@ def CompileTFLiteModelsForCoral():
     op_paths = []
 
     for i in listdir(LAYERS_FOLDER):
-        if isdir(join(LAYERS_FOLDER, i)):
+        if isdir(join(LAYERS_FOLDER, i)) and i in layers:
             path = join(LAYERS_FOLDER, i, "quant")
             if exists(path):
                 for j in listdir(path):
