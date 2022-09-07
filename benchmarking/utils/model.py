@@ -4,7 +4,7 @@ class Model:
         self.delegate       = delegate
         self.model_name     = self._get_model_name(file)
         self.results        = []
-        self.json_output    = {}
+        self.timers         = []
         self.parent         = parent
 
     def  _get_model_name (self, file_path:str) -> str:

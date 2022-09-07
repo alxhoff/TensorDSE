@@ -10,6 +10,7 @@ class Analyzer:
         self.model_path     = m.model_path
         self.model_name     = m.model_name
         self.results        = m.results
+        self.timers         = m.timers
         self.mean           = 0.0
         self.median         = 0.0
         self.std_deviation  = 0.0
@@ -32,6 +33,21 @@ class Analyzer:
         self.avg_absolute_deviation  = (
         ((mean([abs(n - self.mean) for n in data])) / self.mean) *100
         )
+
+        if not self.timers:
+            self.usb_statistics = {
+                    "valid" : len(self.timers)
+            }
+            for k in self.timers[0]:
+                self.usb_statistics[k]["mean"] = mean(
+                        [t[k] for t in self.timers]
+                )
+                self.usb_statistics[k]["median"] = median(
+                        [t[k] for t in self.timers]
+                )
+                self.usb_statistics[k]["std_deviation"] = stdev(
+                        [t[k] for t in self.timers]
+                )
 
     def get_distribution(self, bins=1000, ax=None):
         """Model data by finding best fit distribution to data"""

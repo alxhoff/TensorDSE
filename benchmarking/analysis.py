@@ -10,10 +10,11 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
     from main import log, RESULTS_FOLDER
 
     data = {
-            parent_model: {
-                "count"  : models_dict["count"],
-                "layers" : {}
-        }
+            "models": [{
+                "name"      : parent_model,
+                "runs"      : models_dict["count"],
+                "layers"    : {}
+        }]
     }
 
     for delegate in ("cpu", "gpu", "tpu"):
@@ -31,33 +32,46 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
             a.get_basic_statistics()
             a.get_distribution()
 
-            if not m.model_name in  data[parent_model]["layers"].keys():
-                l = {
+            model = data["models"][0] # hacky for now
+            if not m.model_name in  model["layers"].keys():
+                d = {
                     "name"                  : m.model_name,
-                    "path"                  : [ m.model_path ],
+                    "path"                  : { m.delegate : m.model_path },
                     "delegates"             : {
                         m.delegate: {
-                            "mean time"             : a.mean,
-                            "median"                : a.median,
-                            "standard deviation "   : a.std_deviation,
-                            "distribution"          : a.distribution_name
+                            "mean"                      : a.mean,
+                            "median"                    : a.median,
+                            "standard_deviation "       : a.std_deviation,
+                            "avg_absolute_deviation"    : a.avg_absolute_deviation,
+                            "distribution"              : a.distribution_name
                         }
                     }
                 }
 
-                data[parent_model]["layers"][m.model_name] = l
+                if m.delegate == "tpu":
+                    d["delegates"][m.delegate]["usb"] = m.usb_statistics
+
+                model["layers"][m.model_name] = d
+                data["models"][0] = model
                 continue
 
-            if not m.delegate in  data[parent_model]["layers"][m.model_name]["delegates"].keys():
-                if m.model_path != data[parent_model]["layers"][m.model_name]["path"]:
-                    data[parent_model]["layers"][m.model_name]["path"].append(m.model_path)
+            if not m.delegate in  model["layers"][m.model_name]["delegates"].keys():
+                if m.delegate not in model["layers"][m.model_name]["path"].keys():
+                    model["layers"][m.model_name]["path"][m.delegate] = m.model_path
 
-                data[parent_model]["layers"][m.model_name]["delegates"][m.delegate] = {
-                            "mean time"             : a.mean,
-                            "median"                : a.median,
-                            "standard deviation "   : a.std_deviation,
-                            "distribution"          : a.distribution_name
+                d = {
+                            "mean"                      : a.mean,
+                            "median"                    : a.median,
+                            "standard_deviation "       : a.std_deviation,
+                            "avg_absolute_deviation"    : a.avg_absolute_deviation,
+                            "distribution"              : a.distribution_name
                 }
+
+                if m.delegate == "tpu":
+                    d["usb"] = m.usb_statistics
+
+                model["layers"][m.model_name]["delegates"][m.delegate] = d
+                data["models"][0] = model
                 continue
 
             raise Exception(f"Apparently attempt to overwrite data from model: {m.model_name} run on: {delegate}!")

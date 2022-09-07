@@ -9,7 +9,7 @@ def isCPUavailable() -> bool:
 def isTPUavailable() -> bool:
     # https://github.com/ultralytics/yolov5/issues/5709
     # from pycoral.utils import edgetpu
-    # return (edgetpu.list_edge_tpus() == None)
+    # list = edgetpu.list_edge_tpus()
     return True
 
 def isGPUavailable() -> bool:
@@ -49,6 +49,9 @@ def MakeInterpreter(model_file:str, library:str):
 
 
 def TPUDeploy(m:Model, count:int) -> Model:
+    from multiprocessing import Process, Queue
+    import sys
+    import usb
     import time
     import numpy as np
     import platform
@@ -58,7 +61,9 @@ def TPUDeploy(m:Model, count:int) -> Model:
         "Darwin": "libedgetpu.1.dylib",
         "Windows": "edgetpu.dll",
     }[platform.system()]
+
     results = []
+    timers  = []
 
     interpreter = MakeInterpreter(m.model_path, TPU_LIBRARY)
     interpreter.allocate_tensors()
@@ -74,6 +79,16 @@ def TPUDeploy(m:Model, count:int) -> Model:
     interpreter.set_tensor(input_details[0]["index"], input_data)
 
     for i in range(count):
+        signalsQ = Queue()
+        p = Process(target=usb.capture_stream, args=(m, signalsQ))
+        p.start()
+
+        sig = signalsQ.get()
+        if sig != usb.START_DEPLOYMENT:
+            sig = signalsQ.put(usb.END_DEPLOYMENT)
+            p.join()
+            break
+
         start = time.perf_counter()                     # START
         interpreter.invoke()                            # RUNS
         inference_time = time.perf_counter() - start    # END
@@ -81,12 +96,23 @@ def TPUDeploy(m:Model, count:int) -> Model:
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
         results.append([i, inference_time])
 
+        t = signalsQ.get()
+        if t:
+            timers.append(t)
+        p.join()
+
+        sys.stdout.write(f"\r {i+1}/{count} for TPU ran -> {m.model_name}")
+        sys.stdout.flush()
+    sys.stdout.write("\n")
+
     m.results = results
+    m.timers = timers
     return m
 
 
 def GPUDeploy(m:Model, count:int) -> Model:
     import time
+    import sys
     import tensorflow as tf
     import numpy as np
 
@@ -114,11 +140,16 @@ def GPUDeploy(m:Model, count:int) -> Model:
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
         results.append([i, inference_time])
 
+        sys.stdout.write(f"\r {i+1}/{count} for GPU ran -> {m.model_name}")
+        sys.stdout.flush()
+    sys.stdout.write("\n")
+
     m.results = results
     return m
 
 def CPUDeploy(m:Model, count:int) -> Model:
     import time
+    import sys
     import tensorflow as tf
     import numpy as np
 
@@ -146,6 +177,10 @@ def CPUDeploy(m:Model, count:int) -> Model:
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
         results.append([i, inference_time])
 
+        sys.stdout.write(f"\r {i+1}/{count} for CPU ran -> {m.model_name}")
+        sys.stdout.flush()
+
+    sys.stdout.write("\n")
     m.results = results
     return m
 
@@ -178,7 +213,7 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
     if not isCPUavailable():
         log.info(f"CPU is NOT available on this machine!")
     else:
-        log.info(f"CPU is available on this machine!")
+        log.warning(f"CPU is available on this machine!")
         for d in listdir(LAYERS_FOLDER):
             if isdir(join(LAYERS_FOLDER, d)) and (d in layers):
                 model_name = d
@@ -193,7 +228,7 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
     if not isGPUavailable():
         log.info(f"GPU is NOT available on this machine!")
     else:
-        log.info(f"GPU is available on this machine!")
+        log.warning(f"GPU is available on this machine!")
         for d in listdir(LAYERS_FOLDER):
             if isdir(join(LAYERS_FOLDER, d)) and (d in layers):
                 model_name = d
@@ -207,7 +242,7 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
     if not isTPUavailable():
         log.info(f"TPU is NOT available on this machine!")
     else:
-        log.info(f"TPU is available on this machine!")
+        log.warning(f"TPU is available on this machine!")
         for f in listdir(COMPILED_MODELS_FOLDER):
             if isfile(join(COMPILED_MODELS_FOLDER, f)) and f.endswith(".tflite"):
                 model_name = (f.split("quant_")[1]).split("_edgetpu.tflite")[0]
