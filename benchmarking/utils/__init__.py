@@ -1,23 +1,3 @@
-def load_json(file_path):
-    import json
-
-    with open(file_path) as f:
-        model = json.load(f)
-        return model
-
-
-def load_csv(filename):
-    import csv
-
-    samples = []
-
-    with open(filename) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        for row in csv_reader:
-            samples.append(float(row[1]))
-
-    return samples
-
 def extend_directory(src_dir, dst_dir):
     """Extends directory by creating or appending the 'dst_dir'
        upon the 'src_dir'.
