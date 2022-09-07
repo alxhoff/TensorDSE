@@ -4,7 +4,7 @@
 * [X] create and implement working Dockerfile (w Makefile) for a reproducible containerized environment
 * [X] make adjustments to code according to new docker workflow
 * [X] change output to `JSON`
-* [ ] Merge analysis between yours and Ines, cost values?
+* [ ] Merge analysis between yours and Ines, cost values are decided? currently just mean
 
 <details open>
 <summary>
@@ -13,7 +13,7 @@
 
 - [X] Should the parent model (entire model) also be benchmarked or only its ops?
 - [ ] isTPUAvailable, isCPUAvailable and isGPUAvailable, check with alex, bit tricky
-- [ ] **Similar issue to isTPUAvailable, had to refactor and switch tflite_runtime for tf.lite**
+- [ ] **Had to refactor and switch tflite_runtime for tf.lite**
   - [Link](https://github.com/ultralytics/yolov5/issues/5709)
 
 </details>
@@ -60,9 +60,9 @@
 
 
 ### 3. USB
-- [ ] Reevaluate USB logic, reassure correctness
 - [X] change output to `JSON`
-- [ ] merge with analysis/cost calculations done in benchmarking
+- [X] merge with analysis/cost calculations done in benchmarking
+- [ ] reevaluate USB logic, reassure correctness
 
 <details closed>
 <summary>
