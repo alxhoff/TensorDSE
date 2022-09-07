@@ -13,6 +13,7 @@ class Analyzer:
         self.mean           = 0.0
         self.median         = 0.0
         self.std_deviation  = 0.0
+        self.avg_absolute_deviation  = 0.0
 
     def _get_data(self):
         data = []
@@ -28,6 +29,9 @@ class Analyzer:
         self.mean           = mean(data)
         self.median         = median(data)
         self.std_deviation  = stdev(data)
+        self.avg_absolute_deviation  = (
+        ((mean([abs(n - self.mean) for n in data])) / self.mean) *100
+        )
 
     def get_distribution(self, bins=1000, ax=None):
         """Model data by finding best fit distribution to data"""
