@@ -29,6 +29,10 @@ RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
 RUN sudo apt-get update
 RUN sudo apt-get install -y libedgetpu1-std edgetpu-compiler
 
+# Wireshark/Tshark
+RUN sudo add-apt-repository -y ppa:wireshark-dev/stable
+RUN sudo apt install -y tshark
+
 # Python
 RUN pip3 install pyshark tensorflow matplotlib scipy numpy pandas
 RUN pip3 install --upgrade pip
