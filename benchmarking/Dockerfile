@@ -5,38 +5,41 @@ LABEL Email="daniel.duclos-cavalcanti@gmail.com"
 LABEL Maintainer="Daniel Duclos-Cavalcanti"
 
 ARG USER_NAME="coral-docker"
-ARG DEBIAN_FRONTEND=noninteractive
+ARG DEBIAN_FRONTEND="noninteractive"
+
+ENV DEBIAN_FRONTEND="noninteractive"
 
 RUN set -ex
 
 # Base System
 RUN apt-get update \
     && apt-get install -y \
-    build-essential sudo locales wget curl gnupg \
+    build-essential locales wget curl gnupg \
     python3 python3-pip \
     git vim nano \
     usbutils \
+    software-properties-common \
     && apt-get clean \
     && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen && update-locale
 
 # CoralDev
 RUN echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" \
-    | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
+    | tee /etc/apt/sources.list.d/coral-edgetpu.list
 
 RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-    | sudo apt-key add -
+    | apt-key add -
 
-RUN sudo apt-get update
-RUN sudo apt-get install -y libedgetpu1-std edgetpu-compiler
+RUN apt-get update
+RUN apt-get install -y libedgetpu1-std edgetpu-compiler
 
 # Wireshark/Tshark
-RUN sudo add-apt-repository -y ppa:wireshark-dev/stable
-RUN sudo apt install -y tshark
+RUN add-apt-repository -y ppa:wireshark-dev/stable
+RUN apt-get install -y tshark
 
 # Python
 RUN pip3 install pyshark tensorflow matplotlib scipy numpy pandas
 RUN pip3 install --upgrade pip
-RUN sudo apt-get install -y python3-pycoral python3-ipdb
+RUN apt-get install -y python3-pycoral python3-ipdb
 
 # Ports
 # EXPOSE 8080
