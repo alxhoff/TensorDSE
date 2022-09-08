@@ -178,6 +178,16 @@ cd vcpkg
 ./vcpkg integrate install
 ./vcpkg install flatbuffers
 ```
+
+## Set Up Flabuffers compiler to be used in Terminal:
+- Locate the `flatc` binary inside `vcpkg/` directory. The default path to `flatc` is `vcpkg/installed/x64-linux/tools/flatbuffers`.
+
+- Run
+```
+sudo ln -s <full-path-to-flatc>/flatc /usr/local/bin/flatc
+chmod +x <full-path-to-flatc>
+
+```
 ## Flatbuffers Compiler Usage
 To convert a `.tflite` file into `.json`, run:
 ```
@@ -192,9 +202,9 @@ flatc -b <path/to/schema.fbs> <path/to/model.json>
 ## Setup
 ```
 git clone https://github.com/alxhoff/TensorDSE/
-cd TensorDSE/deployment/Model Splitting
+cd TensorDSE/deployment/model_splitting
 ```
-After cloning the repository, make sure to provide the tflite model by placing it inside the `TensorDSE/deployment/Model Splitting/models/source_model/tflite/`directory.
+After cloning the repository, make sure to provide the tflite model by placing it inside the `TensorDSE/deployment/model_splitting/models/source_model/tflite/`directory.
 
 ## Run the script
 The executable to run has the name `compile_and_map.py` and can be run in the command line as follows:
