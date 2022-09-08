@@ -23,7 +23,7 @@ local.properties
 .loadpath
 .recommenders
 deployment/model_splitting/models/
-#deployment/tflite-cpp/tflite-dist
+deployment/tflite-cpp/tflite-dist
 deployment/tflite-cpp/.vscode
 
 # External tool builders
