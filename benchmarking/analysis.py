@@ -13,17 +13,18 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
             "models": [{
                 "name"      : parent_model,
                 "runs"      : models_dict["count"],
-                "layers"    : {}
+                "layers"    : []
         }]
     }
 
-    for delegate in ("cpu", "gpu", "tpu"):
-        if not isdir(RESULTS_FOLDER):
-            log.error(f"{RESULTS_FOLDER} is not a valid folder to store results!")
-            break
+    if not isdir(RESULTS_FOLDER):
+       import sys
+       log.error(f"{RESULTS_FOLDER} is not a valid folder to store results!")
+       sys.exit(-1)
 
+    for delegate in ("cpu", "gpu", "tpu"):
         if not models_dict[delegate]:
-            log.info(f"Models dictionary does not contain results for delegate: {delegate}")
+            log.warning(f"Models dictionary does not contain results for delegate: {delegate}")
             continue
 
         for m in models_dict[delegate]:
@@ -33,36 +34,45 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
             a.get_distribution()
 
             model = data["models"][0] # hacky for now
-            if not m.model_name in  model["layers"].keys():
+            names = [i["name"] for i in model["layers"]]
+
+            if not m.model_name in names:
                 d = {
-                    "name"                  : m.model_name,
+                    "device"                : m.model_name,
                     "path"                  : { m.delegate : m.model_path },
-                    "delegates"             : {
-                        m.delegate: {
+                    "delegates"             : [
+                        {
+                            "name"                      : m.delegate,
                             "mean"                      : a.mean,
                             "median"                    : a.median,
-                            "standard_deviation "       : a.std_deviation,
+                            "standard_deviation"        : a.std_deviation,
                             "avg_absolute_deviation"    : a.avg_absolute_deviation,
                             "distribution"              : a.distribution_name
                         }
-                    }
+                    ]
                 }
 
                 if m.delegate == "tpu":
                     d["delegates"][m.delegate]["usb"] = m.usb_statistics
 
-                model["layers"][m.model_name] = d
+                model["layers"].append(d)
                 data["models"][0] = model
                 continue
 
-            if not m.delegate in  model["layers"][m.model_name]["delegates"].keys():
-                if m.delegate not in model["layers"][m.model_name]["path"].keys():
-                    model["layers"][m.model_name]["path"][m.delegate] = m.model_path
-
+            model_dict  = [ d for d in model["layers"] if d["name"] == m.model_name][0]
+            delegates   = [ d["name"] for d in model_dict["delegates"]]
+            paths       = [ d["path"] for d in model_dict["delegates"]]
+            if not m.delegate in delegates:
+                if m.delegate not in paths:
+                    for i,j in enumerate(model["layers"]):
+                        if j["name"] == m.model_name:
+                            model["layers"][i]["path"][m.delegate] = m.model_path
+                            break
                 d = {
+                            "name"                      : m.model_name,
                             "mean"                      : a.mean,
                             "median"                    : a.median,
-                            "standard_deviation "       : a.std_deviation,
+                            "standard_deviation"        : a.std_deviation,
                             "avg_absolute_deviation"    : a.avg_absolute_deviation,
                             "distribution"              : a.distribution_name
                 }
@@ -70,8 +80,11 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                 if m.delegate == "tpu":
                     d["usb"] = m.usb_statistics
 
-                model["layers"][m.model_name]["delegates"][m.delegate] = d
-                data["models"][0] = model
+                for i,j in enumerate(model["layers"]):
+                    if j["name"] == m.model_name:
+                        model["layers"][i]["delegates"].append(d)
+                        data["models"][0] = model
+                        break
                 continue
 
             raise Exception(f"Apparently attempt to overwrite data from model: {m.model_name} run on: {delegate}!")

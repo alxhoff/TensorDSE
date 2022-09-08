@@ -34,7 +34,7 @@ class Analyzer:
         ((mean([abs(n - self.mean) for n in data])) / self.mean) *100
         )
 
-        if not self.timers:
+        if self.timers:
             self.usb_statistics = {
                     "valid" : len(self.timers)
             }
