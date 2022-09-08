@@ -81,7 +81,6 @@ dependencies {
 	runtime project(':opendse-visualization')
 	runtime project(':opendse-optimization')
 	runtime project(':opendse-realtime')
-	runtime project(':InesDSE')
 	runtime project(':TensorDSE')
 
     implementation 'net.sourceforge.argparse4j:argparse4j:0.2.0'

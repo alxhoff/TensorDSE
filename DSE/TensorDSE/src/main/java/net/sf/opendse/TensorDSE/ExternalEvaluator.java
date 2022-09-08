@@ -30,11 +30,11 @@ public class ExternalEvaluator implements ImplementationEvaluator {
 
 	protected final Map<String, Objective> map = new HashMap<String, Objective>();
 	protected int priority;
-	private OpCosts op_costs = null;
+	private OpCosts operation_costs = null;
 
 	public ExternalEvaluator(String objectives, FullSpecDef fullspecdef) {
 		super();
-		this.op_costs = fullspecdef.GetOpCosts();
+		this.operation_costs = fullspecdef.GetOpCosts();
 		for (String s : objectives.split(",")) {
 			Objective obj = new Objective(s, Objective.Sign.MIN);
 			map.put(s, obj);
@@ -106,19 +106,14 @@ public class ExternalEvaluator implements ImplementationEvaluator {
 	 */
 	private double MappingCost(Mapping<Task, Resource> mapping) {
 		double cost = 0.0;
-		String task_name = mapping.getSource().getAttribute("type").toString().toLowerCase();
-		String device = mapping.getTarget().getId();
+		String operation_type = mapping.getSource().getAttribute("type").toString().toLowerCase();
+		String device_type = mapping.getTarget().getId();
 		Integer input_shape = ((Integer) (mapping.getSource().getAttribute("input_shape"))).intValue();
-		String input_type = mapping.getTarget().getAttribute("input_type");
-		String number_of_shaves = Integer.toString(mapping.getTarget().getAttribute("num_of_shaves"));
+		String data_type = mapping.getTarget().getAttribute("input_type");
 
-		if (op_costs.GetOpMap(device).containsKey(task_name)) {
-			if (op_costs.GetTypeMap(device, task_name).containsKey(input_shape)) {
-				if (op_costs.GetShaveMap(device, task_name, input_type).containsKey(number_of_shaves)) {
-
-					cost = op_costs.GetOpCoeffucuentA(device, task_name, input_type, number_of_shaves) * input_shape +
-							op_costs.GetOpCoeffucuentB(device, task_name, input_type, number_of_shaves);
-				}
+		if (operation_costs.GetOpTypeTable(device_type).containsKey(operation_type)) {
+			if (operation_costs.GetDataTypeTable(device_type, operation_type).containsKey(input_shape)) {
+				cost = operation_costs.GetMean(device_type, operation_type, data_type);
 			} else {
 				cost = 0.0;
 			}

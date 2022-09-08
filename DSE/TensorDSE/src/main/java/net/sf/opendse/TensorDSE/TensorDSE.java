@@ -74,19 +74,19 @@ public class TensorDSE {
 				.help("Number of offsprings per generation");
 
 		// Other
-		parser.addArgument("-r", "--runs").setDefault(500).type(int.class).help("Number of runs");
+		parser.addArgument("-r", "--runs").setDefault(50).type(int.class).help("Number of runs");
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
-				.setDefault("src/main/resources/model_summaries/example_summary.csv")
+				.setDefault("src/main/resources/modelsummaries/examplesummary.csv")
 				.type(String.class).help("Location of model summary CSV");
-		parser.addArgument("-d", "--costfile").setDefault("src/main/resources/costfiles/examplecosts.csv")
+		parser.addArgument("-d", "--costfile").setDefault("src/main/resources/benchmarkingresults/examplebenchmarkresults.json")
 				.type(String.class).help("Directory containing cost files");
 
 		// Output Files
 		parser.addArgument("-f", "--resultsfile").setDefault("results.csv").type(String.class)
 				.help("Results file name");
-		parser.addArgument("-t", "--outputfolder").setDefault("src/main/resources/example_output")
+		parser.addArgument("-t", "--outputfolder").setDefault("src/main/resources/exampleoutput")
 				.type(String.class);
 
 		Namespace ns = null;

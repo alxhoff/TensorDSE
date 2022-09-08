@@ -1,0 +1,131 @@
+{
+    "models": [
+        {
+            "name": "MNIST",
+            "runs": 1000,
+            "layers": [
+                {
+                    "name": "SOFTMAX",
+                    "path": {
+                        "cpu": "models/layers/SOFTMAX/quant/quant_SOFTMAX.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "input": {
+                                "shape": [
+                                    1,
+                                    10
+                                ],
+                                "type": "uint8"
+                            },
+                            "mean": 3.2636499527143316e-06,
+                            "median": 2.547498297644779e-06,
+                            "standard_deviation": 5.460193969170671e-06,
+                            "avg_absolute_deviation": 40.5510885253212,
+                            "distribution": "cauchy"
+                        }
+                    ]
+                },
+                {
+                    "name": "MAX_POOL_2D",
+                    "path": {
+                        "cpu": "models/layers/MAX_POOL_2D/quant/quant_MAX_POOL_2D.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "input": {
+                                "shape": [
+                                    1,
+                                    26,
+                                    26,
+                                    28
+                                ],
+                                "type": "uint8"
+                            },
+                            "mean": 0.00013567480394704036,
+                            "median": 0.00013462099741445854,
+                            "standard_deviation": 1.3932221584023258e-05,
+                            "avg_absolute_deviation": 8.024258418555233,
+                            "distribution": "fatiguelife"
+                        }
+                    ]
+                },
+                {
+                    "name": "CONV_2D",
+                    "path": {
+                        "cpu": "models/layers/CONV_2D/quant/quant_CONV_2D.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "input": {
+                                "shape": [
+                                    1,
+                                    28,
+                                    28,
+                                    1
+                                ],
+                                "type": "uint8"
+                            },
+                            "mean": 0.0001946439279272454,
+                            "median": 0.00015249599891831167,
+                            "standard_deviation": 0.0010948046154394939,
+                            "avg_absolute_deviation": 37.016465328573304,
+                            "distribution": "fatiguelife"
+                        }
+                    ]
+                },
+                {
+                    "name": "RESHAPE",
+                    "path": {
+                        "cpu": "models/layers/RESHAPE/quant/quant_RESHAPE.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "input": {
+                                "shape": [
+                                    1,
+                                    13,
+                                    13,
+                                    28
+                                ],
+                                "type": "uint8"
+                            },
+                            "mean": 5.763037914584856e-05,
+                            "median": 5.809200229123235e-05,
+                            "standard_deviation": 6.6287069703458345e-06,
+                            "avg_absolute_deviation": 8.333894519568105,
+                            "distribution": "burr"
+                        }
+                    ]
+                },
+                {
+                    "name": "FULLY_CONNECTED",
+                    "path": {
+                        "cpu": "models/layers/FULLY_CONNECTED/quant/quant_FULLY_CONNECTED.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "input": {
+                                "shape": [
+                                    1,
+                                    128
+                                ],
+                                "type": "uint8"
+                            },
+                            "mean": 4.315083111578133e-06,
+                            "median": 4.294000973459333e-06,
+                            "standard_deviation": 8.167521051118729e-07,
+                            "avg_absolute_deviation": 11.5896790692893,
+                            "distribution": "dweibull"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

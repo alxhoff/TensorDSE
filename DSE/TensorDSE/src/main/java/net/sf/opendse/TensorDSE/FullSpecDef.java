@@ -29,19 +29,15 @@ import net.sf.opendse.model.parameter.Parameters;
 import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
- * The {@code FullSpecDef} is the class defining the Specification that
- * corresponds to the graph
- * of the deep learning model to which we want to optimize the performance.
+ * The {@code FullSpecDef} is the class defining the Specification that corresponds to the graph of
+ * the deep learning model to which we want to optimize the performance.
  * 
  * @author Ines Ben Hmida
  * @author Alex Hoffman
  * 
- * @param modelsummary
- *                     user entry of the file path a csv file that summarized
- *                     the graph of the considered deep learning model
- * @param costsfile
- *                     A csv file that contains the costs deducted from running
- *                     the benchmarks
+ * @param modelsummary user entry of the file path a csv file that summarized the graph of the
+ *        considered deep learning model
+ * @param costsfile A csv file that contains the costs deducted from running the benchmarks
  *
  */
 public class FullSpecDef {
@@ -61,7 +57,8 @@ public class FullSpecDef {
 	 * @param task_type
 	 * @return
 	 */
-	private static Task CreateTaskNode(String task_name, String inputs, String output_shape, String task_type) {
+	private static Task CreateTaskNode(String task_name, String inputs, String output_shape,
+			String task_type) {
 		Task ret = new Task(task_name);
 		ret.setAttribute("inputs", inputs);
 		ret.setAttribute("output_shape", output_shape);
@@ -72,26 +69,27 @@ public class FullSpecDef {
 
 	/**
 	 * 
-	 * @param all_tasks
-	 *                  The table containing all tasks of the application
-	 * @param task_id
-	 *                  The task id of the considered task
-	 * @return
-	 *         True if the task is in the table and False ( means the task is not in
-	 *         the application)
+	 * @param all_tasks The table containing all tasks of the application
+	 * @param task_id The task id of the considered task
+	 * @return True if the task is in the table and False ( means the task is not in the
+	 *         application)
 	 */
 	private boolean TaskInTaskSet(HashSet<Task> all_tasks, String task_id) {
 
-		if (all_tasks.stream().filter((task) -> task.getId().equals(task_id)).findFirst().orElse(null) != null)
+		if (all_tasks.stream().filter((task) -> task.getId().equals(task_id)).findFirst()
+				.orElse(null) != null)
 			return true;
 
 		return false;
 	}
 
 	private static void InitExecutionUnitResources(Resource r1, Resource r2, Resource r3) {
-		r1.setAttribute("num_of_shaves", Parameters.select(12, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
-		r2.setAttribute("num_of_shaves", Parameters.select(12, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
-		r3.setAttribute("num_of_shaves", Parameters.select(12, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
+		r1.setAttribute("num_of_shaves",
+				Parameters.select(12, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
+		r2.setAttribute("num_of_shaves",
+				Parameters.select(12, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
+		r3.setAttribute("num_of_shaves",
+				Parameters.select(12, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11));
 
 		r1.setAttribute("input_type", "float");
 		r2.setAttribute("input_type", "float");
@@ -132,10 +130,10 @@ public class FullSpecDef {
 		Link l3 = new Link("l3");
 		Link l4 = new Link("l4");
 
-		l1.setAttribute("cost", this.op_costs.comCost.get(0) / 2);
-		l2.setAttribute("cost", this.op_costs.comCost.get(0) / 2);
-		l3.setAttribute("cost", this.op_costs.comCost.get(1) / 2);
-		l4.setAttribute("cost", this.op_costs.comCost.get(1) / 2);
+		l1.setAttribute("cost", this.op_costs.communication_costs.get(0) / 2);
+		l2.setAttribute("cost", this.op_costs.communication_costs.get(0) / 2);
+		l3.setAttribute("cost", this.op_costs.communication_costs.get(1) / 2);
+		l4.setAttribute("cost", this.op_costs.communication_costs.get(1) / 2);
 
 		// NCS2 -> bus12, w dep Link1
 		architecture.addEdge(l1, r1, bus12);
@@ -237,20 +235,22 @@ public class FullSpecDef {
 
 						// Each edge in the graph needs a dependency for the optimization
 						// Dependency and edge are created between input node and communication
-						String dep_id = input_node_id + "->" + current_node_id + ":" + String.valueOf(unique_id++);
+						String dep_id = input_node_id + "->" + current_node_id + ":"
+								+ String.valueOf(unique_id++);
 						application.addEdge(new Dependency(dep_id), input_node, comm);
 
 						// Dependency from the communication to the current node
 						dep_id = current_task.getId() + "->" + comm.getId();
 						application.addEdge(new Dependency(dep_id), comm, current_task);
 
-						input_shape_list = input_shape.trim().substring(1, input_shape.length() - 1).split("\\|");
+						input_shape_list = input_shape.trim().substring(1, input_shape.length() - 1)
+								.split("\\|");
 						if (!(input_shape_list.length == 0)) {
 							input_size_new = 1;
 							for (int j = 0; j < input_shape_list.length; j++) {
 								try {
-									input_size_new = input_size_new
-											* Integer.parseInt(input_shape_list[j].replace(" ", ""));
+									input_size_new = input_size_new * Integer
+											.parseInt(input_shape_list[j].replace(" ", ""));
 								} catch (NumberFormatException e) {
 									// not a double
 									continue;
@@ -290,7 +290,7 @@ public class FullSpecDef {
 			String mapping_id = null;
 			// NCS2
 			// if (op_costs.OpCost.get(r1.getId()).containsKey(task_name_lower)) {
-			if (op_costs.GetOpMap(r1.getId()).containsKey(task_name_lower)) {
+			if (op_costs.GetOpTypeTable(r1.getId()).containsKey(task_name_lower)) {
 				mapping_id = current_task.getId() + r1.getId();
 				m = new Mapping<Task, Resource>(mapping_id, current_task, r1);
 				all_mappings.add(m);
@@ -298,24 +298,24 @@ public class FullSpecDef {
 			}
 
 			// CPU + GPU
-			if (op_costs.GetOpMap(r2.getId()).containsKey(task_name_lower)) {
+			if (op_costs.GetOpTypeTable(r2.getId()).containsKey(task_name_lower)) {
 				mapping_id = current_task.getId() + r2.getId();
 				m = new Mapping<Task, Resource>(mapping_id, current_task, r2);
 				if (current_task.isDefined("input_shape")) {
 					// m.setAttribute("cost_of_mapping", MappingCost(m));
 				} else {
-					System.out.println("operation without input shape setting cost to 0 of " +
-							task_name_lower + "on cpu+gpu");
+					System.out.println("operation without input shape setting cost to 0 of "
+							+ task_name_lower + "on cpu+gpu");
 					// m.setAttribute("cost_of_mapping", 0.0);
 				}
 
 				all_mappings.add(m);
 				mappings.add(m);
 			} else {
-				System.out.println("operation not found setting cost to 0 of " +
-						task_name_lower + "on cpu+gpu");
-				m = new Mapping<Task, Resource>(current_task.getId() + r2.getId(),
-						current_task, r2);
+				System.out.println("operation not found setting cost to 0 of " + task_name_lower
+						+ "on cpu+gpu");
+				m = new Mapping<Task, Resource>(current_task.getId() + r2.getId(), current_task,
+						r2);
 				// m.setAttribute("cost_of_mapping", 0.0);
 				all_mappings.add(m);
 				mappings.add(m);
@@ -323,9 +323,9 @@ public class FullSpecDef {
 			}
 
 			// Coral
-			if (op_costs.GetOpMap(r3.getId()).containsKey(task_name_lower)) {
-				m = new Mapping<Task, Resource>(current_task.getId() + r3.getId(),
-						current_task, r3);
+			if (op_costs.GetOpTypeTable(r3.getId()).containsKey(task_name_lower)) {
+				m = new Mapping<Task, Resource>(current_task.getId() + r3.getId(), current_task,
+						r3);
 				all_mappings.add(m);
 				mappings.add(m);
 			}

@@ -3,13 +3,19 @@ import java.util.regex.*
 
 apply plugin: 'application'
 
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
 dependencies {	
 	compile project(':opendse-model')
 	compile project(':opendse-io')
 	compile project(':opendse-visualization')
 	compile project(':opendse-optimization')
 	compile project(':opendse-realtime')
-	
+	compile group: "com.google.code.gson", name: "gson", version: "2.7"
+
     implementation 'com.github.SDARG.opt4j:opt4j-core:-SNAPSHOT'
     implementation 'com.github.SDARG.opt4j:opt4j-satdecoding:-SNAPSHOT'
     implementation 'com.github.SDARG.opt4j:opt4j-optimizers:-SNAPSHOT'
