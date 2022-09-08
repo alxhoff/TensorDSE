@@ -22,7 +22,9 @@ local.properties
 .settings/
 .loadpath
 .recommenders
-models/
+deployment/model_splitting/models/
+#deployment/tflite-cpp/tflite-dist
+deployment/tflite-cpp/.vscode
 
 # External tool builders
 .externalToolBuilders/
@@ -110,3 +112,4 @@ gradle-app.setting
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+
