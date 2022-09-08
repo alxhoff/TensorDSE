@@ -191,11 +191,10 @@ flatc -b <path/to/schema.fbs> <path/to/model.json>
 # How to use this project
 ## Setup
 ```
-git clone <repository_link>
-cd TensorDSE/Coral TPU Graph Splitting/
+git clone https://github.com/alxhoff/TensorDSE/
+cd TensorDSE/deployment/Model Splitting
 ```
-After cloning the repository, make sure to provide the operation mapping in the form of a CSV file and place in in the 
-`mappings/` directory.
+After cloning the repository, make sure to provide the tflite model by placing it inside the `TensorDSE/deployment/Model Splitting/models/source_model/tflite/`directory.
 
 ## Run the script
 The executable to run has the name `compile_and_map.py` and can be run in the command line as follows:
