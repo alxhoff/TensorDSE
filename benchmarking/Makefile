@@ -7,7 +7,10 @@ NAME := coral-environment
 REGEX := coral
 
 VOLUME := $(shell pwd)
-DEBUG := 0
+
+MODE := 0
+DEBUG_MODE := 1
+TEST_MODE := 2
 
 exist-docker-image = $(shell docker image ls | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
 is-docker-running = $(shell docker ps -a | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
@@ -34,7 +37,7 @@ run: $(if $(call exist-docker-image),,build)
 		docker run --name ${NAME} \
 				   --rm \
 				   --privileged \
-				   --env DEBUG=${DEBUG} \
+				   --env MODE=${MODE} \
 				   -v /sys/bus/usb/devices:/sys/bus/usb/devices \
 				   -v /dev/bus/usb:/dev/bus/usb \
 				   -v "${VOLUME}":/home/tensorDSE \
@@ -43,7 +46,10 @@ run: $(if $(call exist-docker-image),,build)
 	fi
 
 debug:
-	$(MAKE) -f ${FILE} run DEBUG=1
+	$(MAKE) -f ${FILE} run MODE=${DEBUG_MODE}
+
+test:
+	$(MAKE) -f ${FILE} run MODE=${TEST_MODE}
 
 stop:
 	@if [ -n "$(call is-docker-running)" ]; then \

@@ -48,7 +48,7 @@ RUN apt-get install -y python3-pycoral python3-ipdb
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
-ENV DEBUG 0
+ENV MODE 0
 
 # Work
 RUN mkdir /home/tensorDSE
