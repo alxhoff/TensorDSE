@@ -81,16 +81,12 @@ def TPUDeploy(m:Model, count:int) -> Model:
     m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
 
     for i in range(count):
-        # signalsQ = Queue()
-        # p = Process(target=usb.capture_stream, args=(m, signalsQ))
-        # p.start()
-        #
-        # sig = signalsQ.get()
-        # if sig != usb.START_DEPLOYMENT:
-        #     sig = signalsQ.put(usb.END_DEPLOYMENT)
-        #     p.join()
-        #     break
-        #
+        signalsQ = Queue()
+        p = Process(target=usb.capture_stream, args=(m, signalsQ))
+        p.start()
+
+        signalsQ.get()
+
         start = time.perf_counter()                     # START
         interpreter.invoke()                            # RUNS
         inference_time = time.perf_counter() - start    # END
@@ -98,11 +94,11 @@ def TPUDeploy(m:Model, count:int) -> Model:
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
         results.append([i, inference_time])
 
-        # t = signalsQ.get()
-        # if t:
-        #     timers.append(t)
-        # p.join()
-        #
+        t = signalsQ.get()
+        if t:
+            timers.append(t)
+        p.join()
+
         sys.stdout.write(f"\r {i+1}/{count} for TPU ran -> {m.model_name}")
         sys.stdout.flush()
     sys.stdout.write("\n")

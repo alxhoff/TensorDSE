@@ -14,5 +14,5 @@ results["gpu"]   = []
 results["tpu"]   = []
 results["count"] = count
 
-m = TPUDeploy(Model(model, "tpu"), count)
+results["tpu"].append(TPUDeploy(Model(model, "tpu"), count))
 AnalyzeModelResults("TEST", results)
