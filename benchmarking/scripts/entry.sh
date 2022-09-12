@@ -10,9 +10,11 @@
 ## Exec shell
 set +xe
 
-mode="$MODE"
 DEBUG_MODE=1
 TEST_MODE=2
+SHELL_MODE=2
+
+mode="$MODE"
 
 coral_hello_world() {
     local coral_folder="/home/coral"
@@ -43,9 +45,11 @@ run() {
 
 main() {
     if [ "$mode" -eq $DEBUG_MODE ]; then
-        debug
+        bash
     elif [ "$mode" -eq $TEST_MODE ]; then
         test
+    elif [ "$mode" -eq $SHELL_MODE ]; then
+        bash
     else
         run
     fi

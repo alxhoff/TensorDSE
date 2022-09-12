@@ -11,6 +11,7 @@ VOLUME := $(shell pwd)
 MODE := 0
 DEBUG_MODE := 1
 TEST_MODE := 2
+SHELL_MODE := 3
 
 exist-docker-image = $(shell docker image ls | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
 is-docker-running = $(shell docker ps -a | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
@@ -50,6 +51,9 @@ debug:
 
 test:
 	$(MAKE) -f ${FILE} run MODE=${TEST_MODE}
+
+shell:
+	$(MAKE) -f ${FILE} run MODE=${SHELL_MODE}
 
 stop:
 	@if [ -n "$(call is-docker-running)" ]; then \
