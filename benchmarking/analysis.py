@@ -38,11 +38,15 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
 
             if not m.model_name in names:
                 d = {
-                    "device"                : m.model_name,
+                    "name"                  : m.model_name,
                     "path"                  : { m.delegate : m.model_path },
                     "delegates"             : [
                         {
-                            "name"                      : m.delegate,
+                            "device"                      : m.delegate,
+                            "input"                     : {
+                                    "shape"   : m.input_shape,
+                                    "type"    : m.input_datatype
+                             },
                             "mean"                      : a.mean,
                             "median"                    : a.median,
                             "standard_deviation"        : a.std_deviation,
@@ -69,7 +73,11 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                             model["layers"][i]["path"][m.delegate] = m.model_path
                             break
                 d = {
-                            "name"                      : m.model_name,
+                            "device"                    : m.delegate,
+                            "input"                     : {
+                                    "shape"   : m.input_shape,
+                                    "type"    : m.input_datatype
+                             },
                             "mean"                      : a.mean,
                             "median"                    : a.median,
                             "standard_deviation"        : a.std_deviation,
