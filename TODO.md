@@ -67,7 +67,7 @@
 ### 3. USB
 - [X] change output to `JSON`
 - [X] merge with analysis/cost calculations done in benchmarking
-- [ ] fix usb addr issue
+- [ ] fix usbmon0 issue
 - [ ] reevaluate USB logic, reassure correctness
 
 <details closed>
