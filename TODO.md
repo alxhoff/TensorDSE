@@ -5,6 +5,7 @@
 * [X] make adjustments to code according to new docker workflow
 * [X] change output to `JSON`
 * [ ] fix `seg fault` but with use of tf instead of tflite_runtime
+* [ ] fix issue with checking on HW availability
 
 <details open>
 <summary>
@@ -66,7 +67,7 @@
 ### 3. USB
 - [X] change output to `JSON`
 - [X] merge with analysis/cost calculations done in benchmarking
-- [ ] usb interface not available on docker through pyshark, fix it
+- [ ] fix usb interface not being available on docker through pyshark
 - [ ] reevaluate USB logic, reassure correctness
 
 <details closed>
