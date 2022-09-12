@@ -33,7 +33,8 @@
 - [ ] Adapt Dockerfile
 - [ ] Test it out ssh server
   - need sudo rights to install bazel, its needed to build the GPU delegate
-  - locally it takes too much time
+  - or at least docker rights to run a docker that installs bazel and does the rest
+  - not getting bazel build right
 
 <details closed>
 <summary>
