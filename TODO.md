@@ -66,6 +66,7 @@
 ### 3. USB
 - [X] change output to `JSON`
 - [X] merge with analysis/cost calculations done in benchmarking
+- [ ] usb interface not available on docker through pyshark, fix it
 - [ ] reevaluate USB logic, reassure correctness
 
 <details closed>
