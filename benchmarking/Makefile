@@ -53,6 +53,7 @@ test:
 
 stop:
 	@if [ -n "$(call is-docker-running)" ]; then \
+		docker stop ${NAME}; \
 		docker rm ${NAME}; \
 	fi
 
@@ -95,6 +96,8 @@ purge-all: stop-all rm-all purge
 .PHONY: info \
 		build \
 		run \
+		debug \
+		test \
 		stop \
 		rm \
 		stop-all \
