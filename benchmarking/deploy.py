@@ -10,7 +10,7 @@ def isTPUavailable() -> bool:
     # https://github.com/ultralytics/yolov5/issues/5709
     # from pycoral.utils import edgetpu
     # list = edgetpu.list_edge_tpus()
-    return True
+    return False
 
 def isGPUavailable() -> bool:
     return False
@@ -30,18 +30,19 @@ def MakeInterpreter(model_file:str, library:str):
     tflite.Interpreter Object
     """
     # https://github.com/ultralytics/yolov5/issues/5709
-    # import tflite_runtime.interpreter as tflite
-    import tensorflow as tf
+    # https://github.com/google-coral/pycoral/issues/57
+    # import tensorflow as tf
+    import tflite_runtime.interpreter as tflite
 
     model_file, *device = model_file.split("@")
 
     device = {"device": device[0]} if device else {}
     shared_library = library
     experimental_delegates = [
-        tf.lite.experimental.load_delegate(shared_library, device)
+        tflite.load_delegate(shared_library, device)
     ]
 
-    return tf.lite.Interpreter(
+    return tflite.Interpreter(
         model_path=model_file,
         model_content=None,
         experimental_delegates=experimental_delegates,
@@ -77,18 +78,19 @@ def TPUDeploy(m:Model, count:int) -> Model:
                 dtype=input_details[0]["dtype"])    # input dtype
 
     interpreter.set_tensor(input_details[0]["index"], input_data)
+    m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
 
     for i in range(count):
-        signalsQ = Queue()
-        p = Process(target=usb.capture_stream, args=(m, signalsQ))
-        p.start()
-
-        sig = signalsQ.get()
-        if sig != usb.START_DEPLOYMENT:
-            sig = signalsQ.put(usb.END_DEPLOYMENT)
-            p.join()
-            break
-
+        # signalsQ = Queue()
+        # p = Process(target=usb.capture_stream, args=(m, signalsQ))
+        # p.start()
+        #
+        # sig = signalsQ.get()
+        # if sig != usb.START_DEPLOYMENT:
+        #     sig = signalsQ.put(usb.END_DEPLOYMENT)
+        #     p.join()
+        #     break
+        #
         start = time.perf_counter()                     # START
         interpreter.invoke()                            # RUNS
         inference_time = time.perf_counter() - start    # END
@@ -96,11 +98,11 @@ def TPUDeploy(m:Model, count:int) -> Model:
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
         results.append([i, inference_time])
 
-        t = signalsQ.get()
-        if t:
-            timers.append(t)
-        p.join()
-
+        # t = signalsQ.get()
+        # if t:
+        #     timers.append(t)
+        # p.join()
+        #
         sys.stdout.write(f"\r {i+1}/{count} for TPU ran -> {m.model_name}")
         sys.stdout.flush()
     sys.stdout.write("\n")
@@ -131,6 +133,7 @@ def GPUDeploy(m:Model, count:int) -> Model:
                 dtype=input_details[0]["dtype"])    # input dtype
 
     interpreter.set_tensor(input_details[0]["index"], input_data)
+    m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
 
     for i in range(count):
         start = time.perf_counter()                     # START
@@ -150,8 +153,8 @@ def GPUDeploy(m:Model, count:int) -> Model:
 def CPUDeploy(m:Model, count:int) -> Model:
     import time
     import sys
-    import tensorflow as tf
     import numpy as np
+    import tensorflow as tf
 
     results = []
 
@@ -168,6 +171,7 @@ def CPUDeploy(m:Model, count:int) -> Model:
                 dtype=input_details[0]["dtype"])    # input dtype
 
     interpreter.set_tensor(input_details[0]["index"], input_data)
+    m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
 
     for i in range(count):
         start = time.perf_counter()                     # START
