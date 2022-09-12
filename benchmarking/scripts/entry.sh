@@ -12,7 +12,7 @@ set +xe
 
 DEBUG_MODE=1
 TEST_MODE=2
-SHELL_MODE=2
+SHELL_MODE=3
 
 mode="$MODE"
 

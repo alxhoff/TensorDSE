@@ -102,6 +102,7 @@ purge-all: stop-all rm-all purge
 		run \
 		debug \
 		test \
+		shell \
 		stop \
 		rm \
 		stop-all \
