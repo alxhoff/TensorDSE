@@ -4,13 +4,14 @@
 * [X] create and implement working Dockerfile (w Makefile) for a reproducible containerized environment
 * [X] make adjustments to code according to new docker workflow
 * [X] change output to `JSON`
-* [ ] Merge analysis between yours and Ines, cost values are decided? currently just mean
+* [ ] fix `seg fault` but with use of tf instead of tflite_runtime
 
 <details open>
 <summary>
 <b> Questions </b>
 </summary>
 
+- [ ] Is the cost model final?
 - [X] Should the parent model (entire model) also be benchmarked or only its ops?
 - [ ] isTPUAvailable, isCPUAvailable and isGPUAvailable, check with alex, bit tricky
 - [ ] **Had to refactor and switch tflite_runtime for tf.lite**
@@ -31,10 +32,12 @@
 - [X] Implement Function
 - [ ] Adapt Dockerfile
 - [ ] Test it out ssh server
+  - need sudo rights to install bazel, its needed to build the GPU delegate
+  - locally it takes too much time
 
 <details closed>
 <summary>
-<b> Issues </b>
+<b> Notes </b>
 </summary>
 
 * Pro:
