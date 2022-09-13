@@ -8,10 +8,11 @@ REGEX := coral
 
 VOLUME := $(shell pwd)
 
-MODE := 0
-DEBUG_MODE := 1
-TEST_MODE := 2
-SHELL_MODE := 3
+MODE 				:= 0
+DEBUG_MODE 			:= 1
+TEST_MODE 			:= 2
+HELLO_WORLD_MODE 	:= 3
+SHELL_MODE 			:= 4
 
 exist-docker-image = $(shell docker image ls | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
 is-docker-running = $(shell docker ps -a | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
@@ -40,6 +41,7 @@ run: $(if $(call exist-docker-image),,build)
 				   --privileged \
 				   --env MODE=${MODE} \
 				   -v /sys/bus/usb/devices:/sys/bus/usb/devices \
+				   -v /lib/modules:/lib/modules \
 				   -v /dev/bus/usb:/dev/bus/usb \
 				   -v "${VOLUME}":/home/tensorDSE \
 				   --detach-keys="ctrl-@" \
@@ -51,6 +53,9 @@ debug:
 
 test:
 	$(MAKE) -f ${FILE} run MODE=${TEST_MODE}
+
+hello_world:
+	$(MAKE) -f ${FILE} run MODE=${HELLO_WORLD_MODE}
 
 shell:
 	$(MAKE) -f ${FILE} run MODE=${SHELL_MODE}
@@ -102,6 +107,7 @@ purge-all: stop-all rm-all purge
 		run \
 		debug \
 		test \
+		hello_world \
 		shell \
 		stop \
 		rm \

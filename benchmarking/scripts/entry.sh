@@ -12,7 +12,8 @@ set +xe
 
 DEBUG_MODE=1
 TEST_MODE=2
-SHELL_MODE=3
+HELLO_WORLD_MODE=3
+SHELL_MODE=4
 
 mode="$MODE"
 
@@ -43,11 +44,17 @@ run() {
                     -c 1000
 }
 
+hello_world() {
+    coral_hello_world
+}
+
 main() {
     if [ "$mode" -eq $DEBUG_MODE ]; then
-        bash
+        debug
     elif [ "$mode" -eq $TEST_MODE ]; then
         test
+    elif [ "$mode" -eq $HELLO_WORLD_MODE ]; then
+        hello_world
     elif [ "$mode" -eq $SHELL_MODE ]; then
         bash
     else
