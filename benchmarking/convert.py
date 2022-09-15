@@ -4,8 +4,6 @@ from ast import operator
 from typing import Dict
 from tflite_helper import *
 
-import tensorflow as tf
-
 def print_options(options):
     if options:
         for key, item in options.items():

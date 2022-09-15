@@ -1,5 +1,3 @@
-import tensorflow as tf
-
 # Global variables needed to generate the correct values
 # for the freezing of each model.
 OP_NAME     = ""
@@ -9,6 +7,7 @@ OP_IN_TYPE  = "float32"
 def generator_init(op_name, input_place):
     """Sets global variables that will be used at the generator() function."""
     import numpy as np
+    import tensorflow as tf
 
     tf_type = str(input_place.dtype).split(" '")[1].split("'>")[0]
 
@@ -32,6 +31,7 @@ def generator():
     and compilation for the edge TPU.
     """
     import numpy as np
+    import tensorflow as tf
 
     for _ in range(100):
         input_data = np.array(
@@ -69,6 +69,7 @@ def SaveSession(session, operation_name, operation, op_dir, input_placeholder):
     converter : tf.lite.TFLiteConverter.from_saved_model()
     """
     from utils import extend_directory
+    import tensorflow as tf
 
     # Clears saved model directory.
     export_dir = extend_directory(op_dir, "tmp")
@@ -96,6 +97,7 @@ def TFLiteQuantization(converter):
     -------
     converter : tf.lite.TFLiteConverter.from_saved_model()
     """
+    import tensorflow as tf
 
     # True enables MLIR-based conversion
     # Pro of turning on/True:
@@ -145,6 +147,7 @@ def TFLiteConverter(op_dir, model_saved_dir, operation_name, input_place):
     Shape and type of input tenosr necessary to generate samples to quantize the
     to be produced tflite model.
     """
+    import tensorflow as tf
     from utils import extend_directory, remove_directory
     from os.path import join
 

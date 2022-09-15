@@ -1,9 +1,9 @@
-import tensorflow as tf
 
 
 def process_CONV_2D(operator_name, out_dir, options, input_tensors, output_tensors):
     """Processes the overloaded arguments to recreate the wished Conv 2D model."""
     import numpy as np
+    import tensorflow as tf
     from utils.convert import TFLiteConverter, SaveSession
     import tflite_helper.conv_helper as ch
     import tflite_helper as tfh
@@ -61,6 +61,7 @@ def process_CONV_2D(operator_name, out_dir, options, input_tensors, output_tenso
 def process_MAX_POOL_2D(operator_name, out_dir, options, input_tensors, output_tensors):
     """Processes the overloaded arguments to recreate the wished Max Pool 2D model."""
     import numpy as np
+    import tensorflow as tf
     from utils.convert import TFLiteConverter, SaveSession
     import tflite_helper as tfh
     import tflite_helper.pool_helper as ph
@@ -102,6 +103,7 @@ def process_MAX_POOL_2D(operator_name, out_dir, options, input_tensors, output_t
 def process_RESHAPE(operator_name, out_dir, options, input_tensors, output_tensors):
     """Processes the overloaded arguments to recreate the wished Reshape model."""
     import numpy as np
+    import tensorflow as tf
     from utils.convert import TFLiteConverter, SaveSession
     import tflite_helper as tfh
 
@@ -138,6 +140,7 @@ def process_FULLY_CONNECTED(
 ):
     """Processes the overloaded arguments to recreate the wished FC model."""
     import numpy as np
+    import tensorflow as tf
     from utils.convert import TFLiteConverter, SaveSession
     import tflite_helper as tfh
     import tflite_helper.fully_connected_helper as fch
@@ -179,6 +182,7 @@ def process_FULLY_CONNECTED(
 def process_SOFTMAX(operator_name, out_dir, options, input_tensors, output_tensors):
     """Processes the overloaded arguments to recreate the wished softmax model."""
     import numpy as np
+    import tensorflow as tf
     from utils.convert import TFLiteConverter, SaveSession
     import tflite_helper as tfh
     import tflite_helper.fully_connected_helper as fch
