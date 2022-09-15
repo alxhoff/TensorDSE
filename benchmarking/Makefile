@@ -41,7 +41,7 @@ run: $(if $(call exist-docker-image),,build)
 				   --privileged \
 				   --env MODE=${MODE} \
 				   -v /sys/bus/usb/devices:/sys/bus/usb/devices \
-				   -v /lib/modules:/lib/modules \
+				   -v /dev/usbmon0:/dev/usbmon0 \
 				   -v /dev/bus/usb:/dev/bus/usb \
 				   -v "${VOLUME}":/home/tensorDSE \
 				   --detach-keys="ctrl-@" \
