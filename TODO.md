@@ -4,7 +4,7 @@
 * [X] create and implement working Dockerfile (w Makefile) for a reproducible containerized environment
 * [X] make adjustments to code according to new docker workflow
 * [X] change output to `JSON`
-* [ ] fix issue with checking TPU usb address properly
+* [X] fix issue with checking TPU usb address properly
 * [ ] fix issue using tflite_runtime on conjunction with tflite
   - [Link](https://github.com/ultralytics/yolov5/issues/5709)
 
@@ -13,7 +13,7 @@
 <b> Questions </b>
 </summary>
 
-- [ ] isTPUAvailable, isCPUAvailable and isGPUAvailable, how should I go about it?
+- [ ] isCPUAvailable and isGPUAvailable, how should I go about it?
 - [ ] Is the cost model final?
 
 </details>

@@ -1,4 +1,6 @@
 import argparse
+import utils
+
 from typing import Dict
 
 from utils.model import Model
@@ -10,7 +12,16 @@ def isTPUavailable() -> bool:
     # https://github.com/ultralytics/yolov5/issues/5709
     # from pycoral.utils import edgetpu
     # list = edgetpu.list_edge_tpus()
-    return False
+    out = utils.run("lsusb").split("\n")
+    line = ""
+    for device in out:
+        if ("Global" in device) or ("Google" in device):
+            line = device
+            break
+
+    if not line: # pattern not found in any of the listed devices in lsusb
+        return False
+    return True
 
 def isGPUavailable() -> bool:
     return False
@@ -50,9 +61,10 @@ def MakeInterpreter(model_file:str, library:str):
 
 
 def TPUDeploy(m:Model, count:int) -> Model:
+    from main import log
+    from usb import capture_stream, START_DEPLOYMENT, END_DEPLOYMENT
     from multiprocessing import Process, Queue
     import sys
-    import usb
     import time
     import numpy as np
     import platform
@@ -80,12 +92,16 @@ def TPUDeploy(m:Model, count:int) -> Model:
     interpreter.set_tensor(input_details[0]["index"], input_data)
     m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
 
+    signalsQ = Queue()
     for i in range(count):
-        signalsQ = Queue()
-        p = Process(target=usb.capture_stream, args=(m, signalsQ))
+        p = Process(target=capture_stream, args=(m, signalsQ))
         p.start()
 
-        signalsQ.get()
+        sig = signalsQ.get()
+        if sig == END_DEPLOYMENT:
+            log.error("TPU coral usb device wasnt found or id/address variables weren't able to be extracted!")
+            p.join()
+            break
 
         start = time.perf_counter()                     # START
         interpreter.invoke()                            # RUNS
