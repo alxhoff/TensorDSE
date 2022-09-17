@@ -1,5 +1,5 @@
-# import sys
-# sys.path.insert(0,'utils')
+import sys
+sys.path.append('/home/tensorDSE')
 
 from utils.model import Model
 from deploy import TPUDeploy
