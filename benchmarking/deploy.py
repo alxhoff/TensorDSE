@@ -13,18 +13,20 @@ def isTPUavailable() -> bool:
     # from pycoral.utils import edgetpu
     # list = edgetpu.list_edge_tpus()
     out = utils.run("lsusb").split("\n")
-    line = ""
     for device in out:
         if ("Global" in device) or ("Google" in device):
-            line = device
-            break
-
-    if not line: # pattern not found in any of the listed devices in lsusb
-        return False
-    return True
-
-def isGPUavailable() -> bool:
+            return True
     return False
+
+def isGPUavailable() -> tuple[bool, str]:
+    out = utils.run("lshw -numeric -C display").split("\n")
+    for line in out:
+        if "vendor" in line:
+            gpu = line.split()[1].lower()
+            if "intel" == line.lower():
+                return False, gpu
+            return True, gpu
+    return False, ""
 
 def MakeInterpreter(model_file:str, library:str):
     """Creates the interpreter object needed to deploy a model onto the tpu.
@@ -62,7 +64,7 @@ def MakeInterpreter(model_file:str, library:str):
 
 def TPUDeploy(m:Model, count:int) -> Model:
     from main import log
-    from usb import capture_stream, START_DEPLOYMENT, END_DEPLOYMENT
+    from usb.usb import capture_stream, START_DEPLOYMENT, END_DEPLOYMENT
     from multiprocessing import Process, Queue
     import sys
     import time
@@ -78,6 +80,7 @@ def TPUDeploy(m:Model, count:int) -> Model:
     results = []
     timers  = []
 
+    print("INTERPRETER")
     interpreter = MakeInterpreter(m.model_path, TPU_LIBRARY)
     interpreter.allocate_tensors()
 
@@ -92,9 +95,11 @@ def TPUDeploy(m:Model, count:int) -> Model:
     interpreter.set_tensor(input_details[0]["index"], input_data)
     m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
 
+    print("BEFORE LOOP")
     signalsQ = Queue()
     for i in range(count):
-        p = Process(target=capture_stream, args=(m, signalsQ))
+        p = Process(target=capture_stream, args=(signalsQ))
+        print("START")
         p.start()
 
         sig = signalsQ.get()
@@ -218,6 +223,7 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
     from os.path import join, isdir, isfile
     from main import log
     from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
+    from usb import init_usbmon
 
     models = {}
     models["cpu"]   = []
@@ -227,9 +233,9 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
 
     # regular quantized tflite files for cpu
     if not isCPUavailable():
-        log.info(f"CPU is NOT available on this machine!")
+        log.warning(f"CPU is NOT available on this machine!")
     else:
-        log.warning(f"CPU is available on this machine!")
+        log.info(f"CPU is available on this machine!")
         for d in listdir(LAYERS_FOLDER):
             if isdir(join(LAYERS_FOLDER, d)) and (d in layers):
                 model_name = d
@@ -241,10 +247,11 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
 
 
     # regular quantized tflite files for gpu
-    if not isGPUavailable():
-        log.info(f"GPU is NOT available on this machine!")
+    available, gpu = isGPUavailable()
+    if not available:
+        log.warning(f"GPU is NOT available on this machine! Type: {gpu}")
     else:
-        log.warning(f"GPU is available on this machine!")
+        log.info(f"GPU is available on this machine! Type: {gpu}")
         for d in listdir(LAYERS_FOLDER):
             if isdir(join(LAYERS_FOLDER, d)) and (d in layers):
                 model_name = d
@@ -256,9 +263,14 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
 
     # edge compiled quantized tflite files tpu
     if not isTPUavailable():
-        log.info(f"TPU is NOT available on this machine!")
+        log.warning(f"TPU is NOT available on this machine!")
     else:
-        log.warning(f"TPU is available on this machine!")
+        log.info(f"TPU is available on this machine!")
+        if init_usbmon():
+            log.info("Needed to introduce usbmon module")
+        else:
+            log.info("usbmon module already present")
+
         for f in listdir(COMPILED_MODELS_FOLDER):
             if isfile(join(COMPILED_MODELS_FOLDER, f)) and f.endswith(".tflite"):
                 model_name = (f.split("quant_")[1]).split("_edgetpu.tflite")[0]
