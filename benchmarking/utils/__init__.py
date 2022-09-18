@@ -1,3 +1,12 @@
+
+def run(command:str) -> str:
+    import subprocess
+    p = subprocess.run(command.split(),
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+    output = p.stdout.decode()
+    return output
+
 def extend_directory(src_dir, dst_dir):
     """Extends directory by creating or appending the 'dst_dir'
        upon the 'src_dir'.
