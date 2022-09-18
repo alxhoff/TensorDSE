@@ -13,7 +13,8 @@
 <b> Questions </b>
 </summary>
 
-- [ ] isCPUAvailable and isGPUAvailable, how should I go about it?
+- [ ] isCPUAvailable, isTPUAvailable and isGPUAvailable, is solution good? CPU is still WIP
+- [ ] how should `sudo modprobe usbmon` be implemented? Makefile? or isTPUAvailable()? Show used solution!
 - [ ] Is the cost model final?
 
 </details>
