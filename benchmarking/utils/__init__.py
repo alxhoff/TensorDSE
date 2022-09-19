@@ -38,5 +38,3 @@ def remove_directory(dir):
             os.system(f"rm -r {dir}")
     else:
         raise ValueError
-
-
