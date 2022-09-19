@@ -1,7 +1,7 @@
 import argparse
 import utils
 
-from typing import Dict
+from typing import Dict, Tuple
 
 from utils.model import Model
 
@@ -15,17 +15,17 @@ def isTPUavailable() -> bool:
     out = utils.run("lsusb").split("\n")
     for device in out:
         if ("Global" in device) or ("Google" in device):
-            return True
+            return False
     return False
 
-def isGPUavailable() -> tuple[bool, str]:
+def isGPUavailable() -> Tuple[bool, str]:
     out = utils.run("lshw -numeric -C display").split("\n")
     for line in out:
         if "vendor" in line:
             gpu = line.split()[1].lower()
             if "intel" == line.lower():
                 return False, gpu
-            return True, gpu
+            return False, gpu
     return False, ""
 
 def MakeInterpreter(model_file:str, library:str):
@@ -63,9 +63,11 @@ def MakeInterpreter(model_file:str, library:str):
 
 
 def TPUDeploy(m:Model, count:int) -> Model:
-    from main import log
-    from usb.usb import capture_stream, START_DEPLOYMENT, END_DEPLOYMENT
     from multiprocessing import Process, Queue
+    import queue
+    from main import log
+    from usb import START_DEPLOYMENT, END_DEPLOYMENT
+    from usb.usb import capture_stream
     import sys
     import time
     import numpy as np
@@ -80,7 +82,6 @@ def TPUDeploy(m:Model, count:int) -> Model:
     results = []
     timers  = []
 
-    print("INTERPRETER")
     interpreter = MakeInterpreter(m.model_path, TPU_LIBRARY)
     interpreter.allocate_tensors()
 
@@ -95,11 +96,10 @@ def TPUDeploy(m:Model, count:int) -> Model:
     interpreter.set_tensor(input_details[0]["index"], input_data)
     m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
 
-    print("BEFORE LOOP")
     signalsQ = Queue()
+    dataQ = Queue()
     for i in range(count):
-        p = Process(target=capture_stream, args=(signalsQ))
-        print("START")
+        p = Process(target=capture_stream, args=(signalsQ, dataQ))
         p.start()
 
         sig = signalsQ.get()
@@ -115,13 +115,17 @@ def TPUDeploy(m:Model, count:int) -> Model:
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
         results.append([i, inference_time])
 
-        t = signalsQ.get()
-        if t:
+        try:
+            t = dataQ.get(timeout=10)
             timers.append(t)
+        except queue.Empty:
+            signalsQ.put(END_DEPLOYMENT)
+
         p.join()
 
         sys.stdout.write(f"\r {i+1}/{count} for TPU ran -> {m.model_name}")
         sys.stdout.flush()
+
     sys.stdout.write("\n")
 
     m.results = results
