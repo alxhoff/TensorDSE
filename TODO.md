@@ -38,10 +38,9 @@
 [4](https://github.com/tensorflow/tensorflow/issues/31377#issuecomment-519331496)
 
 - [X] Implement Function
-- [ ] Adapt Dockerfile
+- [X] Adapt Dockerfile (custom GPU delegate build through bazel + git)
 - [ ] Test it out ssh server
-  - sudo rights, bazel , docker
-  - understand bazel build correctly, make it work
+  - sudo rights docker
 
 <details closed>
 <summary>
