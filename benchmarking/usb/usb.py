@@ -1,115 +1,154 @@
-class UsbPacket:
-    """Class containing all necessary methods to decode/retreive human
-    understandable information regarding incoming usb packets.
+from multiprocessing import Queue
 
-    Not only does these methods decode usb info but also sometimes exposes them
-    as easy to use booleans that are useful in conditional statements.
+from usb.analysis import analyze_timestamps
+from usb.timer import UsbTimer
+from usb.packet import UsbPacket
+
+START_DEPLOYMENT    = 0
+END_DEPLOYMENT      = 1
+
+def get_tpu_ids():
+    import utils
+    out = utils.run("lsusb").split("\n")
+    line = ""
+    for device in out:
+        if ("Global" in device) or ("Google" in device):
+            line = device
+            break
+    if not line:
+        return "",""
+
+    bus = line.split()[1]
+    device = line.split()[3].split(":")[0]
+
+    if device.startswith("0"):
+        device = device[1:]
+
+    return bus, device
+
+def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
     """
+    """
+    import pyshark
+    id, addr = get_tpu_ids()
 
-    def __init__(self, raw_packet, id):
-        self.valid_data     = False
-        self.present_data   = False
-        self.id             = id
+    BEGIN               = False
+    END                 = False
+    TPU_REQUEST_SENT    = False
+    SUBMISSION_BEGUN    = False
+    HOST_REQUEST_SENT   = False
+    RETURN_BEGUN        = False
 
-        self.timestamp(raw_packet)
-        self.find_scr_dest(raw_packet)
-        self.find_direction(raw_packet)
-        self.find_transfer_type(raw_packet)
-        self.find_urb_type(raw_packet.usb.urb_type)
+    # f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
+    FILTER = (
+    f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
+    )
 
-    def timestamp(self, packet):
-        self.ts = float(packet.frame_info.time_relative)
+    if (not id) or (not addr):
+        signalsQ.put(END_DEPLOYMENT)
+        return
 
-    def find_direction(self, packet):
-        """
-        Method that stores the overloaded packet's flag denoting direction
-        of usb transfer.
-        """
-        self.direction = packet.usb.endpoint_address_direction
+    timer   = UsbTimer()
+    capture = pyshark.LiveCapture(interface='usbmon0', display_filter=FILTER)
 
-    def find_scr_dest(self, packet):
-        """Stores source and destination values of overloaded packet."""
-        self.src = packet.usb.src
-        self.dest = packet.usb.dst
+    signalsQ.put(START_DEPLOYMENT)
+    for raw_packet in capture.sniff_continuously():
+        packet  = UsbPacket(raw_packet, id, addr)
 
-    def find_transfer_type(self, packet):
-        """Finds the urb transfer type of the overloaded packet."""
-        hexa_transfer_type = packet.usb.transfer_type
-        default = "OTHER"
-        transfer_dict = {
-            "0x00000001":   "INTERRUPT",
-            "0x00000002":   "CONTROL",
-            "0x00000003":   self.find_bulk_type(),
-        }
+        # BEGIN
+        if (packet.transfer_type == "INTERRUPT"
+            and packet.is_host_src()
+            and packet.is_comms_valid()
+            and not BEGIN):
+            timer.stamp_beginning(raw_packet)
+            BEGIN = True
+            continue
 
-        self.transfer_type = transfer_dict.get(hexa_transfer_type, default)
+        # END
+        if (packet.transfer_type == "INTERRUPT"
+            and packet.is_tpu_src()
+            and packet.is_comms_valid()
+            and BEGIN
+            and not END):
+            timer.stamp_ending(raw_packet)
+            END = True
+            break
 
-    def find_urb_type(self, urb_type):
-        """Finds the urb type of the overloaded packet."""
-        default = None
-        transfer_dict = {
-            "'S'":   "SUBMIT",
-            "'C'":   "COMPLETE",
-            "":   None
-        }
+        # TRAFFIC
+        if packet.is_comms_valid() and BEGIN:
+            if (packet.transfer_type == "BULK OUT"):
 
-        self.urb_type = transfer_dict.get(urb_type, default)
+                # Token packets from edge (non-data),
+                # describing return
+                if (not packet.is_data_present() and
+                        packet.is_tpu_src() and
+                        packet.urb_type == "COMPLETE"):
 
-    def find_bulk_type(self):
-        """Finds the packet's usb bulk variation with use of its direction var."""
-        if self.direction == '1':
-            return "BULK IN"
-        elif self.direction == '0':
-            return "BULK OUT"
-        else:
-            raise ValueError(
-                "Wrong attribute type in packet.endpoint_address_direction.")
+                    if (not TPU_REQUEST_SENT and
+                            not RETURN_BEGUN):
+                        timer.stamp_begin_tpu_send_request(raw_packet)
+                        TPU_REQUEST_SENT = True
+                        continue
 
-    def verify_src(self, string):
-        """Verifies if the packet's source is one that is valid for our analysis."""
-        valid = f"{self.id}.3"
-        if string == "begin":
-            return True if ("host" == self.src and valid == self.dest) else False
+                    if (not RETURN_BEGUN):
+                        timer.stamp_end_tpu_send_request(raw_packet)
+                        continue
 
-        elif string == "end":
-            return True if (valid == self.src and "host" == self.dest) else False
+                # Data packets from host
+                if (packet.is_data_present() and
+                        packet.is_host_src() and
+                        packet.urb_type == "SUBMIT"):
 
-        else:  # both
-            return True if (((self.id in self.src) and ("host" == self.dest))
-                            or (("host" == self.src) and (self.id in self.dest))) else False
+                    if not SUBMISSION_BEGUN:
+                        timer.stamp_beginning_submission(raw_packet)
+                        SUBMISSION_BEGUN = True
+                        continue
 
-    def verify_data_presence(self, packet):
-        """Finds if the overloaded packet contains actual DATA being sent."""
+                    if (SUBMISSION_BEGUN and
+                            packet.is_data_valid()):
+                        timer.stamp_src_host(raw_packet)
+                        continue
 
-        tmp = packet.usb.data_flag
-        if tmp == '>' or tmp == '<':
-            self.present_data = False
-            return False
-        elif 'not present' in tmp:
-            self.present_data = False
-            return False
-        elif tmp == 'present (0)':
-            self.present_data = True
-            return True
-        else:
-            raise ValueError("Unknown data presence variable.")
+            if (packet.transfer_type == "BULK IN"):
 
-    def verify_data_validity(self, packet):
-        """Finds if the overloaded packet contains VALID data being sent."""
-        self.urb_size = float(packet.usb.urb_len)
-        self.data_size = float(packet.usb.data_len)
+                # Token packets from host (non-data)
+                # asking for data
+                if (not packet.is_data_present() and
+                        packet.is_host_src() and
+                        packet.urb_type == "SUBMIT"):
 
-        if self.src != "host":
-            if self.data_size > 0 and self.data_size >= 16:
-                self.valid_data = True
-                return True
-            else:
-                self.valid_data = False
-                return False
-        else:
-            if self.data_size > 0:
-                self.valid_data = True
-                return True
-            else:
-                self.valid_data = False
-                return False
+                    # Initial packets of submission of input data
+                    # Stamp initial packets
+                    if (not HOST_REQUEST_SENT and
+                            not SUBMISSION_BEGUN):
+                        timer.stamp_begin_host_send_request(raw_packet)
+                        HOST_REQUEST_SENT = True
+                        continue
+
+                    if not SUBMISSION_BEGUN:
+                        timer.stamp_end_host_send_request(raw_packet)
+                        continue
+
+                # Data packets from edge
+                if (packet.is_data_present() and
+                    packet.is_tpu_src() and
+                    packet.urb_type == "COMPLETE"):
+
+                    # Stamp initial packets
+                    if (not RETURN_BEGUN
+                            and packet.is_data_valid()):
+                        timer.stamp_beginning_return(raw_packet)
+                        RETURN_BEGUN = True
+                        continue
+
+                    if (packet.is_data_valid() and
+                            RETURN_BEGUN):
+                        timer.stamp_src_device(raw_packet)
+                        continue
+
+    if END :
+        dataQ.put(analyze_timestamps(timer))
+    else:
+        dataQ.put({})
+    return
+
