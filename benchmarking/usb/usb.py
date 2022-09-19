@@ -26,6 +26,15 @@ def get_tpu_ids():
 
     return bus, device
 
+
+def peek_queue(signalsQ):
+    import queue
+    try:
+        sig = signalsQ.get(False)
+        return sig
+    except queue.Empty:
+        return False
+
 def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
     """
     """
@@ -39,8 +48,8 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
     HOST_REQUEST_SENT   = False
     RETURN_BEGUN        = False
 
-    # f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
     FILTER = (
+    # f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
     f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
     )
 
@@ -52,8 +61,12 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
     capture = pyshark.LiveCapture(interface='usbmon0', display_filter=FILTER)
 
     signalsQ.put(START_DEPLOYMENT)
+
     for raw_packet in capture.sniff_continuously():
         packet  = UsbPacket(raw_packet, id, addr)
+
+        if peek_queue(signalsQ) == END_DEPLOYMENT:
+            break
 
         # BEGIN
         if (packet.transfer_type == "INTERRUPT"
@@ -62,6 +75,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
             and not BEGIN):
             timer.stamp_beginning(raw_packet)
             BEGIN = True
+            print("BEGIN PACKET")
             continue
 
         # END
@@ -72,6 +86,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
             and not END):
             timer.stamp_ending(raw_packet)
             END = True
+            print("END PACKET")
             break
 
         # TRAFFIC
@@ -84,29 +99,33 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
                         packet.is_tpu_src() and
                         packet.urb_type == "COMPLETE"):
 
-                    if (not TPU_REQUEST_SENT and
-                            not RETURN_BEGUN):
+                    if (not TPU_REQUEST_SENT
+                        and not RETURN_BEGUN):
                         timer.stamp_begin_tpu_send_request(raw_packet)
                         TPU_REQUEST_SENT = True
+                        print("TPU COMM PACKET BEGIN")
                         continue
 
                     if (not RETURN_BEGUN):
                         timer.stamp_end_tpu_send_request(raw_packet)
+                        print("TPU COMM PACKET END")
                         continue
 
                 # Data packets from host
-                if (packet.is_data_present() and
-                        packet.is_host_src() and
-                        packet.urb_type == "SUBMIT"):
+                if (packet.is_data_present()
+                    and packet.is_host_src()
+                    and packet.urb_type == "SUBMIT"):
 
                     if not SUBMISSION_BEGUN:
                         timer.stamp_beginning_submission(raw_packet)
                         SUBMISSION_BEGUN = True
+                        print("SUBMISSION PACKET")
                         continue
 
-                    if (SUBMISSION_BEGUN and
-                            packet.is_data_valid()):
+                    if (SUBMISSION_BEGUN
+                        and packet.is_data_valid()):
                         timer.stamp_src_host(raw_packet)
+                        print("HOST ACK PACKET")
                         continue
 
             if (packet.transfer_type == "BULK IN"):
@@ -123,10 +142,12 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
                             not SUBMISSION_BEGUN):
                         timer.stamp_begin_host_send_request(raw_packet)
                         HOST_REQUEST_SENT = True
+                        print("HOST REQUEST PACKET")
                         continue
 
                     if not SUBMISSION_BEGUN:
                         timer.stamp_end_host_send_request(raw_packet)
+                        print("HOST REQUEST PACKET END")
                         continue
 
                 # Data packets from edge
@@ -139,16 +160,19 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
                             and packet.is_data_valid()):
                         timer.stamp_beginning_return(raw_packet)
                         RETURN_BEGUN = True
+                        print("RETURN PACKET BEGIN")
                         continue
 
                     if (packet.is_data_valid() and
                             RETURN_BEGUN):
                         timer.stamp_src_device(raw_packet)
+                        print("RETURN PACKET END")
                         continue
 
     if END :
         dataQ.put(analyze_timestamps(timer))
     else:
         dataQ.put({})
+    print("RETURN")
     return
 
