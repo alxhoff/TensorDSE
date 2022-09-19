@@ -7,8 +7,6 @@ LABEL Maintainer="Daniel Duclos-Cavalcanti"
 ARG USER_NAME="coral-docker"
 ARG DEBIAN_FRONTEND="noninteractive"
 
-ENV DEBIAN_FRONTEND="noninteractive"
-
 RUN set -ex
 
 # Base System
@@ -18,7 +16,7 @@ RUN apt-get update \
     python3 python3-pip \
     git vim nano \
     usbutils udev lshw \
-    software-properties-common \
+    software-properties-common python3-tabulate \
     && apt-get clean \
     && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen && update-locale
 

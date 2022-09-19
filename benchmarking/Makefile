@@ -18,7 +18,7 @@ exist-docker-image = $(shell docker image ls | grep ${TAG} | tr -s ' ' | cut -f2
 is-docker-running = $(shell docker ps -a | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
 filter-docker = $(shell docker images --filter=reference="*${REGEX}*" -q)
 
-all: build
+all: run
 
 info:
 	@printf "%s\n" "DOCKER IMAGES:"
@@ -58,6 +58,9 @@ hello_world:
 
 shell:
 	$(MAKE) -f ${FILE} run MODE=${SHELL_MODE}
+
+stream:
+	ipdb3 scripts/stream.py
 
 stop:
 	@if [ -n "$(call is-docker-running)" ]; then \
@@ -108,6 +111,7 @@ purge-all: stop-all rm-all purge
 		test \
 		hello_world \
 		shell \
+		stream \
 		stop \
 		rm \
 		stop-all \
