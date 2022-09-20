@@ -27,10 +27,10 @@ def get_tpu_ids():
     return bus, device
 
 
-def peek_queue(signalsQ):
+def peek_queue(q:Queue):
     import queue
     try:
-        sig = signalsQ.get(False)
+        sig = q.get(False)
         return sig
     except queue.Empty:
         return False
@@ -50,7 +50,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
 
     FILTER = (
     # f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
-    f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
+    f"(usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT) && usb.device_address=={addr}"
     )
 
     if (not id) or (not addr):
@@ -61,7 +61,6 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
     capture = pyshark.LiveCapture(interface='usbmon0', display_filter=FILTER)
 
     signalsQ.put(START_DEPLOYMENT)
-
     for raw_packet in capture.sniff_continuously():
         packet  = UsbPacket(raw_packet, id, addr)
 

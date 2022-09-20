@@ -89,12 +89,11 @@ class UsbPacket:
 
     def verify_data_presence(self):
         """Finds if the overloaded packet contains actual DATA being sent."""
-        flag = self.data_flag
-        if flag == '>' or flag == '<':
+        if self.data_flag in ('>', '<'):
             self.present_data = False
-        elif 'not present' in flag:
+        elif 'not present' in self.data_flag:
             self.present_data = False
-        elif flag == 'present (0)':
+        elif self.data_flag == 'present (0)':
             self.present_data = True
         else:
             raise ValueError("Unknown data presence variable.")
@@ -120,10 +119,10 @@ class UsbPacket:
         return ("host" == self.dest)
 
     def is_tpu_src(self):
-        return (self.id in self.src)
+        return (self.addr in self.src)
 
     def is_tpu_dest(self):
-        return (self.id in self.dest)
+        return (self.addr in self.dest)
 
     def is_data_valid(self):
         return (self.valid_data == True)

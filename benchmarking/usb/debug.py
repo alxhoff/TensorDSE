@@ -1,7 +1,7 @@
 from multiprocessing import Queue
 from typing import List, Tuple
 
-from usb.usb import get_tpu_ids, START_DEPLOYMENT, END_DEPLOYMENT
+from usb.usb import peek_queue, get_tpu_ids, START_DEPLOYMENT, END_DEPLOYMENT
 from usb.packet import UsbPacket
 
 def color_text(text, fg, bg):
@@ -76,13 +76,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
         p  = UsbPacket(raw_packet, id, addr)
         packets.append(p)
 
-        try:
-            sig = signalsQ.get(False)
-        except queue.Empty:
-            sig = False
-            pass
-
-        if sig == END_DEPLOYMENT:
+        if peek_queue(signalsQ) == END_DEPLOYMENT:
             break
 
     show_stream(packets, f"{id}.{addr}")
