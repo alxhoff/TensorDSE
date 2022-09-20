@@ -15,7 +15,7 @@ def isTPUavailable() -> bool:
     out = utils.run("lsusb").split("\n")
     for device in out:
         if ("Global" in device) or ("Google" in device):
-            return False
+            return True
     return False
 
 def isGPUavailable() -> Tuple[bool, str]:
@@ -23,9 +23,9 @@ def isGPUavailable() -> Tuple[bool, str]:
     for line in out:
         if "vendor" in line:
             gpu = line.split()[1].lower()
-            if "intel" == line.lower():
+            if "intel" in line.lower():
                 return False, gpu
-            return False, gpu
+            return True, gpu
     return False, ""
 
 def MakeInterpreter(model_file:str, library:str):
