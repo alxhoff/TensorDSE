@@ -34,7 +34,8 @@ int main(int argc, char **argv)
     // Get Model label and input image
     if (argc != 4)
     {
-        fprintf(stderr, "TfliteClassification.exe modelfile labels image\n");
+        fprintf(stderr, "Example Usage:\n
+                         ./TfliteClassification <path/to/model> <path/to/labels> <path/to/image>\n");
         exit(-1);
     }
     const char *modelFileName = argv[1];
@@ -48,6 +49,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "failed to load model\n");
         exit(-1);
     }
+
     // Initiate Interpreter
     std::unique_ptr<tflite::Interpreter> interpreter;
     tflite::ops::builtin::BuiltinOpResolver resolver;
@@ -63,14 +65,17 @@ int main(int argc, char **argv)
         fprintf(stderr, "Failed to allocate tensor\n");
         exit(-1);
     }
+
     // Configure the interpreter
     interpreter->SetAllowFp16PrecisionForFp32(true);
     interpreter->SetNumThreads(1);
+
     // Get Input Tensor Dimensions
     int input = interpreter->inputs()[0];
     auto height = interpreter->tensor(input)->dims->data[1];
     auto width = interpreter->tensor(input)->dims->data[2];
     auto channels = interpreter->tensor(input)->dims->data[3];
+
     // Load Input Image
     cv::Mat image;
     auto frame = cv::imread(imageFile);
@@ -110,6 +115,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "cannot handle output type\n");
         exit(-1);
     }
+    
     // Print inference ms in input image
     cv::putText(frame, "Infernce Time in ms: " + std::to_string(inference_time), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0, 0, 255), 2);
 
