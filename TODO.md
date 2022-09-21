@@ -5,6 +5,7 @@
 * [X] make adjustments to code according to new docker workflow
 * [X] change output to `JSON`
 * [X] fix issue with checking TPU usb address properly
+* [X] Add CPU count to JSON Format
 * [ ] GPU Deployment
   * Pro:
   [1](https://github.com/tensorflow/tensorflow/issues/52155#issuecomment-931498450)
@@ -18,17 +19,17 @@
   - [X] Adapt Dockerfile (custom GPU delegate build through bazel + git)
   - [ ] Test it out ssh server
     - sudo rights docker
-* [X] Add CPU count to JSON Format
 * [ ] fix issue using tflite_runtime on conjunction with tflite
   - [Link](https://github.com/ultralytics/yolov5/issues/5709)
+  - [X] Implemented a current hacky solution
 
 <details open>
 <summary>
 <b> Questions </b>
 </summary>
 
-- [ ] isCPUAvailable, isTPUAvailable and isGPUAvailable, is solution good? CPU is still WIP
-- [ ] how should `sudo modprobe usbmon` be implemented? Makefile? or isTPUAvailable()? Show used solution!
+- [ ] isCPUAvailable, isTPUAvailable and isGPUAvailable, is solution good?
+- [ ] how should `sudo modprobe usbmon` be implemented? Makefile? Show used solution!
 - [ ] Is the cost model final?
 
 </details>
@@ -53,7 +54,7 @@
 </summary>
 </details>
 
-### 3. DSE (ALEX kind of)
+### 3. DSE (alex)
 * [ ] Clean up/Make Generic Ine‘s java code that generates mapping
 * [ ] Add in comm costs (USB) to architecture graph
 * [ ] Adapt to new JSON format
