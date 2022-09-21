@@ -1,6 +1,8 @@
 from multiprocessing import Queue
 
-from usb.analysis import analyze_timestamps
+from utils.log import Log
+
+from usb.process import process_timestamps
 from usb.timer import UsbTimer
 from usb.packet import UsbPacket
 
@@ -35,7 +37,7 @@ def peek_queue(q:Queue):
     except queue.Empty:
         return False
 
-def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
+def capture_stream(signalsQ:Queue, dataQ:Queue, l:Log) -> None:
     """
     """
     import pyshark
@@ -74,7 +76,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
             and not BEGIN):
             timer.stamp_beginning(raw_packet)
             BEGIN = True
-            print("BEGIN PACKET")
+            l.info("BEGIN PACKET")
             continue
 
         # END
@@ -85,7 +87,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
             and not END):
             timer.stamp_ending(raw_packet)
             END = True
-            print("END PACKET")
+            l.info("END PACKET")
             break
 
         # TRAFFIC
@@ -102,12 +104,12 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
                         and not RETURN_BEGUN):
                         timer.stamp_begin_tpu_send_request(raw_packet)
                         TPU_REQUEST_SENT = True
-                        print("TPU COMM PACKET BEGIN")
+                        l.info("TPU COMM PACKET BEGIN")
                         continue
 
                     if (not RETURN_BEGUN):
                         timer.stamp_end_tpu_send_request(raw_packet)
-                        print("TPU COMM PACKET END")
+                        l.info("TPU COMM PACKET END")
                         continue
 
                 # Data packets from host
@@ -118,13 +120,13 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
                     if not SUBMISSION_BEGUN:
                         timer.stamp_beginning_submission(raw_packet)
                         SUBMISSION_BEGUN = True
-                        print("SUBMISSION PACKET")
+                        l.info("SUBMISSION PACKET")
                         continue
 
                     if (SUBMISSION_BEGUN
                         and packet.is_data_valid()):
                         timer.stamp_src_host(raw_packet)
-                        print("HOST ACK PACKET")
+                        l.info("HOST ACK PACKET")
                         continue
 
             if (packet.transfer_type == "BULK IN"):
@@ -141,12 +143,12 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
                             not SUBMISSION_BEGUN):
                         timer.stamp_begin_host_send_request(raw_packet)
                         HOST_REQUEST_SENT = True
-                        print("HOST REQUEST PACKET")
+                        l.info("HOST REQUEST PACKET")
                         continue
 
                     if not SUBMISSION_BEGUN:
                         timer.stamp_end_host_send_request(raw_packet)
-                        print("HOST REQUEST PACKET END")
+                        l.info("HOST REQUEST PACKET END")
                         continue
 
                 # Data packets from edge
@@ -159,19 +161,19 @@ def capture_stream(signalsQ:Queue, dataQ:Queue) -> None:
                             and packet.is_data_valid()):
                         timer.stamp_beginning_return(raw_packet)
                         RETURN_BEGUN = True
-                        print("RETURN PACKET BEGIN")
+                        l.info("RETURN PACKET BEGIN")
                         continue
 
                     if (packet.is_data_valid() and
                             RETURN_BEGUN):
                         timer.stamp_src_device(raw_packet)
-                        print("RETURN PACKET END")
+                        l.info("RETURN PACKET END")
                         continue
 
     if END :
-        dataQ.put(analyze_timestamps(timer))
+        dataQ.put(process_timestamps(timer))
     else:
         dataQ.put({})
-    print("RETURN")
+    l.info("RETURN")
     return
 
