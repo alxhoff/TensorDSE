@@ -132,9 +132,9 @@ def AnalyzeLayerResults(m:Model, delegate:str):
         ]
     }
 
-    ExportResults(os.path.join(RESULTS_FOLDER, f"{m.model_name}_LAYER.json"), data)
+    ExportResults(os.path.join(RESULTS_FOLDER, f"{m.model_name}_LAYER_{delegate.upper()}.json"), data)
 
-def MergeResults(parent_model:str, layers:List):
+def MergeResults(parent_model:str, layers:List, clean:bool=True):
     from main import RESULTS_FOLDER, log
     from utils import load_json
     import os
@@ -143,14 +143,21 @@ def MergeResults(parent_model:str, layers:List):
     d = data["models"][0]["layers"]
     names = [i["name"] for i in d]
 
-    for l in layers:
-        if (os.path.isfile(os.path.join(RESULTS_FOLDER, f"{l.upper()}_LAYER.json"))
-            and l.upper() in names):
-                j = load_json(os.path.join(RESULTS_FOLDER, f"{l.upper()}_LAYER.json"))
-                for k,v in enumerate(d):
-                    if v["name"] == l.upper():
-                        d[k]["path"]["tpu"] = j["path"]["tpu"]
-                        d[k]["delegates"].append(j["delegates"][0])
+    for device in ("cpu", "gpu", "tpu"):
+        for l in layers:
+            file = os.path.join(RESULTS_FOLDER, f"{l.upper()}_LAYER_{device.upper()}.json")
+            name = l.upper()
+            if (os.path.isfile(file)
+                and name in names):
+                    j = load_json(file)
+                    for k,v in enumerate(d):
+                        if (v["name"] == name
+                            and not device in [i["device"] for i in v["delegates"]] ):
+                            d[k]["path"][device] = j["path"][device]
+                            d[k]["delegates"].append(j["delegates"][0])
+
+                    if clean:
+                        os.system(f"rm -f {file}")
 
 
     data["models"][0]["layers"] = d
