@@ -1,13 +1,19 @@
-import argparse
-from typing import Dict
+from typing import Dict, List
 
 from utils.model import Model
-from utils.analysis import Analyzer
+
+def ExportResults(file:str, data:Dict) -> None:
+    import json
+    with open(file, "w") as json_file:
+        json_data = data
+        json.dump(json_data, json_file, indent=4)
 
 def AnalyzeModelResults(parent_model:str, models_dict:Dict):
-    import json
-    from os.path import join, isdir
     from main import log, RESULTS_FOLDER
+    from utils import cpu_count
+    from usb.process import process_timers
+    from analysis.analysis import Analyzer
+    import os
 
     data = {
             "models": [{
@@ -17,7 +23,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
         }]
     }
 
-    if not isdir(RESULTS_FOLDER):
+    if not os.path.isdir(RESULTS_FOLDER):
        import sys
        log.error(f"{RESULTS_FOLDER} is not a valid folder to store results!")
        sys.exit(-1)
@@ -29,9 +35,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
 
         for m in models_dict[delegate]:
             log.info(f"Analyzing results of operation: {m.model_name} ran on {delegate}")
-            a = Analyzer(m)
-            a.get_basic_statistics()
-            a.get_distribution()
+            a = Analyzer(m.results, find_distribution=True)
 
             model = data["models"][0] # hacky for now
             names = [i["name"] for i in model["layers"]]
@@ -51,13 +55,14 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                             "median"                    : a.median,
                             "standard_deviation"        : a.std_deviation,
                             "avg_absolute_deviation"    : a.avg_absolute_deviation,
-                            "distribution"              : a.distribution_name
+                            "distribution"              : a.distribution_name,
+                            "usb"                       : process_timers(m.timers)
                         }
                     ]
                 }
 
-                if m.delegate == "tpu":
-                    d["delegates"][m.delegate]["usb"] = m.usb_statistics
+                if m.delegate == "cpu":
+                    d["delegates"][0]["cpu_count"] = cpu_count()
 
                 model["layers"].append(d)
                 data["models"][0] = model
@@ -82,11 +87,12 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                             "median"                    : a.median,
                             "standard_deviation"        : a.std_deviation,
                             "avg_absolute_deviation"    : a.avg_absolute_deviation,
-                            "distribution"              : a.distribution_name
+                            "distribution"              : a.distribution_name,
+                            "usb"                       : process_timers(m.timers)
                 }
 
-                if m.delegate == "tpu":
-                    d["usb"] = m.usb_statistics
+                if m.delegate == "cpu":
+                    d["cpu_count"] = cpu_count()
 
                 for i,j in enumerate(model["layers"]):
                     if j["name"] == m.model_name:
@@ -97,31 +103,55 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
 
             raise Exception(f"Apparently attempt to overwrite data from model: {m.model_name} run on: {delegate}!")
 
+    ExportResults(os.path.join(RESULTS_FOLDER, f"{parent_model}.json"), data)
 
-    with open(join(RESULTS_FOLDER, f"{parent_model}.json"), "w") as json_file:
-        json_data = data
-        json.dump(json_data, json_file, indent=4)
-
-
-def GetArgs() -> argparse.Namespace:
-    """ Description
-    :raises:
-
-    :rtype:
-    """
+def AnalyzeLayerResults(m:Model, delegate:str):
     from main import RESULTS_FOLDER
-    from os.path import join
+    from usb.process import process_timers
+    from analysis.analysis import Analyzer
+    import os
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    a = Analyzer(m.results, find_distribution=True)
+    data = {
+        "name"                  : m.model_name,
+        "path"                  : { m.delegate : m.model_path },
+        "delegates"             : [
+            {
+                "device"                      : m.delegate,
+                "input"                     : {
+                        "shape"   : m.input_shape,
+                        "type"    : m.input_datatype
+                 },
+                "mean"                      : a.mean,
+                "median"                    : a.median,
+                "standard_deviation"        : a.std_deviation,
+                "avg_absolute_deviation"    : a.avg_absolute_deviation,
+                "distribution"              : a.distribution_name,
+                "usb"                       : process_timers(m.timers)
+            }
+        ]
+    }
 
-    parser.add_argument('-f', '--file', required=False,
-                        default="results/results.json",
-                        help='Path to file .')
+    ExportResults(os.path.join(RESULTS_FOLDER, f"{m.model_name}_LAYER.json"), data)
 
-    args = parser.parse_args()
+def MergeResults(parent_model:str, layers:List):
+    from main import RESULTS_FOLDER, log
+    from utils import load_json
+    import os
 
-    return args
+    data = load_json(os.path.join(RESULTS_FOLDER, f"{parent_model}.json"))
+    d = data["models"][0]["layers"]
+    names = [i["name"] for i in d]
 
-if __name__ == '__main__':
-    args = GetArgs()
+    for l in layers:
+        if (os.path.isfile(os.path.join(RESULTS_FOLDER, f"{l.upper()}_LAYER.json"))
+            and l.upper() in names):
+                j = load_json(os.path.join(RESULTS_FOLDER, f"{l.upper()}_LAYER.json"))
+                for k,v in enumerate(d):
+                    if v["name"] == l.upper():
+                        d[k]["path"]["tpu"] = j["path"]["tpu"]
+                        d[k]["delegates"].append(j["delegates"][0])
 
+
+    data["models"][0]["layers"] = d
+    ExportResults(os.path.join(RESULTS_FOLDER, f"{parent_model}.json"), data)
