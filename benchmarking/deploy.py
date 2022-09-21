@@ -99,9 +99,8 @@ def TPUDeploy(m:Model, count:int) -> Model:
 
     signalsQ = Queue()
     dataQ = Queue()
-    count = 2
     for i in range(count):
-        p = Process(target=capture_stream, args=(signalsQ, dataQ, Log(f"results/{m.model_name}_TPU.log")))
+        p = Process(target=capture_stream, args=(signalsQ, dataQ, Log(f"results/{m.model_name}_USB_TRAFFIC.log")))
         p.start()
 
         sig = signalsQ.get()
