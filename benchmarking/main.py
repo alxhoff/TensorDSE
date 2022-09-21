@@ -1,13 +1,14 @@
 import argparse
+import os
 from utils.log import Log
-
-# custom logger to separate TF logs and Ours
-log = Log("results/journal.log")
 
 MODELS_FOLDER           = "models/source/"
 LAYERS_FOLDER           = "models/layers/"
 COMPILED_MODELS_FOLDER  = "models/compiled/"
 RESULTS_FOLDER          = "results/"
+
+# custom logger to separate TF logs and Ours
+log = Log(os.path.join(RESULTS_FOLDER, "journal.log"))
 
 def DisableTFlogging() -> None:
     """Disable the most annoying logging known to mankind
@@ -21,7 +22,7 @@ def BenchmarkModel(model:str, count:int):
     from deploy import DeployModels
     from convert import ImportTFLiteModules, SplitTFLiteModel
     from compile import CompileTFLiteModelsForCoral
-    from analysis import AnalyzeModelResults
+    from analysis import AnalyzeModelResults, MergeResults
 
     if not model.endswith(".tflite"):
         raise Exception(f"File: {model} is not a tflite file!")
@@ -45,6 +46,7 @@ def BenchmarkModel(model:str, count:int):
 
     # Process results
     AnalyzeModelResults(model_name, results_dict)
+    MergeResults(model_name, layers)
 
 
 def GetArgs() -> argparse.Namespace:
