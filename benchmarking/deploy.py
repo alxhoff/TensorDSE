@@ -66,6 +66,7 @@ def TPUDeploy(m:Model, count:int) -> Model:
     from multiprocessing import Process, Queue
     import queue
     from main import log
+    from utils.log import Log
     from usb import START_DEPLOYMENT, END_DEPLOYMENT
     from usb.usb import capture_stream
     import sys
@@ -98,8 +99,9 @@ def TPUDeploy(m:Model, count:int) -> Model:
 
     signalsQ = Queue()
     dataQ = Queue()
+    count = 2
     for i in range(count):
-        p = Process(target=capture_stream, args=(signalsQ, dataQ))
+        p = Process(target=capture_stream, args=(signalsQ, dataQ, Log(f"results/{m.model_name}_TPU.log")))
         p.start()
 
         sig = signalsQ.get()
@@ -113,10 +115,10 @@ def TPUDeploy(m:Model, count:int) -> Model:
         inference_time = time.perf_counter() - start    # END
 
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
-        results.append([i, inference_time])
+        results.append(inference_time)
 
         try:
-            t = dataQ.get(timeout=10)
+            t = dataQ.get(timeout=5)
             timers.append(t)
         except queue.Empty:
             signalsQ.put(END_DEPLOYMENT)
@@ -162,7 +164,7 @@ def GPUDeploy(m:Model, count:int) -> Model:
         inference_time = time.perf_counter() - start    # END
 
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
-        results.append([i, inference_time])
+        results.append(inference_time)
 
         sys.stdout.write(f"\r {i+1}/{count} for GPU ran -> {m.model_name}")
         sys.stdout.flush()
@@ -200,7 +202,7 @@ def CPUDeploy(m:Model, count:int) -> Model:
         inference_time = time.perf_counter() - start    # END
 
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
-        results.append([i, inference_time])
+        results.append(inference_time)
 
         sys.stdout.write(f"\r {i+1}/{count} for CPU ran -> {m.model_name}")
         sys.stdout.flush()
@@ -283,8 +285,9 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
                 model_path = join(COMPILED_MODELS_FOLDER, f)
                 log.info(f"Deploying layer/operation {model_name} onto the tpu")
 
-                m = TPUDeploy(Model(model_path, "tpu", parent_model), count)
-                models["tpu"].append(m)
+                # m = TPUDeploy(Model(model_path, "tpu", parent_model), count)
+                # models["tpu"].append(m)
+                os.system(f"python3 deploy.py -f single -m {model_path} -p {parent_model} -c {count} -d tpu")
 
     return models
 
@@ -302,15 +305,19 @@ def GetArgs() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "-f", "--form", default="Deploy", required=False, help="Single or Group."
+        "-f", "--form", default="Deploy", required=True, help="Single or Group."
     )
 
     parser.add_argument(
-        "-d", "--delegate", default="", required=False, help="cpu or edge."
+        "-d", "--delegate", default="", required=True, help="cpu or edge."
     )
 
     parser.add_argument(
-        " -m", "--model", help="File path to the .tflite file.")
+        "-m", "--model", required=True, help="File path to the .tflite file.")
+
+    parser.add_argument(
+        "-p", "--parent", default="", required=False, help="parent model"
+    )
 
     parser.add_argument(
         "-c", "--count", type=int, default=1, help="Number of times to run inference."
@@ -346,6 +353,7 @@ if __name__ == "__main__":
     """
 
     from main import  LAYERS_FOLDER, COMPILED_MODELS_FOLDER
+    from analysis import AnalyzeLayerResults
 
     args = GetArgs()
 
@@ -355,12 +363,13 @@ if __name__ == "__main__":
         "tpu"   : TPUDeploy,
     }
 
-    if args.form == "Single":
+    if args.form == "single":
         delegator = delegators.get(args.delegate, None)
         if not (delegator == None):
-            delegator(Model(args.model, args.delegate), args.count)
+            m = delegator(Model(args.model, args.delegate), args.count)
+            AnalyzeLayerResults(m, args.delegate)
 
-    if args.form == "Group":
+    elif args.form == "group":
         import os
         from os import listdir
         from os.path import join, isdir, isfile
@@ -372,7 +381,8 @@ if __name__ == "__main__":
                     if isfile(f) and f.endswith(".tflite"):
                         model_name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
                         model_path = join(os.getcwd(), COMPILED_MODELS_FOLDER, f)
-                        delegator(Model(model_path, "tpu"), args.count)
+                        m = delegator(Model(model_path, args.delegate), args.count)
+                        AnalyzeLayerResults(m, args.delegate)
         else:
             if delegator:
                 for d in listdir(LAYERS_FOLDER):
@@ -382,7 +392,8 @@ if __name__ == "__main__":
                                     d,
                                     "quant",
                                     f"quant_{model_name}.tflite")
-                        delegator(Model(model_path, args.delegate), args.count)
+                        m = delegator(Model(model_path, args.delegate), args.count)
+                        AnalyzeLayerResults(m, args.delegate)
 
     else:
         raise Exception(f"Invalid mode: {args.mode}")
