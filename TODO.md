@@ -18,7 +18,7 @@
   - [X] Adapt Dockerfile (custom GPU delegate build through bazel + git)
   - [ ] Test it out ssh server
     - sudo rights docker
-* [ ] Add CPU count to JSON Format
+* [X] Add CPU count to JSON Format
 * [ ] fix issue using tflite_runtime on conjunction with tflite
   - [Link](https://github.com/ultralytics/yolov5/issues/5709)
 
