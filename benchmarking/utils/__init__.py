@@ -1,3 +1,10 @@
+from typing import Dict
+
+def load_json(file) -> Dict:
+    import json
+    with open(file, "r") as f:
+        data = json.load(f)
+        return data
 
 def run(command:str) -> str:
     import subprocess
@@ -6,6 +13,10 @@ def run(command:str) -> str:
                                 stderr=subprocess.STDOUT)
     output = p.stdout.decode()
     return output
+
+def cpu_count() -> str:
+    out = run("lscpu").split("\n")
+    return out[4].split(" ")[-1]
 
 def extend_directory(src_dir, dst_dir):
     """Extends directory by creating or appending the 'dst_dir'
