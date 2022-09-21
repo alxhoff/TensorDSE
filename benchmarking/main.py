@@ -46,7 +46,7 @@ def BenchmarkModel(model:str, count:int):
 
     # Process results
     AnalyzeModelResults(model_name, results_dict)
-    MergeResults(model_name, layers)
+    MergeResults(model_name, layers, clean=True)
 
 
 def GetArgs() -> argparse.Namespace:
