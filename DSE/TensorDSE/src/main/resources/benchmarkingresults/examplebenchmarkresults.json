@@ -2,12 +2,13 @@
     "models": [
         {
             "name": "MNIST",
-            "runs": 1000,
+            "runs": 10,
             "layers": [
                 {
                     "name": "SOFTMAX",
                     "path": {
-                        "cpu": "models/layers/SOFTMAX/quant/quant_SOFTMAX.tflite"
+                        "cpu": "models/layers/SOFTMAX/quant/quant_SOFTMAX.tflite",
+                        "tpu": "models/compiled/quant_SOFTMAX_edgetpu.tflite"
                     },
                     "delegates": [
                         {
@@ -19,18 +20,43 @@
                                 ],
                                 "type": "uint8"
                             },
-                            "mean": 3.2636499527143316e-06,
-                            "median": 2.547498297644779e-06,
-                            "standard_deviation": 5.460193969170671e-06,
-                            "avg_absolute_deviation": 40.5510885253212,
-                            "distribution": "cauchy"
+                            "mean": 3.044906770810485e-06,
+                            "median": 2.5735062081366777e-06,
+                            "standard_deviation": 1.1154196518341601e-06,
+                            "avg_absolute_deviation": 24.62678093177165,
+                            "distribution": "beta",
+                            "usb": {
+                                "send": 0.0,
+                                "recv": 0.0
+                            },
+                            "cpu_count": "4"
+                        },
+                        {
+                            "device": "tpu",
+                            "input": {
+                                "shape": [
+                                    1,
+                                    10
+                                ],
+                                "type": "uint8"
+                            },
+                            "mean": 0.0005627030041068792,
+                            "median": 0.0005627030041068792,
+                            "standard_deviation": 9.212609612748053e-05,
+                            "avg_absolute_deviation": 11.576797497177042,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "send": 0.0,
+                                "recv": 0.0
+                            }
                         }
                     ]
                 },
                 {
                     "name": "MAX_POOL_2D",
                     "path": {
-                        "cpu": "models/layers/MAX_POOL_2D/quant/quant_MAX_POOL_2D.tflite"
+                        "cpu": "models/layers/MAX_POOL_2D/quant/quant_MAX_POOL_2D.tflite",
+                        "tpu": "models/compiled/quant_MAX_POOL_2D_edgetpu.tflite"
                     },
                     "delegates": [
                         {
@@ -44,18 +70,45 @@
                                 ],
                                 "type": "uint8"
                             },
-                            "mean": 0.00013567480394704036,
-                            "median": 0.00013462099741445854,
-                            "standard_deviation": 1.3932221584023258e-05,
-                            "avg_absolute_deviation": 8.024258418555233,
-                            "distribution": "fatiguelife"
+                            "mean": 0.00012541809119284152,
+                            "median": 0.00012520348536781967,
+                            "standard_deviation": 8.052431153139216e-06,
+                            "avg_absolute_deviation": 3.519663183126632,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "send": 0.0,
+                                "recv": 0.0
+                            },
+                            "cpu_count": "4"
+                        },
+                        {
+                            "device": "tpu",
+                            "input": {
+                                "shape": [
+                                    1,
+                                    26,
+                                    26,
+                                    28
+                                ],
+                                "type": "uint8"
+                            },
+                            "mean": 0.0016366415366064757,
+                            "median": 0.0016366415366064757,
+                            "standard_deviation": 0.0003367899922993316,
+                            "avg_absolute_deviation": 14.550925298181768,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "send": 0.0,
+                                "recv": 0.0
+                            }
                         }
                     ]
                 },
                 {
                     "name": "CONV_2D",
                     "path": {
-                        "cpu": "models/layers/CONV_2D/quant/quant_CONV_2D.tflite"
+                        "cpu": "models/layers/CONV_2D/quant/quant_CONV_2D.tflite",
+                        "tpu": "models/compiled/quant_CONV_2D_edgetpu.tflite"
                     },
                     "delegates": [
                         {
@@ -69,18 +122,45 @@
                                 ],
                                 "type": "uint8"
                             },
-                            "mean": 0.0001946439279272454,
-                            "median": 0.00015249599891831167,
-                            "standard_deviation": 0.0010948046154394939,
-                            "avg_absolute_deviation": 37.016465328573304,
-                            "distribution": "fatiguelife"
+                            "mean": 0.0023078337137121705,
+                            "median": 0.00016338349087163806,
+                            "standard_deviation": 0.006652434957684148,
+                            "avg_absolute_deviation": 164.0617883227135,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "send": 0.0,
+                                "recv": 0.0
+                            },
+                            "cpu_count": "4"
+                        },
+                        {
+                            "device": "tpu",
+                            "input": {
+                                "shape": [
+                                    1,
+                                    28,
+                                    28,
+                                    1
+                                ],
+                                "type": "uint8"
+                            },
+                            "mean": 0.0034743550058919936,
+                            "median": 0.0034743550058919936,
+                            "standard_deviation": 0.002395437332018013,
+                            "avg_absolute_deviation": 48.752357732726296,
+                            "distribution": "betaprime",
+                            "usb": {
+                                "send": 0.0,
+                                "recv": 0.0
+                            }
                         }
                     ]
                 },
                 {
                     "name": "RESHAPE",
                     "path": {
-                        "cpu": "models/layers/RESHAPE/quant/quant_RESHAPE.tflite"
+                        "cpu": "models/layers/RESHAPE/quant/quant_RESHAPE.tflite",
+                        "tpu": "models/compiled/quant_RESHAPE_edgetpu.tflite"
                     },
                     "delegates": [
                         {
@@ -94,18 +174,45 @@
                                 ],
                                 "type": "uint8"
                             },
-                            "mean": 5.763037914584856e-05,
-                            "median": 5.809200229123235e-05,
-                            "standard_deviation": 6.6287069703458345e-06,
-                            "avg_absolute_deviation": 8.333894519568105,
-                            "distribution": "burr"
+                            "mean": 5.159321008250117e-05,
+                            "median": 5.483650602400303e-05,
+                            "standard_deviation": 6.480704159417842e-06,
+                            "avg_absolute_deviation": 10.105047065282166,
+                            "distribution": "beta",
+                            "usb": {
+                                "send": 0.0,
+                                "recv": 0.0
+                            },
+                            "cpu_count": "4"
+                        },
+                        {
+                            "device": "tpu",
+                            "input": {
+                                "shape": [
+                                    1,
+                                    13,
+                                    13,
+                                    28
+                                ],
+                                "type": "uint8"
+                            },
+                            "mean": 0.0010779075091704726,
+                            "median": 0.0010779075091704726,
+                            "standard_deviation": 4.183881431728511e-05,
+                            "avg_absolute_deviation": 2.7446241044674164,
+                            "distribution": "betaprime",
+                            "usb": {
+                                "send": 0.0,
+                                "recv": 0.0
+                            }
                         }
                     ]
                 },
                 {
                     "name": "FULLY_CONNECTED",
                     "path": {
-                        "cpu": "models/layers/FULLY_CONNECTED/quant/quant_FULLY_CONNECTED.tflite"
+                        "cpu": "models/layers/FULLY_CONNECTED/quant/quant_FULLY_CONNECTED.tflite",
+                        "tpu": "models/compiled/quant_FULLY_CONNECTED_edgetpu.tflite"
                     },
                     "delegates": [
                         {
@@ -117,11 +224,35 @@
                                 ],
                                 "type": "uint8"
                             },
-                            "mean": 4.315083111578133e-06,
-                            "median": 4.294000973459333e-06,
-                            "standard_deviation": 8.167521051118729e-07,
-                            "avg_absolute_deviation": 11.5896790692893,
-                            "distribution": "dweibull"
+                            "mean": 4.4410990085452795e-06,
+                            "median": 4.185509169474244e-06,
+                            "standard_deviation": 8.681677610846444e-07,
+                            "avg_absolute_deviation": 11.88282709132016,
+                            "distribution": "beta",
+                            "usb": {
+                                "send": 0.0,
+                                "recv": 0.0
+                            },
+                            "cpu_count": "4"
+                        },
+                        {
+                            "device": "tpu",
+                            "input": {
+                                "shape": [
+                                    1,
+                                    128
+                                ],
+                                "type": "uint8"
+                            },
+                            "mean": 0.0004595810023602098,
+                            "median": 0.0004595810023602098,
+                            "standard_deviation": 3.160342746099545e-05,
+                            "avg_absolute_deviation": 4.862472067305327,
+                            "distribution": "chi2",
+                            "usb": {
+                                "send": 0.0,
+                                "recv": 0.0
+                            }
                         }
                     ]
                 }
