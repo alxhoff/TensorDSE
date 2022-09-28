@@ -1,7 +1,5 @@
 package net.sf.opendse.TensorDSE;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -9,12 +7,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -24,10 +18,7 @@ import org.opt4j.core.optimizer.Archive;
 import org.opt4j.core.start.Opt4JModule;
 import org.opt4j.core.start.Opt4JTask;
 import org.opt4j.optimizers.ea.EvolutionaryAlgorithmModule;
-import org.opt4j.optimizers.ea.SelectorDefault;
-import org.opt4j.viewer.ViewerModule;
-import org.opt4j.core.Objective;
-import org.opt4j.core.Objectives;
+
 
 import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
@@ -41,10 +32,7 @@ import net.sf.opendse.optimization.ImplementationEvaluator;
 import net.sf.opendse.optimization.ImplementationWrapper;
 import net.sf.opendse.optimization.OptimizationModule;
 import net.sf.opendse.optimization.SpecificationWrapper;
-import net.sf.opendse.optimization.evaluator.SumEvaluator;
-import net.sf.opendse.optimization.evaluator.SumEvaluatorModule.Type;
 import net.sf.opendse.optimization.io.SpecificationWrapperInstance;
-import net.sf.opendse.optimization.ImplementationWrapper;
 
 /**
  * Entry point for this project
@@ -57,15 +45,14 @@ import net.sf.opendse.optimization.ImplementationWrapper;
 public class TensorDSE {
 
 	private static Namespace GetArgNamespace(String[] args) {
-		ArgumentParser parser = ArgumentParsers
-				.newFor("TensorDSE")
-				.build()
-				.defaultHelp(true)
+		ArgumentParser parser = ArgumentParsers.newFor("TensorDSE").build().defaultHelp(true)
 				.description("Find Y-graph mapping");
 
 		// EA Parameters
-		parser.addArgument("-c", "--crossover").setDefault(0.9).type(Double.class).help("Cross over rate of the EA");
-		parser.addArgument("-s", "--populationsize").setDefault(100).type(int.class).help("Pupulation size for the EA");
+		parser.addArgument("-c", "--crossover").setDefault(0.9).type(Double.class)
+				.help("Cross over rate of the EA");
+		parser.addArgument("-s", "--populationsize").setDefault(100).type(int.class)
+				.help("Pupulation size for the EA");
 		parser.addArgument("-p", "--parentspergeneration").setDefault(50).type(int.class)
 				.help("Number of parents per generation in the EA");
 		parser.addArgument("-g", "--generations").setDefault(500).type(int.class)
@@ -78,9 +65,14 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
-				.setDefault("src/main/resources/modelsummaries/examplesummary.csv")
-				.type(String.class).help("Location of model summary CSV");
-		parser.addArgument("-d", "--costfile").setDefault("src/main/resources/benchmarkingresults/examplebenchmarkresults.json")
+				.setDefault("src/main/resources/modelsummaries/MNIST.json").type(String.class)
+				.help("Location of model summary CSV");
+		parser.addArgument("-a", "--architecturesummary")
+				.setDefault(
+						"src/main/resources/architecturesummaries/outputarchitecturesummary.json")
+				.type(String.class).help("Location of architecture summary JSON");
+		parser.addArgument("-d", "--costfile")
+				.setDefault("src/main/resources/benchmarkingresults/examplebenchmarkresults.json")
 				.type(String.class).help("Directory containing cost files");
 
 		// Output Files
@@ -129,13 +121,14 @@ public class TensorDSE {
 
 			@Override
 			protected void config() {
-				SpecificationWrapperInstance sw = new SpecificationWrapperInstance(fullspecdef.getSpecification());
+				SpecificationWrapperInstance sw =
+						new SpecificationWrapperInstance(fullspecdef.getSpecification());
 				bind(SpecificationWrapper.class).toInstance(sw);
 				String objectives_s = "cost_of_mapping";
 				ExternalEvaluator evaluator = new ExternalEvaluator(objectives_s, fullspecdef);
 
-				Multibinder<ImplementationEvaluator> multibinder = Multibinder.newSetBinder(binder(),
-						ImplementationEvaluator.class);
+				Multibinder<ImplementationEvaluator> multibinder =
+						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
 				multibinder.addBinding().toInstance(evaluator);
 
 			}
@@ -144,31 +137,33 @@ public class TensorDSE {
 		return specModule;
 	}
 
-	private static FileInputStream GetModelSummary(Namespace args_namespace) {
+	private static String GetModelSummaryPath(Namespace args_namespace) {
 		String model_summary_loc = args_namespace.getString("modelsummary");
-		System.out.printf("Model Summary: %s\n", model_summary_loc);
 		if (model_summary_loc == null) {
 			System.out.println("You need to provide the model summary file");
 			System.exit(0);
 		}
-		FileInputStream model_summary = null;
-		try {
-			model_summary = new FileInputStream(model_summary_loc);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			System.exit(0);
-		}
-
-		return model_summary;
+		System.out.printf("Model Summary: %s\n", model_summary_loc);
+		return model_summary_loc;
 	}
 
-	private static String GetCostFile(Namespace args_namespace) {
+	private static String GetArchitectureSummaryPath(Namespace args_namespace) {
+		String architecture_summary_loc = args_namespace.getString("architecturesummary");
+		if (architecture_summary_loc == null) {
+			System.out.println("You need to provide the architecture summary file");
+			System.exit(0);
+		}
+		System.out.printf("Architecture Summary: %s\n", architecture_summary_loc);
+		return architecture_summary_loc;
+	}
+
+	private static String GetCostFilePath(Namespace args_namespace) {
 		String cost_file = args_namespace.getString("costfile");
-		System.out.printf("Cost Directory: %s\n", cost_file);
 		if (cost_file == null) {
 			System.out.println("You need to provide the cost files directory");
 			System.exit(0);
 		}
+		System.out.printf("Cost Directory: %s\n", cost_file);
 		return cost_file;
 	}
 
@@ -194,8 +189,8 @@ public class TensorDSE {
 		return file;
 	}
 
-	private static Collection<Module> GetModulesCollection(EvolutionaryAlgorithmModule ea, Module spec_module,
-			OptimizationModule opt) {
+	private static Collection<Module> GetModulesCollection(EvolutionaryAlgorithmModule ea,
+			Module spec_module, OptimizationModule opt) {
 		Collection<Module> ret = new ArrayList<Module>();
 		ret.add(ea);
 		ret.add(spec_module);
@@ -223,13 +218,12 @@ public class TensorDSE {
 		double[] objectiveVals = new double[test_runs];
 
 		File output_directory = GetOutputFolder(args_namespace);
-		// File output_file = GetOutputFolder(args_namespace);
-		FileWriter csvWriter = GetResultsWriter(args_namespace);
-		FileInputStream model_summary = GetModelSummary(args_namespace);
+		FileWriter csv_writer = GetResultsWriter(args_namespace);
 
-		for (int itRun = 0; itRun < test_runs; itRun++) {
+		for (int i = 0; i < test_runs; i++) {
 
-			FullSpecDef fullspecdef = new FullSpecDef(model_summary, GetCostFile(args_namespace));
+			FullSpecDef fullspecdef = new FullSpecDef(GetModelSummaryPath(args_namespace),
+					GetCostFilePath(args_namespace), GetArchitectureSummaryPath(args_namespace));
 
 			// Opt4J Modules
 			EvolutionaryAlgorithmModule ea = GetEAModule(args_namespace);
@@ -245,24 +239,29 @@ public class TensorDSE {
 
 				for (Individual individual : archive) {
 
-					Specification impl = ((ImplementationWrapper) individual.getPhenotype()).getImplementation();
+					Specification impl =
+							((ImplementationWrapper) individual.getPhenotype()).getImplementation();
 					SpecificationWriter writer = new SpecificationWriter();
-					String nameSolution = new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
+					String nameSolution =
+							new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
 
 					writer.write(impl, output_directory + "/" + nameSolution + "_solution.xml");
-					objectiveVals[itRun] = individual.getObjectives().getValues().iterator().next().getDouble();
-					System.out.println(objectiveVals[itRun]);
-					csvWriter.append("\n");
-					csvWriter.append(String.join(",", Integer.toString(itRun), nameSolution,
-							Integer.toString(ea.getGenerations()), Integer.toString(ea.getPopulationSize()),
+					objectiveVals[i] =
+							individual.getObjectives().getValues().iterator().next().getDouble();
+					System.out.println(objectiveVals[i]);
+					csv_writer.append("\n");
+					csv_writer.append(String.join(",", Integer.toString(i), nameSolution,
+							Integer.toString(ea.getGenerations()),
+							Integer.toString(ea.getPopulationSize()),
 							Integer.toString(ea.getParentsPerGeneration()),
 							Integer.toString(ea.getOffspringsPerGeneration()),
-							Double.toString(ea.getCrossoverRate()), Double.toString(objectiveVals[itRun])));
+							Double.toString(ea.getCrossoverRate()),
+							Double.toString(objectiveVals[i])));
 
 					for (Mapping<Task, Resource> m : impl.getMappings()) {
-						System.out.println(m.getSource().getId() + " type " +
-								m.getSource().getAttribute("type")
-								+ " HW " + m.getTarget().getId() + " number of shaves : "
+						System.out.println(m.getSource().getId() + " type "
+								+ m.getSource().getAttribute("type") + " HW "
+								+ m.getTarget().getId() + " number of shaves : "
 								+ m.getTarget().getAttribute("num_of_shaves"));
 					}
 
@@ -277,13 +276,13 @@ public class TensorDSE {
 		}
 
 		try {
-			csvWriter.flush();
+			csv_writer.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(0);
 		}
 		try {
-			csvWriter.close();
+			csv_writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(0);

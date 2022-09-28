@@ -1,12 +1,9 @@
 package net.sf.opendse.TensorDSE;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.opt4j.core.Objective;
@@ -14,7 +11,6 @@ import org.opt4j.core.Objectives;
 
 import net.sf.opendse.model.Application;
 import net.sf.opendse.model.Architecture;
-import net.sf.opendse.model.Communication;
 import net.sf.opendse.model.Dependency;
 import net.sf.opendse.model.Element;
 import net.sf.opendse.model.Link;
@@ -112,8 +108,8 @@ public class ExternalEvaluator implements ImplementationEvaluator {
 		String data_type = mapping.getTarget().getAttribute("input_type");
 
 		if (operation_costs.GetOpTypeTable(device_type).containsKey(operation_type)) {
-			if (operation_costs.GetDataTypeTable(device_type, operation_type).containsKey(input_shape)) {
-				cost = operation_costs.GetMean(device_type, operation_type, data_type);
+			if (operation_costs.GetOpDataTypeTable(device_type, operation_type).containsKey(input_shape)) {
+				cost = operation_costs.GetOpCost(device_type, operation_type, data_type);
 			} else {
 				cost = 0.0;
 			}
