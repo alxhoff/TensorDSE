@@ -1,4 +1,4 @@
-package net.sf.opendse.TensorDSE.JSON;
+package net.sf.opendse.TensorDSE.JSON.Benchmark;
 
 
 public class Paths {

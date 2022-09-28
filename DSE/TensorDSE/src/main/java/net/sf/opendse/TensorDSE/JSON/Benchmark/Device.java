@@ -1,4 +1,4 @@
-package net.sf.opendse.TensorDSE.JSON;
+package net.sf.opendse.TensorDSE.JSON.Benchmark;
 
 public class Device {
     String device;
@@ -8,9 +8,14 @@ public class Device {
     Double standard_deviation;
     Double avg_absolute_deviation;
     String distribution;
+    USB usb;
 
-    public Device() {
+    public USB getUsb() {
+        return usb;
+    }
 
+    public void setUsb(USB usb) {
+        this.usb = usb;
     }
 
     public Double getMean() {
