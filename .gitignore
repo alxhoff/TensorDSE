@@ -22,6 +22,9 @@ local.properties
 .settings/
 .loadpath
 .recommenders
+deployment/model_splitting/models/
+deployment/tflite-cpp/tflite-dist
+deployment/tflite-cpp/.vscode
 
 # External tool builders
 .externalToolBuilders/
@@ -110,6 +113,7 @@ gradle-app.setting
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
+<<<<<<< HEAD
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
 # Byte-compiled / optimized / DLL files
