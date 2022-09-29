@@ -3,11 +3,21 @@ from multiprocessing import Queue
 from utils.log import Log
 
 from usb.process import process_timestamps
+from usb.stream import StreamContext
 from usb.timer import UsbTimer
 from usb.packet import UsbPacket
 
-START_DEPLOYMENT    = 0
-END_DEPLOYMENT      = 1
+START_DEPLOYMENT        = 0
+END_DEPLOYMENT          = 1
+SUCCESSFULL_DEPLOYMENT  = 2
+ERRONEOUS_DEPLOYMENT    = 3
+
+MAX_TIME_CAPTURE=90 # minute and a half
+
+def get_filter(addr:str) -> str:
+    return (
+    f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
+    )
 
 def get_tpu_ids():
     import utils
@@ -23,11 +33,10 @@ def get_tpu_ids():
     bus = line.split()[1]
     device = line.split()[3].split(":")[0]
 
-    if device.startswith("0"):
+    while device.startswith("0"):
         device = device[1:]
 
     return bus, device
-
 
 def peek_queue(q:Queue):
     import queue
@@ -51,7 +60,6 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, l:Log) -> None:
     RETURN_BEGUN        = False
 
     FILTER = (
-    # f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
     f"(usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT) && usb.device_address=={addr}"
     )
 
@@ -59,15 +67,13 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, l:Log) -> None:
         signalsQ.put(END_DEPLOYMENT)
         return
 
-    timer   = UsbTimer()
     capture = pyshark.LiveCapture(interface='usbmon0', display_filter=FILTER)
-
     signalsQ.put(START_DEPLOYMENT)
+
+    timer   = UsbTimer()
+    context = StreamContext()
     for raw_packet in capture.sniff_continuously():
         packet  = UsbPacket(raw_packet, id, addr)
-
-        if peek_queue(signalsQ) == END_DEPLOYMENT:
-            break
 
         # BEGIN
         if (packet.transfer_type == "INTERRUPT"

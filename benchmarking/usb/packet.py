@@ -10,16 +10,21 @@ class UsbPacket:
         self.id             = id
         self.addr           = addr
         self.ts             = 0.0
+
         self.direction      = 0
         self.src            = ""
         self.dest           = ""
+
         self.data_flag      = ""
         self.data_size      = 0.0
         self.urb_size       = 0.0
+
         self.transfer_type  = ""
         self.urb_type       = ""
+
         self.valid_comms    = False
         self.present_data   = False
+        self.empty_data     = True
         self.valid_data     = False
 
         self.timestamp(raw_packet)
@@ -41,6 +46,7 @@ class UsbPacket:
         of usb transfer.
         """
         self.direction = packet.usb.endpoint_address_direction
+        self.endpoint  = packet.usb.endpoint_address_number
 
     def store_scr_dest(self, packet):
         """Stores source and destination values of overloaded packet."""
@@ -49,8 +55,8 @@ class UsbPacket:
 
     def store_data_len_info(self, packet):
         self.data_flag = packet.usb.data_flag
-        self.data_size  = float(packet.usb.data_len)
-        self.urb_size   = float(packet.usb.urb_len)
+        self.data_size = float(packet.usb.data_len)
+        self.urb_size  = float(packet.usb.urb_len)
 
     def find_transfer_type(self, packet):
         """Finds the urb transfer type of the overloaded packet."""
@@ -81,35 +87,30 @@ class UsbPacket:
     def verify_communication(self):
         """Verifies if the packet's source is one that is valid for our analysis."""
         if ((self.addr in self.src) and ("host" == self.dest)):
-            self.valid_comms = True
+            self.valid_communication = True
         elif (("host" == self.src) and (self.addr in self.dest)):
-            self.valid_comms = True
+            self.valid_communication = True
         else:
-            self.valid_comms = False
+            self.valid_communication = False
 
     def verify_data_presence(self):
         """Finds if the overloaded packet contains actual DATA being sent."""
         if self.data_flag in ('>', '<'):
             self.present_data = False
-        elif 'not present' in self.data_flag:
-            self.present_data = False
         elif self.data_flag == 'present (0)':
             self.present_data = True
+            self.empty_data   = True
+        elif 'not present' in self.data_flag:
+            self.present_data = False
         else:
             raise ValueError("Unknown data presence variable.")
 
     def verify_data_validity(self):
         """Finds if the overloaded packet contains VALID data being sent."""
-        if self.src != "host":
-            if self.data_size > 0 and self.data_size >= 16:
-                self.valid_data = True
-            else:
-                self.valid_data = False
+        if self.data_size > 0:
+            self.valid_data = True
         else:
-            if self.data_size > 0:
-                self.valid_data = True
-            else:
-                self.valid_data = False
+            self.valid_data = False
 
     # valid = f"{self.id}.3"
     def is_host_src(self):
@@ -129,6 +130,3 @@ class UsbPacket:
 
     def is_data_present(self):
         return (self.present_data == True)
-
-    def is_comms_valid(self):
-        return (self.valid_comms== True)
