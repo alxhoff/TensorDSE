@@ -10,7 +10,7 @@ def ExportResults(file:str, data:Dict) -> None:
 
 def AnalyzeModelResults(parent_model:str, models_dict:Dict):
     from main import log, RESULTS_FOLDER
-    from utils import cpu_count
+    from utils import device_count
     from usb.process import process_timers
     from analysis.analysis import Analyzer
     import os
@@ -47,6 +47,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                     "delegates"             : [
                         {
                             "device"                      : m.delegate,
+                            "count"                       : device_count(m.delegate),
                             "input"                     : {
                                     "shape"   : m.input_shape,
                                     "type"    : m.input_datatype
@@ -60,9 +61,6 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                         }
                     ]
                 }
-
-                if m.delegate == "cpu":
-                    d["delegates"][0]["cpu_count"] = cpu_count()
 
                 model["layers"].append(d)
                 data["models"][0] = model
