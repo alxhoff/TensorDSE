@@ -12,8 +12,7 @@ set +xe
 
 DEBUG_MODE=1
 TEST_MODE=2
-HELLO_WORLD_MODE=3
-SHELL_MODE=4
+SHELL_MODE=3
 
 mode="$MODE"
 
@@ -32,20 +31,17 @@ coral_hello_world() {
 
 debug() {
     ipdb3 main.py -m models/source/MNIST.tflite \
-                  -c 1000
+                  -c 10
 }
 
 test() {
-    ipdb3 scripts/test.py
+    ipdb3 scripts/test.py -c 1 \
+                          -t 20
 }
 
 run() {
     python3 main.py -m models/source/MNIST.tflite \
-                    -c 1000
-}
-
-hello_world() {
-    coral_hello_world
+                    -c 10
 }
 
 main() {
@@ -53,8 +49,6 @@ main() {
         debug
     elif [ "$mode" -eq $TEST_MODE ]; then
         test
-    elif [ "$mode" -eq $HELLO_WORLD_MODE ]; then
-        hello_world
     elif [ "$mode" -eq $SHELL_MODE ]; then
         bash
     else
