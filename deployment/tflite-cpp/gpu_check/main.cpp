@@ -14,7 +14,7 @@ limitations under the License.
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
-#include "tensorflow/lite/delegates/gpu/gl_delegate.h"
+#include "tensorflow/lite/delegates/gpu/delegate.h"
 
 // This is an example that is minimal to read a model
 // from disk and perform inference. There is no data being loaded
@@ -61,16 +61,10 @@ int main(int argc, char* argv[]) {
   tflite::PrintInterpreterState(interpreter.get());
 
   // NEW: Prepare GPU delegate.
-  const TfLiteGpuDelegateOptions options = {
-    .metadata = NULL,
-    .compile_options = {
-        .precision_loss_allowed = 0,  // FP16
-        .preferred_gl_object_type = TFLITE_GL_OBJECT_TYPE_FASTEST,
-        .dynamic_batch_enabled = 0,   // Not fully functional yet
-    },
-  };
+  const TfLiteGpuDelegateOptionsV2 options = TfLiteGpuDelegateOptionsV2Default();
 
-  auto* delegate = TfLiteGpuDelegateCreate(&options);
+  auto* delegate = TfLiteGpuDelegateV2Create(&options);
+  
   if (interpreter->ModifyGraphWithDelegate(delegate) != kTfLiteOk) return false;
 
   // Run inference.
@@ -79,7 +73,7 @@ int main(int argc, char* argv[]) {
   tflite::PrintInterpreterState(interpreter.get());
 
   // NEW: Clean up.
-  TfLiteGpuDelegateDelete(delegate);
+  TfLiteGpuDelegateV2Delete(delegate);
 
   return 0;
 }
