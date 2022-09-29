@@ -18,6 +18,9 @@ def capture_stream() -> None:
 
     for raw_packet in capture.sniff_continuously():
         p = UsbPacket(raw_packet, id, addr)
+        d = raw_packet.usb.data_len
+        if int(d) > 0:
+            print(d)
         continue
 
 capture_stream()
