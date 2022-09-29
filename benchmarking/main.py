@@ -8,7 +8,7 @@ COMPILED_MODELS_FOLDER  = "models/compiled/"
 RESULTS_FOLDER          = "results/"
 
 # custom logger to separate TF logs and Ours
-log = Log(os.path.join(RESULTS_FOLDER, "journal.log"))
+log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))
 
 def DisableTFlogging() -> None:
     """Disable the most annoying logging known to mankind
