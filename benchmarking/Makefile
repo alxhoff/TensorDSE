@@ -11,8 +11,7 @@ VOLUME := $(shell pwd)
 MODE 				:= 0
 DEBUG_MODE 			:= 1
 TEST_MODE 			:= 2
-HELLO_WORLD_MODE 	:= 3
-SHELL_MODE 			:= 4
+SHELL_MODE 			:= 3
 
 exist-docker-image = $(shell docker image ls | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
 is-docker-running = $(shell docker ps -a | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
@@ -39,11 +38,13 @@ run: $(if $(call exist-docker-image),,build)
 		docker run --name ${NAME} \
 				   --rm \
 				   --privileged \
-				   --env MODE=${MODE} \
+				   --net host \
+				   --cap-add SYS_ADMIN \
 				   -v /dev/usbmon0:/dev/usbmon0 \
 				   -v /dev/bus/usb:/dev/bus/usb \
 				   -v "${VOLUME}":/home/tensorDSE \
 				   --detach-keys="ctrl-@" \
+				   --env MODE=${MODE} \
 				   -it ${TAG}:${REPO}; \
 	fi
 
@@ -53,14 +54,11 @@ debug:
 test:
 	$(MAKE) -f ${FILE} run MODE=${TEST_MODE}
 
-hello_world:
-	$(MAKE) -f ${FILE} run MODE=${HELLO_WORLD_MODE}
-
 shell:
 	$(MAKE) -f ${FILE} run MODE=${SHELL_MODE}
 
-stream:
-	ipdb3 scripts/stream.py
+capture:
+	ipdb3 scripts/capture.py
 
 stop:
 	@if [ -n "$(call is-docker-running)" ]; then \
@@ -109,9 +107,8 @@ purge-all: stop-all rm-all purge
 		run \
 		debug \
 		test \
-		hello_world \
 		shell \
-		stream \
+		capture \
 		stop \
 		rm \
 		stop-all \
