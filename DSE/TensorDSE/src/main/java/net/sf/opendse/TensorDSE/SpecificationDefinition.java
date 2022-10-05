@@ -28,7 +28,7 @@ import net.sf.opendse.model.Task;
 import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
- * The {@code FullSpecDef} is the class defining the Specification that corresponds to the graph of
+ * The {@code SpecificationDefinition} is the class defining the Specification that corresponds to the graph of
  * the deep learning model to which we want to optimize the performance.
  * 
  * @author Ines Ben Hmida
@@ -39,7 +39,7 @@ import net.sf.opendse.visualization.SpecificationViewer;
  * @param costsfile A csv file that contains the costs deducted from running the benchmarks
  *
  */
-public class FullSpecDef {
+public class SpecificationDefinition {
 
 	private Specification specification = null;
 	// ******************************************************************************
@@ -47,7 +47,7 @@ public class FullSpecDef {
 	// conducted
 	// and which is included in the resources folder of this project
 	// *******************************************************************************
-	private OpCosts op_costs = null;
+	private OperationCosts op_costs = null;
 
 	private HashMap<String, Task> tasks = new HashMap<String, Task>();
 	private HashMap<String, List<Resource>> resources = new HashMap<String, List<Resource>>();
@@ -66,13 +66,15 @@ public class FullSpecDef {
 		Task ret = new Task(String.format("%s_%d", layer.getType(), layer.getIndex()));
 		// TODO Input size?
 		ret.setAttribute("type", layer.getType());
+		// TODO 0 tensor for dtype?
+		ret.setAttribute("dtype", layer.getInputs().get(0).getType());
 		ret.setAttribute("input_tensors", layer.getInputTensorString());
 		ret.setAttribute("output_tensors", layer.getOutputTensorString());
 
 		return ret;
 	}
 
-	public OpCosts GetOpCosts() {
+	public OperationCosts GetOpCosts() {
 		return this.op_costs;
 	}
 
@@ -80,9 +82,9 @@ public class FullSpecDef {
 	 * @param model_summary_path
 	 * @param cost_file_path
 	 */
-	public FullSpecDef(String model_summary_path, String cost_file_path,
+	public SpecificationDefinition(String model_summary_path, String cost_file_path,
 			String architecture_summary_path) {
-		this.op_costs = new OpCosts(cost_file_path);
+		this.op_costs = new OperationCosts(cost_file_path);
 		this.specification =
 				GetSpecificationFromTFLiteModel(model_summary_path, architecture_summary_path);
 
@@ -281,6 +283,8 @@ public class FullSpecDef {
 				Resource resource = cpus.get(i);
 				Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 						String.format("%s:%s", task_id, resource.getId()), task, resource);
+				m.setAttribute("cost", this.op_costs.GetOpCost("cpu", task.getAttribute("type"),
+						task.getAttribute("dtype")));
 				mappings.add(m);
 			}
 
@@ -289,6 +293,8 @@ public class FullSpecDef {
 				Resource resource = gpus.get(i);
 				Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 						String.format("%s:%s", task_id, resource.getId()), task, resource);
+				m.setAttribute("cost", this.op_costs.GetOpCost("gpu", task.getAttribute("type"),
+						task.getAttribute("dtype")));
 				mappings.add(m);
 			}
 
@@ -299,6 +305,8 @@ public class FullSpecDef {
 					Resource resource = tpus.get(i);
 					Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 							String.format("%s:%s", task_id, resource.getId()), task, resource);
+					m.setAttribute("cost", this.op_costs.GetOpCost("tpu", task.getAttribute("type"),
+							task.getAttribute("dtype")));
 					mappings.add(m);
 				}
 		}

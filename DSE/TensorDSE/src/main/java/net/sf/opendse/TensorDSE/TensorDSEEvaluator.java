@@ -22,15 +22,15 @@ import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
 import net.sf.opendse.optimization.ImplementationEvaluator;
 
-public class ExternalEvaluator implements ImplementationEvaluator {
+public class TensorDSEEvaluator implements ImplementationEvaluator {
 
 	protected final Map<String, Objective> map = new HashMap<String, Objective>();
 	protected int priority;
-	private OpCosts operation_costs = null;
+	private OperationCosts operation_costs = null;
 
-	public ExternalEvaluator(String objectives, FullSpecDef fullspecdef) {
+	public TensorDSEEvaluator(String objectives, SpecificationDefinition SpecificationDefinition) {
 		super();
-		this.operation_costs = fullspecdef.GetOpCosts();
+		this.operation_costs = SpecificationDefinition.GetOpCosts();
 		for (String s : objectives.split(",")) {
 			Objective obj = new Objective(s, Objective.Sign.MIN);
 			map.put(s, obj);
@@ -101,19 +101,28 @@ public class ExternalEvaluator implements ImplementationEvaluator {
 	 *         a double with the cost of mapping.
 	 */
 	private double MappingCost(Mapping<Task, Resource> mapping) {
-		double cost = 0.0;
-		String operation_type = mapping.getSource().getAttribute("type").toString().toLowerCase();
-		String device_type = mapping.getTarget().getId();
+		Double cost = 0.0;
+		String layer = mapping.getSource().getAttribute("type").toString().toLowerCase();
+		String target_device = mapping.getTarget().getId();
 		Integer input_shape = ((Integer) (mapping.getSource().getAttribute("input_shape"))).intValue();
 		String data_type = mapping.getTarget().getAttribute("input_type");
 
-		if (operation_costs.GetOpTypeTable(device_type).containsKey(operation_type)) {
-			if (operation_costs.GetOpDataTypeTable(device_type, operation_type).containsKey(input_shape)) {
-				cost = operation_costs.GetOpCost(device_type, operation_type, data_type);
+		// Execution cost
+		if (operation_costs.GetOpTypeTable(target_device).containsKey(layer)) {
+			if (operation_costs.GetOpDataTypeTable(target_device, layer).containsKey(input_shape)) {
+				cost = operation_costs.GetOpCost(target_device, layer, data_type);
 			} else {
 				cost = 0.0;
 			}
 		}
+
+		//Communication cost
+		if (target_device.contains("tpu"))
+			System.out.printf("wait here");
+
+		Double comm_cost = operation_costs.GetCommCost(target_device, layer, data_type);
+		cost += comm_cost;
+
 		return cost;
 	}
 }
