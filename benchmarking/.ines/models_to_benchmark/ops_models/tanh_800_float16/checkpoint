@@ -1,0 +1,2 @@
+model_checkpoint_path: "graphtanh_800_float16.ckpt"
+all_model_checkpoint_paths: "graphtanh_800_float16.ckpt"

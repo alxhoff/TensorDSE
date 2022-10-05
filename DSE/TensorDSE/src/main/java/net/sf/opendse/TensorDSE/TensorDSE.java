@@ -19,7 +19,6 @@ import org.opt4j.core.start.Opt4JModule;
 import org.opt4j.core.start.Opt4JTask;
 import org.opt4j.optimizers.ea.EvolutionaryAlgorithmModule;
 
-
 import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 
@@ -61,7 +60,7 @@ public class TensorDSE {
 				.help("Number of offsprings per generation");
 
 		// Other
-		parser.addArgument("-r", "--runs").setDefault(50).type(int.class).help("Number of runs");
+		parser.addArgument("-r", "--runs").setDefault(1).type(int.class).help("Number of runs");
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
@@ -115,17 +114,17 @@ public class TensorDSE {
 		return ea;
 	}
 
-	private static Module GetSpecModule(FullSpecDef fullspecdef) {
+	private static Module GetSpecificationModule(SpecificationDefinition specification_definition) {
 
-		Module specModule = new Opt4JModule() {
+		Module specification_module = new Opt4JModule() {
 
 			@Override
 			protected void config() {
-				SpecificationWrapperInstance sw =
-						new SpecificationWrapperInstance(fullspecdef.getSpecification());
-				bind(SpecificationWrapper.class).toInstance(sw);
-				String objectives_s = "cost_of_mapping";
-				ExternalEvaluator evaluator = new ExternalEvaluator(objectives_s, fullspecdef);
+				SpecificationWrapperInstance specification_wrapper =
+						new SpecificationWrapperInstance(specification_definition.getSpecification());
+				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
+	
+				TensorDSEEvaluator evaluator = new TensorDSEEvaluator("cost_of_mapping", specification_definition);
 
 				Multibinder<ImplementationEvaluator> multibinder =
 						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
@@ -134,7 +133,7 @@ public class TensorDSE {
 			}
 		};
 
-		return specModule;
+		return specification_module;
 	}
 
 	private static String GetModelSummaryPath(Namespace args_namespace) {
@@ -157,7 +156,7 @@ public class TensorDSE {
 		return architecture_summary_loc;
 	}
 
-	private static String GetCostFilePath(Namespace args_namespace) {
+	private static String GetBenchmarkingResultsPath(Namespace args_namespace) {
 		String cost_file = args_namespace.getString("costfile");
 		if (cost_file == null) {
 			System.out.println("You need to provide the cost files directory");
@@ -215,50 +214,55 @@ public class TensorDSE {
 		int test_runs = args_namespace.getInt("runs");
 		System.out.printf("Runs: %d\n", test_runs);
 
-		double[] objectiveVals = new double[test_runs];
+		double[] objective_values = new double[test_runs];
 
 		File output_directory = GetOutputFolder(args_namespace);
 		FileWriter csv_writer = GetResultsWriter(args_namespace);
 
 		for (int i = 0; i < test_runs; i++) {
 
-			FullSpecDef fullspecdef = new FullSpecDef(GetModelSummaryPath(args_namespace),
-					GetCostFilePath(args_namespace), GetArchitectureSummaryPath(args_namespace));
+			SpecificationDefinition specification = new SpecificationDefinition(
+					GetModelSummaryPath(args_namespace), GetBenchmarkingResultsPath(args_namespace),
+					GetArchitectureSummaryPath(args_namespace));
 
 			// Opt4J Modules
-			EvolutionaryAlgorithmModule ea = GetEAModule(args_namespace);
-			Module specModule = GetSpecModule(fullspecdef);
-			OptimizationModule opt = new OptimizationModule();
-			Collection<Module> modules = GetModulesCollection(ea, specModule, opt);
+			EvolutionaryAlgorithmModule ea_module = GetEAModule(args_namespace);
+			Module specification_module = GetSpecificationModule(specification);
+			OptimizationModule optimization_module = new OptimizationModule();
+			Collection<Module> modules =
+					GetModulesCollection(ea_module, specification_module, optimization_module);
 
-			Opt4JTask task = GetOpt4JTask(modules);
+			Opt4JTask opt4j_task = GetOpt4JTask(modules);
 
 			try {
-				task.execute();
-				Archive archive = task.getInstance(Archive.class);
+				opt4j_task.execute();
+				Archive archive = opt4j_task.getInstance(Archive.class);
 
 				for (Individual individual : archive) {
 
-					Specification impl =
+					Specification implementation =
 							((ImplementationWrapper) individual.getPhenotype()).getImplementation();
 					SpecificationWriter writer = new SpecificationWriter();
-					String nameSolution =
+					String time_string =
 							new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
 
-					writer.write(impl, output_directory + "/" + nameSolution + "_solution.xml");
-					objectiveVals[i] =
-							individual.getObjectives().getValues().iterator().next().getDouble();
-					System.out.println(objectiveVals[i]);
-					csv_writer.append("\n");
-					csv_writer.append(String.join(",", Integer.toString(i), nameSolution,
-							Integer.toString(ea.getGenerations()),
-							Integer.toString(ea.getPopulationSize()),
-							Integer.toString(ea.getParentsPerGeneration()),
-							Integer.toString(ea.getOffspringsPerGeneration()),
-							Double.toString(ea.getCrossoverRate()),
-							Double.toString(objectiveVals[i])));
+					writer.write(implementation,
+							output_directory + "/" + time_string + "_solution.xml");
 
-					for (Mapping<Task, Resource> m : impl.getMappings()) {
+					objective_values[i] =
+							individual.getObjectives().getValues().iterator().next().getDouble();
+					System.out.println(objective_values[i]);
+
+					csv_writer.append("\n");
+					csv_writer.append(String.join(",", Integer.toString(i), time_string,
+							Integer.toString(ea_module.getGenerations()),
+							Integer.toString(ea_module.getPopulationSize()),
+							Integer.toString(ea_module.getParentsPerGeneration()),
+							Integer.toString(ea_module.getOffspringsPerGeneration()),
+							Double.toString(ea_module.getCrossoverRate()),
+							Double.toString(objective_values[i])));
+
+					for (Mapping<Task, Resource> m : implementation.getMappings()) {
 						System.out.println(m.getSource().getId() + " type "
 								+ m.getSource().getAttribute("type") + " HW "
 								+ m.getTarget().getId() + " number of shaves : "
@@ -270,7 +274,7 @@ public class TensorDSE {
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			} finally {
-				task.close();
+				opt4j_task.close();
 			}
 
 		}

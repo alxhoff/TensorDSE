@@ -1,0 +1,2 @@
+model_checkpoint_path: "graphL2Normalization_10:0.ckpt"
+all_model_checkpoint_paths: "graphL2Normalization_10:0.ckpt"
