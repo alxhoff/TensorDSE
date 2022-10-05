@@ -5,12 +5,12 @@
 
 set -e
 
-if command -v bazel &>/dev/null; then
+if ! command -v bazel &>/dev/null; then
     echo "bazel is needed for this script!"
     exit 1
 fi
 
-if command -v cmake &>/dev/null; then
+if ! command -v cmake &>/dev/null; then
     echo "cmake is needed for this script!"
     exit 1
 fi
