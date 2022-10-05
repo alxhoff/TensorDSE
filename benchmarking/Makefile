@@ -17,7 +17,7 @@ exist-docker-image = $(shell docker image ls | grep ${TAG} | tr -s ' ' | cut -f2
 is-docker-running = $(shell docker ps -a | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
 filter-docker = $(shell docker images --filter=reference="*${REGEX}*" -q)
 
-all: run
+all:
 
 info:
 	@printf "%s\n" "DOCKER IMAGES:"
