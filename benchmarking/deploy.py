@@ -62,18 +62,19 @@ def MakeInterpreter(model_file:str, library:str):
     )
 
 
-def TPUDeploy(m:Model, count:int) -> Model:
+def TPUDeploy(m:Model, count:int, timeout:int=10) -> Model:
     from multiprocessing import Process, Queue
     import queue
     from main import log
     from utils.log import Log
-    from usb import START_DEPLOYMENT, END_DEPLOYMENT
+    from usb import END_DEPLOYMENT
     from usb.usb import capture_stream
     import sys
     import time
     import numpy as np
     import platform
 
+    DEPLOY_WAIT_TIME = 10
     TPU_LIBRARY = {
         "Linux": "libedgetpu.so.1",
         "Darwin": "libedgetpu.1.dylib",
@@ -97,18 +98,19 @@ def TPUDeploy(m:Model, count:int) -> Model:
     interpreter.set_tensor(input_details[0]["index"], input_data)
     m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
 
-    signalsQ = Queue()
-    dataQ = Queue()
     for i in range(count):
-        p = Process(target=capture_stream, args=(signalsQ, dataQ, Log(f"results/{m.model_name}_USB_TRAFFIC.log")))
+        signalsQ = Queue()
+        dataQ = Queue()
+
+        p = Process(target=capture_stream, args=(signalsQ, dataQ, timeout, Log(f"results/{m.model_name}_USB.log")))
         p.start()
 
         sig = signalsQ.get()
         if sig == END_DEPLOYMENT:
-            log.error("TPU coral usb device wasnt found or id/address variables weren't able to be extracted!")
             p.join()
             break
 
+        time.sleep(DEPLOY_WAIT_TIME)
         start = time.perf_counter()                     # START
         interpreter.invoke()                            # RUNS
         inference_time = time.perf_counter() - start    # END
@@ -116,12 +118,9 @@ def TPUDeploy(m:Model, count:int) -> Model:
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
         results.append(inference_time)
 
-        try:
-            t = dataQ.get(timeout=5)
-            timers.append(t)
-        except queue.Empty:
-            signalsQ.put(END_DEPLOYMENT)
-
+        data = dataQ.get()
+        if not data == {}:
+            timers.append(data)
         p.join()
 
         sys.stdout.write(f"\r {i+1}/{count} for TPU ran -> {m.model_name}")

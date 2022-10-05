@@ -11,10 +11,11 @@ def ExportResults(file:str, data:Dict) -> None:
 def AnalyzeModelResults(parent_model:str, models_dict:Dict):
     from main import log, RESULTS_FOLDER
     from utils import device_count
-    from usb.process import process_timers
+    from usb.process import process_streams
     from analysis.analysis import Analyzer
     import os
 
+    unavailable_delegates = []
     data = {
             "models": [{
                 "name"      : parent_model,
@@ -31,6 +32,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
     for delegate in ("cpu", "gpu", "tpu"):
         if not models_dict[delegate]:
             log.warning(f"Models dictionary does not contain results for delegate: {delegate}")
+            unavailable_delegates.append(delegate)
             continue
 
         for m in models_dict[delegate]:
@@ -57,7 +59,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                             "standard_deviation"        : a.std_deviation,
                             "avg_absolute_deviation"    : a.avg_absolute_deviation,
                             "distribution"              : a.distribution_name,
-                            "usb"                       : process_timers(m.timers)
+                            "usb"                       : process_streams(m.timers, m.results)
                         }
                     ]
                 }
@@ -77,6 +79,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                             break
                 d = {
                             "device"                    : m.delegate,
+                            "count"                     : device_count(m.delegate),
                             "input"                     : {
                                     "shape"   : m.input_shape,
                                     "type"    : m.input_datatype
@@ -86,11 +89,8 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                             "standard_deviation"        : a.std_deviation,
                             "avg_absolute_deviation"    : a.avg_absolute_deviation,
                             "distribution"              : a.distribution_name,
-                            "usb"                       : process_timers(m.timers)
+                            "usb"                       : process_streams(m.timers, m.results)
                 }
-
-                if m.delegate == "cpu":
-                    d["cpu_count"] = cpu_count()
 
                 for i,j in enumerate(model["layers"]):
                     if j["name"] == m.model_name:
@@ -101,12 +101,23 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
 
             raise Exception(f"Apparently attempt to overwrite data from model: {m.model_name} run on: {delegate}!")
 
+    for d in unavailable_delegates:
+        for i,m in enumerate(data["models"][0]["layers"]):
+            ret = {
+                        "device"                    : d,
+                        "count"                     : 0,
+            }
+            m["delegates"].append(ret)
+            data["models"][0]["layers"][i] = m
+
+
     ExportResults(os.path.join(RESULTS_FOLDER, f"{parent_model}.json"), data)
 
 def AnalyzeLayerResults(m:Model, delegate:str):
     from main import RESULTS_FOLDER
-    from usb.process import process_timers
+    from usb.process import process_streams
     from analysis.analysis import Analyzer
+    from utils import device_count
     import os
 
     a = Analyzer(m.results, find_distribution=True)
@@ -116,6 +127,7 @@ def AnalyzeLayerResults(m:Model, delegate:str):
         "delegates"             : [
             {
                 "device"                      : m.delegate,
+                "count"                     : device_count(m.delegate),
                 "input"                     : {
                         "shape"   : m.input_shape,
                         "type"    : m.input_datatype
@@ -125,7 +137,7 @@ def AnalyzeLayerResults(m:Model, delegate:str):
                 "standard_deviation"        : a.std_deviation,
                 "avg_absolute_deviation"    : a.avg_absolute_deviation,
                 "distribution"              : a.distribution_name,
-                "usb"                       : process_timers(m.timers)
+                "usb"                       : process_streams(m.timers, m.results)
             }
         ]
     }
@@ -145,14 +157,20 @@ def MergeResults(parent_model:str, layers:List, clean:bool=True):
         for l in layers:
             file = os.path.join(RESULTS_FOLDER, f"{l.upper()}_LAYER_{device.upper()}.json")
             name = l.upper()
-            if (os.path.isfile(file)
-                and name in names):
+            if (os.path.isfile(file) and name in names):
                     j = load_json(file)
                     for k,v in enumerate(d):
-                        if (v["name"] == name
-                            and not device in [i["device"] for i in v["delegates"]] ):
+                        delegates = [i["device"] for i in v["delegates"]]
+                        if (v["name"] == name):
                             d[k]["path"][device] = j["path"][device]
-                            d[k]["delegates"].append(j["delegates"][0])
+                            if device in delegates:
+                                for x,dele in enumerate(d[k]["delegates"]):
+                                    if dele["device"] == device:
+                                        d[k]["delegates"][x] = j["delegates"][0]
+                                        break
+                            else:
+                                d[k]["delegates"].append(j["delegates"][0])
+                            print(f"Merging {name} run on {device} onto the results from {parent_model}!")
 
                     if clean:
                         os.system(f"rm -f {file}")

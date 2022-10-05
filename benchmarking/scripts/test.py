@@ -34,4 +34,5 @@ def get_args() -> argparse.Namespace:
 
 args = get_args()
 results["tpu"].append(TPUDeploy(Model(model, "tpu"), args.count, args.timeout))
-# AnalyzeModelResults("TEST", results)
+if args.count > 1:
+    AnalyzeModelResults("TEST", results)

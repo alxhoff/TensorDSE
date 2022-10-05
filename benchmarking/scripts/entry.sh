@@ -30,17 +30,16 @@ coral_hello_world() {
 }
 
 debug() {
-    ipdb3 main.py -m models/source/MNIST.tflite \
-                  -c 10
+    ipdb3 scripts/debug.py
 }
 
 test() {
-    ipdb3 scripts/test.py -c 1 \
-                          -t 20
+    ipdb3 scripts/test.py -c 2 \
+                          -t 10
 }
 
 run() {
-    python3 main.py -m models/source/MNIST.tflite \
+    ipdb3 main.py -m models/source/MNIST.tflite \
                     -c 10
 }
 

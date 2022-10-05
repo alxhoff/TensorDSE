@@ -4,7 +4,7 @@ from typing import List, Tuple
 from utils.log import Log
 
 from usb.usb import get_tpu_ids, get_filter, MAX_TIME_CAPTURE
-from usb.usb import START_DEPLOYMENT, END_DEPLOYMENT, SUCCESSFULL_DEPLOYMENT, ERRONEOUS_DEPLOYMENT
+from usb.usb import START_DEPLOYMENT, END_DEPLOYMENT
 from usb.packet import UsbPacket
 from usb.stream import StreamContext
 
@@ -18,14 +18,14 @@ def color_define(p:UsbPacket) -> Tuple[str, str]:
         fg = "red"
         bg = "none"
     elif p.transfer_type == "BULK OUT":
-        if p.empty_data and p.present_data:
+        if p.empty_data:
             fg = "magenta"
             bg = "none"
         else:
             fg = "green"
             bg = "none"
     elif p.transfer_type == "BULK IN":
-        if p.empty_data and p.present_data:
+        if p.empty_data:
             fg = "magenta"
             bg = "none"
         else:
@@ -67,41 +67,37 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
     """
     """
     import pyshark
-    import time
+    from utils.timer import Timer,ConditionalTimer
 
     initial = start = time.perf_counter()
-    context = StreamContext()
-    packets = []
 
     id, addr = get_tpu_ids()
-    FILTER = get_filter(addr)
     if (not id) or (not addr):
         signalsQ.put(END_DEPLOYMENT)
         return
 
-    capture = pyshark.LiveCapture(interface='usbmon0', display_filter=FILTER)
+    packets = []
+    context = StreamContext()
+    capture = pyshark.LiveCapture(interface='usbmon0', display_filter=get_filter(addr))
     signalsQ.put(START_DEPLOYMENT)
 
+    max_timer = Timer(MAX_TIME_CAPTURE, start_now=True)
+    timer = Timer(timeout, start_now=True)
     for raw_packet in capture.sniff_continuously():
-        print("PACKET")
         p = UsbPacket(raw_packet, id, addr)
-        diff = (time.perf_counter() - start)
-        total_diff = (time.perf_counter() - initial)
 
-        if diff >= timeout:
-            print("TIME")
+        if timer.reached_timeout():
+            context.timed_out()
             break
-        elif total_diff >= MAX_TIME_CAPTURE:
-            print("MAX TIME")
+
+        elif max_timer.reached_timeout():
+            context.maxed_out()
             break
+
         else:
             if context.stream_valid(p):
                 packets.append(p)
-                if context.stream_started(p):
-                    pass
+                timer.restart()
 
     show_stream(packets, f"{id}.{addr}")
-    signalsQ.put(ERRONEOUS_DEPLOYMENT)
-    dataQ.put({})
-
-
+    dataQ.put(context.conclude())

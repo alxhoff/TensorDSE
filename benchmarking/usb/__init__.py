@@ -1,4 +1,4 @@
-from usb.usb import capture_stream, START_DEPLOYMENT, END_DEPLOYMENT, SUCCESSFULL_DEPLOYMENT
+from usb.usb import capture_stream, START_DEPLOYMENT, END_DEPLOYMENT
 
 def init_usbmon() -> bool:
     import os

@@ -2,15 +2,11 @@ from multiprocessing import Queue
 
 from utils.log import Log
 
-from usb.process import process_timestamps
 from usb.stream import StreamContext
-from usb.timer import UsbTimer
 from usb.packet import UsbPacket
 
 START_DEPLOYMENT        = 0
 END_DEPLOYMENT          = 1
-SUCCESSFULL_DEPLOYMENT  = 2
-ERRONEOUS_DEPLOYMENT    = 3
 
 MAX_TIME_CAPTURE=90 # minute and a half
 
@@ -46,140 +42,47 @@ def peek_queue(q:Queue):
     except queue.Empty:
         return False
 
-def capture_stream(signalsQ:Queue, dataQ:Queue, l:Log) -> None:
+def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
     """
     """
+    from utils.timer import Timer,ConditionalTimer
     import pyshark
+
     id, addr = get_tpu_ids()
-
-    BEGIN               = False
-    END                 = False
-    TPU_REQUEST_SENT    = False
-    SUBMISSION_BEGUN    = False
-    HOST_REQUEST_SENT   = False
-    RETURN_BEGUN        = False
-
-    FILTER = (
-    f"(usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT) && usb.device_address=={addr}"
-    )
-
     if (not id) or (not addr):
         signalsQ.put(END_DEPLOYMENT)
         return
 
-    capture = pyshark.LiveCapture(interface='usbmon0', display_filter=FILTER)
+    context = StreamContext()
+    capture = pyshark.LiveCapture(interface='usbmon0', display_filter=get_filter(addr))
     signalsQ.put(START_DEPLOYMENT)
 
-    timer   = UsbTimer()
-    context = StreamContext()
+    timer = Timer(MAX_TIME_CAPTURE, start_now=True)
+    ctimer = ConditionalTimer(timeout)
     for raw_packet in capture.sniff_continuously():
-        packet  = UsbPacket(raw_packet, id, addr)
+        p = UsbPacket(raw_packet, id, addr)
 
-        # BEGIN
-        if (packet.transfer_type == "INTERRUPT"
-            and packet.is_host_src()
-            and packet.is_comms_valid()
-            and not BEGIN):
-            timer.stamp_beginning(raw_packet)
-            BEGIN = True
-            l.info("BEGIN PACKET")
-            continue
-
-        # END
-        if (packet.transfer_type == "INTERRUPT"
-            and packet.is_tpu_src()
-            and packet.is_comms_valid()
-            and BEGIN
-            and not END):
-            timer.stamp_ending(raw_packet)
-            END = True
-            l.info("END PACKET")
+        if ctimer.reached_timeout():
+            context.timed_out()
             break
 
-        # TRAFFIC
-        if packet.is_comms_valid() and BEGIN:
-            if (packet.transfer_type == "BULK OUT"):
+        elif timer.reached_timeout():
+            context.maxed_out()
+            break
 
-                # Token packets from edge (non-data),
-                # describing return
-                if (not packet.is_data_present() and
-                        packet.is_tpu_src() and
-                        packet.urb_type == "COMPLETE"):
+        else:
+            if context.stream_valid(p):
+                if context.has_data_trafficked(): # only returns true once at most
+                    ctimer.set_conditional_flag()
+                    ctimer.start()
 
-                    if (not TPU_REQUEST_SENT
-                        and not RETURN_BEGUN):
-                        timer.stamp_begin_tpu_send_request(raw_packet)
-                        TPU_REQUEST_SENT = True
-                        l.info("TPU COMM PACKET BEGIN")
-                        continue
+                if context.contains_host_data(p):
+                    context.timestamp_host_data(p)
+                    continue
 
-                    if (not RETURN_BEGUN):
-                        timer.stamp_end_tpu_send_request(raw_packet)
-                        l.info("TPU COMM PACKET END")
-                        continue
+                if context.contains_tpu_data(p):
+                    context.timestamp_tpu_data(p)
+                    ctimer.restart()
+                    continue
 
-                # Data packets from host
-                if (packet.is_data_present()
-                    and packet.is_host_src()
-                    and packet.urb_type == "SUBMIT"):
-
-                    if not SUBMISSION_BEGUN:
-                        timer.stamp_beginning_submission(raw_packet)
-                        SUBMISSION_BEGUN = True
-                        l.info("SUBMISSION PACKET")
-                        continue
-
-                    if (SUBMISSION_BEGUN
-                        and packet.is_data_valid()):
-                        timer.stamp_src_host(raw_packet)
-                        l.info("HOST ACK PACKET")
-                        continue
-
-            if (packet.transfer_type == "BULK IN"):
-
-                # Token packets from host (non-data)
-                # asking for data
-                if (not packet.is_data_present() and
-                        packet.is_host_src() and
-                        packet.urb_type == "SUBMIT"):
-
-                    # Initial packets of submission of input data
-                    # Stamp initial packets
-                    if (not HOST_REQUEST_SENT and
-                            not SUBMISSION_BEGUN):
-                        timer.stamp_begin_host_send_request(raw_packet)
-                        HOST_REQUEST_SENT = True
-                        l.info("HOST REQUEST PACKET")
-                        continue
-
-                    if not SUBMISSION_BEGUN:
-                        timer.stamp_end_host_send_request(raw_packet)
-                        l.info("HOST REQUEST PACKET END")
-                        continue
-
-                # Data packets from edge
-                if (packet.is_data_present() and
-                    packet.is_tpu_src() and
-                    packet.urb_type == "COMPLETE"):
-
-                    # Stamp initial packets
-                    if (not RETURN_BEGUN
-                            and packet.is_data_valid()):
-                        timer.stamp_beginning_return(raw_packet)
-                        RETURN_BEGUN = True
-                        l.info("RETURN PACKET BEGIN")
-                        continue
-
-                    if (packet.is_data_valid() and
-                            RETURN_BEGUN):
-                        timer.stamp_src_device(raw_packet)
-                        l.info("RETURN PACKET END")
-                        continue
-
-    if END :
-        dataQ.put(process_timestamps(timer))
-    else:
-        dataQ.put({})
-    l.info("RETURN")
-    return
-
+    dataQ.put(context.conclude())
