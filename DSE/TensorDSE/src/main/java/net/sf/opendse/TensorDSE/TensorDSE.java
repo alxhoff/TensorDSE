@@ -19,7 +19,6 @@ import org.opt4j.core.start.Opt4JModule;
 import org.opt4j.core.start.Opt4JTask;
 import org.opt4j.optimizers.ea.EvolutionaryAlgorithmModule;
 
-
 import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 
@@ -115,17 +114,17 @@ public class TensorDSE {
 		return ea;
 	}
 
-	private static Module GetSpecModule(FullSpecDef fullspecdef) {
+	private static Module GetSpecModule(FullSpecDef specification_definition) {
 
-		Module specModule = new Opt4JModule() {
+		Module specification_module = new Opt4JModule() {
 
 			@Override
 			protected void config() {
-				SpecificationWrapperInstance sw =
-						new SpecificationWrapperInstance(fullspecdef.getSpecification());
-				bind(SpecificationWrapper.class).toInstance(sw);
-				String objectives_s = "cost_of_mapping";
-				ExternalEvaluator evaluator = new ExternalEvaluator(objectives_s, fullspecdef);
+				SpecificationWrapperInstance specification_wrapper =
+						new SpecificationWrapperInstance(specification_definition.getSpecification());
+				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
+	
+				TensorDSEEvaluator evaluator = new TensorDSEEvaluator("cost_of_mapping", specification_definition);
 
 				Multibinder<ImplementationEvaluator> multibinder =
 						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
@@ -134,7 +133,7 @@ public class TensorDSE {
 			}
 		};
 
-		return specModule;
+		return specification_module;
 	}
 
 	private static String GetModelSummaryPath(Namespace args_namespace) {
@@ -157,7 +156,7 @@ public class TensorDSE {
 		return architecture_summary_loc;
 	}
 
-	private static String GetCostFilePath(Namespace args_namespace) {
+	private static String GetBenchmarkingResultsPath(Namespace args_namespace) {
 		String cost_file = args_namespace.getString("costfile");
 		if (cost_file == null) {
 			System.out.println("You need to provide the cost files directory");
@@ -223,13 +222,13 @@ public class TensorDSE {
 		for (int i = 0; i < test_runs; i++) {
 
 			FullSpecDef fullspecdef = new FullSpecDef(GetModelSummaryPath(args_namespace),
-					GetCostFilePath(args_namespace), GetArchitectureSummaryPath(args_namespace));
+					GetBenchmarkingResultsPath(args_namespace), GetArchitectureSummaryPath(args_namespace));
 
 			// Opt4J Modules
 			EvolutionaryAlgorithmModule ea = GetEAModule(args_namespace);
-			Module specModule = GetSpecModule(fullspecdef);
+			Module specification_module = GetSpecModule(fullspecdef);
 			OptimizationModule opt = new OptimizationModule();
-			Collection<Module> modules = GetModulesCollection(ea, specModule, opt);
+			Collection<Module> modules = GetModulesCollection(ea, specification_module, opt);
 
 			Opt4JTask task = GetOpt4JTask(modules);
 

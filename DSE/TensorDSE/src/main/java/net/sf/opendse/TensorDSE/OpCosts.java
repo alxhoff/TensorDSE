@@ -73,7 +73,7 @@ public class OpCosts {
         return (Double) this.GetCommDataTypeTable(device_type, operation_type).get(data_type);
     }
 
-    public BenchmarkJSON GetModelFromJSON(String json_file_path) {
+    public BenchmarkJSON GetBenchmarkResultsFromJSON(String json_file_path) {
 
         Gson gson = new Gson();
         BenchmarkJSON model = null;
@@ -96,7 +96,7 @@ public class OpCosts {
 
         try {
 
-            BenchmarkJSON benchmark = GetModelFromJSON(cost_file_path);
+            BenchmarkJSON benchmark = GetBenchmarkResultsFromJSON(cost_file_path);
 
             for (Model model : benchmark.getModels()) {
 
