@@ -28,7 +28,7 @@ def isGPUavailable() -> Tuple[bool, str]:
             return True, gpu
     return False, ""
 
-def MakeInterpreter(model_file:str, library:str):
+def MakeInterpreterTPU(model_file:str, library:str):
     """Creates the interpreter object needed to deploy a model onto the tpu.
 
     Parameters
@@ -61,6 +61,32 @@ def MakeInterpreter(model_file:str, library:str):
         experimental_delegates=experimental_delegates,
     )
 
+def MakeInterpreterGPU(model_file:str, library:str):
+    """Creates the interpreter object needed to deploy a model onto the tpu.
+
+    Parameters
+    ----------
+    model_file : String
+    Path to the tflite model that will be deployed to the edge tpu.
+
+    system : String
+
+    Returns
+    -------
+    tflite.Interpreter Object
+    """
+    import tensorflow as tf
+
+    experimental_delegates = [
+        tf.lite.experimental.load_delegate(library=library)
+    ]
+
+    return tf.lite.Interpreter(
+        model_path=model_file,
+        model_content=None,
+        experimental_delegates=experimental_delegates,
+    )
+
 
 def TPUDeploy(m:Model, count:int, timeout:int=10) -> Model:
     from multiprocessing import Process, Queue
@@ -84,7 +110,7 @@ def TPUDeploy(m:Model, count:int, timeout:int=10) -> Model:
     results = []
     timers  = []
 
-    interpreter = MakeInterpreter(m.model_path, TPU_LIBRARY)
+    interpreter = MakeInterpreterTPU(m.model_path, TPU_LIBRARY)
     interpreter.allocate_tensors()
 
     input_details = interpreter.get_input_details()
@@ -139,10 +165,10 @@ def GPUDeploy(m:Model, count:int) -> Model:
     import tensorflow as tf
     import numpy as np
 
-    GPU_LIBRARY = ""
+    GPU_LIBRARY = "/home/lib/tf2.9/libtensorflowlite_gpu_delegate.so"
     results = []
 
-    interpreter = MakeInterpreter(m.model_path, GPU_LIBRARY)
+    interpreter = MakeInterpreterGPU(m.model_path, GPU_LIBRARY)
     interpreter.allocate_tensors()
 
     input_details = interpreter.get_input_details()
