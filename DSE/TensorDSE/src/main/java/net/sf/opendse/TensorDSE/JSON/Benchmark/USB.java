@@ -1,22 +1,31 @@
 package net.sf.opendse.TensorDSE.JSON.Benchmark;
 
 public class USB {
-    Double send;
-    Double recv;
+    Timing communication;
+    Timing inference;
+    Timing total;
 
-    public Double getSend() {
-        return send;
+    public Timing getCommunication() {
+        return communication;
     }
 
-    public void setSend(Double send) {
-        this.send = send;
+    public void setCommunication(Timing communication) {
+        this.communication = communication;
     }
 
-    public Double getRecv() {
-        return recv;
+    public Timing getInference() {
+        return inference;
     }
 
-    public void setRecv(Double recv) {
-        this.recv = recv;
+    public void setInference(Timing inference) {
+        this.inference = inference;
+    }
+
+    public Timing getTotal() {
+        return total;
+    }
+
+    public void setTotal(Timing total) {
+        this.total = total;
     }
 }

@@ -27,7 +27,7 @@
                         "28",
                         "1"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "0"
                 },
                 {
@@ -36,14 +36,14 @@
                         "3",
                         "1"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "6"
                 },
                 {
                     "shape": [
                         "28"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "7"
                 }
             ],
@@ -54,7 +54,7 @@
                         "26",
                         "28"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "8"
                 }
             ]
@@ -87,7 +87,7 @@
                         "26",
                         "28"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "8"
                 }
             ],
@@ -98,7 +98,7 @@
                         "13",
                         "28"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "9"
                 }
             ]
@@ -119,7 +119,7 @@
                         "13",
                         "28"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "9"
                 },
                 {
@@ -135,7 +135,7 @@
                     "shape": [
                         "4732"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "10"
                 }
             ]
@@ -154,21 +154,21 @@
                     "shape": [
                         "4732"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "10"
                 },
                 {
                     "shape": [
                         "4732"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "4"
                 },
                 {
                     "shape": [
                         "128"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "1"
                 }
             ],
@@ -177,7 +177,7 @@
                     "shape": [
                         "128"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "11"
                 }
             ]
@@ -196,21 +196,21 @@
                     "shape": [
                         "128"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "11"
                 },
                 {
                     "shape": [
                         "128"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "5"
                 },
                 {
                     "shape": [
                         "10"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "2"
                 }
             ],
@@ -219,7 +219,7 @@
                     "shape": [
                         "10"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "12"
                 }
             ]
@@ -238,7 +238,7 @@
                     "shape": [
                         "10"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "12"
                 }
             ],
@@ -247,7 +247,7 @@
                     "shape": [
                         "10"
                     ],
-                    "type": "float32",
+                    "type": "uint8",
                     "tensor": "13"
                 }
             ]

@@ -25,11 +25,11 @@ import net.sf.opendse.model.Mappings;
 import net.sf.opendse.model.Resource;
 import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
-import net.sf.opendse.visualization.SpecificationViewer;
+// import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
- * The {@code SpecificationDefinition} is the class defining the Specification that corresponds to the graph of
- * the deep learning model to which we want to optimize the performance.
+ * The {@code SpecificationDefinition} is the class defining the Specification that corresponds to
+ * the graph of the deep learning model to which we want to optimize the performance.
  * 
  * @author Ines Ben Hmida
  * @author Alex Hoffman
@@ -198,10 +198,10 @@ public class SpecificationDefinition {
 
 		// Create a full-duplex link between PCI and USB busses
 		Link link_pci_usb = new Link("link_pci_usb");
-		link_pci_usb.setAttribute("cost", 0);
+		link_pci_usb.setAttribute("cost", 0.0);
 		architecture.addEdge(link_pci_usb, bus_pci, bus_usb);
 		Link link_usb_pci = new Link("link_usb_pci");
-		link_usb_pci.setAttribute("cost", 0);
+		link_usb_pci.setAttribute("cost", 0.0);
 		architecture.addEdge(link_usb_pci, bus_usb, bus_pci);
 
 		// Create CPU Cores
@@ -237,19 +237,19 @@ public class SpecificationDefinition {
 		// Link CPUs and GPUs to PCI bus
 		cpu_cores.forEach((core) -> {
 			Link link_to_dev = new Link(String.format("link_pci_%s", core.getId()));
-			link_to_dev.setAttribute("cost", 0);
+			link_to_dev.setAttribute("cost", 0.0);
 			architecture.addEdge(link_to_dev, bus_pci, core);
 			Link link_to_pci = new Link(String.format("link_%s_pci", core.getId()));
-			link_to_pci.setAttribute("cost", 0);
+			link_to_pci.setAttribute("cost", 0.0);
 			architecture.addEdge(link_to_pci, core, bus_pci);
 		});
 
 		gpus.forEach((gpu) -> {
 			Link link_to_dev = new Link(String.format("link_pci_%s", gpu.getId()));
-			link_to_dev.setAttribute("cost", 0);
+			link_to_dev.setAttribute("cost", 0.0);
 			architecture.addEdge(link_to_dev, bus_pci, gpu);
 			Link link_to_pci = new Link(String.format("link_%s_pci", gpu.getId()));
-			link_to_pci.setAttribute("cost", 0);
+			link_to_pci.setAttribute("cost", 0.0);
 			architecture.addEdge(link_to_pci, gpu, bus_pci);
 		});
 
@@ -257,10 +257,10 @@ public class SpecificationDefinition {
 		// TODO set attribute costs for USB comm
 		tpus.forEach((tpu) -> {
 			Link link_to_dev = new Link(String.format("link_usb_%s", tpu.getId()));
-			link_to_dev.setAttribute("cost", 0);
+			link_to_dev.setAttribute("cost", 0.0);
 			architecture.addEdge(link_to_dev, bus_usb, tpu);
 			Link link_to_usb = new Link(String.format("link_%s_usb", tpu.getId()));
-			link_to_usb.setAttribute("cost", 0);
+			link_to_usb.setAttribute("cost", 0.0);
 			architecture.addEdge(link_to_usb, tpu, bus_usb);
 		});
 
@@ -336,7 +336,7 @@ public class SpecificationDefinition {
 		/*
 		 * It is also possible to view the specification in a GUI.
 		 */
-		SpecificationViewer.view(specification);
+		// SpecificationViewer.view(specification);
 
 		return specification;
 	}

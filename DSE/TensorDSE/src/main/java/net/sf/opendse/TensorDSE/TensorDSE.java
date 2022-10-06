@@ -60,7 +60,7 @@ public class TensorDSE {
 				.help("Number of offsprings per generation");
 
 		// Other
-		parser.addArgument("-r", "--runs").setDefault(1).type(int.class).help("Number of runs");
+		parser.addArgument("-r", "--runs").setDefault(50).type(int.class).help("Number of runs");
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
@@ -98,12 +98,6 @@ public class TensorDSE {
 		int generations = args_namespace.getInt("generations");
 		int offsprings_per_generation = args_namespace.getInt("offspringspergeneration");
 
-		System.out.printf("Crossover Rate: %.2f\n", crossover_rate);
-		System.out.printf("Population Size: %d\n", population_size);
-		System.out.printf("Parents Per Generation: %d\n", parents_per_generation);
-		System.out.printf("Generations: %d\n", generations);
-		System.out.printf("Offsprings Per Generations: %d\n", offsprings_per_generation);
-
 		EvolutionaryAlgorithmModule ea = new EvolutionaryAlgorithmModule();
 		ea.setGenerations(generations);
 		ea.setPopulationSize(population_size);
@@ -121,10 +115,12 @@ public class TensorDSE {
 			@Override
 			protected void config() {
 				SpecificationWrapperInstance specification_wrapper =
-						new SpecificationWrapperInstance(specification_definition.getSpecification());
+						new SpecificationWrapperInstance(
+								specification_definition.getSpecification());
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
-	
-				TensorDSEEvaluator evaluator = new TensorDSEEvaluator("cost_of_mapping", specification_definition);
+
+				TensorDSEEvaluator evaluator =
+						new TensorDSEEvaluator("cost_of_mapping", specification_definition);
 
 				Multibinder<ImplementationEvaluator> multibinder =
 						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
@@ -167,7 +163,8 @@ public class TensorDSE {
 	}
 
 	private static FileWriter GetResultsWriter(Namespace args_namespace) {
-		String results_file = args_namespace.getString("resultsfile");
+		String results_file = String.format("%s/%s/%s", System.getProperty("user.dir"),
+				args_namespace.getString("outputfolder"), args_namespace.getString("resultsfile"));
 		System.out.printf("Results File: %s\n", results_file);
 		FileWriter csvWriter = null;
 		try {
@@ -205,6 +202,19 @@ public class TensorDSE {
 		return task;
 	}
 
+	private static void PrintEAParams(Namespace args_namespace) {
+		Double crossover_rate = args_namespace.getDouble("crossover");
+		int population_size = args_namespace.getInt("populationsize");
+		int parents_per_generation = args_namespace.getInt("parentspergeneration");
+		int generations = args_namespace.getInt("generations");
+		int offsprings_per_generation = args_namespace.getInt("offspringspergeneration");
+		System.out.printf("Crossover Rate: %.2f\n", crossover_rate);
+		System.out.printf("Population Size: %d\n", population_size);
+		System.out.printf("Parents Per Generation: %d\n", parents_per_generation);
+		System.out.printf("Generations: %d\n", generations);
+		System.out.printf("Offsprings Per Generations: %d\n", offsprings_per_generation);
+	}
+
 	public static void main(String[] args) {
 
 		System.out.println("Working Directory: " + System.getProperty("user.dir"));
@@ -219,11 +229,18 @@ public class TensorDSE {
 		File output_directory = GetOutputFolder(args_namespace);
 		FileWriter csv_writer = GetResultsWriter(args_namespace);
 
+		PrintEAParams(args_namespace);
+
+		String model_summary_path = GetModelSummaryPath(args_namespace);
+		String benchmark_results_path = GetBenchmarkingResultsPath(args_namespace);
+		String architecture_summary_path = GetArchitectureSummaryPath(args_namespace);
+
 		for (int i = 0; i < test_runs; i++) {
 
-			SpecificationDefinition specification = new SpecificationDefinition(
-					GetModelSummaryPath(args_namespace), GetBenchmarkingResultsPath(args_namespace),
-					GetArchitectureSummaryPath(args_namespace));
+			System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
+
+			SpecificationDefinition specification = new SpecificationDefinition(model_summary_path,
+					benchmark_results_path, architecture_summary_path);
 
 			// Opt4J Modules
 			EvolutionaryAlgorithmModule ea_module = GetEAModule(args_namespace);
@@ -265,8 +282,7 @@ public class TensorDSE {
 					for (Mapping<Task, Resource> m : implementation.getMappings()) {
 						System.out.println(m.getSource().getId() + " type "
 								+ m.getSource().getAttribute("type") + " HW "
-								+ m.getTarget().getId() + " number of shaves : "
-								+ m.getTarget().getAttribute("num_of_shaves"));
+								+ m.getTarget().getId());
 					}
 
 				}
@@ -276,7 +292,6 @@ public class TensorDSE {
 			} finally {
 				opt4j_task.close();
 			}
-
 		}
 
 		try {
@@ -291,5 +306,7 @@ public class TensorDSE {
 			e.printStackTrace();
 			System.exit(0);
 		}
+		System.out.println("Done!");
+		System.exit(1);
 	}
 }

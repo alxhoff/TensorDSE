@@ -16,6 +16,9 @@ public class IO {
     }
 
     public String getType() {
+        if (type == null)
+            return "null";
+            
         return type;
     }
 

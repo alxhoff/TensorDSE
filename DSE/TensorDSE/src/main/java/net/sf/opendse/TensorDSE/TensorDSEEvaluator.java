@@ -6,12 +6,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
 import org.opt4j.core.Objective;
 import org.opt4j.core.Objectives;
 
-import net.sf.opendse.model.Application;
 import net.sf.opendse.model.Architecture;
-import net.sf.opendse.model.Dependency;
 import net.sf.opendse.model.Element;
 import net.sf.opendse.model.Link;
 import net.sf.opendse.model.Mapping;
@@ -49,7 +50,6 @@ public class TensorDSEEvaluator implements ImplementationEvaluator {
 		elements.addAll(architecture.getVertices());
 		elements.addAll(architecture.getEdges());
 		elements.addAll(mappings.getAll());
-		Application<Task, Dependency> app = impl.getApplication();
 		double cost_of_mapping = 0.0;
 
 		for (Mapping<Task, Resource> m : mappings) {
@@ -64,8 +64,8 @@ public class TensorDSEEvaluator implements ImplementationEvaluator {
 			Iterator<Link> routing_it = r.getEdges().iterator();
 			while (routing_it.hasNext()) {
 				Link link_n = routing_it.next();
-				cost_of_mapping =
-						cost_of_mapping + ((Double) link_n.getAttribute("cost")).doubleValue();
+				Double link_cost = link_n.getAttribute("cost");
+				cost_of_mapping = cost_of_mapping + link_cost;
 			}
 
 		}
@@ -87,31 +87,33 @@ public class TensorDSEEvaluator implements ImplementationEvaluator {
 	}
 
 	/**
-	 * This {@code MappingCost} calculates the mapping cost for the considered
-	 * mapping
+	 * This {@code MappingCost} calculates the mapping cost for the considered mapping
 	 * 
-	 * @param mapping
-	 *                Mapping<Task, Resource>
-	 * @return
-	 *         a double with the cost of mapping.
+	 * @param mapping Mapping<Task, Resource>
+	 * @return a double with the cost of mapping.
 	 */
 	private double MappingCost(Mapping<Task, Resource> mapping) {
 		Double cost = 0.0;
 		String layer = mapping.getSource().getAttribute("type").toString().toLowerCase();
 		String target_device = mapping.getTarget().getId();
-		Integer input_shape = ((Integer) (mapping.getSource().getAttribute("input_shape"))).intValue();
-		String data_type = mapping.getTarget().getAttribute("input_type");
+		String data_type = mapping.getSource().getAttribute("dtype");
+
+		// Extract target device
+		Pattern p = Pattern.compile("([a-z]+)\\d+");
+		Matcher m = p.matcher(target_device);
+		if (m.find())
+			target_device = m.group(1);
 
 		// Execution cost
 		if (operation_costs.GetOpTypeTable(target_device).containsKey(layer)) {
-			if (operation_costs.GetOpDataTypeTable(target_device, layer).containsKey(input_shape)) {
+			if (operation_costs.GetOpDataTypeTable(target_device, layer).containsKey(data_type)) {
 				cost = operation_costs.GetOpCost(target_device, layer, data_type);
 			} else {
 				cost = 0.0;
 			}
 		}
 
-		//Communication cost
+		// Communication cost
 		Double comm_cost = operation_costs.GetCommCost(target_device, layer, data_type);
 		cost += comm_cost;
 

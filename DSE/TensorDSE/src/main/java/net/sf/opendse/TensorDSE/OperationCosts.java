@@ -69,43 +69,55 @@ public class OperationCosts {
 
     public Hashtable<String, Double> GetOpDataTypeTable(String device_type, String operation_type) {
 
-        if (!this.GetOpTypeTable(device_type).containsKey(operation_type)) {
+        Hashtable<String, Hashtable<String, Double>> op_type_table =
+                this.GetOpTypeTable(device_type);
+
+        if (!op_type_table.containsKey(operation_type)) {
             Hashtable<String, Double> new_type_map = this.CreateEmptyDataTypeTable();
-            this.GetOpTypeTable(device_type).put(operation_type, new_type_map);
+            op_type_table.put(operation_type, new_type_map);
         }
 
-        return (Hashtable<String, Double>) this.GetOpTypeTable(device_type).get(operation_type);
+        return (Hashtable<String, Double>) op_type_table.get(operation_type);
 
     }
 
     public Hashtable<String, Double> GetCommDataTypeTable(String device_type,
             String operation_type) {
 
-        if (!this.GetCommTypeTable(device_type).containsKey(operation_type)) {
+        Hashtable<String, Hashtable<String, Double>> comm_type_table =
+                this.GetCommTypeTable(device_type);
+
+        if (!comm_type_table.containsKey(operation_type)) {
             Hashtable<String, Double> new_type_map = this.CreateEmptyDataTypeTable();
-            this.GetCommTypeTable(device_type).put(operation_type, new_type_map);
+            comm_type_table.put(operation_type, new_type_map);
         }
 
-        return (Hashtable<String, Double>) this.GetCommTypeTable(device_type).get(operation_type);
+        return (Hashtable<String, Double>) comm_type_table.get(operation_type);
 
     }
 
     public Double GetOpCost(String device_type, String operation_type, String data_type) {
 
-        if (!this.GetOpDataTypeTable(device_type, operation_type).containsKey(data_type)) {
-            this.GetOpDataTypeTable(device_type, operation_type).put(data_type, 0.0);
+        Hashtable<String, Double> data_type_table =
+                this.GetOpDataTypeTable(device_type, operation_type);
+
+        if (!data_type_table.containsKey(data_type)) {
+            data_type_table.put(data_type, Double.POSITIVE_INFINITY);
         }
 
-        return (Double) this.GetOpDataTypeTable(device_type, operation_type).get(data_type);
+        return (Double) data_type_table.get(data_type);
     }
 
     public Double GetCommCost(String device_type, String operation_type, String data_type) {
 
-        if (!this.GetCommDataTypeTable(device_type, operation_type).containsKey(data_type)) {
-            this.GetCommDataTypeTable(device_type, operation_type).put(data_type, 0.0);
+        Hashtable<String, Double> data_type_table =
+                this.GetCommDataTypeTable(device_type, operation_type);
+
+        if (!data_type_table.containsKey(data_type)) {
+            data_type_table.put(data_type, Double.POSITIVE_INFINITY);
         }
 
-        return (Double) this.GetCommDataTypeTable(device_type, operation_type).get(data_type);
+        return (Double) data_type_table.get(data_type);
     }
 
     public BenchmarkJSON GetBenchmarkResultsFromJSON(String json_file_path) {
@@ -142,18 +154,28 @@ public class OperationCosts {
                     for (Device deligate : layer.getDelegates()) {
 
                         String device_type = deligate.getDevice().toLowerCase();
-                        String data_type = deligate.getInput().getType().toLowerCase();
-                        Double mean_cost = deligate.getMean();
-                        USB usb = deligate.getUsb();
-                        Double comm_send = usb.getSend();
-                        Double comm_recv = usb.getRecv();
+                        Integer count = deligate.getCount();
 
+                        String data_type;
+                        Double mean_cost;
+                        Double comm;
+
+
+                        if (count == 0) {
+                            data_type = "null";
+                            mean_cost = Double.POSITIVE_INFINITY;
+                            comm = Double.POSITIVE_INFINITY;
+                        } else {
+                            data_type = deligate.getInput().getType().toLowerCase();
+                            mean_cost = deligate.getMean();
+                            USB usb = deligate.getUsb();
+                            comm = usb.getCommunication().getMean();
+                        }
 
                         this.GetOpDataTypeTable(device_type, operation_type).put(data_type,
                                 mean_cost);
 
-                        this.GetCommDataTypeTable(device_type, operation_type).put(data_type,
-                                comm_send + comm_recv);
+                        this.GetCommDataTypeTable(device_type, operation_type).put(data_type, comm);
                     }
                 }
             }
