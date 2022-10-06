@@ -31,6 +31,7 @@ public class TensorDSEEvaluator implements ImplementationEvaluator {
 	public TensorDSEEvaluator(String objectives, SpecificationDefinition SpecificationDefinition) {
 		super();
 		this.operation_costs = SpecificationDefinition.GetOpCosts();
+
 		for (String s : objectives.split(",")) {
 			Objective obj = new Objective(s, Objective.Sign.MIN);
 			map.put(s, obj);
@@ -63,24 +64,18 @@ public class TensorDSEEvaluator implements ImplementationEvaluator {
 			Iterator<Link> routing_it = r.getEdges().iterator();
 			while (routing_it.hasNext()) {
 				Link link_n = routing_it.next();
-				cost_of_mapping = cost_of_mapping + ((Double) link_n.getAttribute("cost")).doubleValue();
+				cost_of_mapping =
+						cost_of_mapping + ((Double) link_n.getAttribute("cost")).doubleValue();
 			}
 
 		}
 
 		objectives.add(map.get("cost_of_mapping"), cost_of_mapping);
 		/*
-		 * try {
-		 * FileWriter csvOutput = new FileWriter("src/main/resources/perspec_100.csv",
-		 * true);
-		 * csvOutput.append(Double.toString(cost_of_mapping));
-		 * csvOutput.append("\n");
-		 * csvOutput.flush();
-		 * csvOutput.close();
-		 * } catch (IOException e) {
-		 * // TODO Auto-generated catch block
-		 * e.printStackTrace();
-		 * }
+		 * try { FileWriter csvOutput = new FileWriter("src/main/resources/perspec_100.csv", true);
+		 * csvOutput.append(Double.toString(cost_of_mapping)); csvOutput.append("\n");
+		 * csvOutput.flush(); csvOutput.close(); } catch (IOException e) { // TODO Auto-generated
+		 * catch block e.printStackTrace(); }
 		 */
 		return null;
 
@@ -117,9 +112,6 @@ public class TensorDSEEvaluator implements ImplementationEvaluator {
 		}
 
 		//Communication cost
-		if (target_device.contains("tpu"))
-			System.out.printf("wait here");
-
 		Double comm_cost = operation_costs.GetCommCost(target_device, layer, data_type);
 		cost += comm_cost;
 
