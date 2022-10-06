@@ -9,12 +9,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
+#include <iostream>
 #include <cstdio>
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
 #include "tensorflow/lite/delegates/gpu/delegate.h"
+#include "tensorflow/lite/delegates/gpu/delegate.cc"
+
 
 // This is an example that is minimal to read a model
 // from disk and perform inference. There is no data being loaded
@@ -38,12 +41,14 @@ int main(int argc, char* argv[]) {
     return 1;
   }
   const char* filename = argv[1];
-  const char* device = argv[2];
-
+  
   // Load model
   std::unique_ptr<tflite::FlatBufferModel> model =
       tflite::FlatBufferModel::BuildFromFile(filename);
   TFLITE_MINIMAL_CHECK(model != nullptr);
+
+  //std::cout << model.
+  //status.ToString() << "\n";
 
   // Build the interpreter with the InterpreterBuilder.
   // Note: all Interpreters should be built with the InterpreterBuilder,
@@ -64,9 +69,12 @@ int main(int argc, char* argv[]) {
   const TfLiteGpuDelegateOptionsV2 options = TfLiteGpuDelegateOptionsV2Default();
 
   auto* delegate = TfLiteGpuDelegateV2Create(&options);
-  
-  if (interpreter->ModifyGraphWithDelegate(delegate) != kTfLiteOk) return false;
 
+  if (interpreter->ModifyGraphWithDelegate(delegate) != kTfLiteOk) { // Experimental: tflite::InterpreterBuilder::AddDelegate();
+    fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__);
+    return false;
+  } 
+  
   // Run inference.
   TFLITE_MINIMAL_CHECK(interpreter->Invoke() == kTfLiteOk);
   printf("\n\n=== Post-invoke Interpreter State ===\n");

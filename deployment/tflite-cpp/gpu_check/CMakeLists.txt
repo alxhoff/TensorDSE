@@ -1,34 +1,32 @@
 cmake_minimum_required(VERSION 3.11)
-project(TFLiteCheck)
+project(TFLiteGPUCheck)
 
 set(CMAKE_CXX_STANDARD 14)
 
-# include has 2 subdirectories: tensorflow and flatbuffers
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../tflite-lib/include/)
+set(TARGET_ENV "Desktop" CACHE STRING "Target environment")
 
-# lib has 1 file: libtensorflowlite.so
-#ADD_LIBRARY(tensorflowlite SHARED IMPORTED)
-#set_property(TARGET tensorflowlite PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../tflite-lib/libs/aarch64/libtensorflowlite.so)
-#
-#ADD_LIBRARY(tensorflowlite-gpu SHARED IMPORTED)
-#set_property(TARGET tensorflowlite-gpu PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../tflite-lib/libs/aarch64/libtensorflowlite_gpu_delegate.so)
-#
-#add_executable(TFLiteCheck main.cpp)
-#target_link_libraries(TFLiteCheck tensorflowlite tensorflowlite-gpu)
+message("Target Environment is set to: ${TARGET_ENV}")
 
+if( TARGET_ENV STREQUAL "Desktop" )
+    set(TARGET_ARCH x86_64)
+endif()
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../tflite-lib/libs/linux_x64/)
+if( TARGET_ENV STREQUAL "DevBoard" )
+    set(TARGET_ARCH aarch64)
+endif()
 
-# Define your executable target. You can pass in the SOURCES variable defined above.
-add_executable(TFLiteCheck main.cpp)
+message("Target Architecture is set to: ${TARGET_ARCH}")
 
-# Link the other libraries to your executable, using their full path.
-# Note, the '-L' flag is not necessary.
-target_link_libraries(TFLiteCheck PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../tflite-lib/libs/linux_x64/libtensorflowlite_gpu_delegate.so
-    /usr/lib/x86_64-linux-gnu/libEGL.so
-    /usr/lib/x86_64-linux-gnu/libGL.so
-    /usr/lib/x86_64-linux-gnu/libGLESv2.so
-    ${CMAKE_CURRENT_SOURCE_DIR}/../tflite-lib/libs/linux_x64/libtensorflowlite.so
-   
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/tflite-lib/v2.9.1/include/)
+
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/tflite-lib/v2.9.1/libs/${TARGET_ARCH}/)
+
+add_executable(TFLiteGPUCheck main.cpp)
+
+target_link_libraries(TFLiteGPUCheck PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/tflite-lib/v2.9.1/libs/${TARGET_ARCH}/libtensorflowlite_gpu_delegate.so
+    /usr/lib/${TARGET_ARCH}-linux-gnu/libEGL.so
+    /usr/lib/${TARGET_ARCH}-linux-gnu/libGL.so
+    /usr/lib/${TARGET_ARCH}-linux-gnu/libGLESv2.so
+    ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/tflite-lib/v2.9.1/libs/${TARGET_ARCH}/libtensorflowlite.so
 )
