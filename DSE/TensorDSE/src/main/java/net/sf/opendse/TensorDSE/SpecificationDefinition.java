@@ -12,6 +12,7 @@ import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import net.sf.opendse.TensorDSE.JSON.Architecture.ArchitectureJSON;
 import net.sf.opendse.TensorDSE.JSON.Model.Layer;
+import net.sf.opendse.TensorDSE.JSON.Model.Model;
 import net.sf.opendse.TensorDSE.JSON.Model.ModelJSON;
 
 import net.sf.opendse.io.SpecificationWriter;
@@ -25,7 +26,7 @@ import net.sf.opendse.model.Mappings;
 import net.sf.opendse.model.Resource;
 import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
-// import net.sf.opendse.visualization.SpecificationViewer;
+import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
  * The {@code SpecificationDefinition} is the class defining the Specification that corresponds to
@@ -49,7 +50,9 @@ public class SpecificationDefinition {
 	// *******************************************************************************
 	private OperationCosts op_costs = null;
 
-	private HashMap<String, Task> tasks = new HashMap<String, Task>();
+	// First hashmap takes the model's index in the model summary
+	private HashMap<Integer, HashMap<String, Task>> tasks =
+			new HashMap<Integer, HashMap<String, Task>>();
 	private HashMap<String, List<Resource>> resources = new HashMap<String, List<Resource>>();
 
 	public final List<String> supported_layers =
@@ -62,8 +65,9 @@ public class SpecificationDefinition {
 	 * @param task_type
 	 * @return
 	 */
-	private static Task CreateTaskNode(Layer layer) {
-		Task ret = new Task(String.format("%s_%d", layer.getType(), layer.getIndex()));
+	private static Task CreateTaskNode(Layer layer, Integer model_index) {
+		Task ret = new Task(
+				String.format("%s_%d_m%d", layer.getType(), layer.getIndex(), model_index));
 		// TODO Input size?
 		ret.setAttribute("type", layer.getType());
 		// TODO 0 tensor for dtype?
@@ -110,60 +114,65 @@ public class SpecificationDefinition {
 			e.printStackTrace();
 		}
 
-		List<Layer> layers = model_json.getLayers();
+		List<Model> models = model_json.getModels();
 
-		// Create task nodes in Application and populate hashmap
-		for (int i = 0; i < layers.size(); i++) {
-			Task t = CreateTaskNode(layers.get(i));
-			tasks.put(Integer.toString(i), t);
-			application.addVertex(t);
-		}
+		for (int k = 0; k < models.size(); k++) {
 
-		Integer output_tensor = model_json.getFinishing_tensor();
+			Model model = models.get(k);
+			List<Layer> layers = model.getLayers();
+			tasks.put(k, new HashMap<String, Task>());
 
-		for (int i = 0; i < layers.size(); i++) {
-			Layer l = layers.get(i);
+			// Create task nodes in Application and populate hashmap
+			for (int i = 0; i < layers.size(); i++) {
+				Task t = CreateTaskNode(layers.get(i), k);
+				tasks.get(k).put(Integer.toString(i), t);
+				application.addVertex(t);
+			}
 
-			// Step through all output tensors
-			List<Integer> layer_output_tensors = l.getOutputTensorArray();
+			Integer output_tensor = model.getFinishing_tensor();
 
-			// Task to create communication from
-			if (layer_output_tensors.size() > 0) {
+			for (int i = 0; i < layers.size(); i++) {
+				Layer l = layers.get(i);
 
-				String layer_task_index = l.getIndex().toString();
-				Task layer_task = tasks.get(layer_task_index);
-				Integer output_size =
-						l.getOutputs().get(l.getOutputs().size() - 1).getShapeProduct();
+				// Step through all output tensors
+				List<Integer> layer_output_tensors = l.getOutputTensorArray();
 
-				for (int j = 0; j < layer_output_tensors.size(); j++) {
+				// Task to create communication from
+				if (layer_output_tensors.size() > 0) {
 
-					// Resolve output tensor into input tensor in another layer so we can get layer
-					// index
-					Integer target_tensor = layer_output_tensors.get(j);
+					String layer_task_index = l.getIndex().toString();
+					Task layer_task = tasks.get(k).get(layer_task_index);
+					Integer output_size =
+							l.getOutputs().get(l.getOutputs().size() - 1).getShapeProduct();
 
-					if (target_tensor != output_tensor) {
-						Layer target_layer = model_json.getLayerWithInputTensor(target_tensor);
+					for (int j = 0; j < layer_output_tensors.size(); j++) {
 
-						// Get OpenDSE task and set input shape
-						String target_task_index = target_layer.getIndex().toString();
-						Task target_task = tasks.get(target_task_index);
-						target_task.setAttribute("input_shape", output_size);
+						Integer target_tensor = layer_output_tensors.get(j);
 
-						Communication comm = new Communication(String.format("comm%d_%s_%s", j,
-								layer_task.getId(), target_task.getId()));
-						application.addVertex(comm);
+						if (target_tensor != output_tensor) {
+							Layer target_layer = model.getLayerWithInputTensor(target_tensor);
 
-						// Create dependencies from:
-						// - current task -> communication
-						// - communication -> target task
-						application.addEdge(
-								new Dependency(String.format("%s[%s] -> comm_%s",
-										layer_task.getId(), layer_task_index, comm.getId())),
-								layer_task, comm);
-						application.addEdge(
-								new Dependency(String.format("comm_%s -> %s[%s]", comm.getId(),
-										target_task.getId(), target_task_index)),
-								comm, target_task);
+							// Get OpenDSE task and set input shape
+							String target_task_index = target_layer.getIndex().toString();
+							Task target_task = tasks.get(k).get(target_task_index);
+							target_task.setAttribute("input_shape", output_size);
+
+							Communication comm = new Communication(String.format("comm%d_%s_%s", j,
+									layer_task.getId(), target_task.getId()));
+							application.addVertex(comm);
+
+							// Create dependencies from:
+							// - current task -> communication
+							// - communication -> target task
+							application.addEdge(
+									new Dependency(String.format("%s[%s] -> comm_%s",
+											layer_task.getId(), layer_task_index, comm.getId())),
+									layer_task, comm);
+							application.addEdge(
+									new Dependency(String.format("comm_%s -> %s[%s]", comm.getId(),
+											target_task.getId(), target_task_index)),
+									comm, target_task);
+						}
 					}
 				}
 			}
@@ -274,41 +283,44 @@ public class SpecificationDefinition {
 
 		Mappings<Task, Resource> mappings = new Mappings<Task, Resource>();
 
-		for (Task task : tasks.values()) {
-			String task_id = task.getId();
+		for (HashMap<String, Task> map : tasks.values()) {
 
-			// All tasks can be mapped to CPU + GPU
-			List<Resource> cpus = resources.get("cpu");
-			for (int i = 0; i < cpus.size(); i++) {
-				Resource resource = cpus.get(i);
-				Mapping<Task, Resource> m = new Mapping<Task, Resource>(
-						String.format("%s:%s", task_id, resource.getId()), task, resource);
-				m.setAttribute("cost", this.op_costs.GetOpCost("cpu", task.getAttribute("type"),
-						task.getAttribute("dtype")));
-				mappings.add(m);
-			}
+			for (Task task : map.values()) {
+				String task_id = task.getId();
 
-			List<Resource> gpus = resources.get("gpu");
-			for (int i = 0; i < gpus.size(); i++) {
-				Resource resource = gpus.get(i);
-				Mapping<Task, Resource> m = new Mapping<Task, Resource>(
-						String.format("%s:%s", task_id, resource.getId()), task, resource);
-				m.setAttribute("cost", this.op_costs.GetOpCost("gpu", task.getAttribute("type"),
-						task.getAttribute("dtype")));
-				mappings.add(m);
-			}
-
-			// Compatible tasks can be mapped to TPU
-			List<Resource> tpus = resources.get("tpu");
-			if (supported_layers.contains(task.getAttribute("type")))
-				for (int i = 0; i < tpus.size(); i++) {
-					Resource resource = tpus.get(i);
+				// All tasks can be mapped to CPU + GPU
+				List<Resource> cpus = resources.get("cpu");
+				for (int i = 0; i < cpus.size(); i++) {
+					Resource resource = cpus.get(i);
 					Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 							String.format("%s:%s", task_id, resource.getId()), task, resource);
-					m.setAttribute("cost", this.op_costs.GetOpCost("tpu", task.getAttribute("type"),
+					m.setAttribute("cost", this.op_costs.GetOpCost("cpu", task.getAttribute("type"),
 							task.getAttribute("dtype")));
 					mappings.add(m);
 				}
+
+				List<Resource> gpus = resources.get("gpu");
+				for (int i = 0; i < gpus.size(); i++) {
+					Resource resource = gpus.get(i);
+					Mapping<Task, Resource> m = new Mapping<Task, Resource>(
+							String.format("%s:%s", task_id, resource.getId()), task, resource);
+					m.setAttribute("cost", this.op_costs.GetOpCost("gpu", task.getAttribute("type"),
+							task.getAttribute("dtype")));
+					mappings.add(m);
+				}
+
+				// Compatible tasks can be mapped to TPU
+				List<Resource> tpus = resources.get("tpu");
+				if (supported_layers.contains(task.getAttribute("type")))
+					for (int i = 0; i < tpus.size(); i++) {
+						Resource resource = tpus.get(i);
+						Mapping<Task, Resource> m = new Mapping<Task, Resource>(
+								String.format("%s:%s", task_id, resource.getId()), task, resource);
+						m.setAttribute("cost", this.op_costs.GetOpCost("tpu",
+								task.getAttribute("type"), task.getAttribute("dtype")));
+						mappings.add(m);
+					}
+			}
 		}
 
 		return mappings;
@@ -336,7 +348,7 @@ public class SpecificationDefinition {
 		/*
 		 * It is also possible to view the specification in a GUI.
 		 */
-		// SpecificationViewer.view(specification);
+		SpecificationViewer.view(specification);
 
 		return specification;
 	}

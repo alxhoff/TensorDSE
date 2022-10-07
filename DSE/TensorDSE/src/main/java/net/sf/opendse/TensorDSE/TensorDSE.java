@@ -64,7 +64,7 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
-				.setDefault("src/main/resources/modelsummaries/MNIST.json").type(String.class)
+				.setDefault("src/main/resources/modelsummaries/MNIST_multi.json").type(String.class)
 				.help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary")
 				.setDefault(
