@@ -44,14 +44,30 @@ def process_streams(timestamps:List, py_results:List) -> Dict:
 
     # functional tpu analysis
     total           = [ t["tpu_data"]["last"] - t["host_data"]["first"] for t in timestamps ]
+    send            = [ t["host_data"]["last"] - t["host_data"]["first"] for t in timestamps ]
+    recv            = [ t["tpu_data"]["last"] - t["tpu_data"]["first"] for t in timestamps ]
     inference       = [ t["tpu_data"]["first"] - t["host_data"]["last"] for t in timestamps ]
     communication   = [ t - i for t,i in zip(total, inference) ]
 
     t = Analyzer(total)
+    s = Analyzer(send)
+    r = Analyzer(recv)
     i = Analyzer(inference)
     c = Analyzer(communication)
 
     return {
+            "send" : {
+                    "mean"                      : s.mean,
+                    "median"                    : s.median,
+                    "standard_deviation"        : s.std_deviation,
+                    "avg_absolute_deviation"    : s.avg_absolute_deviation,
+            },
+            "recv" : {
+                    "mean"                      : r.mean,
+                    "median"                    : r.median,
+                    "standard_deviation"        : r.std_deviation,
+                    "avg_absolute_deviation"    : r.avg_absolute_deviation,
+            },
             "communication" : {
                     "mean"                      : c.mean,
                     "median"                    : c.median,
