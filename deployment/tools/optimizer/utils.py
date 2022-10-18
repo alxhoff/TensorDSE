@@ -1,13 +1,14 @@
 import sys
 import csv
 import json
+import time
 import logging
 import argparse
  
-def LoggerInit():
-    logging.basicConfig(filename='optimizer.log',
+def LoggerInit(filename='optimizer.log'):
+    logging.basicConfig(filename=filename,
                         level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(threadName)s -  %(levelname)s - %(message)s')
+                        format='%(asctime)s  -  %(levelname)s - %(message)s')
     return logging.getLogger(__name__)
 
 def ParseArgs():
@@ -25,17 +26,16 @@ def ParseArgs():
         print('Example Usage: compile_and_map.py -model <path/to/model/file> -map <path/to/csv/file/containing/maping>')
         sys.exit(1)
 
-def RunTerminalCommand(*cmd, save_output=False):
+def RunTerminalCommand(*cmd, save_output=False, wait_time=0.5):
     """ Execute an arbitrary command and echo its output."""
     import subprocess
     p = subprocess.run(list(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    time.sleep(wait_time)
     output = p.stdout.decode()
-    if output:
-        print(output)
     p.check_returncode()
     if save_output:
         return output
-
+    
 def ReadCSV(csv_file_path: str):
     with open(csv_file_path, newline='') as f:
         reader = csv.reader(f, delimiter=',')

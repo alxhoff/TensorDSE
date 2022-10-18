@@ -28,8 +28,6 @@
 #include "edgetpu_c.h"
 
 
-namespace fs = std::experimental::filesystem;
-
 namespace {
   constexpr size_t kBmpFileHeaderSize = 14;
   constexpr size_t kBmpInfoHeaderSize = 40;
@@ -220,143 +218,10 @@ namespace {
     return result;
   }
   
-  bool CheckEdgeAcc() {
-    // Check if Coral USB Accelerator is connected!
-    bool edgetpu_check = true;
-    // Find TPU device.
-    std::cout << "Detecting Edge TPUs Devices ..." << "\n";
-    size_t num_devices;
-    std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)> devices(edgetpu_list_devices(&num_devices), 
-                                                                            &edgetpu_free_devices);
-    if (num_devices == 0) {
-      std::cerr << "No connected TPU found" << std::endl;
-      edgetpu_check=false;
-    }
-
-    const auto& available_tpus = edgetpu::EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
-
-    if (available_tpus.size() < 1) {
-      std::cerr << "Edge TPU USB Accelerator found, but not available" << std::endl;
-      edgetpu_check=false;
-    } 
-    std::cout << "Number of available Edge TPUs: " << available_tpus.size() << "\n"; // hopefully we'll see 1 here
-    std::cout << "\n" << std::endl;
-    
-    return edgetpu_check;
-  }
-  
-  std::vector<std::string> ReadModelsPaths(std::string directory) {
-  
-    std::vector<std::string> result;
-  
-    // Read Models Directory
-    std::vector<std::string> cpu_submodel_paths{};
-    std::vector<std::string> gpu_submodel_paths{};
-    std::vector<std::string> tpu_submodel_paths{};
-    // This structure would distinguish a file from a directory
-    struct stat sb;
-    for (const auto& entry : fs::directory_iterator(directory)) {
-      // Converting the path of a file to a const char *
-      fs::path outfilename = entry.path();
-      std::string outfilename_str = outfilename.string();
-      const char* path = outfilename_str.c_str();
-      // Check if path points to a non-directory. If True, display path
-      if (stat(path, &sb) == 0 && !(sb.st_mode & S_IFDIR))
-        if (outfilename_str.find("cpu") != std::string::npos) {
-          //std ::cout << "CPU:" << outfilename_str << std::endl;
-          cpu_submodel_paths.push_back(outfilename_str);
-        } else if (outfilename_str.find("edgetpu") != std::string::npos) {
-          //std ::cout << "TPU:" << outfilename_str << std::endl;
-          tpu_submodel_paths.push_back(outfilename_str);
-        } else if (outfilename_str.find("gpu") != std::string::npos) {
-          //std ::cout << "GPU:" << outfilename_str << std::endl;
-          gpu_submodel_paths.push_back(outfilename_str);
-        } 
-    }
-    
-    for (int i = 0; i < cpu_submodel_paths.size(); i++) {
-      result.push_back(cpu_submodel_paths[i]);
-    }
-
-    for (int i = 0; i < gpu_submodel_paths.size(); i++) {
-      result.push_back(gpu_submodel_paths[i]);
-    }
-
-    if (tpu_submodel_paths.size() != 0) {
-      for (int i = 0; i < tpu_submodel_paths.size(); i++) {
-        result.push_back(tpu_submodel_paths[i]);
-      }
-      bool check;
-      check = CheckEdgeAcc();
-    }
-    
-    std::sort(result.begin(), result.end());
-    return result;
-  }
-  
-  std::vector<std::vector<std::string>> ReadCsvMapping(std::string filepath) {
-    std::vector<std::vector<std::string>> content;
-    std::vector<std::string> row;
-    std::string line, word;
-
-    std::fstream file(filepath, std::ios::in);
-
-    if(file.is_open()) {
-      while(std::getline(file, line)) {
-        row.clear();
-        std::stringstream str(line);
-        while(std::getline(str, word, ',')) {
-          row.push_back(word);
-        }
-        content.push_back(row);
-      }
-    } else {
-      std::cout<<"Could not open the file\n";
-    }
-      
-    for(int i=0;i<content.size();i++) {
-      for(int j=0;j<content[i].size();j++) {
-        std::cout<<content[i][j]<<" ";
-      }
-      std::cout<<"\n";
-    }
-
-    return content;
-  }
-
-  // Could be separated from this namespace later
   std::unique_ptr<tflite::FlatBufferModel> LoadSubmodel(std::string filepath) {
     std::unique_ptr<tflite::FlatBufferModel> submodel =
     tflite::FlatBufferModel::BuildFromFile(filepath.c_str());
     return submodel;
-  }
-
-  bool CheckModelForTPU(const std::string model_path) {
-    const std::string edgtpu_str = "edgetpu.tflite";
-    if (std::strstr(model_path.c_str(), edgtpu_str.c_str())) {
-      return true;
-    }
-    return false;
-  }
-
-  bool CheckModelForGPU(const std::string model_path) {
-    const std::string gpu_str = "gpu";
-    if (std::strstr(model_path.c_str(), gpu_str.c_str())) {
-      return true;
-    }
-    return false;
-  }
-
-  int GetDevice(const std::string model_path) {
-    int result;
-    if (CheckModelForTPU(model_path)) {
-      result = 2;
-    } else if (CheckModelForGPU(model_path)) {
-      result = 1;
-    } else {
-      result = 0;
-    }
-    return result;
   }
 
 }  // namespace
@@ -374,7 +239,6 @@ int main(int argc, char* argv[]) {
   const float threshold          = std::stof(argv[3]);
   
   // Initiating Distributed Inference
-  std::cout << "\n" << std::endl;
   std::cout << "##################################################################################" << "\n";
   std::cout << "#         Running Distributed Inference of an Image Classification Model         #" << "\n";
   std::cout << "##################################################################################" << "\n";
@@ -408,48 +272,15 @@ int main(int argc, char* argv[]) {
   // Load models section
   std::cout << "################################## Loading Models ################################" << "\n";
   std::cout << "\n" << std::endl;
+
     std::unique_ptr<tflite::FlatBufferModel> model_0;
-  model_0 = LoadSubmodel("/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel0_cpu1_0_1_2_3_4.tflite");
+  model_0 = LoadSubmodel("/home/alafnayou/Documents/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel0_gpu1_0_1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16_17_18_19_20_21_22_23_24_25_26_27_28_29_30.tflite");
   if (!model_0) {
-    std::cerr << "Cannot load model from " << "/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel0_cpu1_0_1_2_3_4.tflite" << std::endl;
+    std::cerr << "Cannot load model from " << "/home/alafnayou/Documents/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel0_gpu1_0_1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16_17_18_19_20_21_22_23_24_25_26_27_28_29_30.tflite" << std::endl;
     return 1;
   }
-  std::cout << "submodel0_cpu1_0_1_2_3_4.tflite successfully loaded! " << std::endl;
-  std::unique_ptr<tflite::FlatBufferModel> model_1;
-  model_1 = LoadSubmodel("/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel1_gpu1_5_6_7_8_9.tflite");
-  if (!model_1) {
-    std::cerr << "Cannot load model from " << "/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel1_gpu1_5_6_7_8_9.tflite" << std::endl;
-    return 1;
-  }
-  std::cout << "submodel1_gpu1_5_6_7_8_9.tflite successfully loaded! " << std::endl;
-  std::unique_ptr<tflite::FlatBufferModel> model_2;
-  model_2 = LoadSubmodel("/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel2_tpu1_10_11_12_13_14_edgetpu.tflite");
-  if (!model_2) {
-    std::cerr << "Cannot load model from " << "/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel2_tpu1_10_11_12_13_14_edgetpu.tflite" << std::endl;
-    return 1;
-  }
-  std::cout << "submodel2_tpu1_10_11_12_13_14_edgetpu.tflite successfully loaded! " << std::endl;
-  std::unique_ptr<tflite::FlatBufferModel> model_3;
-  model_3 = LoadSubmodel("/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel3_cpu2_15_16_17_18_19.tflite");
-  if (!model_3) {
-    std::cerr << "Cannot load model from " << "/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel3_cpu2_15_16_17_18_19.tflite" << std::endl;
-    return 1;
-  }
-  std::cout << "submodel3_cpu2_15_16_17_18_19.tflite successfully loaded! " << std::endl;
-  std::unique_ptr<tflite::FlatBufferModel> model_4;
-  model_4 = LoadSubmodel("/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel4_gpu2_20_21_22_23_24.tflite");
-  if (!model_4) {
-    std::cerr << "Cannot load model from " << "/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel4_gpu2_20_21_22_23_24.tflite" << std::endl;
-    return 1;
-  }
-  std::cout << "submodel4_gpu2_20_21_22_23_24.tflite successfully loaded! " << std::endl;
-  std::unique_ptr<tflite::FlatBufferModel> model_5;
-  model_5 = LoadSubmodel("/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel5_tpu2_25_26_27_28_29_30_edgetpu.tflite");
-  if (!model_5) {
-    std::cerr << "Cannot load model from " << "/home/starkaf/Documents/uni/master/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel5_tpu2_25_26_27_28_29_30_edgetpu.tflite" << std::endl;
-    return 1;
-  }
-  std::cout << "submodel5_tpu2_25_26_27_28_29_30_edgetpu.tflite successfully loaded! " << std::endl;
+  std::cout << "submodel0_gpu1_0_1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16_17_18_19_20_21_22_23_24_25_26_27_28_29_30.tflite successfully loaded! " << std::endl;
+
 
   std::cout << "\n" << std::endl;
 
@@ -475,112 +306,25 @@ int main(int argc, char* argv[]) {
   std::cout << "#                               Build Interpreters                               #" << "\n";
   std::cout << "##################################################################################" << "\n";
   std::cout << "\n" << std::endl;
-    std::cout << "############################ Build CPU1 Interpreter ############################" << std::endl;
+
+    std::cout << "############################ Build GPU1 Interpreter ############################" << std::endl;
   std::cout << "\n" << std::endl;
   tflite::ops::builtin::BuiltinOpResolver resolver_0;
   tflite::InterpreterBuilder builder_0(*model_0, resolver_0);
   std::unique_ptr<tflite::Interpreter> interpreter_0;
   builder_0(&interpreter_0);
-  // Allocate tensors
+  // Allocate tensors 
   if (interpreter_0->AllocateTensors() != kTfLiteOk) {
     std::cerr << "Failed to allocate tensors." << std::endl;
     return 1;
   }
-  std::cout << "Tensors successfully allocated." << "\n";
-  std::cout << "\n" << std::endl;
-
-  std::cout << "############################ Build GPU1 Interpreter ############################" << std::endl;
-  std::cout << "\n" << std::endl;
-  tflite::ops::builtin::BuiltinOpResolver resolver_1;
-  tflite::InterpreterBuilder builder_1(*model_1, resolver_1);
-  std::unique_ptr<tflite::Interpreter> interpreter_1;
-  builder_1(&interpreter_1);
-  // Allocate tensors 
-  if (interpreter_1->AllocateTensors() != kTfLiteOk) {
-    std::cerr << "Failed to allocate tensors." << std::endl;
-    return 1;
-  }
   std::cout << "Tensors successfully allocated." << "\n";  // NEW: Prepare GPU delegate.
-  const TfLiteGpuDelegateOptionsV2 options_1 = TfLiteGpuDelegateOptionsV2Default();
-  auto* delegate_1 = TfLiteGpuDelegateV2Create(&options_1);
-  if (interpreter_1->ModifyGraphWithDelegate(delegate_1) != kTfLiteOk) { // Experimental: tflite::InterpreterBuilder::AddDelegate();
+  const TfLiteGpuDelegateOptionsV2 options_0 = TfLiteGpuDelegateOptionsV2Default();
+  auto* delegate_0 = TfLiteGpuDelegateV2Create(&options_0);
+  if (interpreter_0->ModifyGraphWithDelegate(delegate_0) != kTfLiteOk) { // Experimental: tflite::InterpreterBuilder::AddDelegate();
     fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__);
     return 1;
   }
-  std::cout << "\n" << std::endl;
-
-  std::cout << "############################ Build TPU1 Interpreter ############################" << std::endl;
-  std::cout << "\n" << std::endl;
-  std::cout << "Initializing Edge TPU Context ... " << "\n";
-  const std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context_2 = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(available_tpus[0].type, available_tpus[0].path);
-  tflite::ops::builtin::BuiltinOpResolver resolver_2;
-  resolver_2.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
-  std::cout << "Building Edge TPU Interpreter ... " << "\n";
-  tflite::InterpreterBuilder builder_2(*model_2, resolver_2);
-  std::unique_ptr<tflite::Interpreter> interpreter_2;
-  builder_2(&interpreter_2);
-  interpreter_2->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context_2.get());
-  interpreter_2->SetNumThreads(1);
-  // Allocate tensors 
-  if (interpreter_2->AllocateTensors() != kTfLiteOk) {
-    std::cerr << "Failed to allocate tensors." << std::endl;
-    return 1;
-  }
-  std::cout << "Tensors successfully allocated." << "\n";
-  std::cout << "\n" << std::endl;
-
-  std::cout << "############################ Build CPU2 Interpreter ############################" << std::endl;
-  std::cout << "\n" << std::endl;
-  tflite::ops::builtin::BuiltinOpResolver resolver_3;
-  tflite::InterpreterBuilder builder_3(*model_3, resolver_3);
-  std::unique_ptr<tflite::Interpreter> interpreter_3;
-  builder_3(&interpreter_3);
-  // Allocate tensors
-  if (interpreter_3->AllocateTensors() != kTfLiteOk) {
-    std::cerr << "Failed to allocate tensors." << std::endl;
-    return 1;
-  }
-  std::cout << "Tensors successfully allocated." << "\n";
-  std::cout << "\n" << std::endl;
-
-  std::cout << "############################ Build GPU2 Interpreter ############################" << std::endl;
-  std::cout << "\n" << std::endl;
-  tflite::ops::builtin::BuiltinOpResolver resolver_4;
-  tflite::InterpreterBuilder builder_4(*model_4, resolver_4);
-  std::unique_ptr<tflite::Interpreter> interpreter_4;
-  builder_4(&interpreter_4);
-  // Allocate tensors 
-  if (interpreter_4->AllocateTensors() != kTfLiteOk) {
-    std::cerr << "Failed to allocate tensors." << std::endl;
-    return 1;
-  }
-  std::cout << "Tensors successfully allocated." << "\n";  // NEW: Prepare GPU delegate.
-  const TfLiteGpuDelegateOptionsV2 options_4 = TfLiteGpuDelegateOptionsV2Default();
-  auto* delegate_4 = TfLiteGpuDelegateV2Create(&options_4);
-  if (interpreter_4->ModifyGraphWithDelegate(delegate_4) != kTfLiteOk) { // Experimental: tflite::InterpreterBuilder::AddDelegate();
-    fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__);
-    return 1;
-  }
-  std::cout << "\n" << std::endl;
-
-  std::cout << "############################ Build TPU2 Interpreter ############################" << std::endl;
-  std::cout << "\n" << std::endl;
-  std::cout << "Initializing Edge TPU Context ... " << "\n";
-  const std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context_5 = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(available_tpus[0].type, available_tpus[0].path);
-  tflite::ops::builtin::BuiltinOpResolver resolver_5;
-  resolver_5.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
-  std::cout << "Building Edge TPU Interpreter ... " << "\n";
-  tflite::InterpreterBuilder builder_5(*model_5, resolver_5);
-  std::unique_ptr<tflite::Interpreter> interpreter_5;
-  builder_5(&interpreter_5);
-  interpreter_5->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context_5.get());
-  interpreter_5->SetNumThreads(1);
-  // Allocate tensors 
-  if (interpreter_5->AllocateTensors() != kTfLiteOk) {
-    std::cerr << "Failed to allocate tensors." << std::endl;
-    return 1;
-  }
-  std::cout << "Tensors successfully allocated." << "\n";
   std::cout << "\n" << std::endl;
 
 
@@ -602,93 +346,40 @@ int main(int argc, char* argv[]) {
   // Run Inference and pass intermediate tensors
   std::cout << "############################## Initiating Inference ###############################" << "\n";
   std::cout << "\n" << std::endl;
-  std::chrono::steady_clock::time_point total_inference_start, total_inference_end;
-  std::chrono::steady_clock::time_point intermediate_inference_start, intermediate_inference_end;
+
+  auto total_inference_start = std::chrono::high_resolution_clock::now();
+    if (interpreter_0->Invoke() != kTfLiteOk) {
+    std::cerr << "Cannot invoke interpreter" << std::endl;
+    return 1;
+  }
+  auto total_inference_end = std::chrono::high_resolution_clock::now();
   
-  total_inference_start = std::chrono::system_clock::now();
-  if (interpreter_0->Invoke() != kTfLiteOk) {
-    std::cerr << "Cannot invoke interpreter" << std::endl;
-    return 1;
-  }
-  std::chrono::steady_clock::time_point inference_0_end, inference_0_time;
-  inference_0_end = std::chrono::system_clock::now();
-  auto inference_0_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_0_end - total_inference_start).count();
-  const auto* intermediate_tensor_0 = interpreter_0->output_tensor(0);
+  auto total_inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(total_inference_end - total_inference_start).count();
+  auto total_inference_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - total_inference_start).count();
 
-  *interpreter_1->input_tensor(0) = *intermediate_tensor_0;
-  std::chrono::steady_clock::time_point inference_1_start, inference_1_end, inference_1_time;
-  inference_1_start = std::chrono::system_clock::now();
-  if (interpreter_1->Invoke() != kTfLiteOk) {
-    std::cerr << "Cannot invoke interpreter" << std::endl;
-    return 1;
-  }
-  inference_1_end = std::chrono::system_clock::now();
-  const auto* intermediate_tensor_1 = interpreter_1->output_tensor(0);
-  auto inference_1_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_1_end - inference_1_start).count();
-
-  *interpreter_2->input_tensor(0) = *intermediate_tensor_1;
-  std::chrono::steady_clock::time_point inference_2_start, inference_2_end, inference_2_time;
-  inference_2_start = std::chrono::system_clock::now();
-  if (interpreter_2->Invoke() != kTfLiteOk) {
-    std::cerr << "Cannot invoke interpreter" << std::endl;
-    return 1;
-  }
-  inference_2_end = std::chrono::system_clock::now();
-  const auto* intermediate_tensor_2 = interpreter_2->output_tensor(0);
-  auto inference_2_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_2_end - inference_2_start).count();
-
-  *interpreter_3->input_tensor(0) = *intermediate_tensor_2;
-  std::chrono::steady_clock::time_point inference_3_start, inference_3_end, inference_3_time;
-  inference_3_start = std::chrono::system_clock::now();
-  if (interpreter_3->Invoke() != kTfLiteOk) {
-    std::cerr << "Cannot invoke interpreter" << std::endl;
-    return 1;
-  }
-  inference_3_end = std::chrono::system_clock::now();
-  const auto* intermediate_tensor_3 = interpreter_3->output_tensor(0);
-  auto inference_3_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_3_end - inference_3_start).count();
-
-  *interpreter_4->input_tensor(0) = *intermediate_tensor_3;
-  std::chrono::steady_clock::time_point inference_4_start, inference_4_end, inference_4_time;
-  inference_4_start = std::chrono::system_clock::now();
-  if (interpreter_4->Invoke() != kTfLiteOk) {
-    std::cerr << "Cannot invoke interpreter" << std::endl;
-    return 1;
-  }
-  inference_4_end = std::chrono::system_clock::now();
-  const auto* intermediate_tensor_4 = interpreter_4->output_tensor(0);
-  auto inference_4_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_4_end - inference_4_start).count();
-
-  *interpreter_5->input_tensor(0) = *intermediate_tensor_4;
-  std::chrono::steady_clock::time_point inference_5_start, inference_5_time;
-  inference_5_start = std::chrono::system_clock::now();
-  if (interpreter_5->Invoke() != kTfLiteOk) {
-    std::cerr << "Cannot invoke interpreter" << std::endl;
-    return 1;
-  }
-  total_inference_end = std::chrono::system_clock::now();
-  auto inference_5_time = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - inference_5_start).count();
-
-
-  
-  auto total_inference_time = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - total_inference_start).count();
-
-  auto exact_inference_time = std::chrono::duration_cast<std::chrono::milliseconds>( inference_0_time + inference_1_time + inference_2_time + inference_3_time + inference_4_time + inference_5_time).count();
+  auto exact_inference_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - total_inference_start).count();
+  auto exact_inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(total_inference_end - total_inference_start).count();
 
   std::cout << "Inference is successful!" << "\n";
   std::cout << "\n" << std::endl;
 
   std::cout << "############################## Inference Times ##############################" << "\n";
   std::cout << "\n" << std::endl;
-  std::cout << "Exact Infernce Time: " + std::to_string(exact_inference_time) + "ms" << std::endl;
-  std::cout << "Total Infernce Time: " + std::to_string(total_inference_time) + "ms" << std::endl;
+  std::cout << "Total Infernce Time in ms: " + std::to_string(total_inference_time_ms) << std::endl;
+  std::cout << "Exact Infernce Time in ms: " + std::to_string(exact_inference_time_ms) << std::endl;
+  std::cout << "Difference in ms: " + std::to_string(total_inference_time_ms - exact_inference_time_ms) << std::endl;
+  std::cout << "\n" << std::endl;
+  std::cout << "Total Infernce Time in ns: " + std::to_string(total_inference_time_ns) << std::endl;
+  std::cout << "Exact Infernce Time in ns: " + std::to_string(exact_inference_time_ns) << std::endl;
+  std::cout << "Difference in ns: " + std::to_string(total_inference_time_ns - exact_inference_time_ns) << std::endl;
+
   std::cout << "\n" << std::endl;
   
 
   // Read Final Results from Output Interpreter
   std::cout << "############################ Listing Inference Results ############################" << "\n";
   std::cout << "\n" << std::endl;
-  auto results = Sort(Dequantize(*interpreter_5->output_tensor(0)), threshold);
+  auto results = Sort(Dequantize(*interpreter_0->output_tensor(0)), threshold);
   std::cout << "Results are sorted with decreasing likelihood:"<< "\n";
   int i = 1;
   for (auto& result : results) {

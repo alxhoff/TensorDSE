@@ -1,28 +1,33 @@
-import sys
 import os
+import sys
 import jinja2
 import argparse
-import utils
+from utils import LoggerInit, ReadJSON
 
-OPTIMIZER_DIR  = os.path.dirname(os.path.abspath(__file__))
-TOOLS_DIR      = os.path.dirname(OPTIMIZER_DIR)
+SOURCE_GEN_DIR = os.path.dirname(os.path.abspath(__file__))
+TOOLS_DIR      = os.path.dirname(SOURCE_GEN_DIR)
+OPTIMIZER_DIR  = os.path.join(TOOLS_DIR, "optimizer")
 DEPLOYMENT_DIR = os.path.dirname(TOOLS_DIR)
-log = utils.LoggerInit()
+
+log = LoggerInit(filename="create_source.log")
 
 def ParseArgs():
     # Initialize parser
     parser = argparse.ArgumentParser()
     # Adding optional argument
-    parser.add_argument("-md", "--ModelsDirectory", help = "Path to Directory Containing TFLite models", required=False)
-    parser.add_argument("-fm", "--FinalMapping", help = "Path to JSON file containing Final Mapping", required=False)
+    parser.add_argument("-md", 
+                        "--ModelsDirectory", 
+                        help = "Path to Directory Containing TFLite models", 
+                        required=False, 
+                        default=os.path.join(OPTIMIZER_DIR, "models", "sub", "tflite"))
+    parser.add_argument("-fm", 
+                        "--FinalMapping", 
+                        help = "Path to JSON file containing Final Mapping", 
+                        required=False,
+                        default=os.path.join(OPTIMIZER_DIR, "resources", "final_mapping.json"))
     # Read arguments from command line
     try:
-        args = parser.parse_args()
-        if (args.ModelsDirectory == None):
-            args.ModelsDirectory = os.path.join(OPTIMIZER_DIR, "models", "sub", "tflite")
-        if (args.FinalMapping == None):
-            args.FinalMapping = os.path.join(OPTIMIZER_DIR, "resources", "final_mapping.json")
-        return args
+        return parser.parse_args()
     except Exception as e:
         log.error('The provided argument could not be parsed! Potential Cause: {}'.format(str(e)))
         log.info('Example Usage: create_source.py -md <path/to/models/dir> -fm <path/to/json/file/containing/final/maping>')
@@ -38,7 +43,7 @@ def PreparePaths(directory: str):
     for i, file in enumerate(ordered_file_list):
         ordered_file_list[i] = os.path.join(directory, file)
     return ordered_file_list
-            
+
 def CreateLoadModelsSection(filepaths: list):
     load_models_section = ""
     for i, file in enumerate(filepaths):
@@ -126,74 +131,95 @@ def CreateBuildInterpretersSection(mapping: dict):
     return build_interpreters_section
 
 def CreateInvokeSection(mapping: dict):
-    invoke_section = ""
-    input_invoke = "total_inference_start = std::chrono::system_clock::now();\n\
+    invoke_section = "\
   if (interpreter_{0}->Invoke() != kTfLiteOk) {{\n\
     std::cerr << \"Cannot invoke interpreter\" << std::endl;\n\
     return 1;\n\
-  }}\n\
-  std::chrono::steady_clock::time_point inference_{0}_end, inference_{0}_time;\n\
-  inference_{0}_end = std::chrono::system_clock::now();\n\
-  auto inference_{0}_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_{0}_end - total_inference_start).count();\n\
-  const auto* intermediate_tensor_{0} = interpreter_{0}->output_tensor(0);\n\n".format(str(0))
-    output_invoke = "\
+  }}"
+
+    if len(mapping) == 1:
+        result = invoke_section.format(str(0))
+
+    elif len(mapping) >= 2:
+        input_invoke = "{1}\n\
+  auto inference_{0}_end = std::chrono::high_resolution_clock::now();\n\
+  const auto* intermediate_tensor_{0} = interpreter_{0}->output_tensor(0);\n\n".format(str(0), invoke_section.format(str(0)))
+        output_invoke = "\
   *interpreter_{0}->input_tensor(0) = *intermediate_tensor_{1};\n\
-  std::chrono::steady_clock::time_point inference_{0}_start, inference_{0}_time;\n\
-  inference_{0}_start = std::chrono::system_clock::now();\n\
-  if (interpreter_{0}->Invoke() != kTfLiteOk) {{\n\
-    std::cerr << \"Cannot invoke interpreter\" << std::endl;\n\
-    return 1;\n\
-  }}\n\
-  total_inference_end = std::chrono::system_clock::now();\n\
-  auto inference_{0}_time = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - inference_{0}_start).count();\n\n".format(str(len(mapping)-1), str(len(mapping)-2))
+  auto inference_{0}_start = std::chrono::high_resolution_clock::now();\n\
+  {2}\n\n".format(str(len(mapping)-1), str(len(mapping)-2), invoke_section.format(str(len(mapping)-1)))
 
-    invoke_section = invoke_section + input_invoke
-
-    for index in range(1, len(mapping)-1):
-        section_to_add = "\
+        if len(mapping) == 2:
+            result = input_invoke + output_invoke
+        else:
+            intermediate_invoke = ""
+            for index in range(1, len(mapping)-1):
+                section_to_add = "\
   *interpreter_{0}->input_tensor(0) = *intermediate_tensor_{1};\n\
-  std::chrono::steady_clock::time_point inference_{0}_start, inference_{0}_end, inference_{0}_time;\n\
-  inference_{0}_start = std::chrono::system_clock::now();\n\
-  if (interpreter_{0}->Invoke() != kTfLiteOk) {{\n\
-    std::cerr << \"Cannot invoke interpreter\" << std::endl;\n\
-    return 1;\n\
-  }}\n\
-  inference_{0}_end = std::chrono::system_clock::now();\n\
-  const auto* intermediate_tensor_{0} = interpreter_{0}->output_tensor(0);\n\
-  auto inference_{0}_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_{0}_end - inference_{0}_start).count();\n\n".format(str(index), str(index-1))
-        invoke_section = invoke_section + section_to_add
-
-    return invoke_section + output_invoke
+  auto inference_{0}_start = std::chrono::high_resolution_clock::now();\n\
+  {2}\n\
+  auto inference_{0}_end = std::chrono::high_resolution_clock::now();\n\
+  const auto* intermediate_tensor_{0} = interpreter_{0}->output_tensor(0);\n\n".format(str(index), str(index-1), invoke_section.format(str(index)))
+                intermediate_invoke = intermediate_invoke + section_to_add
+            result = input_invoke + intermediate_invoke + output_invoke
+    return result
 
 def CreateExactInferenceTimeSection(op_len: int):
-    result = "auto exact_inference_time = std::chrono::duration_cast<std::chrono::milliseconds>("
-    for i in range(0, op_len-1):
-      result = result + " inference_{0}_time +".format(str(i))
-    return result + " inference_{0}_time).count();".format(str(op_len-1))
+    function_str_ms = "auto exact_inference_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>"
+    function_str_ns = "auto exact_inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>"
+    duration_sum = ""
+    for i in range(0, op_len):
+        if op_len == 1:
+            duration_sum = duration_sum + "(total_inference_end - total_inference_start).count();".format(str(i))
+        else:
+            if i == 0:
+                duration_sum = duration_sum + "((inference_{0}_end - total_inference_start)".format(str(i))
+            elif i == op_len-1:
+                duration_sum = duration_sum + " + (total_inference_end - inference_{0}_start)).count();".format(str(i))
+            else:
+                duration_sum = duration_sum + " + (inference_{0}_end - inference_{0}_start)".format(str(i))
+    
+    return "{0}{1}\n\
+  {2}{1}".format(function_str_ms, duration_sum, function_str_ns)
 
-def CreateSource(ModelsDirectory: str, FinalMapping: dict):
+def GenerateSource(ModelsDirectory: str, FinalMapping: dict):
+    log.info("Initializing Jinja Environment ...")
     # Prepare Jinja Environment
-    environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join("resources", "templates")))
+    environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join("templates")))
     output_filepath = os.path.join(DEPLOYMENT_DIR, "tflite-cpp", "src", "classification", "distributed", "main.cpp")
     template = environment.get_template("main.cpp")
+    log.info("OK")
 
     # Read Mapping
-    mapping = utils.ReadJSON(FinalMapping)
+    log.info("Reading Final Mapping ...")
+    mapping = ReadJSON(FinalMapping)
+    log.info("OK")
+
 
     # Prepare Full Model Paths
+    log.info("Generating Load Models Section ...")
     model_paths = PreparePaths(ModelsDirectory)
+    log.info("OK")
 
     # Prepare Section for Loading Models (Submodels)
+    log.info("Generating Load Models Section ...")
     load_models_section = CreateLoadModelsSection(model_paths)
+    log.info("OK")
 
     # Prepare Section for Building Interpreter Objects for each Model
+    log.info("Generating Build Interpreters Section ...")
     build_interpreters_section = CreateBuildInterpretersSection(mapping)
+    log.info("OK")
 
     # Prepare Section for Invoking Inference and Passing Intermediate Tensors
+    log.info("Generating Invoke Section ...")
     invoke_interpreters_section = CreateInvokeSection(mapping)
+    log.info("OK")
 
     # Prepare Section to determine the exact Inference Times
+    log.info("Generating Inference Time Section ...")
     exact_inference_time_section = CreateExactInferenceTimeSection(len(mapping))
+    log.info("OK")
 
     # Populate Context
     context = {
@@ -205,14 +231,18 @@ def CreateSource(ModelsDirectory: str, FinalMapping: dict):
         "exact_inference_time_section": exact_inference_time_section
     }
 
+    log.info("Populating Template with Generated Sections ...")
     with open(output_filepath, mode="w", encoding="utf-8") as output:
         output.write(template.render(context))
+    log.info("OK")
 
 def main():
   try:
     # Parse Arguments
     args = ParseArgs()
-    CreateSource(args.ModelsDirectory, args.FinalMapping)
+    log.info("Initiating Source Code Generator ...")
+    GenerateSource(args.ModelsDirectory, args.FinalMapping)
+    log.info("Source File successfully generated ...")
   except Exception as e:
     log.error("Failed to Create Target Source File! Potential Cause: {}".format(str(e)))
     
