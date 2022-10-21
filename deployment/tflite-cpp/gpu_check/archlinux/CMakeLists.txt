@@ -19,7 +19,7 @@ message("Target Architecture is set to: ${TARGET_ARCH}")
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tflite-lib/v2.9.1/include/)
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tflite-lib/v2.9.1/libs/${TARGET_ARCH}/archlinux/)
+#[[INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tflite-lib/v2.9.1/libs/${TARGET_ARCH}/nvidia/)]]
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../../../../resources/tensorflow-2.9.1/)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../../../../resources/tflite-build/)
@@ -35,9 +35,9 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../../../../resources/tensorf
 add_executable(TFLiteGPUCheck main.cpp)
 
 target_link_libraries(TFLiteGPUCheck PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tflite-lib/v2.9.1/libs/${TARGET_ARCH}/archlinux/libtensorflowlite_gpu_delegate.so
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tflite-lib/v2.9.1/libs/${TARGET_ARCH}/nvidia/libtensorflowlite_gpu_delegate.so
     /usr/lib/libEGL.so
     /usr/lib/libGL.so
     /usr/lib/libGLESv2.so
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tflite-lib/v2.9.1/libs/${TARGET_ARCH}/archlinux/libtensorflowlite.so
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/tflite-lib/v2.9.1/libs/${TARGET_ARCH}/nvidia/libtensorflowlite.so
 )
