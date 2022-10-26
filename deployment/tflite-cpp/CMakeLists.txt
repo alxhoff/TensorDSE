@@ -28,10 +28,10 @@ message("Target Linux System: ${TARGET_LINUX}-based Linux")
 
 
 set(GPU_SUPPORT "ON" CACHE STRING "Use GPU for inference")
-message("GPU support: ${GPU_SUPPORT}}")
+message("GPU support: ${GPU_SUPPORT}")
 
 set(TENSORFLOW_VERSION "2.9.1" CACHE STRING "Tensorflow Version")
-message("Tensorflow Version: ${TENSORFLOW_VERSION}}")
+message("Tensorflow Version: ${TENSORFLOW_VERSION}")
 
 set(TENSORFLOW_SRC_DIR $ENV{HOME}/Downloads/tensorflow_env/tensorflow-${TENSORFLOW_VERSION})
 
@@ -45,7 +45,7 @@ INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/abseil-cpp)
 INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/gemmlowp)
 INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/eigen)
 INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/ruy)
-INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/opencl_headers)]]
+INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/opencl_headers)
 INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/neon2sse)
 INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/FP16-source/include/)
 INCLUDE_DIRECTORIES(${TENSORFLOW_SRC_DIR}/third_party)
@@ -59,12 +59,11 @@ endif()
 add_executable(TFLiteCheck ${PATH_TO_MAIN})
 
 if( GPU_SUPPORT STREQUAL "ON" )
-    if ()
     target_link_libraries(TFLiteCheck PRIVATE
         ${TENSORFLOW_SRC_DIR}/../bazel-output/libtensorflowlite_gpu_delegate.so
-        LIB_PATH/libEGL.so
-        LIB_PATH/libGL.so
-        LIB_PATH/libGLESv2.so
+        ${LIB_PATH}/libEGL.so
+        ${LIB_PATH}/libGL.so
+        ${LIB_PATH}/libGLESv2.so
         ${TENSORFLOW_SRC_DIR}/../bazel-output/libtensorflowlite.so
     )
 endif()
