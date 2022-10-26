@@ -17,14 +17,14 @@ message("Target Architecture: ${TARGET_ARCH}")
 
 #[[]]
 
-set(TARGET_LINUX "Arch Linux" CACHE STRING "Target Linux system")
-message("Target Linux System: ${TARGET_LINUX}")
-if( TARGET_LINUX STREQUAL "Arch Linux" )
+set(TARGET_LINUX "Arch" CACHE STRING "Target Linux system")
+if( TARGET_LINUX STREQUAL "Arch" )
     set(LIB_PATH /usr/lib)
 endif()
 if( TARGET_ENV STREQUAL "Debian" )
     set(LIB_PATH /usr/lib/${TARGET_ARCH}-linux-gnu)
 endif()
+message("Target Linux System: ${TARGET_LINUX}-based Linux")
 
 
 set(GPU_SUPPORT "ON" CACHE STRING "Use GPU for inference")
