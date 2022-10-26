@@ -80,7 +80,7 @@ if( GPU_SUPPORT STREQUAL "ON" )
 elseif( EDGE_TPU_SUPPORT STREQUAL "ON" )
     target_link_libraries(TFLiteCheck PRIVATE
         ${TENSORFLOW_ENV}/bazel-output/libtensorflow-lite.a
-        ${LIB_PATH}/libedgetpu.so.1.0
+        ${LIB_PATH}/libedgetpu.so
     )
 else()
     target_link_libraries(TFLiteCheck PRIVATE
