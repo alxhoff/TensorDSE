@@ -9,11 +9,12 @@
 #include <vector>
 
 
-#include "edgetpu.h"
-#include "edgetpu_c.h"
+
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
+#include "edgetpu.h"
+#include "edgetpu_c.h"
 
 namespace {
 constexpr size_t kBmpFileHeaderSize = 14;
@@ -30,9 +31,12 @@ std::vector<uint8_t> ReadBmpImage(const char* filename,
                                   int* out_channels = nullptr) {
   assert(filename);
 
-  std::ifstream file(filename, std::ios::binary);
-  if (!file) return {};  // Open failed.
 
+  std::ifstream file(filename, std::ios::binary);
+  if (!file) {
+    std::cerr << "Cannot Open File" << std::endl;
+    return {};  // Open failed.
+  }
   char header[kBmpHeaderSize];
   if (!file.read(header, sizeof(header))) return {};  // Read failed.
 
@@ -167,7 +171,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context =
+  const std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context =
     edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice();
 
   // Create interpreter.
@@ -179,7 +183,7 @@ int main(int argc, char* argv[]) {
   builder(&interpreter);
 
   // Bind given context with interpreter.
-  interpreter->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context);
+  interpreter->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context.get());
   interpreter->SetNumThreads(1);
   if (interpreter->AllocateTensors() != kTfLiteOk) {
     std::cerr << "Failed to allocate tensors." << std::endl;

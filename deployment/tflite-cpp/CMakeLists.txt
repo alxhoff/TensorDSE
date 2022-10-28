@@ -4,6 +4,8 @@ project(TFLiteCheck)
 set(CMAKE_CXX_STANDARD 14)
 
 #[[]]
+set(CMAKE_BUILD_TYPE Debug)
+
 
 set(TARGET_ENV "Desktop" CACHE STRING "Target environment")
 message("Target Environment: ${TARGET_ENV}")
@@ -56,8 +58,9 @@ if( GPU_SUPPORT STREQUAL "ON" )
     INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/FP16-source/include/)
 endif()
 
+#[[INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu_runtime/libedgetpu)]]
 if( EDGE_TPU_SUPPORT STREQUAL "ON" )
-    INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu_runtime/libedgetpu)
+    INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu_runtime/libedgetpu)  
 endif()
 
 if( GPU_SUPPORT STREQUAL "ON" )
@@ -79,7 +82,7 @@ if( GPU_SUPPORT STREQUAL "ON" )
     )
 elseif( EDGE_TPU_SUPPORT STREQUAL "ON" )
     target_link_libraries(TFLiteCheck PRIVATE
-        ${TENSORFLOW_ENV}/bazel-output/libtensorflow-lite.a
+        ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
         ${LIB_PATH}/libedgetpu.so
     )
 else()
