@@ -1,30 +1,35 @@
-cmake_minimum_required(VERSION 3.11)
-project(TFLiteCheck)
+cmake_minimum_required(VERSION 3.7...3.16)
+if(${CMAKE_VERSION} VERSION_LESS 3.12)
+    cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
+endif()
+project(TFLiteCheck VERSION 1.0
+                    DESCRIPTION "Check TF Lite Model Inference on CPU, GPU, and TPU"
+                    LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 
-#[[]]
 set(CMAKE_BUILD_TYPE Debug)
-
 
 set(TARGET_ENV "Desktop" CACHE STRING "Target environment")
 message("Target Environment: ${TARGET_ENV}")
 if( TARGET_ENV STREQUAL "Desktop" )
     set(TARGET_ARCH x86_64)
-endif()
-if( TARGET_ENV STREQUAL "DevBoard" )
+elseif( TARGET_ENV STREQUAL "DevBoard" )
     set(TARGET_ARCH aarch64)
+else()
+    message( FATAL_ERROR "Target Environment not supported. CMake will exit." )
 endif()
 message("Target Architecture: ${TARGET_ARCH}")
 
 #[[]]
 
-set(TARGET_LINUX "Arch" CACHE STRING "Target Linux system")
+set(TARGET_LINUX "Arch" CACHE STRING "Target Linux System")
 if( TARGET_LINUX STREQUAL "Arch" )
     set(LIB_PATH /usr/lib)
-endif()
-if( TARGET_ENV STREQUAL "Debian" )
+elseif( TARGET_ENV STREQUAL "Debian" )
     set(LIB_PATH /usr/lib/${TARGET_ARCH}-linux-gnu)
+else()
+    message( FATAL_ERROR "Target Linux System not supported. CMake will exit." )
 endif()
 message("Target Linux System: ${TARGET_LINUX}-based Linux")
 
@@ -33,6 +38,17 @@ message("Edge TPU support: ${EDGE_TPU_SUPPORT}")
 
 set(GPU_SUPPORT "OFF" CACHE STRING "Use GPU for inference")
 message("GPU support: ${GPU_SUPPORT}")
+
+set(INFERENCE_TYPE "CHECK" CACHE STRING "Inference Type")
+if( INFERENCE_TYPE STREQUAL "CHECK" )
+    set(SRC_SUB_FOLDER check)
+elseif( INFERENCE_TYPE STREQUAL "CLASSIFICATION" )
+    set(SRC_SUB_FOLDER classification)
+else()
+    message( FATAL_ERROR "Inference Type not supported. CMake will exit." )
+endif()
+message("Inference Type: ${INFERENCE_TYPE}")
+
 
 set(TENSORFLOW_VERSION "2.9.1" CACHE STRING "Tensorflow Version")
 message("Tensorflow Version: ${TENSORFLOW_VERSION}")
@@ -60,15 +76,17 @@ endif()
 
 #[[INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu_runtime/libedgetpu)]]
 if( EDGE_TPU_SUPPORT STREQUAL "ON" )
-    INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu_runtime/libedgetpu)  
+    INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu/) 
+    INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu/libedgetpu/)
+    INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu/libedgetpu/direct/k8)
 endif()
 
 if( GPU_SUPPORT STREQUAL "ON" )
-    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/gpu_check/main.cpp)
+    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/gpu/main.cpp)
 elseif( EDGE_TPU_SUPPORT STREQUAL "ON" )
-    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/edgetpu_check/main.cpp)
+    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/tpu/main.cpp)
 else()
-    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/cpu_check/main.cpp)
+    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/cpu/main.cpp)
 endif()
 add_executable(TFLiteCheck ${PATH_TO_MAIN})
 
