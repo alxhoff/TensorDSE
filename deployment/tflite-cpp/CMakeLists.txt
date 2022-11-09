@@ -33,10 +33,16 @@ else()
 endif()
 message("Target Linux System: ${TARGET_LINUX}-based Linux")
 
+set(DISTRIBUTED "OFF" CACHE STRING "Distributed Inference")
 set(EDGE_TPU_SUPPORT "OFF" CACHE STRING "Use Edge TPU for inference")
-message("Edge TPU support: ${EDGE_TPU_SUPPORT}")
-
 set(GPU_SUPPORT "OFF" CACHE STRING "Use GPU for inference")
+
+if( DISTRIBUTED STREQUAL "ON" )
+    set(EDGE_TPU_SUPPORT "ON")
+    set(GPU_SUPPORT "ON")
+endif()
+message("Distributed Inference: ${DISTRIBUTED}")
+message("Edge TPU support: ${EDGE_TPU_SUPPORT}")
 message("GPU support: ${GPU_SUPPORT}")
 
 set(INFERENCE_TYPE "CHECK" CACHE STRING "Inference Type")
@@ -48,7 +54,6 @@ else()
     message( FATAL_ERROR "Inference Type not supported. CMake will exit." )
 endif()
 message("Inference Type: ${INFERENCE_TYPE}")
-
 
 set(TENSORFLOW_VERSION "2.9.1" CACHE STRING "Tensorflow Version")
 message("Tensorflow Version: ${TENSORFLOW_VERSION}")
@@ -81,30 +86,46 @@ if( EDGE_TPU_SUPPORT STREQUAL "ON" )
     INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu/libedgetpu/direct/k8)
 endif()
 
-if( GPU_SUPPORT STREQUAL "ON" )
-    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/gpu/main.cpp)
-elseif( EDGE_TPU_SUPPORT STREQUAL "ON" )
-    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/tpu/main.cpp)
+if( DISTRIBUTED STREQUAL "ON" )
+    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/distributed/main.cpp)
 else()
-    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/cpu/main.cpp)
+    if( GPU_SUPPORT STREQUAL "ON" )
+        set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/gpu/main.cpp)
+    elseif( EDGE_TPU_SUPPORT STREQUAL "ON" )
+        set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/tpu/main.cpp)
+    else()
+        set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/cpu/main.cpp)
+    endif()
 endif()
 add_executable(TFLiteCheck ${PATH_TO_MAIN})
+message("Path to main: ${PATH_TO_MAIN}")
 
-if( GPU_SUPPORT STREQUAL "ON" )
+if( DISTRIBUTED STREQUAL "ON" )
     target_link_libraries(TFLiteCheck PRIVATE
-        ${TTENSORFLOW_ENV}/bazel-output/libtensorflowlite_gpu_delegate.so
+        ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite_gpu_delegate.so
         ${LIB_PATH}/libEGL.so
         ${LIB_PATH}/libGL.so
         ${LIB_PATH}/libGLESv2.so
-        ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
-    )
-elseif( EDGE_TPU_SUPPORT STREQUAL "ON" )
-    target_link_libraries(TFLiteCheck PRIVATE
-        ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
         ${LIB_PATH}/libedgetpu.so
+        ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
     )
 else()
-    target_link_libraries(TFLiteCheck PRIVATE
-        ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
-    )
+    if( GPU_SUPPORT STREQUAL "ON" )
+        target_link_libraries(TFLiteCheck PRIVATE
+            ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite_gpu_delegate.so
+            ${LIB_PATH}/libEGL.so
+            ${LIB_PATH}/libGL.so
+            ${LIB_PATH}/libGLESv2.so
+            ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
+        )   
+    elseif( EDGE_TPU_SUPPORT STREQUAL "ON" )
+        target_link_libraries(TFLiteCheck PRIVATE
+            ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
+            ${LIB_PATH}/libedgetpu.so
+        )
+    else()
+        target_link_libraries(TFLiteCheck PRIVATE
+            ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
+        )
+    endif()
 endif()
