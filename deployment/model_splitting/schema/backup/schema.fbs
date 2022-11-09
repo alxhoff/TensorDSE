@@ -19,8 +19,6 @@
 // Version 3: Move buffer data from Model.Subgraph.Tensors to Model.Buffers.
 // Version 3a: Add new builtin op code field. Has backward compatibility with
 //             version 3.
-// Version 3b: Rename fields in SignatureDef. Has backward compatibility with
-//             version 3 and 3a.
 
 namespace tflite;
 
@@ -47,13 +45,6 @@ enum TensorType : byte {
   FLOAT64 = 10,
   COMPLEX128 = 11,
   UINT64 = 12,
-  // Experimental: Resource and variant types are experimental, that are subject
-  // to change. Do not implement custom kernels using resource & variant types
-  // now.
-  RESOURCE = 13,
-  VARIANT = 14,
-  UINT32 = 15,
-  UINT16 = 16
 }
 
 // Custom quantization parameters for experimenting with new quantization
@@ -226,7 +217,7 @@ table Tensor {
 // ones, but not by much. Moreover, while custom operators accept an opaque
 // object containing configuration parameters, builtins have a predetermined
 // set of acceptable options.
-// LINT.IfChange
+
 enum BuiltinOperator : int32 {
   ADD = 0,
   AVERAGE_POOL_2D = 1,
@@ -364,30 +355,9 @@ enum BuiltinOperator : int32 {
   PLACEHOLDER_FOR_GREATER_OP_CODES = 127,
   CUMSUM = 128,
   CALL_ONCE = 129,
-  BROADCAST_TO = 130,
-  RFFT2D = 131,
-  CONV_3D = 132,
-  IMAG=133,
-  REAL=134,
-  COMPLEX_ABS=135,
-  HASHTABLE = 136,
-  HASHTABLE_FIND = 137,
-  HASHTABLE_IMPORT = 138,
-  HASHTABLE_SIZE = 139,
-  REDUCE_ALL = 140,
-  CONV_3D_TRANSPOSE = 141,
-  VAR_HANDLE = 142,
-  READ_VARIABLE = 143,
-  ASSIGN_VARIABLE = 144,
-  BROADCAST_ARGS = 145,
-  RANDOM_STANDARD_NORMAL = 146,
-  BUCKETIZE = 147,
-  RANDOM_UNIFORM = 148,
-  MULTINOMIAL = 149,
-  GELU = 150,
-  DYNAMIC_UPDATE_SLICE = 151,
+  BROADCAST_TO = 130
 }
-// LINT.ThenChange(nnapi_linter/linter.proto)
+
 
 // Options for the builtin operators.
 union BuiltinOptions {
@@ -494,20 +464,7 @@ union BuiltinOptions {
   BatchMatMulOptions,
   CumsumOptions,
   CallOnceOptions,
-  BroadcastToOptions,
-  Rfft2dOptions,
-  Conv3DOptions,
-  HashtableOptions,
-  HashtableFindOptions,
-  HashtableImportOptions,
-  HashtableSizeOptions,
-  VarHandleOptions,
-  ReadVariableOptions,
-  AssignVariableOptions,
-  RandomOptions,
-  BucketizeOptions,
-  GeluOptions,
-  DynamicUpdateSliceOptions,
+  BroadcastToOptions
 }
 
 enum Padding : byte { SAME, VALID }
@@ -526,18 +483,6 @@ table Conv2DOptions {
   stride_w:int;
   stride_h:int;
   fused_activation_function:ActivationFunctionType;
-  dilation_w_factor:int = 1;
-  dilation_h_factor:int = 1;
-}
-
-// Options for both Conv3D and Conv3DTranspose.
-table Conv3DOptions {
-  padding:Padding;
-  stride_d:int;
-  stride_w:int;
-  stride_h:int;
-  fused_activation_function:ActivationFunctionType;
-  dilation_d_factor:int = 1;
   dilation_w_factor:int = 1;
   dilation_h_factor:int = 1;
 }
@@ -647,7 +592,7 @@ table ConcatenationOptions {
 
 table AddOptions {
   fused_activation_function:ActivationFunctionType;
-  // Parameters supported by version 3.
+  // Parameters supported by version 4.
   pot_scale_int16:bool = true;
 }
 
@@ -656,7 +601,6 @@ table MulOptions {
 }
 
 table L2NormOptions {
-  // This field is currently ignored in the L2 Norm Op.
   fused_activation_function:ActivationFunctionType;
 }
 
@@ -794,8 +738,6 @@ table EmbeddingLookupSparseOptions {
 
 table GatherOptions {
   axis: int;
-  // Parameters for Gather version 5 or above.
-  batch_dims: int = 0;
 }
 
 table TransposeOptions {
@@ -1048,10 +990,6 @@ table SegmentSumOptions {
 table BatchMatMulOptions {
   adj_x:bool;
   adj_y:bool;
-  // Parameters for BatchMatMul version 4 or above.
-  // If set to true, then weights-only op will use asymmetric quantization for
-  // inputs.
-  asymmetric_quantize_inputs: bool;
 }
 
 table CumsumOptions {
@@ -1060,53 +998,6 @@ table CumsumOptions {
 }
 
 table BroadcastToOptions {
-}
-
-table Rfft2dOptions {
-}
-
-table HashtableOptions {
-  // The identity of hash tables. This identity will be used across different
-  // subgraphs in the same interpreter instance.
-  table_id:int;
-  key_dtype:TensorType;
-  value_dtype:TensorType;
-}
-
-table HashtableFindOptions {
-}
-
-table HashtableImportOptions {
-}
-
-table HashtableSizeOptions {
-}
-
-table VarHandleOptions {
-  container:string;
-  shared_name:string;
-}
-
-table ReadVariableOptions {
-}
-
-table AssignVariableOptions {
-}
-
-table RandomOptions {
-  seed: long;
-  seed2: long;
-}
-
-table BucketizeOptions {
-  boundaries: [float];  // The bucket boundaries.
-}
-
-table GeluOptions {
-  approximate: bool;
-}
-
-table DynamicUpdateSliceOptions {
 }
 
 // An OperatorCode can be an enum value (BuiltinOperator) if the operator is a
@@ -1224,14 +1115,11 @@ table SignatureDef {
   // Named outputs for this signature.
   outputs:[TensorMap];
 
+  // Exported method name for this signature.
+  method_name:string;
+
   // Key value which was in the Tensorflow SavedModel SignatureDef map.
-  signature_key:string;
-
-  // Model tag, deprecated.
-  deprecated_tag:string (deprecated);
-
-  // Index of subgraphs that corresponds to the exported method.
-  subgraph_index:uint;
+  key:string;
 }
 
 table Model {

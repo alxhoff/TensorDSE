@@ -14,6 +14,8 @@
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
+#include "tensorflow/lite/delegates/gpu/delegate.h"
+#include "tensorflow/lite/delegates/gpu/delegate.cc"
 
 namespace {
 constexpr size_t kBmpFileHeaderSize = 14;
@@ -262,6 +264,15 @@ int main(int argc, char* argv[]) {
   }
   std::cout << "Tensors successfully allocated." << "\n";
 
+
+  // NEW: Prepare GPU delegate.
+  const TfLiteGpuDelegateOptionsV2 options = TfLiteGpuDelegateOptionsV2Default();
+  auto* delegate = TfLiteGpuDelegateV2Create(&options);
+  if (interpreter->ModifyGraphWithDelegate(delegate) != kTfLiteOk) { // Experimental: tflite::InterpreterBuilder::AddDelegate();
+    fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__);
+    return false;
+  } 
+
   // Set interpreter input.
   const auto* input_tensor = interpreter->input_tensor(0);
   if (input_tensor->type != kTfLiteUInt8 ||           //
@@ -303,6 +314,8 @@ int main(int argc, char* argv[]) {
     std::cout << " - " << i << " - " << GetLabel(labels, result.first) << ": " << result.second * 100 << "%" << std::endl;
     i++;
   }
+  // NEW: Clean up.
+  TfLiteGpuDelegateV2Delete(delegate);
 
   return 0;
 }

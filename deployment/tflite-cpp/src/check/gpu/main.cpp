@@ -38,7 +38,7 @@ limitations under the License.
 int main(int argc, char* argv[]) {
   if (argc != 2) {
     fprintf(stderr, "Missing argument: <tflite model path>\n  \
-                     Usage: ./TFLiteGPUCheck /path/to/tflite/model\n");
+                     Usage: ./TFLiteCheck /path/to/tflite/model\n");
     return 1;
   }
   const char* filename = argv[1];
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
   TFLITE_MINIMAL_CHECK(interpreter != nullptr);
 
   // Allocate tensor buffers.
-  // TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
+  TFLITE_MINIMAL_CHECK(interpreter->AllocateTensors() == kTfLiteOk);
   printf("=== Pre-invoke Interpreter State ===\n");
   tflite::PrintInterpreterState(interpreter.get());
 
