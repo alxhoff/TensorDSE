@@ -32,6 +32,7 @@ import net.sf.opendse.optimization.ImplementationWrapper;
 import net.sf.opendse.optimization.OptimizationModule;
 import net.sf.opendse.optimization.SpecificationWrapper;
 import net.sf.opendse.optimization.io.SpecificationWrapperInstance;
+import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
  * Entry point for this project
@@ -119,8 +120,8 @@ public class TensorDSE {
 								specification_definition.getSpecification());
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
 
-				TensorDSEEvaluator evaluator =
-						new TensorDSEEvaluator("cost_of_mapping", specification_definition);
+				EvaluatorMinimizeCost evaluator =
+						new EvaluatorMinimizeCost("cost_of_mapping", specification_definition);
 
 				Multibinder<ImplementationEvaluator> multibinder =
 						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
@@ -259,6 +260,9 @@ public class TensorDSE {
 
 					Specification implementation =
 							((ImplementationWrapper) individual.getPhenotype()).getImplementation();
+
+					SpecificationViewer.view(implementation);
+
 					SpecificationWriter writer = new SpecificationWriter();
 					String time_string =
 							new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());

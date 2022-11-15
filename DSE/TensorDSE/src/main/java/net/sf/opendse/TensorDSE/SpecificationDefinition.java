@@ -51,12 +51,15 @@ public class SpecificationDefinition {
 	private OperationCosts op_costs = null;
 
 	// First hashmap takes the model's index in the model summary
-	private HashMap<Integer, HashMap<String, Task>> tasks =
-			new HashMap<Integer, HashMap<String, Task>>();
+	public HashMap<Integer, HashMap<Integer, Task>> tasks =
+			new HashMap<Integer, HashMap<Integer, Task>>();
 	private HashMap<String, List<Resource>> resources = new HashMap<String, List<Resource>>();
 
 	public final List<String> supported_layers =
 			Arrays.asList("conv_2d", ":max_pool_2d", "reshape", "fully_connected", "softmax");
+	
+	public Integer longest_model;  
+	public List<Task> starting_tasks = new ArrayList<Task>();
 
 	/**
 	 * @param task_name
@@ -74,6 +77,9 @@ public class SpecificationDefinition {
 		ret.setAttribute("dtype", layer.getInputs().get(0).getType());
 		ret.setAttribute("input_tensors", layer.getInputTensorString());
 		ret.setAttribute("output_tensors", layer.getOutputTensorString());
+		ret.setAttribute("cost", 0.0);
+		ret.setAttribute("start_time", 0.0);
+		ret.setAttribute("end_time", 0.0);
 
 		return ret;
 	}
@@ -114,18 +120,30 @@ public class SpecificationDefinition {
 			e.printStackTrace();
 		}
 
+		Integer longest_model = 0;
+
 		List<Model> models = model_json.getModels();
 
 		for (int k = 0; k < models.size(); k++) {
 
 			Model model = models.get(k);
 			List<Layer> layers = model.getLayers();
-			tasks.put(k, new HashMap<String, Task>());
+
+			if (layers.size() > longest_model)
+				longest_model = layers.size();
+			
+			tasks.put(k, new HashMap<Integer, Task>());
 
 			// Create task nodes in Application and populate hashmap
 			for (int i = 0; i < layers.size(); i++) {
 				Task t = CreateTaskNode(layers.get(i), k);
-				tasks.get(k).put(Integer.toString(i), t);
+
+				// We want to keep track of our entry point tasks to our models such
+				// that they can be traveresed more easily
+				if (i == 0)
+					this.starting_tasks.add(t);
+
+				tasks.get(k).put(i, t);
 				application.addVertex(t);
 			}
 
@@ -140,7 +158,7 @@ public class SpecificationDefinition {
 				// Task to create communication from
 				if (layer_output_tensors.size() > 0) {
 
-					String layer_task_index = l.getIndex().toString();
+					Integer layer_task_index = l.getIndex();
 					Task layer_task = tasks.get(k).get(layer_task_index);
 					Integer output_size =
 							l.getOutputs().get(l.getOutputs().size() - 1).getShapeProduct();
@@ -153,7 +171,7 @@ public class SpecificationDefinition {
 							Layer target_layer = model.getLayerWithInputTensor(target_tensor);
 
 							// Get OpenDSE task and set input shape
-							String target_task_index = target_layer.getIndex().toString();
+							Integer target_task_index = target_layer.getIndex();
 							Task target_task = tasks.get(k).get(target_task_index);
 							target_task.setAttribute("input_shape", output_size);
 
@@ -169,7 +187,7 @@ public class SpecificationDefinition {
 											layer_task.getId(), layer_task_index, comm.getId())),
 									layer_task, comm);
 							application.addEdge(
-									new Dependency(String.format("comm_%s -> %s[%s]", comm.getId(),
+									new Dependency(String.format("comm_%s -> %s[%d]", comm.getId(),
 											target_task.getId(), target_task_index)),
 									comm, target_task);
 						}
@@ -177,6 +195,8 @@ public class SpecificationDefinition {
 				}
 			}
 		}
+
+		this.longest_model = longest_model;
 
 		return application;
 	}
@@ -283,7 +303,7 @@ public class SpecificationDefinition {
 
 		Mappings<Task, Resource> mappings = new Mappings<Task, Resource>();
 
-		for (HashMap<String, Task> map : tasks.values()) {
+		for (HashMap<Integer, Task> map : tasks.values()) {
 
 			for (Task task : map.values()) {
 				String task_id = task.getId();
@@ -348,7 +368,7 @@ public class SpecificationDefinition {
 		/*
 		 * It is also possible to view the specification in a GUI.
 		 */
-		SpecificationViewer.view(specification);
+		// SpecificationViewer.view(specification);
 
 		return specification;
 	}
