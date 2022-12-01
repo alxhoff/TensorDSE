@@ -84,17 +84,17 @@ public class SpecificationDefinition {
 		return ret;
 	}
 
-	public OperationCosts GetOpCosts() {
+	public OperationCosts GetOperationCosts() {
 		return this.op_costs;
 	}
 
 	/**
 	 * @param model_summary_path
-	 * @param cost_file_path
+	 * @param benchmarking_results_path
 	 */
-	public SpecificationDefinition(String model_summary_path, String cost_file_path,
+	public SpecificationDefinition(String model_summary_path, String benchmarking_results_path,
 			String architecture_summary_path) {
-		this.op_costs = new OperationCosts(cost_file_path);
+		this.op_costs = new OperationCosts(benchmarking_results_path);
 		this.specification =
 				GetSpecificationFromTFLiteModel(model_summary_path, architecture_summary_path);
 

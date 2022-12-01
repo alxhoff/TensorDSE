@@ -81,6 +81,13 @@ public class TensorDSE {
 		parser.addArgument("-t", "--outputfolder").setDefault("src/main/resources/exampleoutput")
 				.type(String.class);
 
+		// ILP
+		parser.addArgument("-i", "--ilp").type(Boolean.class).setDefault(true)
+				.help("If the ILP should be run instead of the DSE");
+		parser.addArgument("-k", "--deactivationnumber").type(int.class).setDefault(10).help(
+				"The large integer value used for deactivating pair-wise resource mapping constraints");
+
+
 		Namespace ns = null;
 
 		try {
@@ -243,58 +250,67 @@ public class TensorDSE {
 			SpecificationDefinition specification = new SpecificationDefinition(model_summary_path,
 					benchmark_results_path, architecture_summary_path);
 
-			// Opt4J Modules
-			EvolutionaryAlgorithmModule ea_module = GetEAModule(args_namespace);
-			Module specification_module = GetSpecificationModule(specification);
-			OptimizationModule optimization_module = new OptimizationModule();
-			Collection<Module> modules =
-					GetModulesCollection(ea_module, specification_module, optimization_module);
+			if (args_namespace.getBoolean("ilp") == true) {
+				ILPSolver ilps = new ILPSolver();
+				// ilps.gurobiILPExample();
+				ilps.solveILP(specification);
+				System.out.println("wait here");
+			} else {
 
-			Opt4JTask opt4j_task = GetOpt4JTask(modules);
+				// Opt4J Modules
+				EvolutionaryAlgorithmModule ea_module = GetEAModule(args_namespace);
+				Module specification_module = GetSpecificationModule(specification);
+				OptimizationModule optimization_module = new OptimizationModule();
+				Collection<Module> modules =
+						GetModulesCollection(ea_module, specification_module, optimization_module);
 
-			try {
-				opt4j_task.execute();
-				Archive archive = opt4j_task.getInstance(Archive.class);
+				Opt4JTask opt4j_task = GetOpt4JTask(modules);
 
-				for (Individual individual : archive) {
+				try {
+					opt4j_task.execute();
+					Archive archive = opt4j_task.getInstance(Archive.class);
 
-					Specification implementation =
-							((ImplementationWrapper) individual.getPhenotype()).getImplementation();
+					for (Individual individual : archive) {
 
-					SpecificationViewer.view(implementation);
+						Specification implementation =
+								((ImplementationWrapper) individual.getPhenotype())
+										.getImplementation();
 
-					SpecificationWriter writer = new SpecificationWriter();
-					String time_string =
-							new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
+						SpecificationViewer.view(implementation);
 
-					writer.write(implementation,
-							output_directory + "/" + time_string + "_solution.xml");
+						SpecificationWriter writer = new SpecificationWriter();
+						String time_string =
+								new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
 
-					objective_values[i] =
-							individual.getObjectives().getValues().iterator().next().getDouble();
-					System.out.println(objective_values[i]);
+						writer.write(implementation,
+								output_directory + "/" + time_string + "_solution.xml");
 
-					csv_writer.append("\n");
-					csv_writer.append(String.join(",", Integer.toString(i), time_string,
-							Integer.toString(ea_module.getGenerations()),
-							Integer.toString(ea_module.getPopulationSize()),
-							Integer.toString(ea_module.getParentsPerGeneration()),
-							Integer.toString(ea_module.getOffspringsPerGeneration()),
-							Double.toString(ea_module.getCrossoverRate()),
-							Double.toString(objective_values[i])));
+						objective_values[i] = individual.getObjectives().getValues().iterator()
+								.next().getDouble();
+						System.out.println(objective_values[i]);
 
-					for (Mapping<Task, Resource> m : implementation.getMappings()) {
-						System.out.println(m.getSource().getId() + " type "
-								+ m.getSource().getAttribute("type") + " HW "
-								+ m.getTarget().getId());
+						csv_writer.append("\n");
+						csv_writer.append(String.join(",", Integer.toString(i), time_string,
+								Integer.toString(ea_module.getGenerations()),
+								Integer.toString(ea_module.getPopulationSize()),
+								Integer.toString(ea_module.getParentsPerGeneration()),
+								Integer.toString(ea_module.getOffspringsPerGeneration()),
+								Double.toString(ea_module.getCrossoverRate()),
+								Double.toString(objective_values[i])));
+
+						for (Mapping<Task, Resource> m : implementation.getMappings()) {
+							System.out.println(m.getSource().getId() + " type "
+									+ m.getSource().getAttribute("type") + " HW "
+									+ m.getTarget().getId());
+						}
+
 					}
 
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				} finally {
+					opt4j_task.close();
 				}
-
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			} finally {
-				opt4j_task.close();
 			}
 		}
 

@@ -9,7 +9,7 @@ import java.util.Set;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-
+import org.javatuples.Pair;
 import org.opt4j.core.Objective;
 import org.opt4j.core.Objectives;
 import net.sf.opendse.model.Application;
@@ -38,7 +38,7 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	public EvaluatorMinimizeCost(String objectives,
 			SpecificationDefinition SpecificationDefinition) {
 		super();
-		this.operation_costs = SpecificationDefinition.GetOpCosts();
+		this.operation_costs = SpecificationDefinition.GetOperationCosts();
 		this.starting_tasks = SpecificationDefinition.starting_tasks;
 		this.longest_model = SpecificationDefinition.longest_model;
 		this.tasks = SpecificationDefinition.tasks;
@@ -65,11 +65,9 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 
 		// Specification for viewing and debugging
 		Specification specification = new Specification(application, architecture, mappings);
-		// SpecificationViewer.view(specification);
-		SolutionHelper sh = new SolutionHelper(specification, this.tasks, this.starting_tasks,
-				this.longest_model);
-		sh.calculateTaskFinishTimes();
-		sh.addTPUCommCosts(this.operation_costs);
+		SpecificationViewer.view(specification);
+		Solver sh = new Solver(specification, this.tasks, this.starting_tasks,
+				this.operation_costs);
 
 		for (Mapping<Task, Resource> m : mappings) {
 			Task current_task = m.getSource();
@@ -133,8 +131,9 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		}
 
 		// Communication cost
-		Double comm_cost = operation_costs.GetCommCost(target_device, layer, data_type);
-		cost += comm_cost;
+		Pair<Double, Double> comm_cost = operation_costs.GetCommCost(target_device, layer, data_type);
+
+		cost += comm_cost.getValue0() + comm_cost.getValue1();
 
 		return cost;
 	}

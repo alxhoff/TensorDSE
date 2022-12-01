@@ -6,6 +6,13 @@ public class Timing {
     Double standard_deviation;
     Double avg_absolute_deviation;
 
+    public Timing() {
+        this.mean = 0.0;
+        this.median = 0.0;
+        this.standard_deviation = 0.0;
+        this.avg_absolute_deviation = 0.0;
+    }
+
     public Double getMean() {
         return mean;
     }
@@ -37,4 +44,6 @@ public class Timing {
     public void setAvg_absolute_deviation(Double avg_absolute_deviation) {
         this.avg_absolute_deviation = avg_absolute_deviation;
     }
+
+
 }
