@@ -24,7 +24,6 @@ local.properties
 .recommenders
 deployment/model_splitting/models/
 deployment/tflite-cpp/tflite-dist
-deployment/tflite-cpp/.vscode
 
 # External tool builders
 .externalToolBuilders/
@@ -78,12 +77,6 @@ deployment/tflite-cpp/.vscode
 
 __pycache__
 
-*/.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
 
 # Local History for Visual Studio Code
 .history/
