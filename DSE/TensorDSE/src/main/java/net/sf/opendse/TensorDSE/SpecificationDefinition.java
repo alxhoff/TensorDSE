@@ -42,7 +42,7 @@ import net.sf.opendse.visualization.SpecificationViewer;
  */
 public class SpecificationDefinition {
 
-	private Specification specification = null;
+	public Specification specification = null;
 	// ******************************************************************************
 	// op_costs is set with the csv file containing the latest tests we have
 	// conducted
@@ -57,8 +57,8 @@ public class SpecificationDefinition {
 
 	public final List<String> supported_layers =
 			Arrays.asList("conv_2d", ":max_pool_2d", "reshape", "fully_connected", "softmax");
-	
-	public Integer longest_model;  
+
+	public Integer longest_model;
 	public List<Task> starting_tasks = new ArrayList<Task>();
 
 	/**
@@ -131,7 +131,7 @@ public class SpecificationDefinition {
 
 			if (layers.size() > longest_model)
 				longest_model = layers.size();
-			
+
 			tasks.put(k, new HashMap<Integer, Task>());
 
 			// Create task nodes in Application and populate hashmap
@@ -368,7 +368,7 @@ public class SpecificationDefinition {
 		/*
 		 * It is also possible to view the specification in a GUI.
 		 */
-		// SpecificationViewer.view(specification);
+		SpecificationViewer.view(specification);
 
 		return specification;
 	}

@@ -68,6 +68,7 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		SpecificationViewer.view(specification);
 		Solver sh = new Solver(specification, this.tasks, this.starting_tasks,
 				this.operation_costs);
+		sh.solveDSESchedule();
 
 		for (Mapping<Task, Resource> m : mappings) {
 			Task current_task = m.getSource();

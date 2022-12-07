@@ -46,7 +46,7 @@ public class OperationCosts {
     }
 
     public Hashtable<String, Hashtable<String, Pair<Double, Double>>> CreateEmptyCommOpTypeTable() {
-        return new Hashtable<String, Hashtable<String,  Pair<Double, Double>>>();
+        return new Hashtable<String, Hashtable<String, Pair<Double, Double>>>();
     }
 
     public Hashtable<String, Double> CreateEmptyDataTypeTable() {
@@ -68,10 +68,12 @@ public class OperationCosts {
         return (Hashtable<String, Hashtable<String, Double>>) this.operation_costs.get(device_type);
     }
 
-    public Hashtable<String, Hashtable<String, Pair<Double, Double>>> GetCommTypeTable(String device_type) {
+    public Hashtable<String, Hashtable<String, Pair<Double, Double>>> GetCommTypeTable(
+            String device_type) {
 
         if (!this.communication_costs.containsKey(device_type)) {
-            Hashtable<String, Hashtable<String, Pair<Double, Double>>> new_op_map = this.CreateEmptyCommOpTypeTable();
+            Hashtable<String, Hashtable<String, Pair<Double, Double>>> new_op_map =
+                    this.CreateEmptyCommOpTypeTable();
             this.communication_costs.put(device_type, new_op_map);
         }
 
@@ -93,18 +95,19 @@ public class OperationCosts {
 
     }
 
-    public Hashtable<String,  Pair<Double, Double>> GetCommDataTypeTable(String device_type,
+    public Hashtable<String, Pair<Double, Double>> GetCommDataTypeTable(String device_type,
             String operation_type) {
 
-        Hashtable<String, Hashtable<String,  Pair<Double, Double>>> comm_type_table =
+        Hashtable<String, Hashtable<String, Pair<Double, Double>>> comm_type_table =
                 this.GetCommTypeTable(device_type);
 
         if (!comm_type_table.containsKey(operation_type)) {
-            Hashtable<String,  Pair<Double, Double>> new_type_map = this.CreateEmptyCommDataTypeTable();
+            Hashtable<String, Pair<Double, Double>> new_type_map =
+                    this.CreateEmptyCommDataTypeTable();
             comm_type_table.put(operation_type, new_type_map);
         }
 
-        return (Hashtable<String,  Pair<Double, Double>>) comm_type_table.get(operation_type);
+        return (Hashtable<String, Pair<Double, Double>>) comm_type_table.get(operation_type);
 
     }
 
@@ -120,13 +123,15 @@ public class OperationCosts {
         return (Double) data_type_table.get(data_type);
     }
 
-    public Pair<Double, Double> GetCommCost(String device_type, String operation_type, String data_type) {
+    public Pair<Double, Double> GetCommCost(String device_type, String operation_type,
+            String data_type) {
 
         Hashtable<String, Pair<Double, Double>> data_type_table =
                 this.GetCommDataTypeTable(device_type, operation_type);
 
         if (!data_type_table.containsKey(data_type)) {
-            data_type_table.put(data_type, new Pair(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY));
+            data_type_table.put(data_type,
+                    new Pair(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY));
         }
 
         return (Pair<Double, Double>) data_type_table.get(data_type);
@@ -189,7 +194,8 @@ public class OperationCosts {
                         this.GetOpDataTypeTable(device_type, operation_type).put(data_type,
                                 mean_cost);
 
-                        this.GetCommDataTypeTable(device_type, operation_type).put(data_type, new Pair(comm_send, comm_recv));
+                        this.GetCommDataTypeTable(device_type, operation_type).put(data_type,
+                                new Pair(comm_send, comm_recv));
                     }
                 }
             }
