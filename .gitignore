@@ -115,3 +115,5 @@ gradle-app.setting
 
 .vscode/settings.json
 .vscode/settings.json
+deployment/tflite-cpp/resources/models/classification/distributed
+deployment/tflite-cpp/resources/mapping

@@ -2,9 +2,11 @@ cmake_minimum_required(VERSION 3.7...3.16)
 if(${CMAKE_VERSION} VERSION_LESS 3.12)
     cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 endif()
-project(TFLiteCheck VERSION 1.0
+project(TFLiteApp VERSION 1.0
                     DESCRIPTION "Check TF Lite Model Inference on CPU, GPU, and TPU"
                     LANGUAGES CXX)
+
+#set (CMAKE_CXX_FLAGS "-lstdc++fs -std=c++17")
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -45,7 +47,7 @@ message("Distributed Inference: ${DISTRIBUTED}")
 message("Edge TPU support: ${EDGE_TPU_SUPPORT}")
 message("GPU support: ${GPU_SUPPORT}")
 
-set(INFERENCE_TYPE "CHECK" CACHE STRING "Inference Type")
+set(INFERENCE_TYPE "CLASSIFICATION" CACHE STRING "Inference Type")
 if( INFERENCE_TYPE STREQUAL "CHECK" )
     set(SRC_SUB_FOLDER check)
 elseif( INFERENCE_TYPE STREQUAL "CLASSIFICATION" )
@@ -86,6 +88,8 @@ if( EDGE_TPU_SUPPORT STREQUAL "ON" )
     INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu/libedgetpu/direct/k8)
 endif()
 
+link_libraries(stdc++fs)
+
 if( DISTRIBUTED STREQUAL "ON" )
     set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/distributed/main.cpp)
 else()
@@ -97,11 +101,11 @@ else()
         set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/cpu/main.cpp)
     endif()
 endif()
-add_executable(TFLiteCheck ${PATH_TO_MAIN})
+add_executable(TFLiteApp ${PATH_TO_MAIN})
 message("Path to main: ${PATH_TO_MAIN}")
 
 if( DISTRIBUTED STREQUAL "ON" )
-    target_link_libraries(TFLiteCheck PRIVATE
+    target_link_libraries(TFLiteApp PRIVATE
         ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite_gpu_delegate.so
         ${LIB_PATH}/libEGL.so
         ${LIB_PATH}/libGL.so
@@ -111,7 +115,7 @@ if( DISTRIBUTED STREQUAL "ON" )
     )
 else()
     if( GPU_SUPPORT STREQUAL "ON" )
-        target_link_libraries(TFLiteCheck PRIVATE
+        target_link_libraries(TFLiteApp PRIVATE
             ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite_gpu_delegate.so
             ${LIB_PATH}/libEGL.so
             ${LIB_PATH}/libGL.so
@@ -119,12 +123,12 @@ else()
             ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
         )   
     elseif( EDGE_TPU_SUPPORT STREQUAL "ON" )
-        target_link_libraries(TFLiteCheck PRIVATE
+        target_link_libraries(TFLiteApp PRIVATE
             ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
             ${LIB_PATH}/libedgetpu.so
         )
     else()
-        target_link_libraries(TFLiteCheck PRIVATE
+        target_link_libraries(TFLiteApp PRIVATE
             ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
         )
     endif()
