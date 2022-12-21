@@ -240,8 +240,8 @@ class Submodel(Model):
         #Save Submodel Number
         self.submodel_number = '_'.join([str(elem) for elem in ops_block])
         
-    def Save(self, block_key: str):
-        submodel_filename = "submodel_{0}_{1}.json".format(block_key.lower(), self.submodel_number)
+    def Save(self, block_key: str, index: int):
+        submodel_filename = "submodel{0}_{1}_{2}.json".format(index, block_key.lower(), self.submodel_number)
         submodel_filepath = os.path.join(SUB_DIR, "json", submodel_filename)
         MoveFile(self.paths["json"], submodel_filepath)
         self.paths["json"] = submodel_filepath
@@ -341,16 +341,16 @@ class Optimizer:
         self.source_model.Convert("tflite", "json")
 
     def CreateSubmodels(self):
-        for block_key in self.final_mapping.keys():
+        for i, block_key in enumerate(self.final_mapping.keys()):
             submodel = Submodel(self.source_model.json)
             submodel.AddOps(self.final_mapping[block_key])
-            submodel.Save(block_key)
+            submodel.Save(block_key, i)
             submodel.Convert("json", "tflite")
 
     def CompileForEdgeTPU(self):
         docker = Docker("debian-docker")
-        for submodel in os.listdir(os.path.join(SUB_DIR, "tflite")):
-            if submodel.startswith("submodel_tpu"):
+        for i, submodel in enumerate(sorted(os.listdir(os.path.join(SUB_DIR, "tflite")))):
+            if ((submodel.startswith("submodel{0}_tpu".format(i))) and (not(submodel.endswith("_edgetpu.tflite")))):
                 docker.Copy(submodel, "host", "docker")
                 docker.Compile(submodel)
                 compiled_name  = "{0}_edgetpu.tflite".format(submodel.split(".")[0])
