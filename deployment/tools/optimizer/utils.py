@@ -12,8 +12,8 @@ def ParseArgs():
     # Initialize parser
     parser = argparse.ArgumentParser()
     # Adding optional argument
-    parser.add_argument("-model", "--Model", help = "Path to CSV file containing mapping", required=True)
-    parser.add_argument("-map", "--Mapping", help = "Path to Source Model file to optimize", required=True)
+    parser.add_argument("-model", "--Model", help = "Path to Source Model file to optimize", required=True)
+    parser.add_argument("-map", "--Mapping", help = "Path to CSV file containing mapping", required=True)
     # Read arguments from command line
     try:
         args = parser.parse_args()
