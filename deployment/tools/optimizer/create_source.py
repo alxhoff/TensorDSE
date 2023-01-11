@@ -4,7 +4,10 @@ import jinja2
 import argparse
 import utils
 
-DEPLOYMENT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+OPTIMIZER_DIR  = os.path.dirname(os.path.abspath(__file__))
+TOOLS_DIR      = os.path.dirname(OPTIMIZER_DIR)
+DEPLOYMENT_DIR = os.path.dirname(TOOLS_DIR)
+log = utils.LoggerInit()
 
 def ParseArgs():
     # Initialize parser
@@ -16,13 +19,13 @@ def ParseArgs():
     try:
         args = parser.parse_args()
         if (args.ModelsDirectory == None):
-            args.ModelsDirectory = "/home/starkaf/Documents/projects/EdgeTpuModelOptimizer/models/sub/tflite"
+            args.ModelsDirectory = os.path.join(OPTIMIZER_DIR, "models", "sub", "tflite")
         if (args.FinalMapping == None):
-            args.FinalMapping = os.path.join("resources", "final_mapping.json")
+            args.FinalMapping = os.path.join(OPTIMIZER_DIR, "resources", "final_mapping.json")
         return args
-    except:
-        print('Wrong or Missing argument!')
-        print('Example Usage: create_source.py -md <path/to/models/dir> -fm <path/to/json/file/containing/final/maping>')
+    except Exception as e:
+        log.error('The provided argument could not be parsed! Potential Cause: {}'.format(str(e)))
+        log.info('Example Usage: create_source.py -md <path/to/models/dir> -fm <path/to/json/file/containing/final/maping>')
         sys.exit(1)
 
 def PreparePaths(directory: str):
@@ -65,8 +68,9 @@ def CreateBuildTpuInterpreter(index: int, key: str):
   // Allocate tensors \n\
   if (interpreter_{0}->AllocateTensors() != kTfLiteOk) {{\n\
     std::cerr << \"Failed to allocate tensors.\" << std::endl;\n\
+    return 1;\n\
   }}\n\
-  std::cout << \"Tensors successfully allocated.\" << \"\\n\";\
+  std::cout << \"Tensors successfully allocated.\" << \"\\n\";\n\
   std::cout << \"\\n\" << std::endl;\n\n".format(str(index), key)
 
 def CreateBuildGpuInterpreter(index: int, key: str):
@@ -80,6 +84,7 @@ def CreateBuildGpuInterpreter(index: int, key: str):
   // Allocate tensors \n\
   if (interpreter_{0}->AllocateTensors() != kTfLiteOk) {{\n\
     std::cerr << \"Failed to allocate tensors.\" << std::endl;\n\
+    return 1;\n\
   }}\n\
   std::cout << \"Tensors successfully allocated.\" << \"\\n\";\
   // NEW: Prepare GPU delegate.\n\
@@ -87,7 +92,7 @@ def CreateBuildGpuInterpreter(index: int, key: str):
   auto* delegate_{0} = TfLiteGpuDelegateV2Create(&options_{0});\n\
   if (interpreter_{0}->ModifyGraphWithDelegate(delegate_{0}) != kTfLiteOk) {{ // Experimental: tflite::InterpreterBuilder::AddDelegate();\n\
     fprintf(stderr, \"Error at %s:%d\\n\", __FILE__, __LINE__);\n\
-    return false;\n\
+    return 1;\n\
   }}\n\
   std::cout << \"\\n\" << std::endl;\n\n".format(str(index), key)
 
@@ -102,6 +107,7 @@ def CreateBuildCpuInterpreter(index: int, key: str):
   // Allocate tensors\n\
   if (interpreter_{0}->AllocateTensors() != kTfLiteOk) {{\n\
     std::cerr << \"Failed to allocate tensors.\" << std::endl;\n\
+    return 1;\n\
   }}\n\
   std::cout << \"Tensors successfully allocated.\" << \"\\n\";\n\
   std::cout << \"\\n\" << std::endl;\n\n".format(str(index), key)
@@ -148,36 +154,46 @@ def CreateInvokeSection(mapping: dict):
 
     return invoke_section + output_invoke
 
+def CreateSource(ModelsDirectory: str, FinalMapping: dict):
+  # Prepare Jinja Environment
+  environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join("resources", "templates")))
+  output_filepath = os.path.join(DEPLOYMENT_DIR, "tflite-cpp", "src", "classification", "distributed", "main.cpp")
+  template = environment.get_template("main.cpp")
+
+  # Read Mapping
+  mapping = utils.ReadJSON(FinalMapping)
+
+  # Prepare Full Model Paths
+  model_paths = PreparePaths(ModelsDirectory)
+
+  # Prepare Section for Loading Models (Submodels)
+  load_models_section = CreateLoadModelsSection(model_paths)
+
+  # Prepare Section for Building Interpreter Objects for each Model
+  build_interpreters_section = CreateBuildInterpretersSection(mapping)
+
+  # Prepare Section for Invoking Inference and Passing Intermediate Tensors
+  invoke_interpreters_section = CreateInvokeSection(mapping)
+
+  # Populate Context
+  context = {
+      "input_interpreter": "interpreter_{0}".format("0"),
+      "output_interpreter": "interpreter_{0}".format(str(len(mapping)-1)),
+      "load_models_section": load_models_section,
+      "build_interpreters_section": build_interpreters_section,
+      "invoke_interpreters_section": invoke_interpreters_section
+  }
+
+  with open(output_filepath, mode="w", encoding="utf-8") as output:
+      output.write(template.render(context))
+
 def main():
+  try:
+    # Parse Arguments
     args = ParseArgs()
-    # Prepare Jinja Environment
-    environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join("resources", "templates")))
-    output_filepath = os.path.join(DEPLOYMENT_DIR, "tflite-cpp", "src", "classification", "distributed", "main_test.cpp")
-    template = environment.get_template("main.cpp")
-
-    # Read Mapping
-    mapping = utils.ReadJSON(args.FinalMapping)
-
-    # Prepare Full Model Paths
-    model_paths = PreparePaths(args.ModelsDirectory)
-
-    load_models_section = CreateLoadModelsSection(model_paths)
-
-    build_interpreters_section = CreateBuildInterpretersSection(mapping)
-
-    invoke_interpreters_section = CreateInvokeSection(mapping)
-
-    # Populate Context
-    context = {
-        "input_interpreter": "interpreter_{0}".format("0"),
-        "output_interpreter": "interpreter_{0}".format(str(len(mapping)-1)),
-        "load_models_section": load_models_section,
-        "build_interpreters_section": build_interpreters_section,
-        "invoke_interpreters_section": invoke_interpreters_section
-    }
-
-    with open(output_filepath, mode="w", encoding="utf-8") as output:
-        output.write(template.render(context))
+    CreateSource(args.ModelsDirectory, args.FinalMapping)
+  except Exception as e:
+    log.error("Failed to Create Target Source File! Potential Cause: {}".format(str(e)))
     
 if __name__ == '__main__':
     main()
