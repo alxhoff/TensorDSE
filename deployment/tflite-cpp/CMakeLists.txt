@@ -28,8 +28,10 @@ message("Target Architecture: ${TARGET_ARCH}")
 set(TARGET_LINUX "Arch" CACHE STRING "Target Linux System")
 if( TARGET_LINUX STREQUAL "Arch" )
     set(LIB_PATH /usr/lib)
+    set(LIBEDGETPU_PATH ${LIB_PATH}/libedgetpu.so)
 elseif( TARGET_LINUX STREQUAL "Debian" )
     set(LIB_PATH /usr/lib/${TARGET_ARCH}-linux-gnu)
+    set(LIBEDGETPU_PATH ${LIB_PATH}/libedgetpu.so.1)
 else()
     message( FATAL_ERROR "Target Linux System not supported. CMake will exit." )
 endif()
@@ -100,7 +102,7 @@ endif()
 link_libraries(stdc++fs)
 
 if( DISTRIBUTED STREQUAL "ON" )
-    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/distributed/main_test.cpp)
+    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/distributed/main.cpp)
 else()
     if( GPU_SUPPORT STREQUAL "ON" )
         set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/gpu/main.cpp)
@@ -119,7 +121,7 @@ if( DISTRIBUTED STREQUAL "ON" )
         ${LIB_PATH}/libEGL.so
         ${LIB_PATH}/libGL.so
         ${LIB_PATH}/libGLESv2.so
-        ${LIB_PATH}/libedgetpu.so.1
+        ${LIBEDGETPU_PATH}
         ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
     )
 else()
@@ -134,7 +136,7 @@ else()
     elseif( EDGE_TPU_SUPPORT STREQUAL "ON" )
         target_link_libraries(TFLiteApp PRIVATE
             ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
-            ${LIB_PATH}/libedgetpu.so
+            ${LIBEDGETPU_PATH}
         )
     else()
         target_link_libraries(TFLiteApp PRIVATE
