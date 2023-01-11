@@ -12,7 +12,6 @@
 #include <filesystem>
 #include <experimental/filesystem>
 #include <sys/stat.h>
-#include <jsoncpp/json/value.h>
 
 // Common
 #include "tensorflow/lite/interpreter.h"
@@ -363,46 +362,39 @@ namespace {
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  if (argc != 5) {
+  if (argc != 4) {
     std::cerr << argv[0]
-              << " <models_dir> <label_file> <image_file> <threshold>"
+              << " <label_file> <image_file> <threshold>"
               << std::endl;
     return 1;
   }
 
-  const std::string models_dir   = argv[1];
-  const std::string label_file   = argv[2];
-  const std::string image_file   = argv[3];
-  const float threshold          = std::stof(argv[4]);
-
-  // Find TPU device.
-  std::cout << "Detecting Edge TPUs Devices ..." << "\n";
-  size_t num_devices;
-  std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)> devices(
-      edgetpu_list_devices(&num_devices), &edgetpu_free_devices);
-
-  if (num_devices == 0) {
-    std::cerr << "No connected TPU found" << std::endl;
-    //return 1;
-  }
-  const auto& device = devices.get()[0];
-
-  const auto& available_tpus = edgetpu::EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
-  std::cout << "Number of available Edge TPUs: " << available_tpus.size() << "\n"; // hopefully we'll see 1 here
+  const std::string label_file   = argv[1];
+  const std::string image_file   = argv[2];
+  const float threshold          = std::stof(argv[3]);
+  
+  // Initiating Distributed Inference
+  std::cout << "\n" << std::endl;
+  std::cout << "##################################################################################" << "\n";
+  std::cout << "#         Running Distributed Inference of an Image Classification Model         #" << "\n";
+  std::cout << "##################################################################################" << "\n";
   std::cout << "\n" << std::endl;
 
   // Load labels.
-  std::cout << "Loading resources ..." << "\n";
+  std::cout << "################################# Loading Labels #################################" << "\n";
+  std::cout << "\n" << std::endl;
   auto labels = ReadLabels(label_file);
   if (labels.empty()) {
     std::cerr << "Cannot read labels from " << label_file << std::endl;
     return 1;
   }
   std::cout << "Labels successfully loaded from: " << label_file << "\n";
+  std::cout << "\n" << std::endl;
 
   // Load image.
+  std::cout << "################################# Loading Image ##################################" << "\n";
+  std::cout << "\n" << std::endl;
   int image_bpp, image_width, image_height;
-
   const std::vector<uint8_t>& image =
       read_bmp(image_file.c_str(), &image_width, &image_height, &image_bpp);
 
@@ -411,143 +403,154 @@ int main(int argc, char* argv[]) {
     return 1;
   }
   std::cout << "Image successfully loaded from: " << image_file << "\n";
+  std::cout << "\n" << std::endl;
 
-  std::vector<std::string> paths = {};
-
-  paths = ReadModelsPaths(models_dir);
-
-  for (int i = 0; i < paths.size(); i++) {
-    // Check Target Device
-    int device_id;
-    device_id = GetDevice(paths[i]);
-    
-    // Check For Input/Output
-    bool input,output;
-    input  = i == 0;
-    output = i == paths.size()-1;
-
-    // Load Model
-    std::unique_ptr<tflite::FlatBufferModel> submodel;
-    submodel = LoadSubmodel(paths[i]);
-    if (!submodel) {
-      std::cerr << "Cannot load Submodel from " << paths[i] << std::endl;
-      return 1;
-    } else {
-      std::cout << "Submodel successfully loaded from: " << paths[i] << "\n";
-    }
-
-    // Create Interpreter Object
-    std::unique_ptr<tflite::Interpreter> interpreter;
-
-    std::vector<uint8_t> intermediate_tensor;
-
-    switch (device_id) {
-      case 0:
-        {
-          // Create interpreter.
-          tflite::ops::builtin::BuiltinOpResolver resolver;
-          tflite::InterpreterBuilder builder(*submodel, resolver);
-          builder(&interpreter);
-          // Allocate tensors
-          if (interpreter->AllocateTensors() != kTfLiteOk) {
-            std::cerr << "Failed to allocate tensors." << std::endl;
-          }
-          std::cout << "Tensors successfully allocated." << "\n";
-          break;
-        }
-      case 1:
-        {
-          // Create interpreter.
-          tflite::ops::builtin::BuiltinOpResolver resolver;
-          tflite::InterpreterBuilder builder(*submodel, resolver);
-          builder(&interpreter);
-          // Allocate tensors
-          if (interpreter->AllocateTensors() != kTfLiteOk) {
-            std::cerr << "Failed to allocate tensors." << std::endl;
-          }
-          std::cout << "Tensors successfully allocated." << "\n";
-          // Prepare GPU delegate.
-          const TfLiteGpuDelegateOptionsV2 options = TfLiteGpuDelegateOptionsV2Default();
-          auto* delegate = TfLiteGpuDelegateV2Create(&options);
-          if (interpreter->ModifyGraphWithDelegate(delegate) != kTfLiteOk) {
-            fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__);
-            return false;
-          } 
-          break;
-        }
-      case 2:
-        {
-          std::cout << "Initializing Edge TPU Context ... " << "\n";
-          const std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context =
-            edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(available_tpus[0].type, available_tpus[0].path);
-          // Create interpreter.
-          tflite::ops::builtin::BuiltinOpResolver resolver;
-          resolver.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
-          std::cout << "Building Edge TPU Interpreter ... " << "\n";
-          tflite::InterpreterBuilder builder(*submodel, resolver);
-          builder(&interpreter);
-          // Bind given context with interpreter.
-          interpreter->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context.get());
-          interpreter->SetNumThreads(1);
-          if (interpreter->AllocateTensors() != kTfLiteOk) {
-            std::cerr << "Failed to allocate tensors." << std::endl;
-          }
-          std::cout << "Tensors successfully allocated." << "\n";
-          break;
-        }
-    }
-
-    if (input) {
-      // Set interpreter input.
-      const auto* input_tensor = interpreter->input_tensor(0);
-      if (input_tensor->type != kTfLiteUInt8 ||           //
-          input_tensor->dims->data[0] != 1 ||             //
-          input_tensor->dims->data[1] != image_height ||  //
-          input_tensor->dims->data[2] != image_width ||   //
-          input_tensor->dims->data[3] != image_bpp) {
-            std::cerr << "Input tensor shape does not match input image" << std::endl;
-            return 1;
-      }
-      std::copy(image.begin(), image.end(), interpreter->typed_input_tensor<uint8_t>(0));
-      std::cout << "\n" << std::endl;
-      // Invoke Interpreter
-      if (interpreter->Invoke() != kTfLiteOk) {
-        std::cerr << "Cannot invoke interpreter" << std::endl;
-        return 1;
-      }
-
-      std::copy(interpreter->output_tensor(0)->begin(), interpreter->output_tensor(0)->end(), intermediate_tensor.begin());
-      std::cout << interpreter->output_tensor(0)->bytes << std::endl;
-    } 
-//    else if (output) {
-//      std::copy(intermediate_tensor.begin(), intermediate_tensor.end(), interpreter->typed_input_tensor<uint8_t>(0));
-//      // Invoke Interpreter
-//      if (interpreter->Invoke() != kTfLiteOk) {
-//        std::cerr << "Cannot invoke interpreter" << std::endl;
-//        return 1;
-//      }
-//      // Get interpreter output.
-//      auto results = Sort(Dequantize(*interpreter->output_tensor(0)), threshold);
-//      std::cout << "Results are sorted with decreasing likelihood:"<< "\n";
-//      int i = 1;
-//      for (auto& result : results) {
-//        /*std::cout << " - " << i << " - " << GetLabel(labels, result.first) << ": " << std::setw(7) << std::fixed << std::setprecision(5)
-//              << result.second << std::endl;*/
-//        std::cout << " - " << i << " - " << GetLabel(labels, result.first) << ": " << result.second * 100 << "%" << std::endl;
-//        i++;
-//      }
-//      break;
-//
-//    } else {
-//      std::copy(intermediate_tensor.begin(), intermediate_tensor.end(), interpreter->typed_input_tensor<uint8_t>(0));
-//      // Invoke Interpreter
-//      if (interpreter->Invoke() != kTfLiteOk) {
-//        std::cerr << "Cannot invoke interpreter" << std::endl;
-//        return 1;
-//      }
-//      std::copy(interpreter->typed_output_tensor<uint8_t>(0).begin(), interpreter->typed_output_tensor<uint8_t>(0).end(), intermediate_tensor.begin());
-//    }
-     
+  // Load models section
+  std::cout << "################################## Loading Models ################################" << "\n";
+  std::cout << "\n" << std::endl;
+    std::unique_ptr<tflite::FlatBufferModel> model_0;
+  model_0 = LoadSubmodel("/home/alafnayou/Documents/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel0_gpu1_0_1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16.tflite");
+  if (!model_0) {
+    std::cerr << "Cannot load model from " << "/home/alafnayou/Documents/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel0_gpu1_0_1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16.tflite" << std::endl;
+    return 1;
   }
+  std::cout << "submodel0_gpu1_0_1_2_3_4_5_6_7_8_9_10_11_12_13_14_15_16.tflite successfully loaded! " << std::endl;
+  std::unique_ptr<tflite::FlatBufferModel> model_1;
+  model_1 = LoadSubmodel("/home/alafnayou/Documents/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel1_tpu1_17_18_19_20_21_22_23_24_25_26_27_28_29_30_edgetpu.tflite");
+  if (!model_1) {
+    std::cerr << "Cannot load model from " << "/home/alafnayou/Documents/fp/TensorDSE/deployment/tools/optimizer/models/sub/tflite/submodel1_tpu1_17_18_19_20_21_22_23_24_25_26_27_28_29_30_edgetpu.tflite" << std::endl;
+    return 1;
+  }
+  std::cout << "submodel1_tpu1_17_18_19_20_21_22_23_24_25_26_27_28_29_30_edgetpu.tflite successfully loaded! " << std::endl;
+
+  std::cout << "\n" << std::endl;
+
+
+  // Find TPU device.
+  std::cout << "######################### Check Edge TPU USB Accelerator #########################" << "\n";
+  std::cout << "\n" << std::endl;
+  std::cout << "Detecting Edge TPUs Devices ..." << "\n";
+  size_t num_devices;
+  std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)> devices(
+      edgetpu_list_devices(&num_devices), &edgetpu_free_devices);
+  if (num_devices == 0) {
+    std::cerr << "No connected USB Accelerator is found!" << std::endl;
+    return 1;
+  }
+  const auto& device = devices.get()[0];
+  const auto& available_tpus = edgetpu::EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
+  std::cout << "Number of available Edge TPU USB Accelerators: " << available_tpus.size() << "\n"; // hopefully we'll see 1 here
+  std::cout << "\n" << std::endl;
+
+  // Create Interpreters
+  std::cout << "##################################################################################" << "\n";
+  std::cout << "#                               Build Interpreters                               #" << "\n";
+  std::cout << "##################################################################################" << "\n";
+  std::cout << "\n" << std::endl;
+    std::cout << "############################ Build GPU1 Interpreter ############################" << std::endl;
+  std::cout << "\n" << std::endl;
+  tflite::ops::builtin::BuiltinOpResolver resolver_0;
+  tflite::InterpreterBuilder builder_0(*model_0, resolver_0);
+  std::unique_ptr<tflite::Interpreter> interpreter_0;
+  builder_0(&interpreter_0);
+  // Allocate tensors 
+  if (interpreter_0->AllocateTensors() != kTfLiteOk) {
+    std::cerr << "Failed to allocate tensors." << std::endl;
+    return 1;
+  }
+  std::cout << "Tensors successfully allocated." << "\n";  // NEW: Prepare GPU delegate.
+  const TfLiteGpuDelegateOptionsV2 options_0 = TfLiteGpuDelegateOptionsV2Default();
+  auto* delegate_0 = TfLiteGpuDelegateV2Create(&options_0);
+  if (interpreter_0->ModifyGraphWithDelegate(delegate_0) != kTfLiteOk) { // Experimental: tflite::InterpreterBuilder::AddDelegate();
+    fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__);
+    return 1;
+  }
+  std::cout << "\n" << std::endl;
+
+  std::cout << "############################ Build TPU1 Interpreter ############################" << std::endl;
+  std::cout << "\n" << std::endl;
+  std::cout << "Initializing Edge TPU Context ... " << "\n";
+  const std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context_1 = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(available_tpus[0].type, available_tpus[0].path);
+  tflite::ops::builtin::BuiltinOpResolver resolver_1;
+  resolver_1.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
+  std::cout << "Building Edge TPU Interpreter ... " << "\n";
+  tflite::InterpreterBuilder builder_1(*model_1, resolver_1);
+  std::unique_ptr<tflite::Interpreter> interpreter_1;
+  builder_1(&interpreter_1);
+  interpreter_1->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context_1.get());
+  interpreter_1->SetNumThreads(1);
+  // Allocate tensors 
+  if (interpreter_1->AllocateTensors() != kTfLiteOk) {
+    std::cerr << "Failed to allocate tensors." << std::endl;
+    return 1;
+  }
+  std::cout << "Tensors successfully allocated." << "\n";
+  std::cout << "\n" << std::endl;
+
+
+
+  // Load Data into Input Interpreter
+  const auto* input_tensor = interpreter_0->input_tensor(0);
+  if (input_tensor->type != kTfLiteUInt8 ||           //
+      input_tensor->dims->data[0] != 1 ||             //
+      input_tensor->dims->data[1] != image_height ||  //
+      input_tensor->dims->data[2] != image_width ||   //
+      input_tensor->dims->data[3] != image_bpp) {
+    std::cerr << "Input tensor shape does not match input image" << std::endl;
+    return 1;
+  }
+
+  std::copy(image.begin(), image.end(),
+            interpreter_0->typed_input_tensor<uint8_t>(0));
+
+  // Run Inference and pass intermediate tensors
+  std::cout << "############################## Initiating Inference ###############################" << "\n";
+  std::cout << "\n" << std::endl;
+  std::chrono::steady_clock::time_point start, end;
+  start = std::chrono::steady_clock::now();
+  
+    if (interpreter_0->Invoke() != kTfLiteOk) {
+    std::cerr << "Cannot invoke interpreter" << std::endl;
+    return 1;
+  }
+  const auto* intermediate_tensor_0 = interpreter_0->output_tensor(0);
+
+  *interpreter_1->input_tensor(0) = *intermediate_tensor_0;
+  if (interpreter_1->Invoke() != kTfLiteOk) {
+    std::cerr << "Cannot invoke interpreter" << std::endl;
+    return 1;
+  }
+
+
+
+  end = std::chrono::steady_clock::now();
+  auto inference_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  std::cout << "Inference is successful!" << "\n";
+  std::cout << "\n" << std::endl;
+
+  std::cout << "############################ Estimating Inference Time ############################" << "\n";
+  std::cout << "\n" << std::endl;
+  std::cout << "Infernce Time: " + std::to_string(inference_time) + "ms" << std::endl;
+  std::cout << "\n" << std::endl;
+  
+
+  // Read Final Results from Output Interpreter
+  std::cout << "############################ Listing Inference Results ############################" << "\n";
+  std::cout << "\n" << std::endl;
+  auto results = Sort(Dequantize(*interpreter_1->output_tensor(0)), threshold);
+  std::cout << "Results are sorted with decreasing likelihood:"<< "\n";
+  int i = 1;
+  for (auto& result : results) {
+    /*std::cout << " - " << i << " - " << GetLabel(labels, result.first) << ": " << std::setw(7) << std::fixed << std::setprecision(5)
+              << result.second << std::endl;*/
+    std::cout << " - " << i << " - " << GetLabel(labels, result.first) << ": " << result.second * 100 << "%" << std::endl;
+    i++;
+  }
+  std::cout << "\n" << std::endl;
+
   return 0;
 }
+
+
+
+
