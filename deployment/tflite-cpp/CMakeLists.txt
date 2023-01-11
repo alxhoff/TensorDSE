@@ -3,14 +3,14 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
     cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 endif()
 project(TFLiteApp VERSION 1.0
-                    DESCRIPTION "Check TF Lite Model Inference on CPU, GPU, and TPU"
+                    DESCRIPTION "Run Distributed Inference on CPU, GPU, and TPU"
                     LANGUAGES CXX)
 
 #set (CMAKE_CXX_FLAGS "-lstdc++fs -std=c++17")
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Debug)
 
 set(TARGET_ENV "Desktop" CACHE STRING "Target environment")
 message("Target Environment: ${TARGET_ENV}")
@@ -28,7 +28,7 @@ message("Target Architecture: ${TARGET_ARCH}")
 set(TARGET_LINUX "Arch" CACHE STRING "Target Linux System")
 if( TARGET_LINUX STREQUAL "Arch" )
     set(LIB_PATH /usr/lib)
-elseif( TARGET_ENV STREQUAL "Debian" )
+elseif( TARGET_LINUX STREQUAL "Debian" )
     set(LIB_PATH /usr/lib/${TARGET_ARCH}-linux-gnu)
 else()
     message( FATAL_ERROR "Target Linux System not supported. CMake will exit." )
@@ -66,7 +66,16 @@ set(TENSORFLOW_SRC_DIR ${TENSORFLOW_ENV}/tensorflow-${TENSORFLOW_VERSION})
 
 set(TFLITE_BUILD_DIR ${TENSORFLOW_ENV}//tflite-build)
 
+if(EXISTS ${TENSORFLOW_SRC_DIR}/)
+    INCLUDE_DIRECTORIES(${TENSORFLOW_SRC_DIR}/)
+else()
+    message( FATAL_ERROR "${TENSORFLOW_SRC_DIR}: No such file or directory found!" )    
+endif()
+
+if (EXISTS ${TENSORFLOW_SRC_DIR}/)
 INCLUDE_DIRECTORIES(${TENSORFLOW_SRC_DIR}/)
+endif()
+
 INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/)
 INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/flatbuffers/include/)
 INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/abseil-cpp)
@@ -91,7 +100,7 @@ endif()
 link_libraries(stdc++fs)
 
 if( DISTRIBUTED STREQUAL "ON" )
-    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/distributed/main.cpp)
+    set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/distributed/main_test.cpp)
 else()
     if( GPU_SUPPORT STREQUAL "ON" )
         set(PATH_TO_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_SUB_FOLDER}/gpu/main.cpp)
@@ -110,7 +119,7 @@ if( DISTRIBUTED STREQUAL "ON" )
         ${LIB_PATH}/libEGL.so
         ${LIB_PATH}/libGL.so
         ${LIB_PATH}/libGLESv2.so
-        ${LIB_PATH}/libedgetpu.so
+        ${LIB_PATH}/libedgetpu.so.1
         ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so
     )
 else()
