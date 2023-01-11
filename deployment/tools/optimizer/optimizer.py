@@ -87,8 +87,7 @@ class Docker:
         try:
             RunTerminalCommand("sudo", "docker", "start", self.name)
         except Exception as e:
-            log.error(" Error: Failed to start Docker Container")
-            log.error(e)
+            log.error("Failed to start Docker Container! Potential Cause: {}".format(str(e)))
 
     def Copy(self, filename: str, src: str, trg: str):
         if [src, trg] == ["host", "docker"]:
@@ -374,8 +373,7 @@ def main():
         optimizer.Run()
     except Exception as e:
         optimizer.Clean(True)
-        log.error(e)
-        log.error("ERROR: Failed to run optimizer!")
+        log.error("Failed to run optimizer! {}".format(str(e)))
     finally:
         del optimizer
 

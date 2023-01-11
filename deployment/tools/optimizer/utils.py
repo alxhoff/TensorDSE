@@ -5,7 +5,9 @@ import logging
 import argparse
  
 def LoggerInit():
-    logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.INFO)
+    logging.basicConfig(filename='optimizer.log',
+                        level=logging.DEBUG,
+                        format='%(asctime)s - %(name)s - %(threadName)s -  %(levelname)s - %(message)s')
     return logging.getLogger(__name__)
 
 def ParseArgs():
