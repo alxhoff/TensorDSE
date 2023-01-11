@@ -117,3 +117,5 @@ gradle-app.setting
 .vscode/settings.json
 deployment/tflite-cpp/resources/models/classification/distributed
 deployment/tflite-cpp/resources/mapping
+deployment/tools/optimizer/models/*
+deployment/tools/optimizer/resources/final_mapping.json
