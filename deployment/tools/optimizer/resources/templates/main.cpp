@@ -12,7 +12,6 @@
 #include <filesystem>
 #include <experimental/filesystem>
 #include <sys/stat.h>
-#include <jsoncpp/json/value.h>
 
 // Common
 #include "tensorflow/lite/interpreter.h"
