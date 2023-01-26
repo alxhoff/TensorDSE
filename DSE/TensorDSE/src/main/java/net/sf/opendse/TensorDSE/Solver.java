@@ -216,10 +216,8 @@ public class Solver {
 
                 for (int i = 1; i < tasks.size(); i++) {
 
-                    ilps.addSchedulingDependencyConstraint(tasks.get(i - 1).getGrb_start_time(),
-                            tasks.get(i - 1).getGrb_execution_cost(),
-                            tasks.get(i - 1).getGrb_comm_cost(), tasks.get(i).getGrb_start_time(),
-                            model);
+                    ilps.addSchedulingDependencyConstraint(tasks.get(i - 1).getGrb_finish_time(),
+                            tasks.get(i).getGrb_start_time(), model);
                     ilps.addFinishTimeConstraint(tasks.get(i).getGrb_finish_time(),
                             tasks.get(i).getGrb_start_time(), tasks.get(i).getGrb_execution_cost(),
                             tasks.get(i).getGrb_comm_cost(), model);
@@ -238,9 +236,8 @@ public class Solver {
                                 String.format("Y:%d_%d", i, j));
 
                         ilps.addResourceMappingPairConstraint(task_one.getGrb_start_time(),
-                                task_one.getGrb_execution_cost(), task_one.getGrb_comm_cost(),
-                                task_two.getGrb_start_time(), task_two.getGrb_execution_cost(),
-                                task_two.getGrb_comm_cost(), Y, model);
+                                task_one.getGrb_finish_time(), task_two.getGrb_start_time(),
+                                task_two.getGrb_finish_time(), Y, model);
                     }
 
             // Set objective
@@ -381,10 +378,8 @@ public class Solver {
 
                 for (int i = 1; i < tasks.size(); i++) {
 
-                    ilps.addSchedulingDependencyConstraint(tasks.get(i - 1).getGrb_start_time(),
-                            tasks.get(i - 1).getGrb_execution_cost(),
-                            tasks.get(i - 1).getGrb_comm_cost(), tasks.get(i).getGrb_start_time(),
-                            model);
+                    ilps.addSchedulingDependencyConstraint(tasks.get(i - 1).getGrb_finish_time(),
+                            tasks.get(i).getGrb_start_time(), model);
                     ilps.addFinishTimeConstraint(tasks.get(i).getGrb_finish_time(),
                             tasks.get(i).getGrb_start_time(), tasks.get(i).getGrb_execution_cost(),
                             tasks.get(i).getGrb_comm_cost(), model);
@@ -403,9 +398,9 @@ public class Solver {
                                 String.format("Y:%d_%d", i, j));
 
                         // ilps.addResourceMappingAllPairConstraint(task_one.getGrb_start_time(),
-                        //         task_one.getGrb_execution_cost(), task_one.getGrb_comm_cost(),
-                        //         task_two.getGrb_start_time(), task_two.getGrb_execution_cost(),
-                        //         task_two.getGrb_comm_cost(), Y, model);
+                        // task_one.getGrb_execution_cost(), task_one.getGrb_comm_cost(),
+                        // task_two.getGrb_start_time(), task_two.getGrb_execution_cost(),
+                        // task_two.getGrb_comm_cost(), Y, model);
                     }
 
             // Set objective

@@ -21,10 +21,79 @@ public class ILPSolver {
         this.K = K;
     }
 
+    // For each potential mapping of a task to a resource an x variable contains the boolean
+    // information for the mapping. For each task the sum of all x variables can be at most 1,
+    // ie. a task can only be mapped to one resource.
+    // for all i sum_r x_i_r = 1
+    public void addResourceMappingConstraint(GRBVar[] x_vars, GRBModel model) {
+        GRBLinExpr exp = new GRBLinExpr();
+
+        for (int i = 0; i < x_vars.length; i++)
+            exp.addTerm(1.0, x_vars[i]);
+
+        try {
+            model.addConstr(exp, GRB.EQUAL, 1.0, "");
+        } catch (GRBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    public void addTotalCommunicationCostConstraint(GRBVar resulting_cost, GRBVar sending_cost,
+            GRBVar receiving_cost, GRBModel model) {
+
+        GRBLinExpr exp = new GRBLinExpr();
+
+        exp.addTerm(1.0, sending_cost);
+        exp.addTerm(1.0, receiving_cost);
+
+        try {
+            model.addConstr(exp, GRB.EQUAL, resulting_cost, "");
+        } catch (GRBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    public void addCommunicationCostConstraint(GRBVar resulting_cost, GRBVar cost,
+            GRBVar mapping_var, GRBModel model) {
+
+        GRBQuadExpr exp = new GRBQuadExpr();
+
+        exp.addTerm(1.0, cost, mapping_var);
+
+        try {
+            model.addQConstr(exp, GRB.LESS_EQUAL, resulting_cost, "");
+        } catch (GRBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    // Eg.
+    // cs_i_j_r = Cs_i_r(1 - z_i_j_r)
+    // cs_i_j_r = Cs_i_r - (Cs_i_r * z_i_j_r)
+    public void addSameResourceCommunicationCostConstraint(GRBVar resulting_cost,
+            GRBVar benchmarked_cost, GRBVar z_helper, GRBModel model) {
+
+        GRBQuadExpr exp = new GRBQuadExpr();
+
+        exp.addTerm(1.0, benchmarked_cost);
+
+        exp.addTerm(-1.0, benchmarked_cost, z_helper);
+
+        try {
+            model.addQConstr(exp, GRB.EQUAL, resulting_cost, "");
+        } catch (GRBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
     // Scheduling dependency of the form Ts_j >= Tf_i
     // where task i is a dependency of task j
-    public Void addSchedulingDependencyConstraint(GRBVar precursor_task_finish, GRBVar dependent_task_start,
-            GRBModel model) {
+    public void addSchedulingDependencyConstraint(GRBVar precursor_task_finish,
+            GRBVar dependent_task_start, GRBModel model) {
         GRBLinExpr exp = new GRBLinExpr();
         exp.addTerm(1.0, precursor_task_finish);
 
@@ -34,8 +103,65 @@ public class ILPSolver {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+    }
 
-        return null;
+    public void addPairAndConstrint(GRBVar result_var, GRBVar input_var_one, GRBVar input_var_two,
+            GRBModel model) {
+        // // y >= x1 + x2 - 1, y <= x1, y <= x2, 0 <= y <= 1
+        // GRBLinExpr exp = new GRBLinExpr();
+        // exp.addTerm(1.0, input_var_one);
+        // exp.addTerm(1.0, input_var_two);
+        // exp.addConstant(-1.0);
+        // try {
+        // model.addConstr(exp, GRB.LESS_EQUAL, result_var, "");
+        // } catch (GRBException e) {
+        // // TODO Auto-generated catch block
+        // e.printStackTrace();
+        // }
+
+        // exp = new GRBLinExpr();
+        // exp.addTerm(1.0, result_var);
+        // try {
+        // model.addConstr(exp, GRB.LESS_EQUAL, input_var_one, "");
+        // } catch (GRBException e) {
+        // // TODO Auto-generated catch block
+        // e.printStackTrace();
+        // }
+
+        // exp = new GRBLinExpr();
+        // exp.addTerm(1.0, result_var);
+        // try {
+        // model.addConstr(exp, GRB.LESS_EQUAL, input_var_two, "");
+        // } catch (GRBException e) {
+        // // TODO Auto-generated catch block
+        // e.printStackTrace();
+        // }
+
+        GRBVar[] input_vars = {input_var_one, input_var_two};
+        try {
+            model.addGenConstrAnd(result_var, input_vars, "");
+        } catch (GRBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    public void addSumOfVectorsConstraint(GRBVar result_var, GRBVar[] vars1, GRBVar[] vars2,
+            GRBModel model) {
+
+        if (vars1.length != vars2.length)
+            return;
+
+        GRBQuadExpr exp = new GRBQuadExpr();
+        for (int i = 0; i < vars1.length; i++)
+            exp.addTerm(1.0, vars1[i], vars2[i]);
+
+        try {
+            model.addQConstr(exp, GRB.EQUAL, result_var, "");
+        } catch (GRBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     // For each pair of tasks that share a resource mapping, ie. they are both assigned to the same
@@ -158,7 +284,7 @@ public class ILPSolver {
         return ret;
     }
 
-    private void gurobiDSEExample() {
+    public void gurobiDSEExample() {
         try {
 
             GRBEnv env = new GRBEnv("bilinear.log");
@@ -198,57 +324,109 @@ public class ILPSolver {
 
             // Create variables
 
-            // Start times for each task
-            // 2.1 ts >= 0
-            GRBVar ts1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Ts1");
-            GRBVar ts2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Ts2");
-            GRBVar ts3 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Ts3");
-            GRBVar ts4 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Ts4");
+            // 2.1 Start times for each task
+            // ts >= 0
+            GRBVar ts_1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Ts1");
+            GRBVar ts_2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Ts2");
+            GRBVar ts_3 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Ts3");
+            GRBVar ts_4 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Ts4");
 
-            // Finish times for each task
-            GRBVar tf1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tf1");
-            GRBVar tf2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tf2");
-            GRBVar tf3 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tf3");
-            GRBVar tf4 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tf4");
+            // 2.2 Finish times
+            // tf >= ts + te + tc
+            GRBVar tf_1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tf1");
+            GRBVar tf_2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tf2");
+            GRBVar tf_3 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tf3");
+            GRBVar tf_4 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tf4");
 
-            GRBVar finish_times[] = new GRBVar[] {tf1, tf2, tf3, tf4};
-            GRBVar end_finish_times[] = new GRBVar[] {tf2, tf4};
-
-            // Benchmaked execution times, min and max values are the same to create constants
-            GRBVar E1_1 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "E1_1");
-            GRBVar E1_2 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "E1_2");
-            GRBVar E2_1 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "E2_1");
-            GRBVar E2_2 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "E2_2");
-            GRBVar E3_1 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "E3_1");
-            GRBVar E3_2 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "E3_2");
-            GRBVar E4_1 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "E4_1");
-            GRBVar E4_2 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "E4_2");
+            GRBVar finish_times[] = new GRBVar[] {tf_1, tf_2, tf_3, tf_4};
+            GRBVar end_finish_times[] = new GRBVar[] {tf_2, tf_4};
 
             // Total execution times
-            GRBVar te1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc1");
-            GRBVar te2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc2");
-            GRBVar te3 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc3");
-            GRBVar te4 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc4");
+            GRBVar te_1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc1");
+            GRBVar te_2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc2");
+            GRBVar te_3 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc3");
+            GRBVar te_4 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc4");
+
+            // Total communication times
+            GRBVar tc_1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc1");
+            GRBVar tc_2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc2");
+            GRBVar tc_3 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc3");
+            GRBVar tc_4 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc4");
+
+            addFinishTimeConstraint(tf_1, ts_1, te_1, tc_1, model);
+            addFinishTimeConstraint(tf_2, ts_2, te_2, tc_2, model);
+            addFinishTimeConstraint(tf_3, ts_3, te_3, tc_3, model);
+            addFinishTimeConstraint(tf_4, ts_4, te_4, tc_4, model);
+
+            // 2.3 Execution times
+            // tei = sum_r (E_i_r * x_i_r)
+            // Benchmaked execution times, min and max values are the same to create constants
+            GRBVar E_1_1 = model.addVar(0.5, 0.5, 0.0, GRB.CONTINUOUS, "E1_1");
+            GRBVar E_1_2 = model.addVar(0.8, 0.8, 0.0, GRB.CONTINUOUS, "E1_2");
+            GRBVar[] E_1 = {E_1_1, E_1_2};
+            GRBVar E_2_1 = model.addVar(1.2, 1.2, 0.0, GRB.CONTINUOUS, "E2_1");
+            GRBVar E_2_2 = model.addVar(1.3, 1.3, 0.0, GRB.CONTINUOUS, "E2_2");
+            GRBVar[] E_2 = {E_2_1, E_2_2};
+            GRBVar E_3_1 = model.addVar(0.5, 0.5, 0.0, GRB.CONTINUOUS, "E3_1");
+            GRBVar E_3_2 = model.addVar(1.2, 1.2, 0.0, GRB.CONTINUOUS, "E3_2");
+            GRBVar[] E_3 = {E_3_1, E_3_2};
+            GRBVar E_4_1 = model.addVar(1.5, 1.5, 0.0, GRB.CONTINUOUS, "E4_1");
+            GRBVar E_4_2 = model.addVar(0.9, 0.9, 0.0, GRB.CONTINUOUS, "E4_2");
+            GRBVar[] E_4 = {E_4_1, E_4_2};
+
+            // Mapping variables x_i_r, 1 if task i is mapped to resource r
+            GRBVar x_1_1 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "x_1_1");
+            GRBVar x_1_2 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "x_1_2");
+            GRBVar[] x_1 = {x_1_1, x_1_2};
+            GRBVar x_2_1 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "x_2_1");
+            GRBVar x_2_2 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "x_2_2");
+            GRBVar[] x_2 = {x_2_1, x_2_2};
+            GRBVar x_3_1 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "x_3_1");
+            GRBVar x_3_2 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "x_3_2");
+            GRBVar[] x_3 = {x_3_1, x_3_2};
+            GRBVar x_4_1 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "x_4_1");
+            GRBVar x_4_2 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "x_4_2");
+            GRBVar[] x_4 = {x_4_1, x_4_2};
+
+            addSumOfVectorsConstraint(te_1, E_1, x_1, model);
+            addSumOfVectorsConstraint(te_2, E_2, x_2, model);
+            addSumOfVectorsConstraint(te_3, E_3, x_3, model);
+            addSumOfVectorsConstraint(te_4, E_4, x_4, model);
+
+            // 2.4 Scheduling dependencies of each task
+            // Ts2 >= Tf1
+            addSchedulingDependencyConstraint(tf_1, ts_2, model);
+            addSchedulingDependencyConstraint(tf_3, ts_4, model);
+
+            // 2.5 Resource communication costs
+            // 2.5.1 Z helper variable
+            // If a communication between tasks i and j happens on the same resource
+            // then the Z helper variable should be set to 1.
+            // For each communication edge and for each resoource we need a helper variable.
+            // Zi_j_r helper variables for when two sequential tasks are on the same resource
+            // ie. x_i_r = x_j_r = 1
+            GRBVar z_1_2_1 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z1_2_1");
+            GRBVar z_1_2_2 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z1_2_1");
+            // GRBVar[] z_1_2 = {z_1_2_1, z_1_2_2};
+            GRBVar z_3_4_1 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z3_4_1");
+            GRBVar z_3_4_2 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z3_4_1");
+            // GRBVar[] z_3_4 = {z_3_4_1, z_3_4_2};
+
+            addPairAndConstrint(z_1_2_1, x_1_1, x_2_1, model);
+            addPairAndConstrint(z_1_2_2, x_1_2, x_2_2, model);
+            addPairAndConstrint(z_3_4_1, x_3_1, x_4_1, model);
+            addPairAndConstrint(z_3_4_2, x_3_2, x_4_2, model);
+
+            // 2.5.2 Sending
+            // cs_i_j_r = Cs_i_r(1 - sum_r z_i_j_r)
 
             // Benchmarked edge communication times
-            GRBVar Cs1_1 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "Cs1_1");
-            GRBVar Cs1_2 = model.addVar(1.2, 1.2, 0.0, GRB.CONTINUOUS, "Cs1_2");
-            GRBVar Cr1_1 = model.addVar(0.8, 0.8, 0.0, GRB.CONTINUOUS, "Cr1_1");
-            GRBVar Cr1_2 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "Cr1_2");
-            GRBVar Cs2_1 = model.addVar(2.3, 2.3, 0.0, GRB.CONTINUOUS, "Cs2_1");
-            GRBVar Cs2_2 = model.addVar(2.0, 2.0, 0.0, GRB.CONTINUOUS, "Cs2_2");
-            GRBVar Cr2_1 = model.addVar(0.4, 0.4, 0.0, GRB.CONTINUOUS, "Cr2_1");
-            GRBVar Cr2_2 = model.addVar(0.5, 0.5, 0.0, GRB.CONTINUOUS, "Cr2_2");
-            GRBVar Cs3_1 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "Cs3_1");
-            GRBVar Cs3_2 = model.addVar(1.5, 1.5, 0.0, GRB.CONTINUOUS, "Cs3_2");
-            GRBVar Cr3_1 = model.addVar(1.2, 1.2, 0.0, GRB.CONTINUOUS, "Cr3_1");
-            GRBVar Cr3_2 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "Cr3_2");
-            GRBVar Cs4_1 = model.addVar(1.7, 1.7, 0.0, GRB.CONTINUOUS, "Cs4_1");
-            GRBVar Cs4_2 = model.addVar(1.1, 1.1, 0.0, GRB.CONTINUOUS, "Cs4_2");
-            GRBVar Cr4_1 = model.addVar(1.4, 1.4, 0.0, GRB.CONTINUOUS, "Cr4_1");
-            GRBVar Cr4_2 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "Cr4_2");
+            // Task 2 and 4 don't send to any further tasks
 
-            // Communication times
+            GRBVar Cs_1_1 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "Cs1_1");
+            GRBVar Cs_1_2 = model.addVar(1.2, 1.2, 0.0, GRB.CONTINUOUS, "Cs1_2");
+            GRBVar Cs_3_1 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "Cs3_1");
+            GRBVar Cs_3_2 = model.addVar(1.5, 1.5, 0.0, GRB.CONTINUOUS, "Cs3_2");
 
             // Sending from tasks to next tasks, created from benchmarked results
             // and z helper variables that disable comm costs for same device comms
@@ -259,66 +437,101 @@ public class ILPSolver {
             GRBVar cs_3_4_1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "cs_3_4_1");
             GRBVar cs_3_4_2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "cs_3_4_2");
 
-            // Total communication times
-            GRBVar tc_1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc1");
-            GRBVar tc_2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc2");
-            GRBVar tc_3 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc3");
-            GRBVar tc_4 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "Tc4");
+            // cs_i_j_r, Cs_i_r, z_i_j_r
+            //
+            addSameResourceCommunicationCostConstraint(cs_1_2_1, Cs_1_1, z_1_2_1, model);
+            addSameResourceCommunicationCostConstraint(cs_1_2_2, Cs_1_2, z_1_2_2, model);
+            addSameResourceCommunicationCostConstraint(cs_3_4_1, Cs_3_1, z_3_4_1, model);
+            addSameResourceCommunicationCostConstraint(cs_3_4_2, Cs_3_2, z_3_4_2, model);
 
-            // Zi_j_r helper variables for when two sequential tasks are on the same resource
-            // ie. x_i_r = x_j_r = 1
-            GRBVar z_1_2_1 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z1_2_1");
-            GRBVar z_1_2_2 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z1_2_1");
-            GRBVar z_3_4_1 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z3_4_1");
-            GRBVar z_3_4_2 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z3_4_1");
+            // 2.5.3 Receiving
+            // cr_i_j_r = Cr_j_r(1 - z_i_j_r)
 
-            // Add constraints
+            // Benchmarked edge receive times
+            // Tasks 1 and 3 dont receive from any tasks as they are the starting tasks
+            GRBVar Cr_2_1 = model.addVar(0.4, 0.4, 0.0, GRB.CONTINUOUS, "Cr2_1");
+            GRBVar Cr_2_2 = model.addVar(0.5, 0.5, 0.0, GRB.CONTINUOUS, "Cr2_2");
+            GRBVar Cr_4_1 = model.addVar(1.4, 1.4, 0.0, GRB.CONTINUOUS, "Cr4_1");
+            GRBVar Cr_4_2 = model.addVar(1.0, 1.0, 0.0, GRB.CONTINUOUS, "Cr4_2");
 
-            // Finish times
-            // 2.2 tf >= ts + te + tc
-            addFinishTimeConstraint(tf1, ts1, te1, tc_1, model);
-            addFinishTimeConstraint(tf2, ts2, te2, tc_2, model);
-            addFinishTimeConstraint(tf3, ts3, te3, tc_3, model);
-            addFinishTimeConstraint(tf4, ts4, te4, tc_4, model);
+            GRBVar cr_1_2_1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "cr_1_2_1");
+            GRBVar cr_1_2_2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "cr_1_2_2");
+            GRBVar cr_3_4_1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "cr_3_4_1");
+            GRBVar cr_3_4_2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "cr_3_4_2");
 
-            // Execution times
-            // 2.3 t3 = sum (E_i_r * x_i_r)
+            // cs_i_j_r, Cs_i_r, sum_r z_i_j_r
+            addSameResourceCommunicationCostConstraint(cr_1_2_1, Cr_2_1, z_1_2_1, model);
+            addSameResourceCommunicationCostConstraint(cr_1_2_2, Cr_2_2, z_1_2_2, model);
+            addSameResourceCommunicationCostConstraint(cr_3_4_1, Cr_4_1, z_3_4_1, model);
+            addSameResourceCommunicationCostConstraint(cr_3_4_2, Cr_4_2, z_3_4_2, model);
 
-            // Scheduling dependencies of each task, ie. Ts2 >= Tf1
-            addSchedulingDependencyConstraint(tf1, ts2, model);
-            addSchedulingDependencyConstraint(tf3, ts4, model);
+            // 2.6 Communication cost selection
 
+            // Assuming parallel communication is possible, the largest communication cost
+            // from all incoming or outgoing tasks is what is taken as the communication cost.
+            // This value changes depending on which resource the task of interest is mapped onto
+            // they the mapping helper variables x are used to give us the cost from the
+            // correct resource.
+
+            // 2.6.1 Receiving communication costs
+            // For all edges j->i, cr_i = max_j sum_r cr_i_j_r * x_j_r
+            // Linearized to: for all edges i->j and for all r, cr_i >= cr_i_j_r * x_j_r
+
+            // Task 2 receives from task 1 and task 4 receives from task 3
+            GRBVar cr_1 = model.addVar(0.0, 0.0, 0.0, GRB.CONTINUOUS, "cr_1");
+            GRBVar cr_2 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "cr_2");
+            GRBVar cr_3 = model.addVar(0.0, 0.0, 0.0, GRB.CONTINUOUS, "cr_3");
+            GRBVar cr_4 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "cr_4");
+
+            addCommunicationCostConstraint(cr_2, cr_1_2_1, x_1_1, model);
+            addCommunicationCostConstraint(cr_2, cr_1_2_2, x_1_2, model);
+            addCommunicationCostConstraint(cr_4, cr_3_4_1, x_3_1, model);
+            addCommunicationCostConstraint(cr_4, cr_3_4_2, x_3_2, model);
+
+            // 2.6.2 Sending communication costs
+            // For all edges j->i, cs_i = max_j sum_r cs_i_j_r * x_j_r
+
+            // Task 1 sends to task 2 and task 3 sends to task 4
+            GRBVar cs_1 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "cs_1");
+            GRBVar cs_2 = model.addVar(0.0, 0.0, 0.0, GRB.CONTINUOUS, "cs_2");
+            GRBVar cs_3 = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "cs_3");
+            GRBVar cs_4 = model.addVar(0.0, 0.0, 0.0, GRB.CONTINUOUS, "cs_4");
+
+            addCommunicationCostConstraint(cs_1, cs_1_2_1, x_1_1, model);
+            addCommunicationCostConstraint(cs_1, cs_1_2_2, x_1_2, model);
+            addCommunicationCostConstraint(cs_3, cs_3_4_1, x_3_1, model);
+            addCommunicationCostConstraint(cs_3, cs_3_4_2, x_3_2, model);
+
+            // 2.7 Total communication costs
+            // Total communication time is the sum of sending and receiving times for each task
+            // tc_i = cs_i + cr_i
+            addTotalCommunicationCostConstraint(tc_1, cs_1, cr_1, model);
+            addTotalCommunicationCostConstraint(tc_2, cs_2, cr_2, model);
+            addTotalCommunicationCostConstraint(tc_3, cs_3, cr_3, model);
+            addTotalCommunicationCostConstraint(tc_4, cs_4, cr_4, model);
+
+            // 5.1 Resource mapping
+            // A task can be mapped to exactly one resource
+            addResourceMappingConstraint(x_1, model);
+            addResourceMappingConstraint(x_2, model);
+            addResourceMappingConstraint(x_3, model);
+            addResourceMappingConstraint(x_4, model);
+
+            // 5.2 Resource sharing
             // Resource mappings for each pair of tasks mapped to the same resource,
             // ie. n1,n2 : n1,n3 : n2,n3
-            // Scheduling variables - One for each pair of tasks m apped to same resource
+            // Scheduling variables - One for each pair of tasks mapped to same resource
             GRBVar Y1 = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "Y1");
             GRBVar Y2 = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "Y2");
             GRBVar Y3 = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "Y3");
 
-            addResourceMappingPairConstraint(ts1, tf1, ts2, tf2, Y1, model);
-            addResourceMappingPairConstraint(ts1, tf1, ts3, tf3, Y2, model);
-            addResourceMappingPairConstraint(ts2, tf2, ts3, tf3, Y3, model);
+            addResourceMappingPairConstraint(ts_1, tf_1, ts_2, tf_2, Y1, model);
+            addResourceMappingPairConstraint(ts_1, tf_1, ts_3, tf_3, Y2, model);
+            addResourceMappingPairConstraint(ts_2, tf_2, ts_3, tf_3, Y3, model);
 
-
-
-            // Communication costs
-            // For each node it's sending and recieving comm costs are the maximum costs from
-            // all recieving and sending edges, respectivley.
-            //
-            // Only communication costs should be used that are being sent/recieved from resource
-            // activated by the mapping
-            //
-            // cs_i >= Cr_j_r * x_j_r
-            // cr_i >= Cs_j_r * x_j_r
-            //
-            // This constraint needs to be set for each task and each task it sends and recieves
-            // from, for each resource
-            
-
-            
             // Set objective
             GRBLinExpr obj = new GRBLinExpr();
-                       
+
             // // Minimize the maximum finish time
             // // Maximum finish time
             // GRBVar Tfmax = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "max");
@@ -343,17 +556,17 @@ public class ILPSolver {
 
 
             System.out.println(String.format("Task 1: %s -> %s: E: %s C: %s",
-                    ts1.get(GRB.DoubleAttr.X), tf1.get(GRB.DoubleAttr.X), te1.get(GRB.DoubleAttr.X),
-                    tc_1.get(GRB.DoubleAttr.X)));
+                    ts_1.get(GRB.DoubleAttr.X), tf_1.get(GRB.DoubleAttr.X),
+                    te_1.get(GRB.DoubleAttr.X), tc_1.get(GRB.DoubleAttr.X)));
             System.out.println(String.format("Task 2: %s -> %s: E: %s C: %s",
-                    ts2.get(GRB.DoubleAttr.X), tf2.get(GRB.DoubleAttr.X), te2.get(GRB.DoubleAttr.X),
-                    tc_2.get(GRB.DoubleAttr.X)));
+                    ts_2.get(GRB.DoubleAttr.X), tf_2.get(GRB.DoubleAttr.X),
+                    te_2.get(GRB.DoubleAttr.X), tc_2.get(GRB.DoubleAttr.X)));
             System.out.println(String.format("Task 3: %s -> %s: E: %s C: %s",
-                    ts3.get(GRB.DoubleAttr.X), tf3.get(GRB.DoubleAttr.X), te3.get(GRB.DoubleAttr.X),
-                    tc_3.get(GRB.DoubleAttr.X)));
+                    ts_3.get(GRB.DoubleAttr.X), tf_3.get(GRB.DoubleAttr.X),
+                    te_3.get(GRB.DoubleAttr.X), tc_3.get(GRB.DoubleAttr.X)));
             System.out.println(String.format("Task 4: %s -> %s: E: %s C: %s",
-                    ts4.get(GRB.DoubleAttr.X), tf4.get(GRB.DoubleAttr.X), te4.get(GRB.DoubleAttr.X),
-                    tc_4.get(GRB.DoubleAttr.X)));
+                    ts_4.get(GRB.DoubleAttr.X), tf_4.get(GRB.DoubleAttr.X),
+                    te_4.get(GRB.DoubleAttr.X), tc_4.get(GRB.DoubleAttr.X)));
 
             // Dispose of model and environment
             model.dispose();
@@ -467,7 +680,7 @@ public class ILPSolver {
 
             // Resource mappings for each pair of tasks and for each resource, Ti,r.
             // ie. n1,1,n2,1 : n1,2,n2,1
-            // Scheduling variables - One for each pair of tasks mapped to same  resource
+            // Scheduling variables - One for each pair of tasks mapped to same resource
             GRBVar Y1 = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "Y1");
             GRBVar Y2 = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "Y2");
             GRBVar Y3 = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "Y3");
@@ -907,7 +1120,7 @@ public class ILPSolver {
 
 
             // Resource constraints for each resource and each pair of tasks
-             ilps.addResourceMappingAllPairConstraint(Ts1, Tf1, Ts2, Tf2, Y1, X1_1, X2_1, K, model);
+            ilps.addResourceMappingAllPairConstraint(Ts1, Tf1, Ts2, Tf2, Y1, X1_1, X2_1, K, model);
             ilps.addResourceMappingAllPairConstraint(Ts1, Tf1, Ts2, Tf2, Y2, X1_2, X2_2, K, model);
             ilps.addResourceMappingAllPairConstraint(Ts1, Tf1, Ts3, Tf3, Y3, X1_1, X3_1, K, model);
             ilps.addResourceMappingAllPairConstraint(Ts1, Tf1, Ts3, Tf3, Y4, X1_2, X3_2, K, model);
