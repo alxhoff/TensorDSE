@@ -79,13 +79,18 @@ class Docker:
         self.Start()
         self.CreateSubDir()
 
+    def RunDockerCommand(self, command: str):
+        log.info(RunTerminalCommand('sudo', 'docker', 'exec', '-ti', 'debian-docker', 'sh', '-c', command, save_output=True))
+
     def CreateSubDir(self):
-        compiling_command = "mkdir /home/sub"
-        RunTerminalCommand('sudo', 'docker', 'exec', '-ti', 'debian-docker', 'sh', '-c', compiling_command)
+        create_subdir_command = "mkdir /home/sub"
+        self.RunDockerCommand(create_subdir_command)
 
     def Start(self):
         try:
-            RunTerminalCommand("sudo", "docker", "start", self.name)
+            log.info("Starting Docker Container: {0}".format(self.name))
+            log.info(RunTerminalCommand("sudo", "docker", "start", self.name, save_output=True))
+            log.info("OK\n")
         except Exception as e:
             log.error("Failed to start Docker Container! Potential Cause: {}".format(str(e)))
 
@@ -101,15 +106,15 @@ class Docker:
     
     def Compile(self, filename: str):
         compiling_command = "edgetpu_compiler -o /home/sub/ -s /home/sub/{0}".format(filename)
-        RunTerminalCommand('sudo', 'docker', 'exec', '-ti', 'debian-docker', 'sh', '-c', compiling_command)
+        self.RunDockerCommand(compiling_command)
 
     def Clean(self):
         command = "find -type f -name '*submodel_tpu*' -delete"
-        RunTerminalCommand('sudo', 'docker', 'exec', '-ti', 'debian-docker', 'sh', '-c', command)
+        self.RunDockerCommand(command)
 
     def __del__(self):
         command = "rm -rf /home/sub"
-        RunTerminalCommand('sudo', 'docker', 'exec', '-ti', 'debian-docker', 'sh', '-c', command)
+        self.RunDockerCommand(command)
         
 class Model:
     def __init__(self, path_to_model: str, schema_path: str):
@@ -118,11 +123,9 @@ class Model:
         for ext in self.paths.keys():
             if path_to_model.endswith(ext):
                 self.paths[ext] = path_to_model
-                log.info("    " + ext.upper() + " Model path saved: " + self.paths[ext])
         self.schema = schema_path
     
     def Convert(self, source_ext: str, target_ext: str):
-        log.info("Converting Model from " + source_ext.upper() + " to " + target_ext.upper() + " ...")
         if ([source_ext, target_ext] == ["json", "tflite"]):
             RunTerminalCommand("flatc", "-b", self.schema, self.paths["json"])
             tmp_filename = self.paths["json"].split("/")[len(self.paths["json"].split("/"))-1].split(".")[0] + ".tflite"
@@ -134,7 +137,6 @@ class Model:
             self.paths["json"] = self.paths["tflite"].replace(source_ext, target_ext)
             MoveFile(tmp_filename, self.paths["json"])
             self.json = ReadJSON(self.paths["json"])
-        log.info("    Model successfully converted.")
 
 class Submodel(Model):
     def __init__(self, source_model_json: dict):
@@ -253,9 +255,10 @@ class Optimizer:
         self.InitializeEnv(source_model_path, mapping_path)
         log.info("Initializing Source Model ...")
         self.source_model = Model(self.source_model_path, self.schema_path)
+        log.info("Source Model saved under: {}".format(os.path.join(MODELS_DIR, "source", "tflite")))
         log.info("Reading Mapping ...")
         self.mapping = ReadCSV(self.mapping_path)
-
+        
     def CheckSchema(self):
         log.info("Checking schema ...")
         self.schema_path = os.path.join(RESOURCES_DIR,"schema","schema.fbs")
@@ -268,6 +271,7 @@ class Optimizer:
             log.info("    File schema.fbs found.")
 
     def InitializeEnv(self, source_model_path, mapping_path):
+        self.CheckSchema()
         os.mkdir(MODELS_DIR)
         for directory in ["source", "sub", "final"]:
             sub_dir = os.path.join(MODELS_DIR, directory)
@@ -279,15 +283,15 @@ class Optimizer:
         model_filename = source_model_path.split("/")[len(source_model_path.split("/"))-1]
         self.source_model_path = os.path.join(SOURCE_DIR, "tflite", model_filename)
         CopyFile(source_model_path, self.source_model_path)
-
+        
         os.mkdir(MAPPING_DIR)
         mapping_filename = mapping_path.split("/")[len(mapping_path.split("/"))-1]
         self.mapping_path = os.path.join(MAPPING_DIR, mapping_filename)
         CopyFile(mapping_path, MAPPING_DIR)
-
-        self.CheckSchema()
+        log.info("Mapping saved under: {}".format(os.path.join(MAPPING_DIR)))
 
     def Clean(self, all: bool):
+        log.info("Cleaning Directory ...\n")
         dirs_to_clean = []
         if all:
             dirs_to_clean.extend([MODELS_DIR, MAPPING_DIR])
@@ -326,25 +330,37 @@ class Optimizer:
                 if sequence["END"]:
                     sequence["NEW"] = True
                     sequence["IN"]  = False
-        log.info("Final Mapping Generated!")
+        
         for e in self.final_mapping:
             ops = self.final_mapping[e]
             log.info("        Operations : " + ", ".join(str(op) for op in ops))
             log.info("        Target HW  : " + e[:3])
-
+        
         final_mapping_path = os.path.join(RESOURCES_DIR, "final_mapping.json")
         with open(final_mapping_path, "w") as fout:
             json.dump(self.final_mapping, fout, indent=2)
 
+        log.info("Final Mapping Saved!\n")
+
     def ReadSourceModel(self):
+        log.info("Converting Source Model from TFLite to JSON ...")
         self.source_model.Convert("tflite", "json")
+        log.info("OK\n")
 
     def CreateSubmodels(self):
         for i, block_key in enumerate(self.final_mapping.keys()):
+            log.info("Initializing Shell Model for Submodel {0} ...".format(str(i)))
             submodel = Submodel(self.source_model.json)
+            log.info("OK")
+            log.info("Adding Operations (" + ", ".join(str(op) for op in self.final_mapping[block_key]) + ") to Shell Model ...")
             submodel.AddOps(self.final_mapping[block_key])
+            log.info("OK")
+            log.info("Saving Submodel {0} | Operations: {1} | Target HW: {2} ...".format(str(i), ", ".join(str(op) for op in self.final_mapping[block_key]), block_key))
             submodel.Save(block_key, i)
+            log.info("OK")
+            log.info("Converting Submodel {0} from JSON to TFLite ...".format(str(i)))
             submodel.Convert("json", "tflite")
+            log.info("OK\n")
 
     def CompileForEdgeTPU(self):
         docker = Docker("debian-docker")
@@ -370,7 +386,9 @@ def main():
     args = ParseArgs()
     optimizer = Optimizer(args.Model, args.Mapping)
     try:
+        log.info("Running Optimizer ...")
         optimizer.Run()
+        log.info("Optiizing Process Complete!\n")
     except Exception as e:
         optimizer.Clean(True)
         log.error("Failed to run optimizer! {}".format(str(e)))
