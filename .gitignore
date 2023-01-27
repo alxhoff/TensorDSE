@@ -120,3 +120,4 @@ deployment/tflite-cpp/resources/mapping
 deployment/tools/optimizer/models/*
 deployment/tools/optimizer/resources/final_mapping.json
 deployment/tflite-cpp/backup/*
+*.log
