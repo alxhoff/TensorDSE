@@ -7,7 +7,7 @@ import utils
 OPTIMIZER_DIR  = os.path.dirname(os.path.abspath(__file__))
 TOOLS_DIR      = os.path.dirname(OPTIMIZER_DIR)
 DEPLOYMENT_DIR = os.path.dirname(TOOLS_DIR)
-log = utils.LoggerInit()
+log = utils.LoggerInit(filename="create_source.log")
 
 def ParseArgs():
     # Initialize parser
@@ -127,49 +127,53 @@ def CreateBuildInterpretersSection(mapping: dict):
 
 def CreateInvokeSection(mapping: dict):
     invoke_section = ""
-    input_invoke = "total_inference_start = std::chrono::system_clock::now();\n\
+    input_invoke = "auto total_inference_start = std::chrono::high_resolution_clock::now();\n\
   if (interpreter_{0}->Invoke() != kTfLiteOk) {{\n\
     std::cerr << \"Cannot invoke interpreter\" << std::endl;\n\
     return 1;\n\
   }}\n\
-  std::chrono::steady_clock::time_point inference_{0}_end, inference_{0}_time;\n\
-  inference_{0}_end = std::chrono::system_clock::now();\n\
-  auto inference_{0}_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_{0}_end - total_inference_start).count();\n\
+  auto inference_{0}_end = std::chrono::high_resolution_clock::now();\n\
   const auto* intermediate_tensor_{0} = interpreter_{0}->output_tensor(0);\n\n".format(str(0))
     output_invoke = "\
   *interpreter_{0}->input_tensor(0) = *intermediate_tensor_{1};\n\
-  std::chrono::steady_clock::time_point inference_{0}_start, inference_{0}_time;\n\
-  inference_{0}_start = std::chrono::system_clock::now();\n\
+  auto inference_{0}_start = std::chrono::high_resolution_clock::now();\n\
   if (interpreter_{0}->Invoke() != kTfLiteOk) {{\n\
     std::cerr << \"Cannot invoke interpreter\" << std::endl;\n\
     return 1;\n\
   }}\n\
-  total_inference_end = std::chrono::system_clock::now();\n\
-  auto inference_{0}_time = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - inference_{0}_start).count();\n\n".format(str(len(mapping)-1), str(len(mapping)-2))
+  auto total_inference_end = std::chrono::high_resolution_clock::now();\n\n".format(str(len(mapping)-1), str(len(mapping)-2))
 
+  
     invoke_section = invoke_section + input_invoke
 
     for index in range(1, len(mapping)-1):
         section_to_add = "\
   *interpreter_{0}->input_tensor(0) = *intermediate_tensor_{1};\n\
-  std::chrono::steady_clock::time_point inference_{0}_start, inference_{0}_end, inference_{0}_time;\n\
-  inference_{0}_start = std::chrono::system_clock::now();\n\
+  auto inference_{0}_start = std::chrono::high_resolution_clock::now();\n\
   if (interpreter_{0}->Invoke() != kTfLiteOk) {{\n\
     std::cerr << \"Cannot invoke interpreter\" << std::endl;\n\
     return 1;\n\
   }}\n\
-  inference_{0}_end = std::chrono::system_clock::now();\n\
-  const auto* intermediate_tensor_{0} = interpreter_{0}->output_tensor(0);\n\
-  auto inference_{0}_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_{0}_end - inference_{0}_start).count();\n\n".format(str(index), str(index-1))
+  auto inference_{0}_end = std::chrono::high_resolution_clock::now();\n\
+  const auto* intermediate_tensor_{0} = interpreter_{0}->output_tensor(0);\n\n".format(str(index), str(index-1))
         invoke_section = invoke_section + section_to_add
 
     return invoke_section + output_invoke
 
 def CreateExactInferenceTimeSection(op_len: int):
-    result = "auto exact_inference_time = std::chrono::duration_cast<std::chrono::milliseconds>("
-    for i in range(0, op_len-1):
-      result = result + " inference_{0}_time +".format(str(i))
-    return result + " inference_{0}_time).count();".format(str(op_len-1))
+    function_str_ms = "auto exact_inference_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>"
+    function_str_ns = "auto exact_inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>"
+    duration_sum = ""
+    for i in range(0, op_len):
+        if i == 0:
+            duration_sum = duration_sum + "((inference_{0}_end - total_inference_start)".format(str(i))
+        elif i == op_len-1:
+            duration_sum = duration_sum + " + (total_inference_end - inference_{0}_start)).count();".format(str(i))
+        else:
+            duration_sum = duration_sum + " + (inference_{0}_end - inference_{0}_start)".format(str(i))
+    
+    return "{0}{1}\n\
+  {2}{1}\n\n".format(function_str_ms, duration_sum, function_str_ns)
 
 def CreateSource(ModelsDirectory: str, FinalMapping: dict):
     # Prepare Jinja Environment
