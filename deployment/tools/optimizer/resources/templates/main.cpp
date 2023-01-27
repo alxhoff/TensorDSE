@@ -452,19 +452,22 @@ int main(int argc, char* argv[]) {
   // Run Inference and pass intermediate tensors
   std::cout << "############################## Initiating Inference ###############################" << "\n";
   std::cout << "\n" << std::endl;
-  std::chrono::steady_clock::time_point start, end;
-  start = std::chrono::steady_clock::now();
+  std::chrono::steady_clock::time_point total_inference_start, total_inference_end;
+  std::chrono::steady_clock::time_point intermediate_inference_start, intermediate_inference_end;
   
   {{invoke_interpreters_section}}
+  
+  auto total_inference_time = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - total_inference_start).count();
 
-  end = std::chrono::steady_clock::now();
-  auto inference_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  {{exact_inference_time_section}}
+
   std::cout << "Inference is successful!" << "\n";
   std::cout << "\n" << std::endl;
 
-  std::cout << "############################ Estimating Inference Time ############################" << "\n";
+  std::cout << "############################## Inference Times ##############################" << "\n";
   std::cout << "\n" << std::endl;
-  std::cout << "Infernce Time: " + std::to_string(inference_time) + "ms" << std::endl;
+  std::cout << "Exact Infernce Time: " + std::to_string(exact_inference_time) + "ms" << std::endl;
+  std::cout << "Total Infernce Time: " + std::to_string(total_inference_time) + "ms" << std::endl;
   std::cout << "\n" << std::endl;
   
 

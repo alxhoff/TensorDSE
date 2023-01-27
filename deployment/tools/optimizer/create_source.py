@@ -127,65 +127,86 @@ def CreateBuildInterpretersSection(mapping: dict):
 
 def CreateInvokeSection(mapping: dict):
     invoke_section = ""
-    input_invoke = "\
+    input_invoke = "total_inference_start = std::chrono::system_clock::now();\n\
   if (interpreter_{0}->Invoke() != kTfLiteOk) {{\n\
     std::cerr << \"Cannot invoke interpreter\" << std::endl;\n\
     return 1;\n\
   }}\n\
+  std::chrono::steady_clock::time_point inference_{0}_end, inference_{0}_time;\n\
+  inference_{0}_end = std::chrono::system_clock::now();\n\
+  auto inference_{0}_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_{0}_end - total_inference_start).count();\n\
   const auto* intermediate_tensor_{0} = interpreter_{0}->output_tensor(0);\n\n".format(str(0))
     output_invoke = "\
   *interpreter_{0}->input_tensor(0) = *intermediate_tensor_{1};\n\
+  std::chrono::steady_clock::time_point inference_{0}_start, inference_{0}_time;\n\
+  inference_{0}_start = std::chrono::system_clock::now();\n\
   if (interpreter_{0}->Invoke() != kTfLiteOk) {{\n\
     std::cerr << \"Cannot invoke interpreter\" << std::endl;\n\
     return 1;\n\
-  }}\n\n".format(str(len(mapping)-1), str(len(mapping)-2))
+  }}\n\
+  total_inference_end = std::chrono::system_clock::now();\n\
+  auto inference_{0}_time = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - inference_{0}_start).count();\n\n".format(str(len(mapping)-1), str(len(mapping)-2))
 
     invoke_section = invoke_section + input_invoke
 
     for index in range(1, len(mapping)-1):
         section_to_add = "\
   *interpreter_{0}->input_tensor(0) = *intermediate_tensor_{1};\n\
+  std::chrono::steady_clock::time_point inference_{0}_start, inference_{0}_end, inference_{0}_time;\n\
+  inference_{0}_start = std::chrono::system_clock::now();\n\
   if (interpreter_{0}->Invoke() != kTfLiteOk) {{\n\
     std::cerr << \"Cannot invoke interpreter\" << std::endl;\n\
     return 1;\n\
   }}\n\
-  const auto* intermediate_tensor_{0} = interpreter_{0}->output_tensor(0);\n\n".format(str(index), str(index-1))
+  inference_{0}_end = std::chrono::system_clock::now();\n\
+  const auto* intermediate_tensor_{0} = interpreter_{0}->output_tensor(0);\n\
+  auto inference_{0}_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_{0}_end - inference_{0}_start).count();\n\n".format(str(index), str(index-1))
         invoke_section = invoke_section + section_to_add
 
     return invoke_section + output_invoke
 
+def CreateExactInferenceTimeSection(op_len: int):
+    result = "auto exact_inference_time = std::chrono::duration_cast<std::chrono::milliseconds>("
+    for i in range(0, op_len-1):
+      result = result + " inference_{0}_time +".format(str(i))
+    return result + " inference_{0}_time).count();".format(str(op_len-1))
+
 def CreateSource(ModelsDirectory: str, FinalMapping: dict):
-  # Prepare Jinja Environment
-  environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join("resources", "templates")))
-  output_filepath = os.path.join(DEPLOYMENT_DIR, "tflite-cpp", "src", "classification", "distributed", "main.cpp")
-  template = environment.get_template("main.cpp")
+    # Prepare Jinja Environment
+    environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join("resources", "templates")))
+    output_filepath = os.path.join(DEPLOYMENT_DIR, "tflite-cpp", "src", "classification", "distributed", "main.cpp")
+    template = environment.get_template("main.cpp")
 
-  # Read Mapping
-  mapping = utils.ReadJSON(FinalMapping)
+    # Read Mapping
+    mapping = utils.ReadJSON(FinalMapping)
 
-  # Prepare Full Model Paths
-  model_paths = PreparePaths(ModelsDirectory)
+    # Prepare Full Model Paths
+    model_paths = PreparePaths(ModelsDirectory)
 
-  # Prepare Section for Loading Models (Submodels)
-  load_models_section = CreateLoadModelsSection(model_paths)
+    # Prepare Section for Loading Models (Submodels)
+    load_models_section = CreateLoadModelsSection(model_paths)
 
-  # Prepare Section for Building Interpreter Objects for each Model
-  build_interpreters_section = CreateBuildInterpretersSection(mapping)
+    # Prepare Section for Building Interpreter Objects for each Model
+    build_interpreters_section = CreateBuildInterpretersSection(mapping)
 
-  # Prepare Section for Invoking Inference and Passing Intermediate Tensors
-  invoke_interpreters_section = CreateInvokeSection(mapping)
+    # Prepare Section for Invoking Inference and Passing Intermediate Tensors
+    invoke_interpreters_section = CreateInvokeSection(mapping)
 
-  # Populate Context
-  context = {
-      "input_interpreter": "interpreter_{0}".format("0"),
-      "output_interpreter": "interpreter_{0}".format(str(len(mapping)-1)),
-      "load_models_section": load_models_section,
-      "build_interpreters_section": build_interpreters_section,
-      "invoke_interpreters_section": invoke_interpreters_section
-  }
+    # Prepare Section to determine the exact Inference Times
+    exact_inference_time_section = CreateExactInferenceTimeSection(len(mapping))
 
-  with open(output_filepath, mode="w", encoding="utf-8") as output:
-      output.write(template.render(context))
+    # Populate Context
+    context = {
+        "input_interpreter": "interpreter_{0}".format("0"),
+        "output_interpreter": "interpreter_{0}".format(str(len(mapping)-1)),
+        "load_models_section": load_models_section,
+        "build_interpreters_section": build_interpreters_section,
+        "invoke_interpreters_section": invoke_interpreters_section,
+        "exact_inference_time_section": exact_inference_time_section
+    }
+
+    with open(output_filepath, mode="w", encoding="utf-8") as output:
+        output.write(template.render(context))
 
 def main():
   try:
