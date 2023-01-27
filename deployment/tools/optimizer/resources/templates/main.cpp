@@ -220,143 +220,10 @@ namespace {
     return result;
   }
   
-  bool CheckEdgeAcc() {
-    // Check if Coral USB Accelerator is connected!
-    bool edgetpu_check = true;
-    // Find TPU device.
-    std::cout << "Detecting Edge TPUs Devices ..." << "\n";
-    size_t num_devices;
-    std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)> devices(edgetpu_list_devices(&num_devices), 
-                                                                            &edgetpu_free_devices);
-    if (num_devices == 0) {
-      std::cerr << "No connected TPU found" << std::endl;
-      edgetpu_check=false;
-    }
-
-    const auto& available_tpus = edgetpu::EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
-
-    if (available_tpus.size() < 1) {
-      std::cerr << "Edge TPU USB Accelerator found, but not available" << std::endl;
-      edgetpu_check=false;
-    } 
-    std::cout << "Number of available Edge TPUs: " << available_tpus.size() << "\n"; // hopefully we'll see 1 here
-    std::cout << "\n" << std::endl;
-    
-    return edgetpu_check;
-  }
-  
-  std::vector<std::string> ReadModelsPaths(std::string directory) {
-  
-    std::vector<std::string> result;
-  
-    // Read Models Directory
-    std::vector<std::string> cpu_submodel_paths{};
-    std::vector<std::string> gpu_submodel_paths{};
-    std::vector<std::string> tpu_submodel_paths{};
-    // This structure would distinguish a file from a directory
-    struct stat sb;
-    for (const auto& entry : fs::directory_iterator(directory)) {
-      // Converting the path of a file to a const char *
-      fs::path outfilename = entry.path();
-      std::string outfilename_str = outfilename.string();
-      const char* path = outfilename_str.c_str();
-      // Check if path points to a non-directory. If True, display path
-      if (stat(path, &sb) == 0 && !(sb.st_mode & S_IFDIR))
-        if (outfilename_str.find("cpu") != std::string::npos) {
-          //std ::cout << "CPU:" << outfilename_str << std::endl;
-          cpu_submodel_paths.push_back(outfilename_str);
-        } else if (outfilename_str.find("edgetpu") != std::string::npos) {
-          //std ::cout << "TPU:" << outfilename_str << std::endl;
-          tpu_submodel_paths.push_back(outfilename_str);
-        } else if (outfilename_str.find("gpu") != std::string::npos) {
-          //std ::cout << "GPU:" << outfilename_str << std::endl;
-          gpu_submodel_paths.push_back(outfilename_str);
-        } 
-    }
-    
-    for (int i = 0; i < cpu_submodel_paths.size(); i++) {
-      result.push_back(cpu_submodel_paths[i]);
-    }
-
-    for (int i = 0; i < gpu_submodel_paths.size(); i++) {
-      result.push_back(gpu_submodel_paths[i]);
-    }
-
-    if (tpu_submodel_paths.size() != 0) {
-      for (int i = 0; i < tpu_submodel_paths.size(); i++) {
-        result.push_back(tpu_submodel_paths[i]);
-      }
-      bool check;
-      check = CheckEdgeAcc();
-    }
-    
-    std::sort(result.begin(), result.end());
-    return result;
-  }
-  
-  std::vector<std::vector<std::string>> ReadCsvMapping(std::string filepath) {
-    std::vector<std::vector<std::string>> content;
-    std::vector<std::string> row;
-    std::string line, word;
-
-    std::fstream file(filepath, std::ios::in);
-
-    if(file.is_open()) {
-      while(std::getline(file, line)) {
-        row.clear();
-        std::stringstream str(line);
-        while(std::getline(str, word, ',')) {
-          row.push_back(word);
-        }
-        content.push_back(row);
-      }
-    } else {
-      std::cout<<"Could not open the file\n";
-    }
-      
-    for(int i=0;i<content.size();i++) {
-      for(int j=0;j<content[i].size();j++) {
-        std::cout<<content[i][j]<<" ";
-      }
-      std::cout<<"\n";
-    }
-
-    return content;
-  }
-
-  // Could be separated from this namespace later
   std::unique_ptr<tflite::FlatBufferModel> LoadSubmodel(std::string filepath) {
     std::unique_ptr<tflite::FlatBufferModel> submodel =
     tflite::FlatBufferModel::BuildFromFile(filepath.c_str());
     return submodel;
-  }
-
-  bool CheckModelForTPU(const std::string model_path) {
-    const std::string edgtpu_str = "edgetpu.tflite";
-    if (std::strstr(model_path.c_str(), edgtpu_str.c_str())) {
-      return true;
-    }
-    return false;
-  }
-
-  bool CheckModelForGPU(const std::string model_path) {
-    const std::string gpu_str = "gpu";
-    if (std::strstr(model_path.c_str(), gpu_str.c_str())) {
-      return true;
-    }
-    return false;
-  }
-
-  int GetDevice(const std::string model_path) {
-    int result;
-    if (CheckModelForTPU(model_path)) {
-      result = 2;
-    } else if (CheckModelForGPU(model_path)) {
-      result = 1;
-    } else {
-      result = 0;
-    }
-    return result;
   }
 
 }  // namespace
@@ -408,7 +275,9 @@ int main(int argc, char* argv[]) {
   // Load models section
   std::cout << "################################## Loading Models ################################" << "\n";
   std::cout << "\n" << std::endl;
+
   {{load_models_section}}
+
   std::cout << "\n" << std::endl;
 
 
@@ -433,6 +302,7 @@ int main(int argc, char* argv[]) {
   std::cout << "#                               Build Interpreters                               #" << "\n";
   std::cout << "##################################################################################" << "\n";
   std::cout << "\n" << std::endl;
+
   {{build_interpreters_section}}
 
   // Load Data into Input Interpreter
@@ -452,12 +322,11 @@ int main(int argc, char* argv[]) {
   // Run Inference and pass intermediate tensors
   std::cout << "############################## Initiating Inference ###############################" << "\n";
   std::cout << "\n" << std::endl;
-  std::chrono::steady_clock::time_point total_inference_start, total_inference_end;
-  std::chrono::steady_clock::time_point intermediate_inference_start, intermediate_inference_end;
   
   {{invoke_interpreters_section}}
   
-  auto total_inference_time = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - total_inference_start).count();
+  auto total_inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(total_inference_end - total_inference_start).count();
+  auto total_inference_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - total_inference_start).count();
 
   {{exact_inference_time_section}}
 
@@ -466,8 +335,18 @@ int main(int argc, char* argv[]) {
 
   std::cout << "############################## Inference Times ##############################" << "\n";
   std::cout << "\n" << std::endl;
-  std::cout << "Exact Infernce Time: " + std::to_string(exact_inference_time) + "ms" << std::endl;
-  std::cout << "Total Infernce Time: " + std::to_string(total_inference_time) + "ms" << std::endl;
+  std::cout << "Total Infernce Time in ms: " + std::to_string(total_inference_time_ms) << std::endl;
+  std::cout << "Exact Infernce Time in ms: " + std::to_string(exact_inference_time_ms) << std::endl;
+  std::cout << "Difference in ms: " + std::to_string(total_inference_time_ms - exact_inference_time_ms) + " ms" << std::endl;
+  std::cout << "\n" << std::endl;
+  std::cout << "Total Infernce Time in ns: " + std::to_string(total_inference_time_ns) << std::endl;
+  std::cout << "Exact Infernce Time in ns: " + std::to_string(exact_inference_time_ns) << std::endl;
+  std::cout << "Difference in ns: " + std::to_string(total_inference_time_ns - exact_inference_time_ns) << std::endl;
+  float diff_perc = (total_inference_time_ns - exact_inference_time_ns)/total_inference_time_ns;
+  std::cout << "Difference in %: ";
+  std::cout << std::setprecision(10);
+  std::cout << diff_perc << std::endl;
+
   std::cout << "\n" << std::endl;
   
 
