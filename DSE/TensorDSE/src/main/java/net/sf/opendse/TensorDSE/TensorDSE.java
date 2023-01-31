@@ -252,7 +252,7 @@ public class TensorDSE {
 
 			if (args_namespace.getBoolean("ilp") == true) {
 				ILPSolver ilps = new ILPSolver();
-				ilps.gurobiDSEExample();
+				ilps.gurobiDSEExampleSixTask();
 				// Solver solver = new Solver(specification.specification, specification.tasks,
 				// 		specification.starting_tasks, specification.GetOperationCosts());
 				// solver.solveILP();

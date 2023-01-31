@@ -216,7 +216,7 @@ public class Solver {
 
                 for (int i = 1; i < tasks.size(); i++) {
 
-                    ilps.addSchedulingDependencyConstraint(tasks.get(i - 1).getGrb_finish_time(),
+                    ilps.addTaskSchedulingDependencyConstraint(tasks.get(i - 1).getGrb_finish_time(),
                             tasks.get(i).getGrb_start_time(), model);
                     ilps.addFinishTimeConstraint(tasks.get(i).getGrb_finish_time(),
                             tasks.get(i).getGrb_start_time(), tasks.get(i).getGrb_execution_cost(),
@@ -378,7 +378,7 @@ public class Solver {
 
                 for (int i = 1; i < tasks.size(); i++) {
 
-                    ilps.addSchedulingDependencyConstraint(tasks.get(i - 1).getGrb_finish_time(),
+                    ilps.addTaskSchedulingDependencyConstraint(tasks.get(i - 1).getGrb_finish_time(),
                             tasks.get(i).getGrb_start_time(), model);
                     ilps.addFinishTimeConstraint(tasks.get(i).getGrb_finish_time(),
                             tasks.get(i).getGrb_start_time(), tasks.get(i).getGrb_execution_cost(),
