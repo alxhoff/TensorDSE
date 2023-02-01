@@ -28,8 +28,6 @@
 #include "edgetpu_c.h"
 
 
-namespace fs = std::experimental::filesystem;
-
 namespace {
   constexpr size_t kBmpFileHeaderSize = 14;
   constexpr size_t kBmpInfoHeaderSize = 40;
@@ -241,7 +239,6 @@ int main(int argc, char* argv[]) {
   const float threshold          = std::stof(argv[3]);
   
   // Initiating Distributed Inference
-  std::cout << "\n" << std::endl;
   std::cout << "##################################################################################" << "\n";
   std::cout << "#         Running Distributed Inference of an Image Classification Model         #" << "\n";
   std::cout << "##################################################################################" << "\n";
@@ -349,32 +346,19 @@ int main(int argc, char* argv[]) {
   // Run Inference and pass intermediate tensors
   std::cout << "############################## Initiating Inference ###############################" << "\n";
   std::cout << "\n" << std::endl;
-  
-  auto total_inference_start = std::chrono::high_resolution_clock::now();
-  if (interpreter_0->Invoke() != kTfLiteOk) {
-    std::cerr << "Cannot invoke interpreter" << std::endl;
-    return 1;
-  }
-  auto inference_0_end = std::chrono::high_resolution_clock::now();
-  const auto* intermediate_tensor_0 = interpreter_0->output_tensor(0);
 
-  *interpreter_0->input_tensor(0) = *intermediate_tensor_-1;
-  auto inference_0_start = std::chrono::high_resolution_clock::now();
-  if (interpreter_0->Invoke() != kTfLiteOk) {
+  auto total_inference_start = std::chrono::high_resolution_clock::now();
+    if (interpreter_0->Invoke() != kTfLiteOk) {
     std::cerr << "Cannot invoke interpreter" << std::endl;
     return 1;
   }
   auto total_inference_end = std::chrono::high_resolution_clock::now();
-
-
   
   auto total_inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(total_inference_end - total_inference_start).count();
   auto total_inference_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - total_inference_start).count();
 
-  auto exact_inference_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>((inference_0_end - total_inference_start)
-  auto exact_inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>((inference_0_end - total_inference_start)
-
-
+  auto exact_inference_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(total_inference_end - total_inference_start).count();
+  auto exact_inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(total_inference_end - total_inference_start).count();
 
   std::cout << "Inference is successful!" << "\n";
   std::cout << "\n" << std::endl;
@@ -383,15 +367,11 @@ int main(int argc, char* argv[]) {
   std::cout << "\n" << std::endl;
   std::cout << "Total Infernce Time in ms: " + std::to_string(total_inference_time_ms) << std::endl;
   std::cout << "Exact Infernce Time in ms: " + std::to_string(exact_inference_time_ms) << std::endl;
-  std::cout << "Difference in ms: " + std::to_string(total_inference_time_ms - exact_inference_time_ms) + " ms" << std::endl;
+  std::cout << "Difference in ms: " + std::to_string(total_inference_time_ms - exact_inference_time_ms) << std::endl;
   std::cout << "\n" << std::endl;
   std::cout << "Total Infernce Time in ns: " + std::to_string(total_inference_time_ns) << std::endl;
   std::cout << "Exact Infernce Time in ns: " + std::to_string(exact_inference_time_ns) << std::endl;
   std::cout << "Difference in ns: " + std::to_string(total_inference_time_ns - exact_inference_time_ns) << std::endl;
-  float diff_perc = (total_inference_time_ns - exact_inference_time_ns)/total_inference_time_ns;
-  std::cout << "Difference in %: ";
-  std::cout << std::setprecision(10);
-  std::cout << diff_perc << std::endl;
 
   std::cout << "\n" << std::endl;
   
