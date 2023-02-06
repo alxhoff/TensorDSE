@@ -32,6 +32,7 @@ import net.sf.opendse.optimization.ImplementationWrapper;
 import net.sf.opendse.optimization.OptimizationModule;
 import net.sf.opendse.optimization.SpecificationWrapper;
 import net.sf.opendse.optimization.io.SpecificationWrapperInstance;
+import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
  * Entry point for this project
@@ -64,7 +65,7 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
-				.setDefault("src/main/resources/modelsummaries/MNIST.json").type(String.class)
+				.setDefault("src/main/resources/modelsummaries/MNIST_multi.json").type(String.class)
 				.help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary")
 				.setDefault(
@@ -79,6 +80,14 @@ public class TensorDSE {
 				.help("Results file name");
 		parser.addArgument("-t", "--outputfolder").setDefault("src/main/resources/exampleoutput")
 				.type(String.class);
+
+		// ILP
+		parser.addArgument("-i", "--ilp").type(Boolean.class).setDefault(true)
+				.help("If the ILP should be run instead of the DSE");
+		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(100.0).help(
+				"The large integer value used for deactivating pair-wise resource mapping constraints");
+		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
+				.help("Run Demo instead of solving input specification");
 
 		Namespace ns = null;
 
@@ -119,8 +128,8 @@ public class TensorDSE {
 								specification_definition.getSpecification());
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
 
-				TensorDSEEvaluator evaluator =
-						new TensorDSEEvaluator("cost_of_mapping", specification_definition);
+				EvaluatorMinimizeCost evaluator =
+						new EvaluatorMinimizeCost("cost_of_mapping", specification_definition);
 
 				Multibinder<ImplementationEvaluator> multibinder =
 						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
@@ -239,58 +248,85 @@ public class TensorDSE {
 
 			System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
 
+			// Specification contains, architecture and application graph as well as a generated set
+			// of possible mappings
 			SpecificationDefinition specification = new SpecificationDefinition(model_summary_path,
 					benchmark_results_path, architecture_summary_path);
 
-			// Opt4J Modules
-			EvolutionaryAlgorithmModule ea_module = GetEAModule(args_namespace);
-			Module specification_module = GetSpecificationModule(specification);
-			OptimizationModule optimization_module = new OptimizationModule();
-			Collection<Module> modules =
-					GetModulesCollection(ea_module, specification_module, optimization_module);
+			if (args_namespace.getBoolean("ilp") == true) {
+				// Solve for mappings and schedule using only ILP
 
-			Opt4JTask opt4j_task = GetOpt4JTask(modules);
+				if (args_namespace.getBoolean("demo") == true) {
+					// Run an ILP demo
+					ILPSolver ilps = new ILPSolver();
+					ilps.gurobiDSEExampleSixTask();
+				} else {
+					// Solve the given input
 
-			try {
-				opt4j_task.execute();
-				Archive archive = opt4j_task.getInstance(Archive.class);
+					// Solver contains the application, architecture, and possible mapping graphs as
+					// well as the list of starting tasks and the operation costs
+					Solver solver = new Solver(specification.specification, specification.application_graphs,
+							specification.starting_tasks, specification.GetOperationCosts(),
+							args_namespace.getDouble("deactivationnumber"));
+					solver.solveILP();
+				}
+			} else {
+				// Solve for mappings using heuristic and schedule using ILP
 
-				for (Individual individual : archive) {
+				// Opt4J Modules
+				EvolutionaryAlgorithmModule ea_module = GetEAModule(args_namespace);
+				Module specification_module = GetSpecificationModule(specification);
+				OptimizationModule optimization_module = new OptimizationModule();
+				Collection<Module> modules =
+						GetModulesCollection(ea_module, specification_module, optimization_module);
 
-					Specification implementation =
-							((ImplementationWrapper) individual.getPhenotype()).getImplementation();
-					SpecificationWriter writer = new SpecificationWriter();
-					String time_string =
-							new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
+				Opt4JTask opt4j_task = GetOpt4JTask(modules);
 
-					writer.write(implementation,
-							output_directory + "/" + time_string + "_solution.xml");
+				try {
+					opt4j_task.execute();
+					Archive archive = opt4j_task.getInstance(Archive.class);
 
-					objective_values[i] =
-							individual.getObjectives().getValues().iterator().next().getDouble();
-					System.out.println(objective_values[i]);
+					for (Individual individual : archive) {
 
-					csv_writer.append("\n");
-					csv_writer.append(String.join(",", Integer.toString(i), time_string,
-							Integer.toString(ea_module.getGenerations()),
-							Integer.toString(ea_module.getPopulationSize()),
-							Integer.toString(ea_module.getParentsPerGeneration()),
-							Integer.toString(ea_module.getOffspringsPerGeneration()),
-							Double.toString(ea_module.getCrossoverRate()),
-							Double.toString(objective_values[i])));
+						Specification implementation =
+								((ImplementationWrapper) individual.getPhenotype())
+										.getImplementation();
 
-					for (Mapping<Task, Resource> m : implementation.getMappings()) {
-						System.out.println(m.getSource().getId() + " type "
-								+ m.getSource().getAttribute("type") + " HW "
-								+ m.getTarget().getId());
+						SpecificationViewer.view(implementation);
+
+						SpecificationWriter writer = new SpecificationWriter();
+						String time_string =
+								new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
+
+						writer.write(implementation,
+								output_directory + "/" + time_string + "_solution.xml");
+
+						objective_values[i] = individual.getObjectives().getValues().iterator()
+								.next().getDouble();
+						System.out.println(objective_values[i]);
+
+						csv_writer.append("\n");
+						csv_writer.append(String.join(",", Integer.toString(i), time_string,
+								Integer.toString(ea_module.getGenerations()),
+								Integer.toString(ea_module.getPopulationSize()),
+								Integer.toString(ea_module.getParentsPerGeneration()),
+								Integer.toString(ea_module.getOffspringsPerGeneration()),
+								Double.toString(ea_module.getCrossoverRate()),
+								Double.toString(objective_values[i])));
+
+						for (Mapping<Task, Resource> m : implementation.getMappings()) {
+							System.out.println(m.getSource().getId() + " type "
+									+ m.getSource().getAttribute("type") + " HW "
+									+ m.getTarget().getId());
+						}
+
 					}
 
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				} finally {
+					opt4j_task.close();
 				}
-
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			} finally {
-				opt4j_task.close();
 			}
 		}
 

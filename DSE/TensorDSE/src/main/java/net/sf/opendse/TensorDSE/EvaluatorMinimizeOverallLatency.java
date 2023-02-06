@@ -3,16 +3,18 @@ package net.sf.opendse.TensorDSE;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-
+import org.javatuples.Pair;
 import org.opt4j.core.Objective;
 import org.opt4j.core.Objectives;
-
+import net.sf.opendse.model.Application;
 import net.sf.opendse.model.Architecture;
+import net.sf.opendse.model.Dependency;
 import net.sf.opendse.model.Element;
 import net.sf.opendse.model.Link;
 import net.sf.opendse.model.Mapping;
@@ -22,16 +24,25 @@ import net.sf.opendse.model.Routings;
 import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
 import net.sf.opendse.optimization.ImplementationEvaluator;
+import net.sf.opendse.optimization.validation.SpecificationValidator;
+import net.sf.opendse.visualization.SpecificationViewer;
 
-public class TensorDSEEvaluator implements ImplementationEvaluator {
+public class EvaluatorMinimizeOverallLatency implements ImplementationEvaluator {
 
 	protected final Map<String, Objective> map = new HashMap<String, Objective>();
 	protected int priority;
 	private OperationCosts operation_costs = null;
+	public List<Task> starting_tasks;
+	public HashMap<Integer, HashMap<Integer, Task>> tasks;
+	public Integer longest_model;
 
-	public TensorDSEEvaluator(String objectives, SpecificationDefinition SpecificationDefinition) {
+	public EvaluatorMinimizeOverallLatency(String objectives,
+			SpecificationDefinition SpecificationDefinition) {
 		super();
-		this.operation_costs = SpecificationDefinition.GetOpCosts();
+		this.operation_costs = SpecificationDefinition.GetOperationCosts();
+		this.starting_tasks = SpecificationDefinition.starting_tasks;
+		this.longest_model = SpecificationDefinition.longest_model;
+		this.tasks = SpecificationDefinition.application_graphs;
 
 		for (String s : objectives.split(",")) {
 			Objective obj = new Objective(s, Objective.Sign.MIN);
@@ -44,13 +55,27 @@ public class TensorDSEEvaluator implements ImplementationEvaluator {
 	public Specification evaluate(Specification impl, Objectives objectives) {
 
 		Architecture<Resource, Link> architecture = impl.getArchitecture();
+		Application<Task, Dependency> application = impl.getApplication();
 		Mappings<Task, Resource> mappings = impl.getMappings();
+
+		// Specification for viewing and debugging
+		Specification specification = new Specification(application, architecture, mappings);
+		SpecificationViewer.view(specification);
+
 		Routings<Task, Resource, Link> routings = impl.getRoutings();
-		Set<Element> elements = new HashSet<Element>();
-		elements.addAll(architecture.getVertices());
-		elements.addAll(architecture.getEdges());
-		elements.addAll(mappings.getAll());
+		// Set<Element> elements = new HashSet<Element>();
+		// elements.addAll(architecture.getVertices());
+		// elements.addAll(architecture.getEdges());
+		// elements.addAll(mappings.getAll());
 		double cost_of_mapping = 0.0;
+
+		// Tasks: application.getEdges().get(index).getValue.get(0 for taks 1 for comm)
+		// List<Task>
+
+		Solver sh = new Solver(specification, this.tasks, this.starting_tasks,
+				this.operation_costs);
+
+		sh.addCommCosts(this.operation_costs);
 
 		for (Mapping<Task, Resource> m : mappings) {
 			Task current_task = m.getSource();
@@ -114,8 +139,9 @@ public class TensorDSEEvaluator implements ImplementationEvaluator {
 		}
 
 		// Communication cost
-		Double comm_cost = operation_costs.GetCommCost(target_device, layer, data_type);
-		cost += comm_cost;
+		Pair<Double, Double> comm_cost = operation_costs.GetCommCost(target_device, layer, data_type);
+
+		cost += comm_cost.getValue0() + comm_cost.getValue1();
 
 		return cost;
 	}

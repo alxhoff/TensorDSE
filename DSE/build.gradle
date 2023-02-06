@@ -76,12 +76,13 @@ task fatjar(dependsOn: subprojects.jar, type: Jar) {
 }
 
 dependencies {
+	runtime project(':TensorDSE')
+
 	runtime project(':opendse-model')
 	runtime project(':opendse-io')
 	runtime project(':opendse-visualization')
 	runtime project(':opendse-optimization')
 	runtime project(':opendse-realtime')
-	runtime project(':TensorDSE')
 
     implementation 'net.sourceforge.argparse4j:argparse4j:0.2.0'
 }
