@@ -4,8 +4,6 @@ from ast import operator
 from typing import Dict
 from tflite_helper import *
 
-import tensorflow as tf
-
 def print_options(options):
     if options:
         for key, item in options.items():
@@ -176,15 +174,20 @@ def ProcessOperation(model, graph, operator) -> None:
     ProcessLayer(operator_name, operator_options, input_tensors, output_tensors)
 
 
-def SplitTFLiteModel(model) -> None:
+def SplitTFLiteModel(model) -> list:
 
     """Splits/Processes the given as input tflite model into its individual operations.
 
     Individually calls onto the process_operation function that processes and
     eventually recreates the operation overloaded onto 'process_operation(...)'
     as 'graph.Operators(i)'.
+
+    :rtype: list of strins
+        each entry is one of the layers that compose the
+        to-be-benchmarked model
     """
     from main import log
+    layers = []
     with open(model, "rb") as f:
         # Load our model from file and create the flatbuffer parser object for the root node
         model = GetTFLiteClass("Model").GetRootAsModel(f.read(), 0)
@@ -192,8 +195,10 @@ def SplitTFLiteModel(model) -> None:
         log.info(f"Model subdivided into {graph.OperatorsLength()} operators")
 
         for operator in [graph.Operators(i) for i in range(graph.OperatorsLength())]:
+            layers.append(GetOpNameFromOperator(model=model, operator=operator))
             ProcessOperation(model, graph, operator)
 
+    return layers
 
 def ImportTFLiteModules() -> None:
 

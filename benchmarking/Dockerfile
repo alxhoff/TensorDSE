@@ -5,34 +5,69 @@ LABEL Email="daniel.duclos-cavalcanti@gmail.com"
 LABEL Maintainer="Daniel Duclos-Cavalcanti"
 
 ARG USER_NAME="coral-docker"
-ARG DEBIAN_FRONTEND=noninteractive
+ARG DEBIAN_FRONTEND="noninteractive"
 
 RUN set -ex
 
 # Base System
 RUN apt-get update \
     && apt-get install -y \
-    build-essential sudo locales wget curl gnupg \
+    build-essential locales wget curl gnupg \
     python3 python3-pip \
     git vim nano \
+    usbutils udev lshw \
+    software-properties-common \
     && apt-get clean \
     && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen && update-locale
 
-# CoralDev
+# CoralDev Apt Paackages
 RUN echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" \
-    | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
+    | tee /etc/apt/sources.list.d/coral-edgetpu.list
 
 RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-    | sudo apt-key add -
+    | apt-key add -
 
-RUN sudo apt-get update
-RUN sudo apt-get install -y libedgetpu1-std edgetpu-compiler
+RUN apt-get update
+RUN apt-get install -y libedgetpu1-std edgetpu-compiler
 
-# Python
-# Pillow?
-RUN pip3 install pyshark tensorflow matplotlib scipy numpy pandas
+# Wireshark/Tshark
+RUN add-apt-repository -y ppa:wireshark-dev/stable
+RUN apt-get install -y tshark
+
+# Python Libraries
+RUN pip3 install pyshark pyserial pyftdi
+RUN pip3 install tensorflow matplotlib scipy numpy pandas
 RUN pip3 install --upgrade pip
-RUN sudo apt-get install -y python3-pycoral python3-ipdb
+RUN apt-get install -y python3-ipdb python3-tabulate
+
+# Pycoral
+RUN apt-get install -y python3-pycoral
+# RUN pip install --extra-index-url https://google-coral.github.io/py-repo/ pycoral~=2.0
+
+# Tensorflow + GPU Delegate
+COPY scripts/install_tf.sh /home/install_tf.sh
+RUN chmod +x /home/install_tf.sh
+
+WORKDIR /home/
+
+# see the original bash script for detailed information
+# https://github.com/terryky/tflite_gles_app/blob/master/tools/scripts/tf2.9/build_libtflite_r2.9.sh
+
+# cmake
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-x86_64.sh
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-aarch64.sh
+RUN chmod 755 cmake-3.22.1-linux-x86_64.sh
+RUN ./cmake-3.22.1-linux-x86_64.sh --skip-license --prefix=/usr/local
+
+# bazel
+RUN apt-get install -y unzip
+RUN wget https://github.com/bazelbuild/bazel/releases/download/5.0.0/bazel-5.0.0-installer-linux-x86_64.sh
+RUN chmod 755 bazel-5.0.0-installer-linux-x86_64.sh
+RUN ./bazel-5.0.0-installer-linux-x86_64.sh
+
+# script to build delegates
+RUN apt-get install -y libegl1-mesa-dev
+RUN /home/install_tf.sh
 
 # Ports
 # EXPOSE 8080
@@ -41,7 +76,7 @@ RUN sudo apt-get install -y python3-pycoral python3-ipdb
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
-ENV DEBUG 0
+ENV MODE 0
 
 # Work
 RUN mkdir /home/tensorDSE

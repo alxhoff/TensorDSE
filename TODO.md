@@ -1,48 +1,53 @@
 # ToDo's
 
-### 1. Tflite Conversion
-#### Questions :question:
-1. Activation functions for tflite conversions? TODO?
-2. I changed a flag concerning `experimental_new_converter`, double check Alex
-
-### 2. Merging/Finishing Benchmarking + Analysis
+### 1. Benchmarking
 * [X] create and implement working Dockerfile (w Makefile) for a reproducible containerized environment
 * [X] make adjustments to code according to new docker workflow
 * [X] change output to `JSON`
-* [ ] implement **NEW ANALYSIS** as merger between yours and Ines,
-      ines uses linear regression to obtain cost parameters
+* [X] fix issue with checking TPU usb address properly
+* [X] Add CPU count to JSON Format
+* [ ] GPU Deployment
+  - [X] Implement Function
+  - Pro:
+  [1](https://github.com/tensorflow/tensorflow/issues/52155#issuecomment-931498450)
+  - Cons:
+  [1](https://www.tensorflow.org/lite/performance/delegates)
+  [2](https://github.com/tensorflow/tensorflow/issues/40706#issuecomment-648456999)
+  [3](https://github.com/tensorflow/tensorflow/issues/34536#issuecomment-565632906)
+  [4](https://github.com/tensorflow/tensorflow/issues/31377#issuecomment-519331496)
 
-Future Ideas:
-- [ ] suppress stdout of unnecessary commands like the conversion itself, pollutes stdout
-- [ ] at some point, instead of pip installing libraries in dockerfile, maybe use requirements.txt
+- [X] fix issue using tflite_runtime on conjunction with tflite [currently hacky]
+  * [Link](https://github.com/ultralytics/yolov5/issues/5709)
 
-#### Questions :question:
-1. Should the parent model (entire model) also be benchmarked or only its ops?
+<details open>
+<summary>
+<b> Questions </b>
+</summary>
 
-### 3. Implement GPU Deployment
-- [ ] Implement Function
-- [ ] Test it ssh server
+- [ ] how should `sudo modprobe usbmon` be implemented? Makefile?
+- [ ] Is the cost model final?
 
-#### Questions :question:
-1. Maybe GPU can only be deployed onto mobile GPU's like Android and IOS
+</details>
 
-links that support this statement:
-[1](https://www.tensorflow.org/lite/performance/delegates)
-[2](https://github.com/tensorflow/tensorflow/issues/40706#issuecomment-648456999)
-[3](https://github.com/tensorflow/tensorflow/issues/34536#issuecomment-565632906)
-[4](https://github.com/tensorflow/tensorflow/issues/31377#issuecomment-519331496)
+<details open>
+<summary>
+<b> Ideas </b>
+</summary>
 
-possible hacky workaround:
-[1](https://github.com/tensorflow/tensorflow/issues/52155#issuecomment-931498450)
+- [ ] suppress stdout of unnecessary commands like the conversion itself
+</details>
 
-### 4. USB
-- [ ] Reevaluate USB logic, reassure correctness
+### 2. USB
 - [X] change output to `JSON`
-- [ ] merge with analysis
+- [X] merge with analysis/cost calculations done in benchmarking
+- [ ] reevaluate USB logic, reassure correctness
 
-### Questions :question:
+<details closed>
+<summary>
+<b> Questions </b>
+</summary>
+</details>
 
-### 5. Java DSE
-* [ ] Clean up/Make Generic Ine‘s java code that generates mapping
-* [ ] Add in comm costs (USB) to architecture graph
-
+### 3. EXTRA
+* [ ] Setup `Doxygen` documentation and "website"
+* [ ] Remove docs folder from benchmarking maybe

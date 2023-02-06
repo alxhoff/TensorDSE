@@ -1,39 +1,35 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy.stats as st
-
-from utils.model import Model
 
 class Analyzer:
-    def __init__(self, m:Model):
-        self.model_path     = m.model_path
-        self.model_name     = m.model_name
-        self.results        = m.results
+    def __init__(self, results, find_distribution=False):
+        self.results        = results
         self.mean           = 0.0
         self.median         = 0.0
         self.std_deviation  = 0.0
+        self.avg_absolute_deviation  = 0.0
+        self.distribution_name = ""
 
-    def _get_data(self):
-        data = []
-        # results are organized as [iteration, inference time of current iteration]
-        for r in self.results:
-            data.append(r[1])
-
-        return data
+        self.get_basic_statistics()
+        if find_distribution:
+            self.get_distribution()
 
     def get_basic_statistics(self):
         from statistics import mean, median, stdev
-        data = self._get_data()
+        data = self.results
         self.mean           = mean(data)
         self.median         = median(data)
         self.std_deviation  = stdev(data)
+        self.avg_absolute_deviation  = (
+            ((mean([abs(n - self.mean) for n in data])) / self.mean) *100
+        )
 
     def get_distribution(self, bins=1000, ax=None):
         """Model data by finding best fit distribution to data"""
         import warnings
+        import scipy.stats as st
 
-        data = self._get_data()
+        data = self.results
 
         # Get histogram of original data
         y, x = np.histogram(data, bins=bins, density=True)
@@ -115,13 +111,3 @@ class Analyzer:
 
         self.pdf = pdf
 
-    def plot(self, bins=1000):
-        import os
-        import matplotlib
-
-        matplotlib.rcParams['figure.figsize'] = (16.0, 12.0)
-
-        data = self._get_data()
-
-        plt.hist(data, bins = bins)
-        plt.savefig(os.path.join("results/", f"{self.model_name}_hist.png"))

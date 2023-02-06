@@ -10,6 +10,12 @@
 ## Exec shell
 set +xe
 
+DEBUG_MODE=1
+TEST_MODE=2
+SHELL_MODE=3
+
+mode="$MODE"
+
 coral_hello_world() {
     local coral_folder="/home/coral"
     mkdir ${coral_folder} && cd ${coral_folder}
@@ -23,21 +29,28 @@ coral_hello_world() {
     --input test_data/parrot.jpg
 }
 
-run() {
-    python3 main.py -m models/source/MNIST.tflite \
-                    -c 1000
+debug() {
+    ipdb3 scripts/debug.py
 }
 
-debug() {
+test() {
+    ipdb3 scripts/test.py -c 2 \
+                          -t 10
+}
+
+run() {
     ipdb3 main.py -m models/source/MNIST.tflite \
-                  -c 1000
+                    -c 10
 }
 
 main() {
-    if [ "$DEBUG" -eq 1 ]; then
+    if [ "$mode" -eq $DEBUG_MODE ]; then
         debug
+    elif [ "$mode" -eq $TEST_MODE ]; then
+        test
+    elif [ "$mode" -eq $SHELL_MODE ]; then
+        bash
     else
-        # coral_hello_world
         run
     fi
 }
