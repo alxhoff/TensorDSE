@@ -51,12 +51,12 @@ public class SpecificationDefinition {
 	private OperationCosts op_costs = null;
 
 	// First hashmap takes the model's index in the model summary
-	public HashMap<Integer, HashMap<Integer, Task>> tasks =
+	public HashMap<Integer, HashMap<Integer, Task>> application_graphs =
 			new HashMap<Integer, HashMap<Integer, Task>>();
 	private HashMap<String, List<Resource>> resources = new HashMap<String, List<Resource>>();
 
 	public final List<String> supported_layers =
-			Arrays.asList("conv_2d", ":max_pool_2d", "reshape", "fully_connected", "softmax");
+			Arrays.asList("conv_2d", "max_pool_2d", "reshape", "fully_connected", "softmax");
 
 	public Integer longest_model;
 	public List<Task> starting_tasks = new ArrayList<Task>();
@@ -84,6 +84,10 @@ public class SpecificationDefinition {
 		return ret;
 	}
 
+
+	/**
+	 * @return OperationCosts
+	 */
 	public OperationCosts GetOperationCosts() {
 		return this.op_costs;
 	}
@@ -132,7 +136,7 @@ public class SpecificationDefinition {
 			if (layers.size() > longest_model)
 				longest_model = layers.size();
 
-			tasks.put(k, new HashMap<Integer, Task>());
+			application_graphs.put(k, new HashMap<Integer, Task>());
 
 			// Create task nodes in Application and populate hashmap
 			for (int i = 0; i < layers.size(); i++) {
@@ -143,7 +147,7 @@ public class SpecificationDefinition {
 				if (i == 0)
 					this.starting_tasks.add(t);
 
-				tasks.get(k).put(i, t);
+				application_graphs.get(k).put(i, t);
 				application.addVertex(t);
 			}
 
@@ -159,7 +163,7 @@ public class SpecificationDefinition {
 				if (layer_output_tensors.size() > 0) {
 
 					Integer layer_task_index = l.getIndex();
-					Task layer_task = tasks.get(k).get(layer_task_index);
+					Task layer_task = application_graphs.get(k).get(layer_task_index);
 					Integer output_size =
 							l.getOutputs().get(l.getOutputs().size() - 1).getShapeProduct();
 
@@ -172,7 +176,7 @@ public class SpecificationDefinition {
 
 							// Get OpenDSE task and set input shape
 							Integer target_task_index = target_layer.getIndex();
-							Task target_task = tasks.get(k).get(target_task_index);
+							Task target_task = application_graphs.get(k).get(target_task_index);
 							target_task.setAttribute("input_shape", output_size);
 
 							Communication comm = new Communication(String.format("comm%d_%s_%s", j,
@@ -296,14 +300,18 @@ public class SpecificationDefinition {
 		return architecture;
 	}
 
+
+
 	/**
-	 * @return
+	 * @brief Creates a set of possible mappings, ie. all tasks can be mapped onto the CPU + GPU,
+	 *        compatible tasks can be mapped to the TPU.
+	 * @return Mappings<Task, Resource>
 	 */
-	private Mappings<Task, Resource> GetMappings() {
+	private Mappings<Task, Resource> CreateMappingOptions() {
 
 		Mappings<Task, Resource> mappings = new Mappings<Task, Resource>();
 
-		for (HashMap<Integer, Task> map : tasks.values()) {
+		for (HashMap<Integer, Task> map : application_graphs.values()) {
 
 			for (Task task : map.values()) {
 				String task_id = task.getId();
@@ -357,7 +365,7 @@ public class SpecificationDefinition {
 				GetArchitectureFromArchitectureSummary(architecture_summary_path);
 		Application<Task, Dependency> application =
 				GetApplicationFromModelSummary(model_summary_path);
-		Mappings<Task, Resource> mappings = GetMappings();
+		Mappings<Task, Resource> mappings = CreateMappingOptions();
 
 		Specification specification = new Specification(application, architecture, mappings);
 
@@ -373,6 +381,10 @@ public class SpecificationDefinition {
 		return specification;
 	}
 
+
+	/**
+	 * @return Specification
+	 */
 	public Specification getSpecification() {
 		return (specification);
 	}

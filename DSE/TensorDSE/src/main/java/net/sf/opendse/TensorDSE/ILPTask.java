@@ -1,19 +1,36 @@
 package net.sf.opendse.TensorDSE;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import org.javatuples.Pair;
 import gurobi.GRBVar;
 import net.sf.opendse.model.Resource;
 import net.sf.opendse.model.Task;
 
 public class ILPTask {
 
+    private String ID;
     private Task task;
     private GRBVar grb_start_time;
     private GRBVar grb_finish_time;
     private GRBVar grb_execution_cost;
     private GRBVar grb_comm_cost;
     private Resource target_resource;
+    private ArrayList<Resource> target_resources;
     private Double execution_cost;
-    private Double comm_cost;
+    private HashMap<Resource, Double> execution_costs;
+    private Double send_cost;
+    private HashMap<Resource, Double> send_costs;
+    private Double recv_cost;
+    private HashMap<Resource, Double> recv_costs;
+
+    public ArrayList<Resource> getTarget_resources() {
+        return target_resources;
+    }
+
+    public void setTarget_resources(ArrayList<Resource> target_resources) {
+        this.target_resources = target_resources;
+    }
 
     public Double getExecution_cost() {
         return execution_cost;
@@ -39,13 +56,6 @@ public class ILPTask {
         this.target_resource = target_resource;
     }
 
-    public Double getComm_cost() {
-        return comm_cost;
-    }
-
-    public void setComm_cost(Double comm_cost) {
-        this.comm_cost = comm_cost;
-    }
 
     public GRBVar getGrb_start_time() {
         return grb_start_time;
@@ -77,6 +87,54 @@ public class ILPTask {
 
     public void setGrb_comm_cost(GRBVar grb_comm_cost) {
         this.grb_comm_cost = grb_comm_cost;
+    }
+
+    public Double getSend_cost() {
+        return send_cost;
+    }
+
+    public void setSend_cost(Double send_cost) {
+        this.send_cost = send_cost;
+    }
+
+    public Double getRecv_cost() {
+        return recv_cost;
+    }
+
+    public void setRecv_cost(Double recv_cost) {
+        this.recv_cost = recv_cost;
+    }
+
+    public HashMap<Resource, Double> getExecution_costs() {
+        return execution_costs;
+    }
+
+    public void setExecution_costs(HashMap<Resource, Double> execution_costs) {
+        this.execution_costs = execution_costs;
+    }
+
+    public HashMap<Resource, Double> getSend_costs() {
+        return send_costs;
+    }
+
+    public void setSend_costs(HashMap<Resource, Double> send_costs) {
+        this.send_costs = send_costs;
+    }
+
+    public HashMap<Resource, Double> getRecv_costs() {
+        return recv_costs;
+    }
+
+    public void setRecv_costs(HashMap<Resource, Double> recv_costs) {
+        this.recv_costs = recv_costs;
+    }
+
+    public String getID() {
+        return ID;
+    }
+
+    public void setID(String iD) {
+        ID = iD;
     }
 
 }

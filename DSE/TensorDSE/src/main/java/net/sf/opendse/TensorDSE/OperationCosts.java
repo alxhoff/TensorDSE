@@ -92,7 +92,6 @@ public class OperationCosts {
         }
 
         return (Hashtable<String, Double>) op_type_table.get(operation_type);
-
     }
 
     public Hashtable<String, Pair<Double, Double>> GetCommDataTypeTable(String device_type,
@@ -108,7 +107,6 @@ public class OperationCosts {
         }
 
         return (Hashtable<String, Pair<Double, Double>>) comm_type_table.get(operation_type);
-
     }
 
     public Double GetOpCost(String device_type, String operation_type, String data_type) {
@@ -117,7 +115,7 @@ public class OperationCosts {
                 this.GetOpDataTypeTable(device_type, operation_type);
 
         if (!data_type_table.containsKey(data_type)) {
-            data_type_table.put(data_type, Double.POSITIVE_INFINITY);
+            data_type_table.put(data_type, 1000.0);
         }
 
         return (Double) data_type_table.get(data_type);
@@ -130,8 +128,7 @@ public class OperationCosts {
                 this.GetCommDataTypeTable(device_type, operation_type);
 
         if (!data_type_table.containsKey(data_type)) {
-            data_type_table.put(data_type,
-                    new Pair(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY));
+            data_type_table.put(data_type, new Pair(1000.0, 1000.0));
         }
 
         return (Pair<Double, Double>) data_type_table.get(data_type);
@@ -174,28 +171,30 @@ public class OperationCosts {
                         Integer count = deligate.getCount();
 
                         String data_type;
-                        Double mean_cost;
-                        Double comm_send;
-                        Double comm_recv;
+                        Double mean_exec_cost;
+                        Double comm_send_cost;
+                        Double comm_recv_cost;
 
                         if (count == 0) {
                             data_type = "null";
-                            mean_cost = Double.POSITIVE_INFINITY;
-                            comm_send = Double.POSITIVE_INFINITY;
-                            comm_recv = Double.POSITIVE_INFINITY;
+                            mean_exec_cost = 1000.0;
+                            comm_send_cost = 1000.0;
+                            comm_recv_cost = 1000.0;
                         } else {
                             data_type = deligate.getInput().getType().toLowerCase();
-                            mean_cost = deligate.getMean();
+                            mean_exec_cost = deligate.getMean();
                             USB usb = deligate.getUsb();
-                            comm_send = usb.getSend().getMean();
-                            comm_recv = usb.getRecv().getMean();
+                            comm_send_cost = usb.getSend().getMean();
+                            comm_recv_cost = usb.getRecv().getMean();
                         }
 
                         this.GetOpDataTypeTable(device_type, operation_type).put(data_type,
-                                mean_cost);
+                                mean_exec_cost);
 
+                        Pair<Double, Double> comm_costs =
+                                new Pair<Double, Double>(comm_send_cost, comm_recv_cost);
                         this.GetCommDataTypeTable(device_type, operation_type).put(data_type,
-                                new Pair(comm_send, comm_recv));
+                                comm_costs);
                     }
                 }
             }

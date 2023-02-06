@@ -84,9 +84,10 @@ public class TensorDSE {
 		// ILP
 		parser.addArgument("-i", "--ilp").type(Boolean.class).setDefault(true)
 				.help("If the ILP should be run instead of the DSE");
-		parser.addArgument("-k", "--deactivationnumber").type(int.class).setDefault(10).help(
+		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(100.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
-
+		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
+				.help("Run Demo instead of solving input specification");
 
 		Namespace ns = null;
 
@@ -247,17 +248,30 @@ public class TensorDSE {
 
 			System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
 
+			// Specification contains, architecture and application graph as well as a generated set
+			// of possible mappings
 			SpecificationDefinition specification = new SpecificationDefinition(model_summary_path,
 					benchmark_results_path, architecture_summary_path);
 
 			if (args_namespace.getBoolean("ilp") == true) {
-				ILPSolver ilps = new ILPSolver();
-				ilps.gurobiDSEExampleSixTask();
-				// Solver solver = new Solver(specification.specification, specification.tasks,
-				// 		specification.starting_tasks, specification.GetOperationCosts());
-				// solver.solveILP();
-				System.out.println("wait here");
+				// Solve for mappings and schedule using only ILP
+
+				if (args_namespace.getBoolean("demo") == true) {
+					// Run an ILP demo
+					ILPSolver ilps = new ILPSolver();
+					ilps.gurobiDSEExampleSixTask();
+				} else {
+					// Solve the given input
+
+					// Solver contains the application, architecture, and possible mapping graphs as
+					// well as the list of starting tasks and the operation costs
+					Solver solver = new Solver(specification.specification, specification.application_graphs,
+							specification.starting_tasks, specification.GetOperationCosts(),
+							args_namespace.getDouble("deactivationnumber"));
+					solver.solveILP();
+				}
 			} else {
+				// Solve for mappings using heuristic and schedule using ILP
 
 				// Opt4J Modules
 				EvolutionaryAlgorithmModule ea_module = GetEAModule(args_namespace);

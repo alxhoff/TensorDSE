@@ -41,13 +41,12 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		this.operation_costs = SpecificationDefinition.GetOperationCosts();
 		this.starting_tasks = SpecificationDefinition.starting_tasks;
 		this.longest_model = SpecificationDefinition.longest_model;
-		this.tasks = SpecificationDefinition.tasks;
+		this.tasks = SpecificationDefinition.application_graphs;
 
 		for (String s : objectives.split(",")) {
 			Objective obj = new Objective(s, Objective.Sign.MIN);
 			map.put(s, obj);
 		}
-
 	}
 
 	@Override
@@ -68,7 +67,7 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		SpecificationViewer.view(specification);
 		Solver sh = new Solver(specification, this.tasks, this.starting_tasks,
 				this.operation_costs);
-		sh.solveDSESchedule();
+		sh.solveILP();
 
 		for (Mapping<Task, Resource> m : mappings) {
 			Task current_task = m.getSource();

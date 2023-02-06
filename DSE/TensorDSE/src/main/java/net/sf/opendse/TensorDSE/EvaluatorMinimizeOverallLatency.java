@@ -42,7 +42,7 @@ public class EvaluatorMinimizeOverallLatency implements ImplementationEvaluator 
 		this.operation_costs = SpecificationDefinition.GetOperationCosts();
 		this.starting_tasks = SpecificationDefinition.starting_tasks;
 		this.longest_model = SpecificationDefinition.longest_model;
-		this.tasks = SpecificationDefinition.tasks;
+		this.tasks = SpecificationDefinition.application_graphs;
 
 		for (String s : objectives.split(",")) {
 			Objective obj = new Objective(s, Objective.Sign.MIN);
