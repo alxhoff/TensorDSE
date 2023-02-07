@@ -44,6 +44,11 @@ import net.sf.opendse.visualization.SpecificationViewer;
 
 public class TensorDSE {
 
+	
+	/** 
+	 * @param args
+	 * @return Namespace
+	 */
 	private static Namespace GetArgNamespace(String[] args) {
 		ArgumentParser parser = ArgumentParsers.newFor("TensorDSE").build().defaultHelp(true)
 				.description("Find Y-graph mapping");
@@ -61,7 +66,7 @@ public class TensorDSE {
 				.help("Number of offsprings per generation");
 
 		// Other
-		parser.addArgument("-r", "--runs").setDefault(50).type(int.class).help("Number of runs");
+		parser.addArgument("-r", "--runs").setDefault(1).type(int.class).help("Number of runs");
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
@@ -82,8 +87,8 @@ public class TensorDSE {
 				.type(String.class);
 
 		// ILP
-		parser.addArgument("-i", "--ilp").type(Boolean.class).setDefault(true)
-				.help("If the ILP should be run instead of the DSE");
+		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
+				.help("If the ILP should be run instead of the DSE for finding task mappings");
 		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(100.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
 		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
@@ -100,6 +105,11 @@ public class TensorDSE {
 		return ns;
 	}
 
+	
+	/** 
+	 * @param args_namespace
+	 * @return EvolutionaryAlgorithmModule
+	 */
 	private static EvolutionaryAlgorithmModule GetEAModule(Namespace args_namespace) {
 		Double crossover_rate = args_namespace.getDouble("crossover");
 		int population_size = args_namespace.getInt("populationsize");
@@ -117,6 +127,12 @@ public class TensorDSE {
 		return ea;
 	}
 
+	
+	/** 
+	 * @brief The specification module binds an evaluator to the problem's specification
+	 * @param specification_definition
+	 * @return Module
+	 */
 	private static Module GetSpecificationModule(SpecificationDefinition specification_definition) {
 
 		Module specification_module = new Opt4JModule() {
@@ -141,6 +157,11 @@ public class TensorDSE {
 		return specification_module;
 	}
 
+	
+	/** 
+	 * @param args_namespace
+	 * @return String
+	 */
 	private static String GetModelSummaryPath(Namespace args_namespace) {
 		String model_summary_loc = args_namespace.getString("modelsummary");
 		if (model_summary_loc == null) {
@@ -151,6 +172,11 @@ public class TensorDSE {
 		return model_summary_loc;
 	}
 
+	
+	/** 
+	 * @param args_namespace
+	 * @return String
+	 */
 	private static String GetArchitectureSummaryPath(Namespace args_namespace) {
 		String architecture_summary_loc = args_namespace.getString("architecturesummary");
 		if (architecture_summary_loc == null) {
@@ -161,6 +187,11 @@ public class TensorDSE {
 		return architecture_summary_loc;
 	}
 
+	
+	/** 
+	 * @param args_namespace
+	 * @return String
+	 */
 	private static String GetBenchmarkingResultsPath(Namespace args_namespace) {
 		String cost_file = args_namespace.getString("costfile");
 		if (cost_file == null) {
@@ -171,6 +202,11 @@ public class TensorDSE {
 		return cost_file;
 	}
 
+	
+	/** 
+	 * @param args_namespace
+	 * @return FileWriter
+	 */
 	private static FileWriter GetResultsWriter(Namespace args_namespace) {
 		String results_file = String.format("%s/%s/%s", System.getProperty("user.dir"),
 				args_namespace.getString("outputfolder"), args_namespace.getString("resultsfile"));
@@ -186,6 +222,11 @@ public class TensorDSE {
 		return csvWriter;
 	}
 
+	
+	/** 
+	 * @param args_namespace
+	 * @return File
+	 */
 	private static File GetOutputFolder(Namespace args_namespace) {
 		String output_folder = args_namespace.getString("outputfolder");
 		System.out.printf("Output Directory: %s\n", output_folder);
@@ -194,6 +235,13 @@ public class TensorDSE {
 		return file;
 	}
 
+	
+	/** 
+	 * @param ea
+	 * @param spec_module
+	 * @param opt
+	 * @return Collection<Module>
+	 */
 	private static Collection<Module> GetModulesCollection(EvolutionaryAlgorithmModule ea,
 			Module spec_module, OptimizationModule opt) {
 		Collection<Module> ret = new ArrayList<Module>();
@@ -204,6 +252,11 @@ public class TensorDSE {
 		return ret;
 	}
 
+	
+	/** 
+	 * @param modules
+	 * @return Opt4JTask
+	 */
 	private static Opt4JTask GetOpt4JTask(Collection<Module> modules) {
 		Opt4JTask task = new Opt4JTask(false);
 		task.init(modules);
@@ -211,7 +264,11 @@ public class TensorDSE {
 		return task;
 	}
 
-	private static void PrintEAParams(Namespace args_namespace) {
+	
+	/** 
+	 * @param args_namespace
+	 */
+	private static void PrintEAParameters(Namespace args_namespace) {
 		Double crossover_rate = args_namespace.getDouble("crossover");
 		int population_size = args_namespace.getInt("populationsize");
 		int parents_per_generation = args_namespace.getInt("parentspergeneration");
@@ -224,25 +281,24 @@ public class TensorDSE {
 		System.out.printf("Offsprings Per Generations: %d\n", offsprings_per_generation);
 	}
 
+	
+	/** 
+	 * @param args
+	 */
 	public static void main(String[] args) {
-
-		System.out.println("Working Directory: " + System.getProperty("user.dir"));
 
 		Namespace args_namespace = GetArgNamespace(args);
 
 		int test_runs = args_namespace.getInt("runs");
-		System.out.printf("Runs: %d\n", test_runs);
-
 		double[] objective_values = new double[test_runs];
-
 		File output_directory = GetOutputFolder(args_namespace);
 		FileWriter csv_writer = GetResultsWriter(args_namespace);
-
-		PrintEAParams(args_namespace);
-
-		String model_summary_path = GetModelSummaryPath(args_namespace);
+		String models_description_path = GetModelSummaryPath(args_namespace);
 		String benchmark_results_path = GetBenchmarkingResultsPath(args_namespace);
-		String architecture_summary_path = GetArchitectureSummaryPath(args_namespace);
+		String hardware_description_path = GetArchitectureSummaryPath(args_namespace);
+
+		System.out.println("Working Directory: " + System.getProperty("user.dir"));
+		System.out.printf("Runs: %d\n", test_runs);
 
 		for (int i = 0; i < test_runs; i++) {
 
@@ -250,32 +306,35 @@ public class TensorDSE {
 
 			// Specification contains, architecture and application graph as well as a generated set
 			// of possible mappings
-			SpecificationDefinition specification = new SpecificationDefinition(model_summary_path,
-					benchmark_results_path, architecture_summary_path);
+			SpecificationDefinition specification_definition = new SpecificationDefinition(models_description_path,
+					benchmark_results_path, hardware_description_path);
 
-			if (args_namespace.getBoolean("ilp") == true) {
+			
+			if (args_namespace.getBoolean("ilpmapping") == true) {
+				
 				// Solve for mappings and schedule using only ILP
-
 				if (args_namespace.getBoolean("demo") == true) {
 					// Run an ILP demo
-					ILPSolver ilps = new ILPSolver();
-					ilps.gurobiDSEExampleSixTask();
+					ILPFormuation ilp_formulation = new ILPFormuation();
+					ilp_formulation.gurobiDSEExampleSixTask();
 				} else {
-					// Solve the given input
-
 					// Solver contains the application, architecture, and possible mapping graphs as
 					// well as the list of starting tasks and the operation costs
-					Solver solver = new Solver(specification.specification, specification.application_graphs,
-							specification.starting_tasks, specification.GetOperationCosts(),
+					ScheduleSolver schedule_solver = new ScheduleSolver(specification_definition.getSpecification(), specification_definition.getApplication_graphs(),
+							specification_definition.getStarting_tasks(), specification_definition.GetOperationCosts(),
 							args_namespace.getDouble("deactivationnumber"));
-					solver.solveILP();
+					schedule_solver.solveILPMappingAndSchedule();
 				}
+				
+			// Solve mappings using the DSE
 			} else {
 				// Solve for mappings using heuristic and schedule using ILP
+				PrintEAParameters(args_namespace);
 
 				// Opt4J Modules
 				EvolutionaryAlgorithmModule ea_module = GetEAModule(args_namespace);
-				Module specification_module = GetSpecificationModule(specification);
+				// Bind the evaluator to the specification
+				Module specification_module = GetSpecificationModule(specification_definition);
 				OptimizationModule optimization_module = new OptimizationModule();
 				Collection<Module> modules =
 						GetModulesCollection(ea_module, specification_module, optimization_module);

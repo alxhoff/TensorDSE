@@ -1,9 +1,5 @@
 package net.sf.opendse.TensorDSE;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,13 +8,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import org.apache.xalan.templates.ElemSort;
-import org.apache.xpath.operations.Bool;
 import org.javatuples.Pair;
-import org.javatuples.Triplet;
-import com.google.ortools.sat.RoutesConstraintProto;
-import edu.uci.ics.jung.visualization.control.AbstractPopupGraphMousePlugin;
 import net.sf.opendse.model.Application;
 import net.sf.opendse.model.Architecture;
 import net.sf.opendse.model.Dependency;
@@ -31,7 +21,7 @@ import net.sf.opendse.model.Task;
 
 import gurobi.*;
 
-public class Solver {
+public class ScheduleSolver {
 
     private Architecture<Resource, Link> architecture;
     private Application<Task, Dependency> application;
@@ -39,11 +29,11 @@ public class Solver {
     private Routings<Task, Resource, Link> routings;
     private Double K;
 
-    private HashMap<Integer, HashMap<Integer, Task>> application_graphs;
+    // private HashMap<Integer, HashMap<Integer, Task>> application_graphs;
     private List<Task> starting_tasks;
     private OperationCosts operation_costs;
 
-    public Solver(Specification specification,
+    public ScheduleSolver(Specification specification,
             HashMap<Integer, HashMap<Integer, Task>> application_graphs, List<Task> starting_tasks,
             OperationCosts operation_costs, Double K) {
 
@@ -51,7 +41,7 @@ public class Solver {
         this.application = specification.getApplication();
         this.mapping = specification.getMappings();
         this.routings = specification.getRoutings();
-        this.application_graphs = application_graphs;
+        // this.application_graphs = application_graphs;
         this.starting_tasks = starting_tasks;
         this.operation_costs = operation_costs;
         this.K = K;
@@ -59,14 +49,14 @@ public class Solver {
         addCommCosts(operation_costs);
     }
 
-    public Solver(Specification specification, HashMap<Integer, HashMap<Integer, Task>> tasks,
+    public ScheduleSolver(Specification specification, HashMap<Integer, HashMap<Integer, Task>> tasks,
             List<Task> starting_tasks, OperationCosts operation_costs) {
 
         this.architecture = specification.getArchitecture();
         this.application = specification.getApplication();
         this.mapping = specification.getMappings();
         this.routings = specification.getRoutings();
-        this.application_graphs = tasks;
+        // this.application_graphs = tasks;
         this.starting_tasks = starting_tasks;
         this.operation_costs = operation_costs;
         this.K = 100.0;
@@ -74,6 +64,55 @@ public class Solver {
         addCommCosts(operation_costs);
     }
 
+    /**
+     * @param operation_costs
+     * @return Boolean
+     */
+    public Boolean addCommCosts(OperationCosts operation_costs) {
+
+        // Tasks that were routed over will have the resource in the verticies of the routing
+        // of the comm node that sits between the task and its predecessor
+
+        for (Task task : this.application.getVertices()) {
+
+            // Only interested in non-communication tasks
+            if (task.getId().contains("comm"))
+                continue;
+
+            Collection<Task> predecessors = this.application.getPredecessors(task);
+
+            if (predecessors.size() > 0) {
+
+                // Comm task coming before current task
+                Task predecessor_comm = predecessors.iterator().next();
+
+                // Resources used in communication
+                Collection<Resource> comm_resources = routings.get(predecessor_comm).getVertices();
+
+                Boolean bus = false;
+
+                for (Resource resource : comm_resources) {
+                    if (resource.getId().contains("usb") || resource.getId().contains("pci")) {
+                        bus = true;
+                        break;
+                    }
+                }
+
+                if (bus == true) {
+                    Pair<Double, Double> comm_cost = operation_costs.GetCommCost("tpu",
+                            task.getAttribute("type"), task.getAttribute("dtype"));
+                    task.setAttribute("comm_cost", comm_cost);
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param task
+     * @return Resource
+     */
     private Resource getTargetResource(Task task) {
 
         Resource target_resource = new ArrayList<Resource>(mapping.getTargets(task))
@@ -82,12 +121,23 @@ public class Solver {
         return target_resource;
     }
 
+
+    /**
+     * @param task
+     * @return ArrayList<Resource>
+     */
     private ArrayList<Resource> getPossibleTargetResources(Task task) {
         ArrayList<Resource> target_resources = new ArrayList<Resource>(mapping.getTargets(task));
 
         return target_resources;
     }
 
+
+    /**
+     * @param comm
+     * @param target_resource
+     * @return Pair<Double, Double>
+     */
     private Pair<Double, Double> getRoutedCommunicationCost(Task comm, Resource target_resource) {
 
         Pair<Double, Double> comm_cost = new Pair<>(0.0, 0.0);
@@ -139,6 +189,12 @@ public class Solver {
         return comm_cost;
     }
 
+
+    /**
+     * @param task
+     * @param target_resource
+     * @return Double
+     */
     private Double getExecutionCost(Task task, Resource target_resource) {
         Double exec_cost = operation_costs.GetOpCost(target_resource.getId().replaceAll("\\d", ""),
                 task.getAttribute("type"), task.getAttribute("dtype"));
@@ -146,6 +202,10 @@ public class Solver {
         return exec_cost;
     }
 
+
+    /**
+     * @return Boolean
+     */
     public Boolean solveDSESchedule() {
 
         // Sequential arrays of models and their tasks
@@ -157,7 +217,7 @@ public class Solver {
 
         try {
 
-            ILPSolver ilps = new ILPSolver();
+            ILPFormuation ilps = new ILPFormuation();
             GRBEnv env = new GRBEnv("bilinear.log");
             GRBModel model = new GRBModel(env);
 
@@ -300,7 +360,7 @@ public class Solver {
         return true;
     }
 
-    public void solveILP() {
+    public void solveILPMappingAndSchedule() {
 
         // Sequential arrays of models and their tasks
         ArrayList<ArrayList<ILPTask>> models = new ArrayList<ArrayList<ILPTask>>();
@@ -308,7 +368,7 @@ public class Solver {
 
         try {
 
-            ILPSolver ilps = new ILPSolver();
+            ILPFormuation ilps = new ILPFormuation();
             GRBEnv grb_env = new GRBEnv("bilinear.log");
             GRBModel grb_model = new GRBModel(grb_env);
 
@@ -743,44 +803,4 @@ public class Solver {
         }
     }
 
-    public Boolean addCommCosts(OperationCosts operation_costs) {
-
-        // Tasks that were routed over will have the resource in the verticies of the routing
-        // of the comm node that sits between the task and its predecessor
-
-        for (Task task : this.application.getVertices()) {
-
-            // Only interested in non-communication tasks
-            if (task.getId().contains("comm"))
-                continue;
-
-            Collection<Task> predecessors = this.application.getPredecessors(task);
-
-            if (predecessors.size() > 0) {
-
-                // Comm task coming before current task
-                Task predecessor_comm = predecessors.iterator().next();
-
-                // Resources used in communication
-                Collection<Resource> comm_resources = routings.get(predecessor_comm).getVertices();
-
-                Boolean bus = false;
-
-                for (Resource resource : comm_resources) {
-                    if (resource.getId().contains("usb") || resource.getId().contains("pci")) {
-                        bus = true;
-                        break;
-                    }
-                }
-
-                if (bus == true) {
-                    Pair<Double, Double> comm_cost = operation_costs.GetCommCost("tpu",
-                            task.getAttribute("type"), task.getAttribute("dtype"));
-                    task.setAttribute("comm_cost", comm_cost);
-                }
-            }
-        }
-
-        return true;
-    }
 }

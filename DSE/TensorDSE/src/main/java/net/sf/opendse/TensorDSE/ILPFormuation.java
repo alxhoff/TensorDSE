@@ -9,20 +9,23 @@ import org.javatuples.Pair;
 import gurobi.*;
 import net.sf.opendse.model.Resource;
 
-import net.sf.opendse.model.Task;
-
-public class ILPSolver {
+public class ILPFormuation {
 
     public Double K;
 
-    public ILPSolver() {
+    public ILPFormuation() {
         this.K = 100.0;
     }
 
-    public ILPSolver(Double K) {
+    public ILPFormuation(Double K) {
         this.K = K;
     }
 
+    
+    /** 
+     * @param x_vars
+     * @param model
+     */
     // For each potential mapping of a task to a resource an x variable contains the boolean
     // information for the mapping. For each task the sum of all x variables can be at most 1,
     // ie. a task can only be mapped to one resource.
@@ -41,6 +44,13 @@ public class ILPSolver {
         }
     }
 
+    
+    /** 
+     * @param resulting_cost
+     * @param sending_cost
+     * @param receiving_cost
+     * @param model
+     */
     public void addTotalCommunicationCostConstraint(GRBVar resulting_cost, GRBVar sending_cost,
             GRBVar receiving_cost, GRBModel model) {
 
@@ -57,6 +67,13 @@ public class ILPSolver {
         }
     }
 
+    
+    /** 
+     * @param resulting_cost
+     * @param cost
+     * @param mapping_var
+     * @param model
+     */
     public void addCommunicationCostSelectionConstraint(GRBVar resulting_cost, GRBVar cost,
             GRBVar mapping_var, GRBModel model) {
 
@@ -72,6 +89,13 @@ public class ILPSolver {
         }
     }
 
+    
+    /** 
+     * @param resulting_cost
+     * @param benchmarked_cost
+     * @param z_helper
+     * @param model
+     */
     // Eg.
     // cs_i_j_r = Cs_i_r(1 - z_i_j_r)
     // cs_i_j_r = Cs_i_r - (Cs_i_r * z_i_j_r)
@@ -92,6 +116,12 @@ public class ILPSolver {
         }
     }
 
+    
+    /** 
+     * @param precursor_task_finish
+     * @param dependent_task_start
+     * @param model
+     */
     // Scheduling dependency of the form Ts_j >= Tf_i
     // where task i is a dependency of task j
     public void addTaskSchedulingDependencyConstraint(GRBVar precursor_task_finish,
@@ -107,6 +137,13 @@ public class ILPSolver {
         }
     }
 
+    
+    /** 
+     * @param result_var
+     * @param input_var_one
+     * @param input_var_two
+     * @param model
+     */
     public void addPairAndConstrint(GRBVar result_var, GRBVar input_var_one, GRBVar input_var_two,
             GRBModel model) {
         // // y >= x1 + x2 - 1, y <= x1, y <= x2, 0 <= y <= 1
@@ -148,6 +185,13 @@ public class ILPSolver {
         }
     }
 
+    
+    /** 
+     * @param result_var
+     * @param vars1
+     * @param vars2
+     * @param model
+     */
     public void addSumOfVectorsConstraint(GRBVar result_var, GRBVar[] vars1, GRBVar[] vars2,
             GRBModel model) {
 
@@ -166,6 +210,16 @@ public class ILPSolver {
         }
     }
 
+    
+    /** 
+     * @param task_one_start
+     * @param task_one_finish
+     * @param task_two_start
+     * @param task_two_finish
+     * @param Y
+     * @param model
+     * @return Void
+     */
     // For each pair of tasks that share a resource mapping, ie. they are both assigned to the same
     // resource for execution, then there is an inter-task dependency that one must run before the
     // other.
@@ -202,6 +256,19 @@ public class ILPSolver {
         return null;
     }
 
+    
+    /** 
+     * @param task_one_start
+     * @param task_one_finish
+     * @param task_two_start
+     * @param task_two_finish
+     * @param Y
+     * @param X_one
+     * @param X_two
+     * @param K
+     * @param model
+     * @return Void
+     */
     // When solving the mapping via the ILP, there should be a pair-wise resource mapping
     // constraints placed on all possible pairs of tasks.
     //
@@ -243,6 +310,15 @@ public class ILPSolver {
     }
 
 
+    
+    /** 
+     * @param task_finish
+     * @param task_start
+     * @param task_exec_time
+     * @param task_comm_time
+     * @param model
+     * @return Void
+     */
     // Finish times are simply the start time summed with the execution time and communication time
     // Tf = Ts + E1 + C1
     public Void addFinishTimeConstraint(GRBVar task_finish, GRBVar task_start,
@@ -262,6 +338,12 @@ public class ILPSolver {
         return null;
     }
 
+    
+    /** 
+     * @param task_id
+     * @param model
+     * @return ILPTask
+     */
     private ILPTask initILPTaskBase(String task_id, GRBModel model) {
 
         ILPTask ret = new ILPTask();
@@ -272,6 +354,15 @@ public class ILPSolver {
     }
 
 
+    
+    /** 
+     * @param task_id
+     * @param target_resource
+     * @param comm_cost
+     * @param exec_cost
+     * @param model
+     * @return ILPTask
+     */
     public ILPTask initILPTask(String task_id, Resource target_resource,
             Pair<Double, Double> comm_cost, Double exec_cost, GRBModel model) {
 
@@ -301,6 +392,16 @@ public class ILPSolver {
         return ret;
     }
 
+    
+    /** 
+     * @param task_id
+     * @param target_resources
+     * @param comm_costs
+     * @param HashMap<Resource
+     * @param exec_costs
+     * @param model
+     * @return ILPTask
+     */
     public ILPTask initILPTask(String task_id, ArrayList<Resource> target_resources,
             HashMap<Resource, Pair<Double, Double>> comm_costs,
             HashMap<Resource, Double> exec_costs, GRBModel model) {
@@ -1286,7 +1387,7 @@ public class ILPSolver {
 
         try {
 
-            ILPSolver ilps = new ILPSolver();
+            ILPFormuation ilps = new ILPFormuation();
 
             GRBEnv env = new GRBEnv("bilinear.log");
             System.out.println(String.format("Using Gurobi version: %s",
@@ -1559,7 +1660,7 @@ public class ILPSolver {
 
         try {
 
-            ILPSolver ilps = new ILPSolver();
+            ILPFormuation ilps = new ILPFormuation();
 
             GRBEnv env = new GRBEnv("bilinear.log");
             System.out.println(String.format("Using Gurobi version: %s",
