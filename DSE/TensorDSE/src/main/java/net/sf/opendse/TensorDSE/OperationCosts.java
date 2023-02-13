@@ -33,56 +33,56 @@ public class OperationCosts {
     public Hashtable<String, Hashtable<String, Hashtable<String, Double>>> operation_costs;
     public Hashtable<String, Hashtable<String, Hashtable<String, Pair<Double, Double>>>> communication_costs;
 
-    
-    /** 
+
+    /**
      * @return Hashtable<String, Hashtable<String, Hashtable<String, Double>>>
      */
     public Hashtable<String, Hashtable<String, Hashtable<String, Double>>> CreateEmptyDeviceTypeTable() {
         return new Hashtable<String, Hashtable<String, Hashtable<String, Double>>>();
     }
 
-    
-    /** 
+
+    /**
      * @return Hashtable<String, Hashtable<String, Hashtable<String, Pair<Double, Double>>>>
      */
     public Hashtable<String, Hashtable<String, Hashtable<String, Pair<Double, Double>>>> CreateEmptyCommDeviceTypeTable() {
         return new Hashtable<String, Hashtable<String, Hashtable<String, Pair<Double, Double>>>>();
     }
 
-    
-    /** 
+
+    /**
      * @return Hashtable<String, Hashtable<String, Double>>
      */
     public Hashtable<String, Hashtable<String, Double>> CreateEmptyOpTypeTable() {
         return new Hashtable<String, Hashtable<String, Double>>();
     }
 
-    
-    /** 
+
+    /**
      * @return Hashtable<String, Hashtable<String, Pair<Double, Double>>>
      */
     public Hashtable<String, Hashtable<String, Pair<Double, Double>>> CreateEmptyCommOpTypeTable() {
         return new Hashtable<String, Hashtable<String, Pair<Double, Double>>>();
     }
 
-    
-    /** 
+
+    /**
      * @return Hashtable<String, Double>
      */
     public Hashtable<String, Double> CreateEmptyDataTypeTable() {
         return new Hashtable<String, Double>();
     }
 
-    
-    /** 
+
+    /**
      * @return Hashtable<String, Pair<Double, Double>>
      */
     public Hashtable<String, Pair<Double, Double>> CreateEmptyCommDataTypeTable() {
         return new Hashtable<String, Pair<Double, Double>>();
     }
 
-    
-    /** 
+
+    /**
      * @param device_type
      * @return Hashtable<String, Hashtable<String, Double>>
      */
@@ -97,8 +97,8 @@ public class OperationCosts {
         return (Hashtable<String, Hashtable<String, Double>>) this.operation_costs.get(device_type);
     }
 
-    
-    /** 
+
+    /**
      * @param device_type
      * @return Hashtable<String, Hashtable<String, Pair<Double, Double>>>
      */
@@ -115,8 +115,8 @@ public class OperationCosts {
                 .get(device_type);
     }
 
-    
-    /** 
+
+    /**
      * @param device_type
      * @param operation_type
      * @return Hashtable<String, Double>
@@ -134,8 +134,8 @@ public class OperationCosts {
         return (Hashtable<String, Double>) op_type_table.get(operation_type);
     }
 
-    
-    /** 
+
+    /**
      * @param device_type
      * @param operation_type
      * @return Hashtable<String, Pair<Double, Double>>
@@ -155,8 +155,8 @@ public class OperationCosts {
         return (Hashtable<String, Pair<Double, Double>>) comm_type_table.get(operation_type);
     }
 
-    
-    /** 
+
+    /**
      * @param device_type
      * @param operation_type
      * @param data_type
@@ -174,8 +174,8 @@ public class OperationCosts {
         return (Double) data_type_table.get(data_type);
     }
 
-    
-    /** 
+
+    /**
      * @param device_type
      * @param operation_type
      * @param data_type
@@ -194,8 +194,8 @@ public class OperationCosts {
         return (Pair<Double, Double>) data_type_table.get(data_type);
     }
 
-    
-    /** 
+
+    /**
      * @param json_file_path
      * @return BenchmarkJSON
      */
@@ -270,8 +270,8 @@ public class OperationCosts {
         }
     }
 
-    
-    /** 
+
+    /**
      * @return Hashtable<String, Hashtable<String, Hashtable<String, Double>>>
      */
     public Hashtable<String, Hashtable<String, Hashtable<String, Double>>> getOpCost() {

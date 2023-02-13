@@ -44,8 +44,8 @@ import net.sf.opendse.visualization.SpecificationViewer;
 
 public class TensorDSE {
 
-	
-	/** 
+
+	/**
 	 * @param args
 	 * @return Namespace
 	 */
@@ -70,8 +70,8 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
-				.setDefault("src/main/resources/modelsummaries/MNIST_multi.json").type(String.class)
-				.help("Location of model summary CSV");
+				.setDefault("src/main/resources/modelsummaries/MNIST_multi_3.json")
+				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary")
 				.setDefault(
 						"src/main/resources/architecturesummaries/outputarchitecturesummary.json")
@@ -87,7 +87,7 @@ public class TensorDSE {
 				.type(String.class);
 
 		// ILP
-		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
+		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(true)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
 		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(100.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
@@ -105,8 +105,8 @@ public class TensorDSE {
 		return ns;
 	}
 
-	
-	/** 
+
+	/**
 	 * @param args_namespace
 	 * @return EvolutionaryAlgorithmModule
 	 */
@@ -127,8 +127,8 @@ public class TensorDSE {
 		return ea;
 	}
 
-	
-	/** 
+
+	/**
 	 * @brief The specification module binds an evaluator to the problem's specification
 	 * @param specification_definition
 	 * @return Module
@@ -157,8 +157,8 @@ public class TensorDSE {
 		return specification_module;
 	}
 
-	
-	/** 
+
+	/**
 	 * @param args_namespace
 	 * @return String
 	 */
@@ -172,8 +172,8 @@ public class TensorDSE {
 		return model_summary_loc;
 	}
 
-	
-	/** 
+
+	/**
 	 * @param args_namespace
 	 * @return String
 	 */
@@ -187,8 +187,8 @@ public class TensorDSE {
 		return architecture_summary_loc;
 	}
 
-	
-	/** 
+
+	/**
 	 * @param args_namespace
 	 * @return String
 	 */
@@ -202,8 +202,8 @@ public class TensorDSE {
 		return cost_file;
 	}
 
-	
-	/** 
+
+	/**
 	 * @param args_namespace
 	 * @return FileWriter
 	 */
@@ -222,8 +222,8 @@ public class TensorDSE {
 		return csvWriter;
 	}
 
-	
-	/** 
+
+	/**
 	 * @param args_namespace
 	 * @return File
 	 */
@@ -235,8 +235,8 @@ public class TensorDSE {
 		return file;
 	}
 
-	
-	/** 
+
+	/**
 	 * @param ea
 	 * @param spec_module
 	 * @param opt
@@ -252,8 +252,8 @@ public class TensorDSE {
 		return ret;
 	}
 
-	
-	/** 
+
+	/**
 	 * @param modules
 	 * @return Opt4JTask
 	 */
@@ -264,8 +264,8 @@ public class TensorDSE {
 		return task;
 	}
 
-	
-	/** 
+
+	/**
 	 * @param args_namespace
 	 */
 	private static void PrintEAParameters(Namespace args_namespace) {
@@ -281,8 +281,8 @@ public class TensorDSE {
 		System.out.printf("Offsprings Per Generations: %d\n", offsprings_per_generation);
 	}
 
-	
-	/** 
+
+	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
@@ -306,12 +306,12 @@ public class TensorDSE {
 
 			// Specification contains, architecture and application graph as well as a generated set
 			// of possible mappings
-			SpecificationDefinition specification_definition = new SpecificationDefinition(models_description_path,
-					benchmark_results_path, hardware_description_path);
+			SpecificationDefinition specification_definition = new SpecificationDefinition(
+					models_description_path, benchmark_results_path, hardware_description_path);
 
-			
+
 			if (args_namespace.getBoolean("ilpmapping") == true) {
-				
+
 				// Solve for mappings and schedule using only ILP
 				if (args_namespace.getBoolean("demo") == true) {
 					// Run an ILP demo
@@ -320,13 +320,15 @@ public class TensorDSE {
 				} else {
 					// Solver contains the application, architecture, and possible mapping graphs as
 					// well as the list of starting tasks and the operation costs
-					ScheduleSolver schedule_solver = new ScheduleSolver(specification_definition.getSpecification(), specification_definition.getApplication_graphs(),
-							specification_definition.getStarting_tasks(), specification_definition.GetOperationCosts(),
-							args_namespace.getDouble("deactivationnumber"));
+					ScheduleSolver schedule_solver =
+							new ScheduleSolver(specification_definition.getSpecification(),
+									specification_definition.getStarting_tasks(),
+									specification_definition.getOperation_costs(),
+									args_namespace.getDouble("deactivationnumber"));
 					schedule_solver.solveILPMappingAndSchedule();
 				}
-				
-			// Solve mappings using the DSE
+
+				// Solve mappings using the DSE
 			} else {
 				// Solve for mappings using heuristic and schedule using ILP
 				PrintEAParameters(args_namespace);

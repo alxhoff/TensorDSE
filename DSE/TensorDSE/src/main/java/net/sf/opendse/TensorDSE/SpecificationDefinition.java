@@ -147,13 +147,6 @@ public class SpecificationDefinition {
 
 
 	/**
-	 * @return OperationCosts
-	 */
-	public OperationCosts GetOperationCosts() {
-		return this.operation_costs;
-	}
-
-	/**
 	 * @param model_summary_path
 	 * @return
 	 */

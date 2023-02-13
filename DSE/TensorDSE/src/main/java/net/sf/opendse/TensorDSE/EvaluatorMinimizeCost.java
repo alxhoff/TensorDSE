@@ -26,17 +26,16 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	protected final Map<String, Objective> map = new HashMap<String, Objective>();
 	protected int priority;
 	private OperationCosts operation_costs = null;
-	public List<Task> starting_tasks;
-	public HashMap<Integer, HashMap<Integer, Task>> tasks;
-	// public Integer longest_model;
+	private List<Task> starting_tasks;
+	// public HashMap<Integer, HashMap<Integer, Task>> tasks;
+	Mappings<Task, Resource> possible_mappings;
 
 	public EvaluatorMinimizeCost(String objectives,
 			SpecificationDefinition SpecificationDefinition) {
 		super();
-		this.operation_costs = SpecificationDefinition.GetOperationCosts();
+		this.operation_costs = SpecificationDefinition.getOperation_costs();
 		this.starting_tasks = SpecificationDefinition.getStarting_tasks();
-		// this.longest_model = SpecificationDefinition.longest_model;
-		this.tasks = SpecificationDefinition.getApplication_graphs();
+		this.possible_mappings = SpecificationDefinition.getSpecification().getMappings();
 
 		for (String s : objectives.split(",")) {
 			Objective obj = new Objective(s, Objective.Sign.MIN);
@@ -54,37 +53,15 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	public Specification evaluate(Specification solution_specification, Objectives objectives) {
 
 		// Pieces that comprise the solution's specification
-		// Architecture<Resource, Link> architecture = solution_specification.getArchitecture();
-		// Application<Task, Dependency> application = solution_specification.getApplication();
 		Mappings<Task, Resource> mappings = solution_specification.getMappings();
 		Routings<Task, Resource, Link> routings = solution_specification.getRoutings();
 
-		double cost_of_mapping = 0.0;
-
 		// Specification for viewing and debugging
-		// Specification specification = new Specification(application, architecture, mappings);
 		SpecificationViewer.view(solution_specification);
-		ScheduleSolver schedule_solver = new ScheduleSolver(solution_specification, this.tasks,
+		ScheduleSolver schedule_solver = new ScheduleSolver(solution_specification,
 				this.starting_tasks, this.operation_costs);
-		schedule_solver.solveDSESchedule();
 
-		for (Mapping<Task, Resource> m : mappings) {
-			Task current_task = m.getSource();
-			if (current_task.isDefined("input_shape")) {
-				cost_of_mapping = cost_of_mapping + MappingCost(m);
-			}
-		}
-
-		for (Architecture<Resource, Link> r : routings.getRoutings()) {
-
-			Iterator<Link> routing_it = r.getEdges().iterator();
-			while (routing_it.hasNext()) {
-				Link link_n = routing_it.next();
-				Double link_cost = link_n.getAttribute("cost");
-				cost_of_mapping = cost_of_mapping + link_cost;
-			}
-
-		}
+		double cost_of_mapping = schedule_solver.solveDSESchedule(getPossible_mappings());
 
 		objectives.add(map.get("cost_of_mapping"), cost_of_mapping);
 		/*
@@ -94,7 +71,6 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		 * catch block e.printStackTrace(); }
 		 */
 		return null;
-
 	}
 
 
@@ -140,5 +116,37 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		cost += comm_cost.getValue0() + comm_cost.getValue1();
 
 		return cost;
+	}
+
+	public Map<String, Objective> getMap() {
+		return map;
+	}
+
+	public void setPriority(int priority) {
+		this.priority = priority;
+	}
+
+	public OperationCosts getOperation_costs() {
+		return operation_costs;
+	}
+
+	public void setOperation_costs(OperationCosts operation_costs) {
+		this.operation_costs = operation_costs;
+	}
+
+	public List<Task> getStarting_tasks() {
+		return starting_tasks;
+	}
+
+	public void setStarting_tasks(List<Task> starting_tasks) {
+		this.starting_tasks = starting_tasks;
+	}
+
+	public Mappings<Task, Resource> getPossible_mappings() {
+		return possible_mappings;
+	}
+
+	public void setPossible_mappings(Mappings<Task, Resource> possible_mappings) {
+		this.possible_mappings = possible_mappings;
 	}
 }

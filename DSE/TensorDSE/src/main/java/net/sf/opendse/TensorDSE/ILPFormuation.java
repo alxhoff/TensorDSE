@@ -8,6 +8,7 @@ import java.util.Map;
 import org.javatuples.Pair;
 import gurobi.*;
 import net.sf.opendse.model.Resource;
+import net.sf.opendse.model.Task;
 
 public class ILPFormuation {
 
@@ -21,8 +22,8 @@ public class ILPFormuation {
         this.K = K;
     }
 
-    
-    /** 
+
+    /**
      * @param x_vars
      * @param model
      */
@@ -44,8 +45,8 @@ public class ILPFormuation {
         }
     }
 
-    
-    /** 
+
+    /**
      * @param resulting_cost
      * @param sending_cost
      * @param receiving_cost
@@ -67,8 +68,8 @@ public class ILPFormuation {
         }
     }
 
-    
-    /** 
+
+    /**
      * @param resulting_cost
      * @param cost
      * @param mapping_var
@@ -89,8 +90,22 @@ public class ILPFormuation {
         }
     }
 
-    
-    /** 
+    public void addCommunicationCostConstraint(GRBVar resulting_cost, GRBVar cost, GRBModel model) {
+
+        GRBLinExpr exp = new GRBLinExpr();
+
+        exp.addTerm(1.0, cost);
+
+        try {
+            model.addConstr(exp, GRB.LESS_EQUAL, resulting_cost, "");
+        } catch (GRBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
      * @param resulting_cost
      * @param benchmarked_cost
      * @param z_helper
@@ -105,7 +120,6 @@ public class ILPFormuation {
         GRBQuadExpr exp = new GRBQuadExpr();
 
         exp.addTerm(1.0, benchmarked_cost);
-
         exp.addTerm(-1.0, benchmarked_cost, z_helper);
 
         try {
@@ -116,8 +130,8 @@ public class ILPFormuation {
         }
     }
 
-    
-    /** 
+
+    /**
      * @param precursor_task_finish
      * @param dependent_task_start
      * @param model
@@ -137,8 +151,8 @@ public class ILPFormuation {
         }
     }
 
-    
-    /** 
+
+    /**
      * @param result_var
      * @param input_var_one
      * @param input_var_two
@@ -185,8 +199,8 @@ public class ILPFormuation {
         }
     }
 
-    
-    /** 
+
+    /**
      * @param result_var
      * @param vars1
      * @param vars2
@@ -210,8 +224,8 @@ public class ILPFormuation {
         }
     }
 
-    
-    /** 
+
+    /**
      * @param task_one_start
      * @param task_one_finish
      * @param task_two_start
@@ -256,8 +270,8 @@ public class ILPFormuation {
         return null;
     }
 
-    
-    /** 
+
+    /**
      * @param task_one_start
      * @param task_one_finish
      * @param task_two_start
@@ -309,9 +323,24 @@ public class ILPFormuation {
         return null;
     }
 
+    public void addDirectExecutionTimeConstraint(GRBVar resulting_cost, GRBVar benchmarked_time,
+            GRBModel model) {
 
-    
-    /** 
+        GRBLinExpr exp = new GRBLinExpr();
+
+        exp.addTerm(1.0, benchmarked_time);
+
+        try {
+            model.addConstr(exp, GRB.EQUAL, resulting_cost, "");
+        } catch (GRBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+
+
+    /**
      * @param task_finish
      * @param task_start
      * @param task_exec_time
@@ -321,7 +350,7 @@ public class ILPFormuation {
      */
     // Finish times are simply the start time summed with the execution time and communication time
     // Tf = Ts + E1 + C1
-    public Void addFinishTimeConstraint(GRBVar task_finish, GRBVar task_start,
+    public void addFinishTimeConstraint(GRBVar task_finish, GRBVar task_start,
             GRBVar task_exec_time, GRBVar task_comm_time, GRBModel model) {
         GRBLinExpr exp = new GRBLinExpr();
         exp.addTerm(1.0, task_start);
@@ -334,28 +363,26 @@ public class ILPFormuation {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
-        return null;
     }
 
-    
-    /** 
+
+    /**
      * @param task_id
      * @param model
      * @return ILPTask
      */
-    private ILPTask initILPTaskBase(String task_id, GRBModel model) {
+    private ILPTask initILPTaskBase(Task task, GRBModel model) {
 
-        ILPTask ret = new ILPTask();
+        ILPTask ret = new ILPTask(model);
 
-        ret.setID(task_id);
+        ret.setID(task.getId());
+        ret.setTask(task);
 
         return ret;
     }
 
 
-    
-    /** 
+    /**
      * @param task_id
      * @param target_resource
      * @param comm_cost
@@ -363,26 +390,10 @@ public class ILPFormuation {
      * @param model
      * @return ILPTask
      */
-    public ILPTask initILPTask(String task_id, Resource target_resource,
-            Pair<Double, Double> comm_cost, Double exec_cost, GRBModel model) {
+    public ILPTask initILPTask(Task task, Resource target_resource, Pair<Double, Double> comm_cost,
+            Double exec_cost, GRBModel model) {
 
-        ILPTask ret = initILPTaskBase(task_id, model);
-
-        try {
-            ret.setGrb_execution_cost(model.addVar(exec_cost, exec_cost, 0.0, GRB.CONTINUOUS,
-                    String.format("exec_cost:%s", task_id)));
-            ret.setGrb_comm_cost(model.addVar(comm_cost.getValue0(), comm_cost.getValue0(), 0.0,
-                    GRB.CONTINUOUS, String.format("send_cost:%s", task_id)));
-            ret.setGrb_comm_cost(model.addVar(comm_cost.getValue1(), comm_cost.getValue1(), 0.0,
-                    GRB.CONTINUOUS, String.format("recv_cost:%s", task_id)));
-                    ret.setGrb_start_time(model.addVar(0.0, GRB.INFINITY, 0, GRB.CONTINUOUS,
-                    String.format("start_time:%s", task_id)));
-            ret.setGrb_finish_time(model.addVar(0.0, GRB.INFINITY, 0, GRB.CONTINUOUS,
-                    String.format("finish_time:%s", task_id)));
-        } catch (GRBException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        ILPTask ret = initILPTaskBase(task, model);
 
         ret.setSend_cost(comm_cost.getValue0());
         ret.setRecv_cost(comm_cost.getValue1());
@@ -392,8 +403,8 @@ public class ILPFormuation {
         return ret;
     }
 
-    
-    /** 
+
+    /**
      * @param task_id
      * @param target_resources
      * @param comm_costs
@@ -402,11 +413,11 @@ public class ILPFormuation {
      * @param model
      * @return ILPTask
      */
-    public ILPTask initILPTask(String task_id, ArrayList<Resource> target_resources,
+    public ILPTask initILPTask(Task task, ArrayList<Resource> target_resources,
             HashMap<Resource, Pair<Double, Double>> comm_costs,
             HashMap<Resource, Double> exec_costs, GRBModel model) {
 
-        ILPTask ret = initILPTaskBase(task_id, model);
+        ILPTask ret = initILPTaskBase(task, model);
 
         HashMap<Resource, Double> send_costs = new HashMap<Resource, Double>();
         for (Map.Entry<Resource, Pair<Double, Double>> entry : comm_costs.entrySet()) {
