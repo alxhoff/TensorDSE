@@ -1,16 +1,11 @@
 package net.sf.opendse.TensorDSE;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-import org.javatuples.Pair;
 import org.opt4j.core.Objective;
 import org.opt4j.core.Objectives;
-import net.sf.opendse.model.Mapping;
 import net.sf.opendse.model.Mappings;
 import net.sf.opendse.model.Resource;
 import net.sf.opendse.model.Specification;
@@ -90,35 +85,35 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	 * @param mapping Mapping<Task, Resource>
 	 * @return a double with the cost of mapping.
 	 */
-	private double MappingCost(Mapping<Task, Resource> mapping) {
-		Double cost = 0.0;
-		String layer = mapping.getSource().getAttribute("type").toString().toLowerCase();
-		String target_device = mapping.getTarget().getId();
-		String data_type = mapping.getSource().getAttribute("dtype");
+	// private double MappingCost(Mapping<Task, Resource> mapping) {
+	// Double cost = 0.0;
+	// String layer = mapping.getSource().getAttribute("type").toString().toLowerCase();
+	// String target_device = mapping.getTarget().getId();
+	// String data_type = mapping.getSource().getAttribute("dtype");
 
-		// Extract target device
-		Pattern p = Pattern.compile("([a-z]+)\\d+");
-		Matcher m = p.matcher(target_device);
-		if (m.find())
-			target_device = m.group(1);
+	// // Extract target device
+	// Pattern p = Pattern.compile("([a-z]+)\\d+");
+	// Matcher m = p.matcher(target_device);
+	// if (m.find())
+	// target_device = m.group(1);
 
-		// Execution cost
-		if (operation_costs.GetOpTypeTable(target_device).containsKey(layer)) {
-			if (operation_costs.GetOpDataTypeTable(target_device, layer).containsKey(data_type)) {
-				cost = operation_costs.GetOpCost(target_device, layer, data_type);
-			} else {
-				cost = 0.0;
-			}
-		}
+	// // Execution cost
+	// if (operation_costs.GetOpTypeTable(target_device).containsKey(layer)) {
+	// if (operation_costs.GetOpDataTypeTable(target_device, layer).containsKey(data_type)) {
+	// cost = operation_costs.GetOpCost(target_device, layer, data_type);
+	// } else {
+	// cost = 0.0;
+	// }
+	// }
 
-		// Communication cost
-		Pair<Double, Double> comm_cost =
-				operation_costs.GetCommCost(target_device, layer, data_type);
+	// // Communication cost
+	// Pair<Double, Double> comm_cost =
+	// operation_costs.GetCommCost(target_device, layer, data_type);
 
-		cost += comm_cost.getValue0() + comm_cost.getValue1();
+	// cost += comm_cost.getValue0() + comm_cost.getValue1();
 
-		return cost;
-	}
+	// return cost;
+	// }
 
 	public Map<String, Objective> getMap() {
 		return map;

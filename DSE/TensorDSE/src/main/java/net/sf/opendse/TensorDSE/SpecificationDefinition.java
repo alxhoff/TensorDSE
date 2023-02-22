@@ -26,7 +26,6 @@ import net.sf.opendse.model.Mappings;
 import net.sf.opendse.model.Resource;
 import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
-import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
  * The {@code SpecificationDefinition} is the class defining the Specification that corresponds to
@@ -161,88 +160,82 @@ public class SpecificationDefinition {
 		try {
 			JsonReader jr = new JsonReader(new FileReader(model_summary_path));
 			model_json = gson.fromJson(jr, ModelJSON.class);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 
-		// Integer longest_model = 0;
+			List<Model> models = model_json.getModels();
 
-		List<Model> models = model_json.getModels();
+			for (int k = 0; k < models.size(); k++) {
 
-		for (int k = 0; k < models.size(); k++) {
+				Model model = models.get(k);
+				List<Layer> layers = model.getLayers();
 
-			Model model = models.get(k);
-			List<Layer> layers = model.getLayers();
+				application_graphs.put(k, new HashMap<Integer, Task>());
 
-			// if (layers.size() > longest_model)
-			// longest_model = layers.size();
+				// Create task nodes in Application and populate hashmap
+				for (int i = 0; i < layers.size(); i++) {
+					Task t = CreateTaskNode(layers.get(i), k);
 
-			application_graphs.put(k, new HashMap<Integer, Task>());
+					// We want to keep track of our entry point tasks to our models such
+					// that they can be traveresed more easily
+					if (i == 0)
+						this.starting_tasks.add(t);
 
-			// Create task nodes in Application and populate hashmap
-			for (int i = 0; i < layers.size(); i++) {
-				Task t = CreateTaskNode(layers.get(i), k);
+					application_graphs.get(k).put(i, t);
+					application.addVertex(t);
+				}
 
-				// We want to keep track of our entry point tasks to our models such
-				// that they can be traveresed more easily
-				if (i == 0)
-					this.starting_tasks.add(t);
+				Integer output_tensor = model.getFinishing_tensor();
 
-				application_graphs.get(k).put(i, t);
-				application.addVertex(t);
-			}
+				for (int i = 0; i < layers.size(); i++) {
+					Layer l = layers.get(i);
 
-			Integer output_tensor = model.getFinishing_tensor();
+					// Step through all output tensors
+					List<Integer> layer_output_tensors = l.getOutputTensorArray();
 
-			for (int i = 0; i < layers.size(); i++) {
-				Layer l = layers.get(i);
+					// Task to create communication from
+					if (layer_output_tensors.size() > 0) {
 
-				// Step through all output tensors
-				List<Integer> layer_output_tensors = l.getOutputTensorArray();
+						Integer layer_task_index = l.getIndex();
+						Task layer_task = application_graphs.get(k).get(layer_task_index);
+						Integer output_size =
+								l.getOutputs().get(l.getOutputs().size() - 1).getShapeProduct();
 
-				// Task to create communication from
-				if (layer_output_tensors.size() > 0) {
+						for (int j = 0; j < layer_output_tensors.size(); j++) {
 
-					Integer layer_task_index = l.getIndex();
-					Task layer_task = application_graphs.get(k).get(layer_task_index);
-					Integer output_size =
-							l.getOutputs().get(l.getOutputs().size() - 1).getShapeProduct();
+							Integer target_tensor = layer_output_tensors.get(j);
 
-					for (int j = 0; j < layer_output_tensors.size(); j++) {
+							if (target_tensor != output_tensor) {
+								Layer target_layer = model.getLayerWithInputTensor(target_tensor);
 
-						Integer target_tensor = layer_output_tensors.get(j);
+								// Get OpenDSE task and set input shape
+								Integer target_task_index = target_layer.getIndex();
+								Task target_task = application_graphs.get(k).get(target_task_index);
+								target_task.setAttribute("input_shape", output_size);
 
-						if (target_tensor != output_tensor) {
-							Layer target_layer = model.getLayerWithInputTensor(target_tensor);
+								Communication comm = new Communication(String.format("comm%d_%s_%s",
+										j, layer_task.getId(), target_task.getId()));
+								application.addVertex(comm);
 
-							// Get OpenDSE task and set input shape
-							Integer target_task_index = target_layer.getIndex();
-							Task target_task = application_graphs.get(k).get(target_task_index);
-							target_task.setAttribute("input_shape", output_size);
-
-							Communication comm = new Communication(String.format("comm%d_%s_%s", j,
-									layer_task.getId(), target_task.getId()));
-							application.addVertex(comm);
-
-							// Create dependencies from:
-							// - current task -> communication
-							// - communication -> target task
-							application.addEdge(
-									new Dependency(String.format("%s[%s] -> comm_%s",
-											layer_task.getId(), layer_task_index, comm.getId())),
-									layer_task, comm);
-							application.addEdge(
-									new Dependency(String.format("comm_%s -> %s[%d]", comm.getId(),
-											target_task.getId(), target_task_index)),
-									comm, target_task);
+								// Create dependencies from:
+								// - current task -> communication
+								// - communication -> target task
+								application.addEdge(new Dependency(
+										String.format("%s[%s] -> comm_%s", layer_task.getId(),
+												layer_task_index, comm.getId())),
+										layer_task, comm);
+								application.addEdge(
+										new Dependency(
+												String.format("comm_%s -> %s[%d]", comm.getId(),
+														target_task.getId(), target_task_index)),
+										comm, target_task);
+							}
 						}
 					}
 				}
 			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-
-		// this.longest_model = longest_model;
 
 		return application;
 	}
@@ -265,6 +258,7 @@ public class SpecificationDefinition {
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return null;
 		}
 
 		// System only has 2 busses independant of the number of execution units

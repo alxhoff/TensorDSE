@@ -8,11 +8,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import net.sf.opendse.model.Application;
-import net.sf.opendse.model.Architecture;
 import net.sf.opendse.model.Dependency;
 import net.sf.opendse.model.Link;
 import net.sf.opendse.model.Mapping;
@@ -26,7 +24,7 @@ import gurobi.*;
 
 public class ScheduleSolver {
 
-    private Architecture<Resource, Link> architecture;
+    // private Architecture<Resource, Link> architecture;
     private Application<Task, Dependency> application;
     private Mappings<Task, Resource> mapping;
     private Routings<Task, Resource, Link> routings;
@@ -40,7 +38,7 @@ public class ScheduleSolver {
     public ScheduleSolver(Specification specification, List<Task> starting_tasks,
             OperationCosts operation_costs, Double K, Boolean verbose) {
 
-        this.architecture = specification.getArchitecture();
+        // this.architecture = specification.getArchitecture();
         this.application = specification.getApplication();
         this.mapping = specification.getMappings();
         this.routings = specification.getRoutings();
@@ -55,7 +53,7 @@ public class ScheduleSolver {
     public ScheduleSolver(Specification specification, List<Task> starting_tasks,
             OperationCosts operation_costs, Boolean verbose) {
 
-        this.architecture = specification.getArchitecture();
+        // this.architecture = specification.getArchitecture();
         this.application = specification.getApplication();
         this.mapping = specification.getMappings();
         this.routings = specification.getRoutings();
@@ -136,74 +134,75 @@ public class ScheduleSolver {
     }
 
 
-    /**
-     * @param comm
-     * @param target_resource
-     * @return Pair<Double, Double>
-     */
-    private Pair<Double, Double> getRoutedCommunicationCost(Task comm, Resource target_resource) {
+    // /**
+    // * @param comm
+    // * @param target_resource
+    // * @return Pair<Double, Double>
+    // */
+    // private Pair<Double, Double> getRoutedCommunicationCost(Task comm, Resource target_resource)
+    // {
 
-        Pair<Double, Double> comm_cost = new Pair<>(0.0, 0.0);
+    // Pair<Double, Double> comm_cost = new Pair<>(0.0, 0.0);
 
-        if (comm != null) {
+    // if (comm != null) {
 
-            Collection<Resource> routed_targets = this.routings.get(comm).getVertices();
+    // Collection<Resource> routed_targets = this.routings.get(comm).getVertices();
 
-            for (Resource res : routed_targets) {
-                // Resource -> bus communication, ie. send comms
-                if (res.getId().contains("cpu") || res.getId().contains("tpu")
-                        || res.getId().contains("gpu")) {
-                    if (this.routings.get(comm).getPredecessorCount(res) > 0) {
-                        Resource from =
-                                this.routings.get(comm).getPredecessors(res).iterator().next();
-                        // Because we are dealing with recv comms we need the prev op type for
-                        // getting comms costs
-                        Task prev_task = application.getPredecessors(comm).iterator().next();
-                        if (from.getId().contains("pci") || from.getId().contains("usb")) {
-                            Pair<Double, Double> comms =
-                                    operation_costs.GetCommCost(res.getId().replaceAll("\\d", ""),
-                                            prev_task.getAttribute("type"),
-                                            prev_task.getAttribute("dtype"));
-                            // Value0 is send, 1 is recv
-                            comm_cost = comm_cost.setAt0(comms.getValue0() + comm_cost.getValue0());
-                        }
-                    }
-
-
-                    // Bus -> resource communication, ie. recv comms
-                } else if (res.getId().contains("usb") || res.getId().equals("pci")) {
-                    if (this.routings.get(comm).getSuccessorCount(res) > 0) {
-                        Resource to = architecture.getSuccessors(res).iterator().next();
-                        Task next_task = application.getSuccessors(comm).iterator().next();
-                        if (to.getId().contains("cpu") || to.getId().contains("tpu")
-                                || to.getId().contains("gpu")) {
-                            Pair<Double, Double> comms =
-                                    operation_costs.GetCommCost(to.getId().replaceAll("\\d", ""),
-                                            next_task.getAttribute("type"),
-                                            next_task.getAttribute("dtype"));
-                            // Value0 is send, 1 is recv
-                            comm_cost = comm_cost.setAt1(comms.getValue1() + comm_cost.getValue1());
-                        }
-                    }
-                }
-            }
-        }
-
-        return comm_cost;
-    }
+    // for (Resource res : routed_targets) {
+    // // Resource -> bus communication, ie. send comms
+    // if (res.getId().contains("cpu") || res.getId().contains("tpu")
+    // || res.getId().contains("gpu")) {
+    // if (this.routings.get(comm).getPredecessorCount(res) > 0) {
+    // Resource from =
+    // this.routings.get(comm).getPredecessors(res).iterator().next();
+    // // Because we are dealing with recv comms we need the prev op type for
+    // // getting comms costs
+    // Task prev_task = application.getPredecessors(comm).iterator().next();
+    // if (from.getId().contains("pci") || from.getId().contains("usb")) {
+    // Pair<Double, Double> comms =
+    // operation_costs.GetCommCost(res.getId().replaceAll("\\d", ""),
+    // prev_task.getAttribute("type"),
+    // prev_task.getAttribute("dtype"));
+    // // Value0 is send, 1 is recv
+    // comm_cost = comm_cost.setAt0(comms.getValue0() + comm_cost.getValue0());
+    // }
+    // }
 
 
-    /**
-     * @param task
-     * @param target_resource
-     * @return Double
-     */
-    private Double getExecutionCost(Task task, Resource target_resource) {
-        Double exec_cost = operation_costs.GetOpCost(target_resource.getId().replaceAll("\\d", ""),
-                task.getAttribute("type"), task.getAttribute("dtype"));
+    // // Bus -> resource communication, ie. recv comms
+    // } else if (res.getId().contains("usb") || res.getId().equals("pci")) {
+    // if (this.routings.get(comm).getSuccessorCount(res) > 0) {
+    // Resource to = architecture.getSuccessors(res).iterator().next();
+    // Task next_task = application.getSuccessors(comm).iterator().next();
+    // if (to.getId().contains("cpu") || to.getId().contains("tpu")
+    // || to.getId().contains("gpu")) {
+    // Pair<Double, Double> comms =
+    // operation_costs.GetCommCost(to.getId().replaceAll("\\d", ""),
+    // next_task.getAttribute("type"),
+    // next_task.getAttribute("dtype"));
+    // // Value0 is send, 1 is recv
+    // comm_cost = comm_cost.setAt1(comms.getValue1() + comm_cost.getValue1());
+    // }
+    // }
+    // }
+    // }
+    // }
 
-        return exec_cost;
-    }
+    // return comm_cost;
+    // }
+
+
+    // /**
+    // * @param task
+    // * @param target_resource
+    // * @return Double
+    // */
+    // private Double getExecutionCost(Task task, Resource target_resource) {
+    // Double exec_cost = operation_costs.GetOpCost(target_resource.getId().replaceAll("\\d", ""),
+    // task.getAttribute("type"), task.getAttribute("dtype"));
+
+    // return exec_cost;
+    // }
 
 
     /**

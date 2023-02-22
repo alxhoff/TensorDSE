@@ -188,7 +188,7 @@ public class OperationCosts {
                 this.GetCommDataTypeTable(device_type, operation_type);
 
         if (!data_type_table.containsKey(data_type)) {
-            data_type_table.put(data_type, new Pair(1000.0, 1000.0));
+            data_type_table.put(data_type, new Pair<>(1000.0, 1000.0));
         }
 
         return (Pair<Double, Double>) data_type_table.get(data_type);

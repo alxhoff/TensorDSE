@@ -1133,7 +1133,7 @@ public class ILPFormuation {
             GRBVar z_3_4_1 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z3_4_1");
             GRBVar z_3_4_2 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z3_4_1");
 
-            GRBVar[] z_variables = {z_1_2_1, z_1_2_2, z_3_4_1, z_3_4_2};
+            // GRBVar[] z_variables = {z_1_2_1, z_1_2_2, z_3_4_1, z_3_4_2};
 
             addPairAndConstrint(z_1_2_1, x_1_1, x_2_1, model);
             addPairAndConstrint(z_1_2_2, x_1_2, x_2_2, model);
@@ -1933,7 +1933,7 @@ public class ILPFormuation {
             model.addConstr(Z34_4_2, GRB.LESS_EQUAL, X4_2, "Z34_4_2");
 
             // Communication times
-            GRBQuadExpr C12 = new GRBQuadExpr();
+            // GRBQuadExpr C12 = new GRBQuadExpr();
 
 
             // Resource constraints for each resource and each pair of tasks
