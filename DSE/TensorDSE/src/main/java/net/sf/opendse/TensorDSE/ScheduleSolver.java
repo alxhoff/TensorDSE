@@ -31,37 +31,38 @@ public class ScheduleSolver {
     private Mappings<Task, Resource> mapping;
     private Routings<Task, Resource, Link> routings;
     private Double K;
+    private Boolean verbose;
 
     // private HashMap<Integer, HashMap<Integer, Task>> application_graphs;
     private List<Task> starting_tasks;
     private OperationCosts operation_costs;
 
     public ScheduleSolver(Specification specification, List<Task> starting_tasks,
-            OperationCosts operation_costs, Double K) {
+            OperationCosts operation_costs, Double K, Boolean verbose) {
 
         this.architecture = specification.getArchitecture();
         this.application = specification.getApplication();
         this.mapping = specification.getMappings();
         this.routings = specification.getRoutings();
-        // this.application_graphs = application_graphs;
         this.starting_tasks = starting_tasks;
         this.operation_costs = operation_costs;
         this.K = K;
+        this.verbose = verbose;
 
         addCommCosts(operation_costs);
     }
 
     public ScheduleSolver(Specification specification, List<Task> starting_tasks,
-            OperationCosts operation_costs) {
+            OperationCosts operation_costs, Boolean verbose) {
 
         this.architecture = specification.getArchitecture();
         this.application = specification.getApplication();
         this.mapping = specification.getMappings();
         this.routings = specification.getRoutings();
-        // this.application_graphs = tasks;
         this.starting_tasks = starting_tasks;
         this.operation_costs = operation_costs;
         this.K = 100.0;
+        this.verbose = verbose;
 
         addCommCosts(operation_costs);
     }
@@ -222,6 +223,7 @@ public class ScheduleSolver {
 
             ILPFormuation ilps = new ILPFormuation();
             GRBEnv grb_env = new GRBEnv("bilinear.log");
+            grb_env.set(GRB.IntParam.OutputFlag, 0);
             GRBModel grb_model = new GRBModel(grb_env);
 
             // Process each branch of the application graph
@@ -457,108 +459,113 @@ public class ScheduleSolver {
             try {
                 grb_model.optimize();
                 obj_val = grb_model.get(GRB.DoubleAttr.ObjVal);
-                System.out.println(String.format("ObjVal: %f", obj_val));
             } catch (GRBException e) {
                 System.out.println("Model optimization failed");
             }
 
-            for (int i = 0; i < all_tasks.size(); i++) {
-                System.out.print(String.format("Task: %d:%s - ", i, all_tasks.get(i).getID()));
-                for (GRBVar x : all_tasks.get(i).getX_vars().values().toArray(new GRBVar[0]))
-                    System.out.print(String.format("%f, ", x.get(GRB.DoubleAttr.X)));
-                System.out.println();
-            }
+            if (this.verbose == true) {
+                System.out.println(String.format("ObjVal: %f", obj_val));
 
-            System.out.println();
-            System.out.println("Z vars");
-            for (ILPTask task : all_tasks) {
-                if (task.getZ_vars() != null)
-                    for (Map.Entry<Resource, GRBVar> entry : task.getZ_vars().entrySet()) {
-                        System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
-                                entry.getValue().get(GRB.DoubleAttr.X)));
+                for (int i = 0; i < all_tasks.size(); i++) {
+                    System.out.print(String.format("Task: %d:%s - ", i, all_tasks.get(i).getID()));
+                    for (GRBVar x : all_tasks.get(i).getX_vars().values().toArray(new GRBVar[0]))
+                        System.out.print(String.format("%f, ", x.get(GRB.DoubleAttr.X)));
+                    System.out.println();
+                }
+
+                System.out.println();
+                System.out.println("Z vars");
+                for (ILPTask task : all_tasks) {
+                    if (task.getZ_vars() != null)
+                        for (Map.Entry<Resource, GRBVar> entry : task.getZ_vars().entrySet()) {
+                            System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
+                                    entry.getValue().get(GRB.DoubleAttr.X)));
+                        }
+                    System.out.println();
+                }
+
+                HashMap<Resource, ArrayList<Pair<String, Double>>> per_resource_schedule =
+                        new HashMap<Resource, ArrayList<Pair<String, Double>>>();
+
+                for (int i = 0; i < all_tasks.size(); i++) {
+                    ILPTask task = all_tasks.get(i);
+                    System.out.println(String.format("Task %d:%s, start: %f, finish: %f, exec: %f",
+                            i + 1, task.getID(), task.getD_start_time(), task.getD_finish_time(),
+                            task.getD_total_execution_cost()));
+                    System.out.println(String.format("Comm: %f, send: %f, recv: %f",
+                            task.getD_total_comm_cost(), task.getD_total_sending_comm_cost(),
+                            task.getD_total_receiving_comm_cost()));
+                    for (Map.Entry<Resource, GRBVar> entry : task.getX_vars().entrySet())
+                        if (entry.getValue().get(GRB.DoubleAttr.X) > 0.0)
+                            System.out.println(
+                                    String.format("Mapped to resource %s", entry.getKey().getId()));
+
+                    System.out.println("------------------------------------------------");
+                    System.out.println("Benchmarks");
+
+                    System.out.print("Execution times,  ");
+                    System.out.print(String.format("%f, ", task.getD_benchmarked_execution_cost()));
+                    System.out.println();
+
+                    System.out.print("Sending times,  ");
+                    System.out.print(String.format("%f, ", task.getD_benchmarked_sending_cost()));
+                    System.out.println();
+
+                    System.out.print("Receiving times,  ");
+                    System.out.print(String.format("%f, ", task.getD_benchmarked_receiving_cost()));
+                    System.out.println();
+
+                    System.out.println("------------------------------------------------");
+                    System.out.println("Same resource sending times");
+
+                    System.out.print(String.format("%f, ", task.getD_same_resource_sending_cost()));
+                    System.out.println();
+
+                    System.out.println("Same resource receiving times");
+                    System.out
+                            .print(String.format("%f, ", task.getD_same_resource_receiving_cost()));
+                    System.out.println();
+
+                    Resource mapped_resource = null;
+                    for (Map.Entry<Resource, GRBVar> entry : task.getX_vars().entrySet())
+                        if (entry.getValue().get(GRB.DoubleAttr.X) > 0.0)
+                            mapped_resource = entry.getKey();
+                    if (mapped_resource != null) {
+                        per_resource_schedule.putIfAbsent(mapped_resource,
+                                new ArrayList<Pair<String, Double>>());
+                        per_resource_schedule.get(mapped_resource).add(new Pair<String, Double>(
+                                String.format("%s:%s", i, task.getID()), task.getD_start_time()));
                     }
+                    System.out.println();
+                    System.out.println();
+                }
+
+                for (ILPTask task : all_tasks) {
+                    System.out.print(String.format("Task: %s - ", task.getID()));
+                    for (GRBVar x : task.getX_vars().values().toArray(new GRBVar[0]))
+                        System.out.print(String.format("%f, ", x.get(GRB.DoubleAttr.X)));
+                    System.out.println();
+                }
+
                 System.out.println();
-            }
-
-            HashMap<Resource, ArrayList<Pair<String, Double>>> per_resource_schedule =
-                    new HashMap<Resource, ArrayList<Pair<String, Double>>>();
-
-            for (int i = 0; i < all_tasks.size(); i++) {
-                ILPTask task = all_tasks.get(i);
-                System.out.println(String.format("Task %d:%s, start: %f, finish: %f, exec: %f",
-                        i + 1, task.getID(), task.getD_start_time(), task.getD_finish_time(),
-                        task.getD_total_execution_cost()));
-                System.out.println(String.format("Comm: %f, send: %f, recv: %f",
-                        task.getD_total_comm_cost(), task.getD_total_sending_comm_cost(),
-                        task.getD_total_receiving_comm_cost()));
-                for (Map.Entry<Resource, GRBVar> entry : task.getX_vars().entrySet())
-                    if (entry.getValue().get(GRB.DoubleAttr.X) > 0.0)
+                System.out.println("Resource wise schedule");
+                for (Map.Entry<Resource, ArrayList<Pair<String, Double>>> entry : per_resource_schedule
+                        .entrySet()) {
+                    System.out.println(String.format("Resource: %s", entry.getKey().getId()));
+                    // Sort tasks
+                    Collections.sort(entry.getValue(), Comparator.comparing(p -> p.getValue1()));
+                    for (Pair<String, Double> task : entry.getValue())
                         System.out.println(
-                                String.format("Mapped to resource %s", entry.getKey().getId()));
-
-                System.out.println("------------------------------------------------");
-                System.out.println("Benchmarks");
-
-                System.out.print("Execution times,  ");
-                System.out.print(String.format("%f, ", task.getD_benchmarked_execution_cost()));
-                System.out.println();
-
-                System.out.print("Sending times,  ");
-                System.out.print(String.format("%f, ", task.getD_benchmarked_sending_cost()));
-                System.out.println();
-
-                System.out.print("Receiving times,  ");
-                System.out.print(String.format("%f, ", task.getD_benchmarked_receiving_cost()));
-                System.out.println();
-
-                System.out.println("------------------------------------------------");
-                System.out.println("Same resource sending times");
-
-                System.out.print(String.format("%f, ", task.getD_same_resource_sending_cost()));
-                System.out.println();
-
-                System.out.println("Same resource receiving times");
-                System.out.print(String.format("%f, ", task.getD_same_resource_receiving_cost()));
-                System.out.println();
-
-                Resource mapped_resource = null;
-                for (Map.Entry<Resource, GRBVar> entry : task.getX_vars().entrySet())
-                    if (entry.getValue().get(GRB.DoubleAttr.X) > 0.0)
-                        mapped_resource = entry.getKey();
-                if (mapped_resource != null) {
-                    per_resource_schedule.putIfAbsent(mapped_resource,
-                            new ArrayList<Pair<String, Double>>());
-                    per_resource_schedule.get(mapped_resource).add(new Pair<String, Double>(
-                            String.format("%s:%s", i, task.getID()), task.getD_start_time()));
+                                String.format("%s @ %f", task.getValue0(), task.getValue1()));
                 }
                 System.out.println();
                 System.out.println();
-            }
 
-            for (ILPTask task : all_tasks) {
-                System.out.print(String.format("Task: %s - ", task.getID()));
-                for (GRBVar x : task.getX_vars().values().toArray(new GRBVar[0]))
-                    System.out.print(String.format("%f, ", x.get(GRB.DoubleAttr.X)));
-                System.out.println();
-            }
 
-            System.out.println();
-            System.out.println("Resource wise schedule");
-            for (Map.Entry<Resource, ArrayList<Pair<String, Double>>> entry : per_resource_schedule
-                    .entrySet()) {
-                System.out.println(String.format("Resource: %s", entry.getKey().getId()));
-                // Sort tasks
-                Collections.sort(entry.getValue(), Comparator.comparing(p -> p.getValue1()));
-                for (Pair<String, Double> task : entry.getValue())
-                    System.out
-                            .println(String.format("%s @ %f", task.getValue0(), task.getValue1()));
+                for (GRBVar finish_time : final_task_finish_times)
+                    System.out.println(
+                            String.format("Finish time: %f", finish_time.get(GRB.DoubleAttr.X)));
             }
-            System.out.println();
-            System.out.println();
-
-            for (GRBVar finish_time : final_task_finish_times)
-                System.out.println(
-                        String.format("Finish time: %f", finish_time.get(GRB.DoubleAttr.X)));
 
             return obj_val;
         } catch (
@@ -636,13 +643,13 @@ public class ScheduleSolver {
                         comm_costs.put(resource,
                                 this.operation_costs.GetCommCost(
                                         resource.getId().replaceAll("\\d", ""),
-                                        starting_task.getAttribute("type"),
-                                        starting_task.getAttribute("dtype")));
+                                        task.getAttribute("type"),
+                                        task.getAttribute("dtype")));
                         exec_costs.put(resource,
                                 this.operation_costs.GetOpCost(
                                         resource.getId().replaceAll("\\d", ""),
-                                        starting_task.getAttribute("type"),
-                                        starting_task.getAttribute("dtype")));
+                                        task.getAttribute("type"),
+                                        task.getAttribute("dtype")));
                     }
                     ilp_task = ilps.initILPTask(task, possible_resources, comm_costs, exec_costs,
                             grb_model);
@@ -844,139 +851,147 @@ public class ScheduleSolver {
 
             grb_model.setObjective(obj, GRB.MINIMIZE);
 
+            Double obj_val = -1.0;
+
             try {
                 grb_model.optimize();
+                obj_val = grb_model.get(GRB.DoubleAttr.ObjVal);
             } catch (GRBException e) {
                 System.out.println("Model optimization failed");
             }
 
-            HashMap<Resource, ArrayList<Triplet<String, Double, Double>>> per_resource_schedule =
-                    new HashMap<Resource, ArrayList<Triplet<String, Double, Double>>>();
+            System.out.println(String.format("ObjVal: %f", obj_val));
 
-            for (int i = 0; i < all_tasks.size(); i++) {
-                ILPTask task = all_tasks.get(i);
-                System.out.println(String.format("Task %d:%s, start: %f, finish: %f, exec: %f",
-                        i + 1, task.getID(), task.getD_start_time(), task.getD_finish_time(),
-                        task.getD_total_execution_cost()));
-                System.out.println(String.format("Comm: %f, send: %f, recv: %f",
-                        task.getD_total_comm_cost(), task.getD_total_sending_comm_cost(),
-                        task.getD_total_receiving_comm_cost()));
-                for (Map.Entry<Resource, GRBVar> entry : task.getX_vars().entrySet())
-                    if (entry.getValue().get(GRB.DoubleAttr.X) > 0.0) {
-                        System.out.println(
-                                String.format("Mapped to resource %s", entry.getKey().getId()));
-                        task.setTarget_resource_string(entry.getKey().getId());
+            if (this.verbose == true) {
+
+                HashMap<Resource, ArrayList<Triplet<String, Double, Double>>> per_resource_schedule =
+                        new HashMap<Resource, ArrayList<Triplet<String, Double, Double>>>();
+
+                for (int i = 0; i < all_tasks.size(); i++) {
+                    ILPTask task = all_tasks.get(i);
+                    System.out.println(String.format("Task %d:%s, start: %f, finish: %f, exec: %f",
+                            i + 1, task.getID(), task.getD_start_time(), task.getD_finish_time(),
+                            task.getD_total_execution_cost()));
+                    System.out.println(String.format("Comm: %f, send: %f, recv: %f",
+                            task.getD_total_comm_cost(), task.getD_total_sending_comm_cost(),
+                            task.getD_total_receiving_comm_cost()));
+                    for (Map.Entry<Resource, GRBVar> entry : task.getX_vars().entrySet())
+                        if (entry.getValue().get(GRB.DoubleAttr.X) > 0.0) {
+                            System.out.println(
+                                    String.format("Mapped to resource %s", entry.getKey().getId()));
+                            task.setTarget_resource_string(entry.getKey().getId());
+                        }
+
+                    System.out.println("------------------------------------------------");
+                    System.out.println("Benchmarks");
+
+                    System.out.print("Execution times,  ");
+                    for (Map.Entry<Resource, GRBVar> entry : task.getBenchmark_execution_costs()
+                            .entrySet())
+                        System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
+                                entry.getValue().get(GRB.DoubleAttr.X)));
+                    System.out.println();
+                    System.out.print("Sending times,  ");
+                    if (task.getBenchmark_sending_costs().size() == 0)
+                        System.out.print("None");
+                    for (Map.Entry<Resource, GRBVar> entry : task.getBenchmark_sending_costs()
+                            .entrySet())
+                        System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
+                                entry.getValue().get(GRB.DoubleAttr.X)));
+                    System.out.println();
+
+                    System.out.print("Receiving times,  ");
+                    if (task.getBenchmark_receiving_costs().size() == 0)
+                        System.out.print("None");
+                    for (Map.Entry<Resource, GRBVar> entry : task.getBenchmark_receiving_costs()
+                            .entrySet())
+                        System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
+                                entry.getValue().get(GRB.DoubleAttr.X)));
+                    System.out.println();
+
+                    System.out.println("------------------------------------------------");
+                    System.out.println("Same resource sending times");
+
+                    if (task.getSame_resource_sending_costs().size() == 0)
+                        System.out.print("None");
+                    for (Map.Entry<Resource, GRBVar> entry : task.getSame_resource_sending_costs()
+                            .entrySet())
+                        System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
+                                entry.getValue().get(GRB.DoubleAttr.X)));
+                    System.out.println();
+
+                    System.out.println("Same resource receiving times");
+                    if (task.getSame_resource_receiving_costs().size() == 0)
+                        System.out.print("None");
+                    for (Map.Entry<Resource, GRBVar> entry : task.getSame_resource_receiving_costs()
+                            .entrySet())
+                        System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
+                                entry.getValue().get(GRB.DoubleAttr.X)));
+                    System.out.println();
+
+                    Resource mapped_resource = null;
+                    for (Map.Entry<Resource, GRBVar> entry : task.getX_vars().entrySet())
+                        if (entry.getValue().get(GRB.DoubleAttr.X) > 0.0)
+                            mapped_resource = entry.getKey();
+                    if (mapped_resource != null) {
+                        per_resource_schedule.putIfAbsent(mapped_resource,
+                                new ArrayList<Triplet<String, Double, Double>>());
+                        per_resource_schedule.get(mapped_resource)
+                                .add(new Triplet<String, Double, Double>(
+                                        String.format("%s:%s", i, task.getID()),
+                                        task.getD_start_time(), task.getD_finish_time()));
                     }
-
-                System.out.println("------------------------------------------------");
-                System.out.println("Benchmarks");
-
-                System.out.print("Execution times,  ");
-                for (Map.Entry<Resource, GRBVar> entry : task.getBenchmark_execution_costs()
-                        .entrySet())
-                    System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
-                            entry.getValue().get(GRB.DoubleAttr.X)));
-                System.out.println();
-                System.out.print("Sending times,  ");
-                if (task.getBenchmark_sending_costs().size() == 0)
-                    System.out.print("None");
-                for (Map.Entry<Resource, GRBVar> entry : task.getBenchmark_sending_costs()
-                        .entrySet())
-                    System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
-                            entry.getValue().get(GRB.DoubleAttr.X)));
-                System.out.println();
-
-                System.out.print("Receiving times,  ");
-                if (task.getBenchmark_receiving_costs().size() == 0)
-                    System.out.print("None");
-                for (Map.Entry<Resource, GRBVar> entry : task.getBenchmark_receiving_costs()
-                        .entrySet())
-                    System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
-                            entry.getValue().get(GRB.DoubleAttr.X)));
-                System.out.println();
-
-                System.out.println("------------------------------------------------");
-                System.out.println("Same resource sending times");
-
-                if (task.getSame_resource_sending_costs().size() == 0)
-                    System.out.print("None");
-                for (Map.Entry<Resource, GRBVar> entry : task.getSame_resource_sending_costs()
-                        .entrySet())
-                    System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
-                            entry.getValue().get(GRB.DoubleAttr.X)));
-                System.out.println();
-
-                System.out.println("Same resource receiving times");
-                if (task.getSame_resource_receiving_costs().size() == 0)
-                    System.out.print("None");
-                for (Map.Entry<Resource, GRBVar> entry : task.getSame_resource_receiving_costs()
-                        .entrySet())
-                    System.out.print(String.format("%s: %f, ", entry.getKey().getId(),
-                            entry.getValue().get(GRB.DoubleAttr.X)));
-                System.out.println();
-
-                Resource mapped_resource = null;
-                for (Map.Entry<Resource, GRBVar> entry : task.getX_vars().entrySet())
-                    if (entry.getValue().get(GRB.DoubleAttr.X) > 0.0)
-                        mapped_resource = entry.getKey();
-                if (mapped_resource != null) {
-                    per_resource_schedule.putIfAbsent(mapped_resource,
-                            new ArrayList<Triplet<String, Double, Double>>());
-                    per_resource_schedule.get(mapped_resource)
-                            .add(new Triplet<String, Double, Double>(
-                                    String.format("%s:%s", i, task.getID()), task.getD_start_time(),
-                                    task.getD_finish_time()));
-                }
-                System.out.println();
-            }
-
-            System.out.println("X vars");
-            for (ILPTask task : all_tasks) {
-                System.out.print(String.format("Task: %s - ", task.getID()));
-                for (GRBVar x : task.getX_vars().values().toArray(new GRBVar[0]))
-                    System.out.print(String.format("%f, ", x.get(GRB.DoubleAttr.X)));
-                System.out.println();
-            }
-            System.out.println();
-
-            System.out.println("Z vars");
-            for (ILPTask task : all_tasks) {
-                if (task.getZ_vars() != null) {
-                    for (GRBVar z : task.getZ_vars().values().toArray(new GRBVar[0]))
-                        System.out.print(String.format("%f, ", z.get(GRB.DoubleAttr.X)));
                     System.out.println();
                 }
-            }
-            System.out.println();
 
-            System.out.println("Resource wise schedule");
-            for (Map.Entry<Resource, ArrayList<Triplet<String, Double, Double>>> entry : per_resource_schedule
-                    .entrySet()) {
-                System.out.println();
-                System.out.println(String.format("Resource: %s", entry.getKey().getId()));
-                // Sort tasks
-                Collections.sort(entry.getValue(), Comparator.comparing(p -> p.getValue1()));
-                for (Triplet<String, Double, Double> task : entry.getValue())
-                    System.out.println(String.format("%s @ %f -> %f", task.getValue0(),
-                            task.getValue1(), task.getValue2()));
-            }
-            System.out.println();
-
-            System.out.println("Model wise shedule");
-            for (ArrayList<ILPTask> model : models) {
-                for (ILPTask task : model) {
-                    System.out.println(String.format("%s on %s: %f -> %f", task.getID(),
-                            task.getTarget_resource_string(), task.getD_start_time(),
-                            task.getD_finish_time()));
+                System.out.println("X vars");
+                for (ILPTask task : all_tasks) {
+                    System.out.print(String.format("Task: %s - ", task.getID()));
+                    for (GRBVar x : task.getX_vars().values().toArray(new GRBVar[0]))
+                        System.out.print(String.format("%f, ", x.get(GRB.DoubleAttr.X)));
+                    System.out.println();
                 }
                 System.out.println();
+
+                System.out.println("Z vars");
+                for (ILPTask task : all_tasks) {
+                    if (task.getZ_vars() != null) {
+                        for (GRBVar z : task.getZ_vars().values().toArray(new GRBVar[0]))
+                            System.out.print(String.format("%f, ", z.get(GRB.DoubleAttr.X)));
+                        System.out.println();
+                    }
+                }
+                System.out.println();
+
+                System.out.println("Resource wise schedule");
+                for (Map.Entry<Resource, ArrayList<Triplet<String, Double, Double>>> entry : per_resource_schedule
+                        .entrySet()) {
+                    System.out.println();
+                    System.out.println(String.format("Resource: %s", entry.getKey().getId()));
+                    // Sort tasks
+                    Collections.sort(entry.getValue(), Comparator.comparing(p -> p.getValue1()));
+                    for (Triplet<String, Double, Double> task : entry.getValue())
+                        System.out.println(String.format("%s @ %f -> %f", task.getValue0(),
+                                task.getValue1(), task.getValue2()));
+                }
+                System.out.println();
+
+                System.out.println("Model wise shedule");
+                for (ArrayList<ILPTask> model : models) {
+                    for (ILPTask task : model) {
+                        System.out.println(String.format("%s on %s: %f -> %f", task.getID(),
+                                task.getTarget_resource_string(), task.getD_start_time(),
+                                task.getD_finish_time()));
+                    }
+                    System.out.println();
+                }
+
+                for (GRBVar finish_time : final_task_finish_times)
+                    System.out.println(
+                            String.format("Finish time: %f", finish_time.get(GRB.DoubleAttr.X)));
+
+                System.out.println();
             }
-
-            for (GRBVar finish_time : final_task_finish_times)
-                System.out.println(
-                        String.format("Finish time: %f", finish_time.get(GRB.DoubleAttr.X)));
-
-            System.out.println();
 
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());

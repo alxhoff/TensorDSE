@@ -10,12 +10,9 @@ import java.util.regex.Matcher;
 import org.javatuples.Pair;
 import org.opt4j.core.Objective;
 import org.opt4j.core.Objectives;
-import net.sf.opendse.model.Architecture;
-import net.sf.opendse.model.Link;
 import net.sf.opendse.model.Mapping;
 import net.sf.opendse.model.Mappings;
 import net.sf.opendse.model.Resource;
-import net.sf.opendse.model.Routings;
 import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
 import net.sf.opendse.optimization.ImplementationEvaluator;
@@ -27,15 +24,18 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	protected int priority;
 	private OperationCosts operation_costs = null;
 	private List<Task> starting_tasks;
-	// public HashMap<Integer, HashMap<Integer, Task>> tasks;
 	Mappings<Task, Resource> possible_mappings;
+	private Boolean verbose;
+	private Boolean visualise;
 
-	public EvaluatorMinimizeCost(String objectives,
-			SpecificationDefinition SpecificationDefinition) {
+	public EvaluatorMinimizeCost(String objectives, SpecificationDefinition SpecificationDefinition,
+			Boolean verbose, Boolean visualise) {
 		super();
 		this.operation_costs = SpecificationDefinition.getOperation_costs();
 		this.starting_tasks = SpecificationDefinition.getStarting_tasks();
 		this.possible_mappings = SpecificationDefinition.getSpecification().getMappings();
+		this.verbose = verbose;
+		this.visualise = visualise;
 
 		for (String s : objectives.split(",")) {
 			Objective obj = new Objective(s, Objective.Sign.MIN);
@@ -53,13 +53,15 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	public Specification evaluate(Specification solution_specification, Objectives objectives) {
 
 		// Pieces that comprise the solution's specification
-		Mappings<Task, Resource> mappings = solution_specification.getMappings();
-		Routings<Task, Resource, Link> routings = solution_specification.getRoutings();
+		// Mappings<Task, Resource> mappings = solution_specification.getMappings();
+		// Routings<Task, Resource, Link> routings = solution_specification.getRoutings();
 
 		// Specification for viewing and debugging
-		SpecificationViewer.view(solution_specification);
+		if (this.visualise)
+			SpecificationViewer.view(solution_specification);
+
 		ScheduleSolver schedule_solver = new ScheduleSolver(solution_specification,
-				this.starting_tasks, this.operation_costs);
+				this.starting_tasks, this.operation_costs, this.verbose);
 
 		double cost_of_mapping = schedule_solver.solveDSESchedule(getPossible_mappings());
 
@@ -148,5 +150,21 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 
 	public void setPossible_mappings(Mappings<Task, Resource> possible_mappings) {
 		this.possible_mappings = possible_mappings;
+	}
+
+	public Boolean getVerbose() {
+		return verbose;
+	}
+
+	public void setVerbose(Boolean verbose) {
+		this.verbose = verbose;
+	}
+
+	public Boolean getVisualise() {
+		return visualise;
+	}
+
+	public void setVisualise(Boolean visualise) {
+		this.visualise = visualise;
 	}
 }

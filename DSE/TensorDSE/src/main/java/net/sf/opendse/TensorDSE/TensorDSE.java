@@ -56,17 +56,23 @@ public class TensorDSE {
 		// EA Parameters
 		parser.addArgument("-c", "--crossover").setDefault(0.9).type(Double.class)
 				.help("Cross over rate of the EA");
-		parser.addArgument("-s", "--populationsize").setDefault(100).type(int.class)
+		parser.addArgument("-s", "--populationsize").setDefault(400).type(int.class)
 				.help("Pupulation size for the EA");
-		parser.addArgument("-p", "--parentspergeneration").setDefault(50).type(int.class)
+		parser.addArgument("-p", "--parentspergeneration").setDefault(100).type(int.class)
 				.help("Number of parents per generation in the EA");
-		parser.addArgument("-g", "--generations").setDefault(500).type(int.class)
+		parser.addArgument("-g", "--generations").setDefault(300).type(int.class)
 				.help("Number of generations in the EA");
-		parser.addArgument("-o", "--offspringspergeneration").setDefault(50).type(int.class)
+		parser.addArgument("-o", "--offspringspergeneration").setDefault(100).type(int.class)
 				.help("Number of offsprings per generation");
+		parser.addArgument("-v", "--verbose").setDefault(true).type(Boolean.class)
+				.help("Enables verbose output messages");
+		parser.addArgument("-u", "--visualise").setDefault(false).type(Boolean.class)
+				.help("If set, OpenDSE will visualise all specificatons");
 
 		// Other
 		parser.addArgument("-r", "--runs").setDefault(1).type(int.class).help("Number of runs");
+		parser.addArgument("-n", "--config").type(String.class)
+				.help("Location of config file to be used for running multiple tests");
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
@@ -87,7 +93,7 @@ public class TensorDSE {
 				.type(String.class);
 
 		// ILP
-		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(true)
+		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
 		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(100.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
@@ -133,7 +139,8 @@ public class TensorDSE {
 	 * @param specification_definition
 	 * @return Module
 	 */
-	private static Module GetSpecificationModule(SpecificationDefinition specification_definition) {
+	private static Module GetSpecificationModule(SpecificationDefinition specification_definition,
+			Boolean verbose, Boolean visualise) {
 
 		Module specification_module = new Opt4JModule() {
 
@@ -144,8 +151,8 @@ public class TensorDSE {
 								specification_definition.getSpecification());
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
 
-				EvaluatorMinimizeCost evaluator =
-						new EvaluatorMinimizeCost("cost_of_mapping", specification_definition);
+				EvaluatorMinimizeCost evaluator = new EvaluatorMinimizeCost("cost_of_mapping",
+						specification_definition, verbose, visualise);
 
 				Multibinder<ImplementationEvaluator> multibinder =
 						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
@@ -324,8 +331,12 @@ public class TensorDSE {
 							new ScheduleSolver(specification_definition.getSpecification(),
 									specification_definition.getStarting_tasks(),
 									specification_definition.getOperation_costs(),
-									args_namespace.getDouble("deactivationnumber"));
+									args_namespace.getDouble("deactivationnumber"),
+									args_namespace.getBoolean("verbose"));
+					long startILP = System.currentTimeMillis();
 					schedule_solver.solveILPMappingAndSchedule();
+					System.out.println(String.format("ILP Exec time: %dms",
+							System.currentTimeMillis() - startILP));
 				}
 
 				// Solve mappings using the DSE
@@ -336,7 +347,9 @@ public class TensorDSE {
 				// Opt4J Modules
 				EvolutionaryAlgorithmModule ea_module = GetEAModule(args_namespace);
 				// Bind the evaluator to the specification
-				Module specification_module = GetSpecificationModule(specification_definition);
+				Module specification_module = GetSpecificationModule(specification_definition,
+						args_namespace.getBoolean("verbose"),
+						args_namespace.getBoolean("visualise"));
 				OptimizationModule optimization_module = new OptimizationModule();
 				Collection<Module> modules =
 						GetModulesCollection(ea_module, specification_module, optimization_module);
@@ -344,7 +357,10 @@ public class TensorDSE {
 				Opt4JTask opt4j_task = GetOpt4JTask(modules);
 
 				try {
+					long startDSE = System.currentTimeMillis();
 					opt4j_task.execute();
+					System.out.println(String.format("DSE Exec time: %dms",
+							System.currentTimeMillis() - startDSE));
 					Archive archive = opt4j_task.getInstance(Archive.class);
 
 					for (Individual individual : archive) {
@@ -353,7 +369,8 @@ public class TensorDSE {
 								((ImplementationWrapper) individual.getPhenotype())
 										.getImplementation();
 
-						SpecificationViewer.view(implementation);
+						if (args_namespace.getBoolean("visualise"))
+							SpecificationViewer.view(implementation);
 
 						SpecificationWriter writer = new SpecificationWriter();
 						String time_string =

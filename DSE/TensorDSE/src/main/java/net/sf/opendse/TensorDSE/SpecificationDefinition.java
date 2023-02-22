@@ -117,7 +117,7 @@ public class SpecificationDefinition {
 		/*
 		 * It is also possible to view the specification in a GUI.
 		 */
-		SpecificationViewer.view(specification);
+		// SpecificationViewer.view(specification);
 
 		return specification;
 	}
