@@ -1,13 +1,18 @@
 package net.sf.opendse.TensorDSE;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-
+import java.util.List;
+import java.util.Properties;
+import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -54,6 +59,8 @@ public class TensorDSE {
 				.description("Find Y-graph mapping");
 
 		// EA Parameters
+		parser.addArgument("-n", "--config").type(String.class)
+				.help("Location of config file to be used for running multiple tests");
 		parser.addArgument("-c", "--crossover").setDefault(0.9).type(Double.class)
 				.help("Cross over rate of the EA");
 		parser.addArgument("-s", "--populationsize").setDefault(400).type(int.class)
@@ -71,8 +78,6 @@ public class TensorDSE {
 
 		// Other
 		parser.addArgument("-r", "--runs").setDefault(1).type(int.class).help("Number of runs");
-		parser.addArgument("-n", "--config").type(String.class)
-				.help("Location of config file to be used for running multiple tests");
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
@@ -116,12 +121,9 @@ public class TensorDSE {
 	 * @param args_namespace
 	 * @return EvolutionaryAlgorithmModule
 	 */
-	private static EvolutionaryAlgorithmModule GetEAModule(Namespace args_namespace) {
-		Double crossover_rate = args_namespace.getDouble("crossover");
-		int population_size = args_namespace.getInt("populationsize");
-		int parents_per_generation = args_namespace.getInt("parentspergeneration");
-		int generations = args_namespace.getInt("generations");
-		int offsprings_per_generation = args_namespace.getInt("offspringspergeneration");
+	private static EvolutionaryAlgorithmModule GetEAModule(Double crossover_rate,
+			int population_size, int parents_per_generation, int generations,
+			int offsprings_per_generation) {
 
 		EvolutionaryAlgorithmModule ea = new EvolutionaryAlgorithmModule();
 		ea.setGenerations(generations);
@@ -275,12 +277,8 @@ public class TensorDSE {
 	/**
 	 * @param args_namespace
 	 */
-	private static void PrintEAParameters(Namespace args_namespace) {
-		Double crossover_rate = args_namespace.getDouble("crossover");
-		int population_size = args_namespace.getInt("populationsize");
-		int parents_per_generation = args_namespace.getInt("parentspergeneration");
-		int generations = args_namespace.getInt("generations");
-		int offsprings_per_generation = args_namespace.getInt("offspringspergeneration");
+	private static void PrintEAParameters(Double crossover_rate, int population_size,
+			int parents_per_generation, int generations, int offsprings_per_generation) {
 		System.out.printf("Crossover Rate: %.2f\n", crossover_rate);
 		System.out.printf("Population Size: %d\n", population_size);
 		System.out.printf("Parents Per Generation: %d\n", parents_per_generation);
@@ -307,106 +305,189 @@ public class TensorDSE {
 		System.out.println("Working Directory: " + System.getProperty("user.dir"));
 		System.out.printf("Runs: %d\n", test_runs);
 
-		for (int i = 0; i < test_runs; i++) {
 
-			System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
+		ArrayList<Double> crossover_rates = new ArrayList<Double>();
+		ArrayList<Integer> population_sizes = new ArrayList<Integer>();
+		ArrayList<Integer> generations = new ArrayList<Integer>();
+		ArrayList<Integer> parents_per_generation = new ArrayList<Integer>();
+		ArrayList<Integer> offsprings_per_generation = new ArrayList<Integer>();
 
-			// Specification contains, architecture and application graph as well as a generated set
-			// of possible mappings
-			SpecificationDefinition specification_definition = new SpecificationDefinition(
-					models_description_path, benchmark_results_path, hardware_description_path);
+		String config_file = args_namespace.getString("config");
 
-
-			if (args_namespace.getBoolean("ilpmapping") == true) {
-
-				// Solve for mappings and schedule using only ILP
-				if (args_namespace.getBoolean("demo") == true) {
-					// Run an ILP demo
-					ILPFormuation ilp_formulation = new ILPFormuation();
-					ilp_formulation.gurobiDSEExampleSixTask();
-				} else {
-					// Solver contains the application, architecture, and possible mapping graphs as
-					// well as the list of starting tasks and the operation costs
-					ScheduleSolver schedule_solver =
-							new ScheduleSolver(specification_definition.getSpecification(),
-									specification_definition.getStarting_tasks(),
-									specification_definition.getOperation_costs(),
-									args_namespace.getDouble("deactivationnumber"),
-									args_namespace.getBoolean("verbose"));
-					long startILP = System.currentTimeMillis();
-					schedule_solver.solveILPMappingAndSchedule();
-					System.out.println(String.format("ILP Exec time: %dms",
-							System.currentTimeMillis() - startILP));
-				}
-
-				// Solve mappings using the DSE
-			} else {
-				// Solve for mappings using heuristic and schedule using ILP
-				PrintEAParameters(args_namespace);
-
-				// Opt4J Modules
-				EvolutionaryAlgorithmModule ea_module = GetEAModule(args_namespace);
-				// Bind the evaluator to the specification
-				Module specification_module = GetSpecificationModule(specification_definition,
-						args_namespace.getBoolean("verbose"),
-						args_namespace.getBoolean("visualise"));
-				OptimizationModule optimization_module = new OptimizationModule();
-				Collection<Module> modules =
-						GetModulesCollection(ea_module, specification_module, optimization_module);
-
-				Opt4JTask opt4j_task = GetOpt4JTask(modules);
-
-				try {
-					long startDSE = System.currentTimeMillis();
-					opt4j_task.execute();
-					System.out.println(String.format("DSE Exec time: %dms",
-							System.currentTimeMillis() - startDSE));
-					Archive archive = opt4j_task.getInstance(Archive.class);
-
-					for (Individual individual : archive) {
-
-						Specification implementation =
-								((ImplementationWrapper) individual.getPhenotype())
-										.getImplementation();
-
-						if (args_namespace.getBoolean("visualise"))
-							SpecificationViewer.view(implementation);
-
-						SpecificationWriter writer = new SpecificationWriter();
-						String time_string =
-								new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
-
-						writer.write(implementation,
-								output_directory + "/" + time_string + "_solution.xml");
-
-						objective_values[i] = individual.getObjectives().getValues().iterator()
-								.next().getDouble();
-						System.out.println(objective_values[i]);
-
-						csv_writer.append("\n");
-						csv_writer.append(String.join(",", Integer.toString(i), time_string,
-								Integer.toString(ea_module.getGenerations()),
-								Integer.toString(ea_module.getPopulationSize()),
-								Integer.toString(ea_module.getParentsPerGeneration()),
-								Integer.toString(ea_module.getOffspringsPerGeneration()),
-								Double.toString(ea_module.getCrossoverRate()),
-								Double.toString(objective_values[i])));
-
-						for (Mapping<Task, Resource> m : implementation.getMappings()) {
-							System.out.println(m.getSource().getId() + " type "
-									+ m.getSource().getAttribute("type") + " HW "
-									+ m.getTarget().getId());
-						}
-
-					}
-
-				} catch (Exception ex) {
-					ex.printStackTrace();
-				} finally {
-					opt4j_task.close();
-				}
+		if (config_file != null) {
+			FileInputStream propsInput = null;
+			try {
+				propsInput = new FileInputStream(config_file);
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
+
+			Properties prop = new Properties();
+			try {
+				prop.load(propsInput);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			ArrayList<Double> crs = new ArrayList<Double>(
+					Arrays.asList(prop.getProperty("CROSSOVER").toString().split(",")).stream()
+							.map(Double::parseDouble).collect(Collectors.toList()));
+			ArrayList<Integer> pop_sizes = new ArrayList<Integer>(
+					Arrays.asList(prop.getProperty("POPULATION_SIZE").toString().split(","))
+							.stream().map(Integer::parseInt).collect(Collectors.toList()));
+			ArrayList<Integer> gens = new ArrayList<Integer>(
+					Arrays.asList(prop.getProperty("GENERATIONS").toString().split(",")).stream()
+							.map(Integer::parseInt).collect(Collectors.toList()));
+			ArrayList<Double> parent_ratios = new ArrayList<Double>(
+					Arrays.asList(prop.getProperty("PARENTS_PER_GENERATION").toString().split(","))
+							.stream().map(Double::parseDouble).collect(Collectors.toList()));
+			ArrayList<Double> offspring_ratios = new ArrayList<Double>(Arrays
+					.asList(prop.getProperty("OFFSPRING_PER_GENERATION").toString().split(","))
+					.stream().map(Double::parseDouble).collect(Collectors.toList()));
+
+			for (Double cr : crs)
+				for (Integer ps : pop_sizes)
+					for (Integer gen : gens)
+						for (Double pr : parent_ratios)
+							for (Double or : offspring_ratios) {
+								crossover_rates.add(cr);
+								population_sizes.add(ps);
+								generations.add(gen);
+								parents_per_generation.add((int) (pr * ps));
+								offsprings_per_generation.add((int) (or * ps));
+							}
+
+
+			System.out.println();
+		} else {
+			crossover_rates.add(args_namespace.getDouble("crossover"));
+			population_sizes.add(args_namespace.getInt("populationsize"));
+			generations.add(args_namespace.getInt("generations"));
+			parents_per_generation.add(args_namespace.getInt("parentspergeneration"));
+			offsprings_per_generation.add(args_namespace.getInt("offspringspergeneration"));
 		}
+
+		for (Double crossover_rate : crossover_rates)
+			for (Integer population_size : population_sizes)
+				for (Integer generation_size : generations)
+					for (Integer parents : parents_per_generation)
+						for (Integer offspring : offsprings_per_generation)
+							for (int i = 0; i < test_runs; i++) {
+
+								System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
+
+								// Specification contains, architecture and application graph as
+								// well as a generated set
+								// of possible mappings
+								SpecificationDefinition specification_definition =
+										new SpecificationDefinition(models_description_path,
+												benchmark_results_path, hardware_description_path);
+
+
+								if (args_namespace.getBoolean("ilpmapping") == true) {
+
+									// Solve for mappings and schedule using only ILP
+									if (args_namespace.getBoolean("demo") == true) {
+										// Run an ILP demo
+										ILPFormuation ilp_formulation = new ILPFormuation();
+										ilp_formulation.gurobiDSEExampleSixTask();
+									} else {
+										// Solver contains the application, architecture, and
+										// possible mapping graphs as
+										// well as the list of starting tasks and the operation
+										// costs
+										ScheduleSolver schedule_solver = new ScheduleSolver(
+												specification_definition.getSpecification(),
+												specification_definition.getStarting_tasks(),
+												specification_definition.getOperation_costs(),
+												args_namespace.getDouble("deactivationnumber"),
+												args_namespace.getBoolean("verbose"));
+										long startILP = System.currentTimeMillis();
+										schedule_solver.solveILPMappingAndSchedule();
+										System.out.println(String.format("ILP Exec time: %dms",
+												System.currentTimeMillis() - startILP));
+									}
+
+									// Solve mappings using the DSE
+								} else {
+									// Solve for mappings using heuristic and schedule using ILP
+									PrintEAParameters(crossover_rate, population_size,
+											generation_size, parents, offspring);
+
+									// Opt4J Modules
+									EvolutionaryAlgorithmModule ea_module =
+											GetEAModule(crossover_rate, population_size, parents,
+													generation_size, offspring);
+									// Bind the evaluator to the specification
+									Module specification_module =
+											GetSpecificationModule(specification_definition,
+													args_namespace.getBoolean("verbose"),
+													args_namespace.getBoolean("visualise"));
+									OptimizationModule optimization_module =
+											new OptimizationModule();
+									Collection<Module> modules = GetModulesCollection(ea_module,
+											specification_module, optimization_module);
+
+									Opt4JTask opt4j_task = GetOpt4JTask(modules);
+
+									try {
+										long startDSE = System.currentTimeMillis();
+										opt4j_task.execute();
+										System.out.println(String.format("DSE Exec time: %dms",
+												System.currentTimeMillis() - startDSE));
+										Archive archive = opt4j_task.getInstance(Archive.class);
+
+										for (Individual individual : archive) {
+
+											Specification implementation =
+													((ImplementationWrapper) individual
+															.getPhenotype()).getImplementation();
+
+											if (args_namespace.getBoolean("visualise"))
+												SpecificationViewer.view(implementation);
+
+											SpecificationWriter writer = new SpecificationWriter();
+											String time_string =
+													new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss")
+															.format(new Date());
+
+											writer.write(implementation, output_directory + "/"
+													+ time_string + "_solution.xml");
+
+											objective_values[i] = individual.getObjectives()
+													.getValues().iterator().next().getDouble();
+											System.out.println(objective_values[i]);
+
+											csv_writer.append("\n");
+											csv_writer.append(String.join(",", Integer.toString(i),
+													time_string,
+													Integer.toString(ea_module.getGenerations()),
+													Integer.toString(ea_module.getPopulationSize()),
+													Integer.toString(
+															ea_module.getParentsPerGeneration()),
+													Integer.toString(
+															ea_module.getOffspringsPerGeneration()),
+													Double.toString(ea_module.getCrossoverRate()),
+													Double.toString(objective_values[i])));
+
+											for (Mapping<Task, Resource> m : implementation
+													.getMappings()) {
+												System.out.println(m.getSource().getId() + " type "
+														+ m.getSource().getAttribute("type")
+														+ " HW " + m.getTarget().getId());
+											}
+
+										}
+
+									} catch (Exception ex) {
+										ex.printStackTrace();
+									} finally {
+										opt4j_task.close();
+									}
+								}
+							}
 
 		try {
 			csv_writer.flush();

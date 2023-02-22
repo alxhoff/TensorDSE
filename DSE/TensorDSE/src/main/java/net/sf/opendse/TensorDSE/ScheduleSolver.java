@@ -643,13 +643,11 @@ public class ScheduleSolver {
                         comm_costs.put(resource,
                                 this.operation_costs.GetCommCost(
                                         resource.getId().replaceAll("\\d", ""),
-                                        task.getAttribute("type"),
-                                        task.getAttribute("dtype")));
+                                        task.getAttribute("type"), task.getAttribute("dtype")));
                         exec_costs.put(resource,
                                 this.operation_costs.GetOpCost(
                                         resource.getId().replaceAll("\\d", ""),
-                                        task.getAttribute("type"),
-                                        task.getAttribute("dtype")));
+                                        task.getAttribute("type"), task.getAttribute("dtype")));
                     }
                     ilp_task = ilps.initILPTask(task, possible_resources, comm_costs, exec_costs,
                             grb_model);
