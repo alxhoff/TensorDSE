@@ -70,7 +70,7 @@ public class TensorDSE {
 				.help("Number of generations in the EA");
 		parser.addArgument("-o", "--offspringspergeneration").setDefault(100).type(int.class)
 				.help("Number of offsprings per generation");
-		parser.addArgument("-v", "--verbose").setDefault(true).type(Boolean.class)
+		parser.addArgument("-v", "--verbose").setDefault(false).type(Boolean.class)
 				.help("Enables verbose output messages");
 		parser.addArgument("-u", "--visualise").setDefault(false).type(Boolean.class)
 				.help("If set, OpenDSE will visualise all specificatons");
@@ -368,125 +368,115 @@ public class TensorDSE {
 			offsprings_per_generation.add(args_namespace.getInt("offspringspergeneration"));
 		}
 
-		for (Double crossover_rate : crossover_rates)
-			for (Integer population_size : population_sizes)
-				for (Integer generation_size : generations)
-					for (Integer parents : parents_per_generation)
-						for (Integer offspring : offsprings_per_generation)
-							for (int i = 0; i < test_runs; i++) {
+		for (int j = 0; j < crossover_rates.size(); j++)
+			for (int i = 0; i < test_runs; i++) {
 
-								System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
+				System.out.println("#########################################################");
+				System.out.println(String.format("Test %d/%d", j + 1, crossover_rates.size()));
+				System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
 
-								// Specification contains, architecture and application graph as
-								// well as a generated set
-								// of possible mappings
-								SpecificationDefinition specification_definition =
-										new SpecificationDefinition(models_description_path,
-												benchmark_results_path, hardware_description_path);
+				// Specification contains, architecture and application graph as well as a generated
+				// set of possible mappings
+				SpecificationDefinition specification_definition = new SpecificationDefinition(
+						models_description_path, benchmark_results_path, hardware_description_path);
 
 
-								if (args_namespace.getBoolean("ilpmapping") == true) {
+				if (args_namespace.getBoolean("ilpmapping") == true) {
 
-									// Solve for mappings and schedule using only ILP
-									if (args_namespace.getBoolean("demo") == true) {
-										// Run an ILP demo
-										ILPFormuation ilp_formulation = new ILPFormuation();
-										ilp_formulation.gurobiDSEExampleSixTask();
-									} else {
-										// Solver contains the application, architecture, and
-										// possible mapping graphs as
-										// well as the list of starting tasks and the operation
-										// costs
-										ScheduleSolver schedule_solver = new ScheduleSolver(
-												specification_definition.getSpecification(),
-												specification_definition.getStarting_tasks(),
-												specification_definition.getOperation_costs(),
-												args_namespace.getDouble("deactivationnumber"),
-												args_namespace.getBoolean("verbose"));
-										long startILP = System.currentTimeMillis();
-										schedule_solver.solveILPMappingAndSchedule();
-										System.out.println(String.format("ILP Exec time: %dms",
-												System.currentTimeMillis() - startILP));
-									}
+					// Solve for mappings and schedule using only ILP
+					if (args_namespace.getBoolean("demo") == true) {
+						// Run an ILP demo
+						ILPFormuation ilp_formulation = new ILPFormuation();
+						ilp_formulation.gurobiDSEExampleSixTask();
+					} else {
+						// Solver contains the application, architecture, and possible mapping
+						// graphs as well as the list of starting tasks and the operation costs
+						ScheduleSolver schedule_solver =
+								new ScheduleSolver(specification_definition.getSpecification(),
+										specification_definition.getStarting_tasks(),
+										specification_definition.getOperation_costs(),
+										args_namespace.getDouble("deactivationnumber"),
+										args_namespace.getBoolean("verbose"));
+						long startILP = System.currentTimeMillis();
+						schedule_solver.solveILPMappingAndSchedule();
+						System.out.println(String.format("ILP Exec time: %dms",
+								System.currentTimeMillis() - startILP));
+					}
+				} else {
+					// Solve for mappings using heuristic and schedule using ILP
+					if (args_namespace.getBoolean("verbose"))
+						PrintEAParameters(crossover_rates.get(j), population_sizes.get(j),
+								generations.get(j), parents_per_generation.get(j),
+								offsprings_per_generation.get(j));
 
-									// Solve mappings using the DSE
-								} else {
-									// Solve for mappings using heuristic and schedule using ILP
-									PrintEAParameters(crossover_rate, population_size,
-											generation_size, parents, offspring);
+					// Opt4J Modules
+					EvolutionaryAlgorithmModule ea_module = GetEAModule(crossover_rates.get(j),
+							population_sizes.get(j), generations.get(j),
+							parents_per_generation.get(j), offsprings_per_generation.get(j));
+					// Bind the evaluator to the specification
+					Module specification_module = GetSpecificationModule(specification_definition,
+							args_namespace.getBoolean("verbose"),
+							args_namespace.getBoolean("visualise"));
+					OptimizationModule optimization_module = new OptimizationModule();
+					Collection<Module> modules = GetModulesCollection(ea_module,
+							specification_module, optimization_module);
 
-									// Opt4J Modules
-									EvolutionaryAlgorithmModule ea_module =
-											GetEAModule(crossover_rate, population_size, parents,
-													generation_size, offspring);
-									// Bind the evaluator to the specification
-									Module specification_module =
-											GetSpecificationModule(specification_definition,
-													args_namespace.getBoolean("verbose"),
-													args_namespace.getBoolean("visualise"));
-									OptimizationModule optimization_module =
-											new OptimizationModule();
-									Collection<Module> modules = GetModulesCollection(ea_module,
-											specification_module, optimization_module);
+					Opt4JTask opt4j_task = GetOpt4JTask(modules);
 
-									Opt4JTask opt4j_task = GetOpt4JTask(modules);
+					try {
+						long startDSE = System.currentTimeMillis();
+						opt4j_task.execute();
+						long exec_time = System.currentTimeMillis() - startDSE;
+						System.out.println(String.format("DSE Exec time: %dms", exec_time));
+						Archive archive = opt4j_task.getInstance(Archive.class);
 
-									try {
-										long startDSE = System.currentTimeMillis();
-										opt4j_task.execute();
-										System.out.println(String.format("DSE Exec time: %dms",
-												System.currentTimeMillis() - startDSE));
-										Archive archive = opt4j_task.getInstance(Archive.class);
+						for (Individual individual : archive) {
 
-										for (Individual individual : archive) {
+							Specification implementation =
+									((ImplementationWrapper) individual.getPhenotype())
+											.getImplementation();
 
-											Specification implementation =
-													((ImplementationWrapper) individual
-															.getPhenotype()).getImplementation();
+							if (args_namespace.getBoolean("visualise"))
+								SpecificationViewer.view(implementation);
 
-											if (args_namespace.getBoolean("visualise"))
-												SpecificationViewer.view(implementation);
+							SpecificationWriter writer = new SpecificationWriter();
+							String time_string =
+									new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
 
-											SpecificationWriter writer = new SpecificationWriter();
-											String time_string =
-													new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss")
-															.format(new Date());
+							writer.write(implementation,
+									output_directory + "/" + time_string + "_solution.xml");
 
-											writer.write(implementation, output_directory + "/"
-													+ time_string + "_solution.xml");
+							objective_values[i] = individual.getObjectives().getValues().iterator()
+									.next().getDouble();
+							System.out.println(objective_values[i]);
+							System.out.println();
 
-											objective_values[i] = individual.getObjectives()
-													.getValues().iterator().next().getDouble();
-											System.out.println(objective_values[i]);
+							csv_writer.append(String.join(",", Integer.toString(i), time_string,
+									Integer.toString(ea_module.getGenerations()),
+									Integer.toString(ea_module.getPopulationSize()),
+									Integer.toString(ea_module.getParentsPerGeneration()),
+									Integer.toString(ea_module.getOffspringsPerGeneration()),
+									Double.toString(ea_module.getCrossoverRate()),
+									Double.toString(objective_values[i]),
+									Double.toString(exec_time)));
+							csv_writer.append("\n");
+							csv_writer.flush();
 
-											csv_writer.append("\n");
-											csv_writer.append(String.join(",", Integer.toString(i),
-													time_string,
-													Integer.toString(ea_module.getGenerations()),
-													Integer.toString(ea_module.getPopulationSize()),
-													Integer.toString(
-															ea_module.getParentsPerGeneration()),
-													Integer.toString(
-															ea_module.getOffspringsPerGeneration()),
-													Double.toString(ea_module.getCrossoverRate()),
-													Double.toString(objective_values[i])));
-
-											for (Mapping<Task, Resource> m : implementation
-													.getMappings()) {
-												System.out.println(m.getSource().getId() + " type "
-														+ m.getSource().getAttribute("type")
-														+ " HW " + m.getTarget().getId());
-											}
-
-										}
-
-									} catch (Exception ex) {
-										ex.printStackTrace();
-									} finally {
-										opt4j_task.close();
-									}
+							if (args_namespace.getBoolean("verbose"))
+								for (Mapping<Task, Resource> m : implementation.getMappings()) {
+									System.out.println(m.getSource().getId() + " type "
+											+ m.getSource().getAttribute("type") + " HW "
+											+ m.getTarget().getId());
 								}
-							}
+						}
+
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					} finally {
+						opt4j_task.close();
+					}
+				}
+			}
 
 		try {
 			csv_writer.flush();

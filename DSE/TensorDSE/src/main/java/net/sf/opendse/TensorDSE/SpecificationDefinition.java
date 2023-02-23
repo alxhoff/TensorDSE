@@ -113,11 +113,6 @@ public class SpecificationDefinition {
 		writer.write(specification, "src/main/resources/generatedspecs/spec_"
 				+ new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date()) + ".xml");
 
-		/*
-		 * It is also possible to view the specification in a GUI.
-		 */
-		// SpecificationViewer.view(specification);
-
 		return specification;
 	}
 
@@ -337,7 +332,6 @@ public class SpecificationDefinition {
 	}
 
 
-
 	/**
 	 * @brief Creates a set of possible mappings, ie. all tasks can be mapped onto the CPU + GPU,
 	 *        compatible tasks can be mapped to the TPU.
@@ -437,16 +431,6 @@ public class SpecificationDefinition {
 	public List<String> getSupported_layers() {
 		return supported_layers;
 	}
-
-
-	// public Integer getLongest_model() {
-	// return longest_model;
-	// }
-
-
-	// public void setLongest_model(Integer longest_model) {
-	// this.longest_model = longest_model;
-	// }
 
 
 	public ArrayList<Task> getStarting_tasks() {

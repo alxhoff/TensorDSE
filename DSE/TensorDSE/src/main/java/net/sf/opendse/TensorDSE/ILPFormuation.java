@@ -441,17 +441,22 @@ public class ILPFormuation {
     public void gurobiDSEExampleSixTask() {
         try {
 
-            GRBEnv env = new GRBEnv("bilinear.log");
+            GRBEnv grb_env = new GRBEnv(true);
+            grb_env.set(GRB.IntParam.OutputFlag, 0);
+            grb_env.set(GRB.IntParam.LogToConsole, 0);
+            grb_env.set(GRB.IntParam.TuneOutput, 0);
+            grb_env.set(GRB.IntParam.CSIdleTimeout, 10);
+            grb_env.start();
             System.out.println(String.format("Using Gurobi version: %s",
-                    env.getClass().getPackage().getSpecificationVersion()));
+                    grb_env.getClass().getPackage().getSpecificationVersion()));
             try {
-                System.out.println(String.format("Gurobi Loc: %s", env.getClass()
+                System.out.println(String.format("Gurobi Loc: %s", grb_env.getClass()
                         .getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
             } catch (URISyntaxException e1) {
                 // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
-            GRBModel model = new GRBModel(env);
+            GRBModel model = new GRBModel(grb_env);
 
             // 2.1 Start times for each task
             // ts >= 0
@@ -1005,7 +1010,7 @@ public class ILPFormuation {
 
             // Dispose of model and environment
             model.dispose();
-            env.dispose();
+            grb_env.dispose();
 
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());
@@ -1015,17 +1020,22 @@ public class ILPFormuation {
     public void gurobiDSEExampleFourTask() {
         try {
 
-            GRBEnv env = new GRBEnv("bilinear.log");
+            GRBEnv grb_env = new GRBEnv(true);
+            grb_env.set(GRB.IntParam.OutputFlag, 0);
+            grb_env.set(GRB.IntParam.LogToConsole, 0);
+            grb_env.set(GRB.IntParam.TuneOutput, 0);
+            grb_env.set(GRB.IntParam.CSIdleTimeout, 10);
+            grb_env.start();
             System.out.println(String.format("Using Gurobi version: %s",
-                    env.getClass().getPackage().getSpecificationVersion()));
+                    grb_env.getClass().getPackage().getSpecificationVersion()));
             try {
-                System.out.println(String.format("Gurobi Loc: %s", env.getClass()
+                System.out.println(String.format("Gurobi Loc: %s", grb_env.getClass()
                         .getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
             } catch (URISyntaxException e1) {
                 // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
-            GRBModel model = new GRBModel(env);
+            GRBModel model = new GRBModel(grb_env);
 
             // Create variables
 
@@ -1387,7 +1397,7 @@ public class ILPFormuation {
 
             // Dispose of model and environment
             model.dispose();
-            env.dispose();
+            grb_env.dispose();
 
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());
@@ -1400,17 +1410,22 @@ public class ILPFormuation {
 
             ILPFormuation ilps = new ILPFormuation();
 
-            GRBEnv env = new GRBEnv("bilinear.log");
+            GRBEnv grb_env = new GRBEnv(true);
+            grb_env.set(GRB.IntParam.OutputFlag, 0);
+            grb_env.set(GRB.IntParam.LogToConsole, 0);
+            grb_env.set(GRB.IntParam.TuneOutput, 0);
+            grb_env.set(GRB.IntParam.CSIdleTimeout, 10);
+            grb_env.start();
             System.out.println(String.format("Using Gurobi version: %s",
-                    env.getClass().getPackage().getSpecificationVersion()));
+                    grb_env.getClass().getPackage().getSpecificationVersion()));
             try {
-                System.out.println(String.format("Gurobi Loc: %s", env.getClass()
+                System.out.println(String.format("Gurobi Loc: %s", grb_env.getClass()
                         .getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
             } catch (URISyntaxException e1) {
                 // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
-            GRBModel model = new GRBModel(env);
+            GRBModel model = new GRBModel(grb_env);
 
             // Example implementation for 4 tasks with the following dependencies and mapping
             //
@@ -1660,7 +1675,7 @@ public class ILPFormuation {
 
             // Dispose of model and environment
             model.dispose();
-            env.dispose();
+            grb_env.dispose();
 
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());
@@ -1673,17 +1688,22 @@ public class ILPFormuation {
 
             ILPFormuation ilps = new ILPFormuation();
 
-            GRBEnv env = new GRBEnv("bilinear.log");
+            GRBEnv grb_env = new GRBEnv(true);
+            grb_env.set(GRB.IntParam.OutputFlag, 0);
+            grb_env.set(GRB.IntParam.LogToConsole, 0);
+            grb_env.set(GRB.IntParam.TuneOutput, 0);
+            grb_env.set(GRB.IntParam.CSIdleTimeout, 10);
+            grb_env.start();
             System.out.println(String.format("Using Gurobi version: %s",
-                    env.getClass().getPackage().getSpecificationVersion()));
+                    grb_env.getClass().getPackage().getSpecificationVersion()));
             try {
-                System.out.println(String.format("Gurobi Loc: %s", env.getClass()
+                System.out.println(String.format("Gurobi Loc: %s", grb_env.getClass()
                         .getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
             } catch (URISyntaxException e1) {
                 // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
-            GRBModel model = new GRBModel(env);
+            GRBModel model = new GRBModel(grb_env);
 
             // Example implementation for 4 tasks with the following dependencies and mapping
             //
@@ -2004,7 +2024,7 @@ public class ILPFormuation {
 
             // Dispose of model and environment
             model.dispose();
-            env.dispose();
+            grb_env.dispose();
 
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());

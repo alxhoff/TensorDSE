@@ -52,7 +52,7 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		// Routings<Task, Resource, Link> routings = solution_specification.getRoutings();
 
 		// Specification for viewing and debugging
-		if (this.visualise)
+		if (this.visualise == true && this.verbose == true)
 			SpecificationViewer.view(solution_specification);
 
 		ScheduleSolver schedule_solver = new ScheduleSolver(solution_specification,
