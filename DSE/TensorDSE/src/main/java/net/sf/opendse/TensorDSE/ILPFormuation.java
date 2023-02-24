@@ -8,21 +8,25 @@ import java.util.Map;
 import org.javatuples.Pair;
 import gurobi.*;
 import net.sf.opendse.model.Resource;
-
 import net.sf.opendse.model.Task;
 
-public class ILPSolver {
+public class ILPFormuation {
 
     public Double K;
 
-    public ILPSolver() {
+    public ILPFormuation() {
         this.K = 100.0;
     }
 
-    public ILPSolver(Double K) {
+    public ILPFormuation(Double K) {
         this.K = K;
     }
 
+
+    /**
+     * @param x_vars
+     * @param model
+     */
     // For each potential mapping of a task to a resource an x variable contains the boolean
     // information for the mapping. For each task the sum of all x variables can be at most 1,
     // ie. a task can only be mapped to one resource.
@@ -41,6 +45,13 @@ public class ILPSolver {
         }
     }
 
+
+    /**
+     * @param resulting_cost
+     * @param sending_cost
+     * @param receiving_cost
+     * @param model
+     */
     public void addTotalCommunicationCostConstraint(GRBVar resulting_cost, GRBVar sending_cost,
             GRBVar receiving_cost, GRBModel model) {
 
@@ -57,6 +68,13 @@ public class ILPSolver {
         }
     }
 
+
+    /**
+     * @param resulting_cost
+     * @param cost
+     * @param mapping_var
+     * @param model
+     */
     public void addCommunicationCostSelectionConstraint(GRBVar resulting_cost, GRBVar cost,
             GRBVar mapping_var, GRBModel model) {
 
@@ -72,6 +90,27 @@ public class ILPSolver {
         }
     }
 
+    public void addCommunicationCostConstraint(GRBVar resulting_cost, GRBVar cost, GRBModel model) {
+
+        GRBLinExpr exp = new GRBLinExpr();
+
+        exp.addTerm(1.0, cost);
+
+        try {
+            model.addConstr(exp, GRB.LESS_EQUAL, resulting_cost, "");
+        } catch (GRBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * @param resulting_cost
+     * @param benchmarked_cost
+     * @param z_helper
+     * @param model
+     */
     // Eg.
     // cs_i_j_r = Cs_i_r(1 - z_i_j_r)
     // cs_i_j_r = Cs_i_r - (Cs_i_r * z_i_j_r)
@@ -81,7 +120,6 @@ public class ILPSolver {
         GRBQuadExpr exp = new GRBQuadExpr();
 
         exp.addTerm(1.0, benchmarked_cost);
-
         exp.addTerm(-1.0, benchmarked_cost, z_helper);
 
         try {
@@ -92,6 +130,12 @@ public class ILPSolver {
         }
     }
 
+
+    /**
+     * @param precursor_task_finish
+     * @param dependent_task_start
+     * @param model
+     */
     // Scheduling dependency of the form Ts_j >= Tf_i
     // where task i is a dependency of task j
     public void addTaskSchedulingDependencyConstraint(GRBVar precursor_task_finish,
@@ -107,6 +151,13 @@ public class ILPSolver {
         }
     }
 
+
+    /**
+     * @param result_var
+     * @param input_var_one
+     * @param input_var_two
+     * @param model
+     */
     public void addPairAndConstrint(GRBVar result_var, GRBVar input_var_one, GRBVar input_var_two,
             GRBModel model) {
         // // y >= x1 + x2 - 1, y <= x1, y <= x2, 0 <= y <= 1
@@ -148,6 +199,13 @@ public class ILPSolver {
         }
     }
 
+
+    /**
+     * @param result_var
+     * @param vars1
+     * @param vars2
+     * @param model
+     */
     public void addSumOfVectorsConstraint(GRBVar result_var, GRBVar[] vars1, GRBVar[] vars2,
             GRBModel model) {
 
@@ -166,6 +224,16 @@ public class ILPSolver {
         }
     }
 
+
+    /**
+     * @param task_one_start
+     * @param task_one_finish
+     * @param task_two_start
+     * @param task_two_finish
+     * @param Y
+     * @param model
+     * @return Void
+     */
     // For each pair of tasks that share a resource mapping, ie. they are both assigned to the same
     // resource for execution, then there is an inter-task dependency that one must run before the
     // other.
@@ -202,6 +270,19 @@ public class ILPSolver {
         return null;
     }
 
+
+    /**
+     * @param task_one_start
+     * @param task_one_finish
+     * @param task_two_start
+     * @param task_two_finish
+     * @param Y
+     * @param X_one
+     * @param X_two
+     * @param K
+     * @param model
+     * @return Void
+     */
     // When solving the mapping via the ILP, there should be a pair-wise resource mapping
     // constraints placed on all possible pairs of tasks.
     //
@@ -242,10 +323,34 @@ public class ILPSolver {
         return null;
     }
 
+    public void addDirectExecutionTimeConstraint(GRBVar resulting_cost, GRBVar benchmarked_time,
+            GRBModel model) {
 
+        GRBLinExpr exp = new GRBLinExpr();
+
+        exp.addTerm(1.0, benchmarked_time);
+
+        try {
+            model.addConstr(exp, GRB.EQUAL, resulting_cost, "");
+        } catch (GRBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+
+
+    /**
+     * @param task_finish
+     * @param task_start
+     * @param task_exec_time
+     * @param task_comm_time
+     * @param model
+     * @return Void
+     */
     // Finish times are simply the start time summed with the execution time and communication time
     // Tf = Ts + E1 + C1
-    public Void addFinishTimeConstraint(GRBVar task_finish, GRBVar task_start,
+    public void addFinishTimeConstraint(GRBVar task_finish, GRBVar task_start,
             GRBVar task_exec_time, GRBVar task_comm_time, GRBModel model) {
         GRBLinExpr exp = new GRBLinExpr();
         exp.addTerm(1.0, task_start);
@@ -258,40 +363,37 @@ public class ILPSolver {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
-        return null;
     }
 
-    private ILPTask initILPTaskBase(String task_id, GRBModel model) {
 
-        ILPTask ret = new ILPTask();
+    /**
+     * @param task_id
+     * @param model
+     * @return ILPTask
+     */
+    private ILPTask initILPTaskBase(Task task, GRBModel model) {
 
-        ret.setID(task_id);
+        ILPTask ret = new ILPTask(model);
+
+        ret.setID(task.getId());
+        ret.setTask(task);
 
         return ret;
     }
 
 
-    public ILPTask initILPTask(String task_id, Resource target_resource,
-            Pair<Double, Double> comm_cost, Double exec_cost, GRBModel model) {
+    /**
+     * @param task_id
+     * @param target_resource
+     * @param comm_cost
+     * @param exec_cost
+     * @param model
+     * @return ILPTask
+     */
+    public ILPTask initILPTask(Task task, Resource target_resource, Pair<Double, Double> comm_cost,
+            Double exec_cost, GRBModel model) {
 
-        ILPTask ret = initILPTaskBase(task_id, model);
-
-        try {
-            ret.setGrb_execution_cost(model.addVar(exec_cost, exec_cost, 0.0, GRB.CONTINUOUS,
-                    String.format("exec_cost:%s", task_id)));
-            ret.setGrb_comm_cost(model.addVar(comm_cost.getValue0(), comm_cost.getValue0(), 0.0,
-                    GRB.CONTINUOUS, String.format("send_cost:%s", task_id)));
-            ret.setGrb_comm_cost(model.addVar(comm_cost.getValue1(), comm_cost.getValue1(), 0.0,
-                    GRB.CONTINUOUS, String.format("recv_cost:%s", task_id)));
-                    ret.setGrb_start_time(model.addVar(0.0, GRB.INFINITY, 0, GRB.CONTINUOUS,
-                    String.format("start_time:%s", task_id)));
-            ret.setGrb_finish_time(model.addVar(0.0, GRB.INFINITY, 0, GRB.CONTINUOUS,
-                    String.format("finish_time:%s", task_id)));
-        } catch (GRBException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        ILPTask ret = initILPTaskBase(task, model);
 
         ret.setSend_cost(comm_cost.getValue0());
         ret.setRecv_cost(comm_cost.getValue1());
@@ -301,11 +403,21 @@ public class ILPSolver {
         return ret;
     }
 
-    public ILPTask initILPTask(String task_id, ArrayList<Resource> target_resources,
+
+    /**
+     * @param task_id
+     * @param target_resources
+     * @param comm_costs
+     * @param HashMap<Resource
+     * @param exec_costs
+     * @param model
+     * @return ILPTask
+     */
+    public ILPTask initILPTask(Task task, ArrayList<Resource> target_resources,
             HashMap<Resource, Pair<Double, Double>> comm_costs,
             HashMap<Resource, Double> exec_costs, GRBModel model) {
 
-        ILPTask ret = initILPTaskBase(task_id, model);
+        ILPTask ret = initILPTaskBase(task, model);
 
         HashMap<Resource, Double> send_costs = new HashMap<Resource, Double>();
         for (Map.Entry<Resource, Pair<Double, Double>> entry : comm_costs.entrySet()) {
@@ -329,17 +441,22 @@ public class ILPSolver {
     public void gurobiDSEExampleSixTask() {
         try {
 
-            GRBEnv env = new GRBEnv("bilinear.log");
+            GRBEnv grb_env = new GRBEnv(true);
+            grb_env.set(GRB.IntParam.OutputFlag, 0);
+            grb_env.set(GRB.IntParam.LogToConsole, 0);
+            grb_env.set(GRB.IntParam.TuneOutput, 0);
+            grb_env.set(GRB.IntParam.CSIdleTimeout, 10);
+            grb_env.start();
             System.out.println(String.format("Using Gurobi version: %s",
-                    env.getClass().getPackage().getSpecificationVersion()));
+                    grb_env.getClass().getPackage().getSpecificationVersion()));
             try {
-                System.out.println(String.format("Gurobi Loc: %s", env.getClass()
+                System.out.println(String.format("Gurobi Loc: %s", grb_env.getClass()
                         .getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
             } catch (URISyntaxException e1) {
                 // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
-            GRBModel model = new GRBModel(env);
+            GRBModel model = new GRBModel(grb_env);
 
             // 2.1 Start times for each task
             // ts >= 0
@@ -893,7 +1010,7 @@ public class ILPSolver {
 
             // Dispose of model and environment
             model.dispose();
-            env.dispose();
+            grb_env.dispose();
 
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());
@@ -903,17 +1020,22 @@ public class ILPSolver {
     public void gurobiDSEExampleFourTask() {
         try {
 
-            GRBEnv env = new GRBEnv("bilinear.log");
+            GRBEnv grb_env = new GRBEnv(true);
+            grb_env.set(GRB.IntParam.OutputFlag, 0);
+            grb_env.set(GRB.IntParam.LogToConsole, 0);
+            grb_env.set(GRB.IntParam.TuneOutput, 0);
+            grb_env.set(GRB.IntParam.CSIdleTimeout, 10);
+            grb_env.start();
             System.out.println(String.format("Using Gurobi version: %s",
-                    env.getClass().getPackage().getSpecificationVersion()));
+                    grb_env.getClass().getPackage().getSpecificationVersion()));
             try {
-                System.out.println(String.format("Gurobi Loc: %s", env.getClass()
+                System.out.println(String.format("Gurobi Loc: %s", grb_env.getClass()
                         .getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
             } catch (URISyntaxException e1) {
                 // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
-            GRBModel model = new GRBModel(env);
+            GRBModel model = new GRBModel(grb_env);
 
             // Create variables
 
@@ -1021,7 +1143,7 @@ public class ILPSolver {
             GRBVar z_3_4_1 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z3_4_1");
             GRBVar z_3_4_2 = model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "Z3_4_1");
 
-            GRBVar[] z_variables = {z_1_2_1, z_1_2_2, z_3_4_1, z_3_4_2};
+            // GRBVar[] z_variables = {z_1_2_1, z_1_2_2, z_3_4_1, z_3_4_2};
 
             addPairAndConstrint(z_1_2_1, x_1_1, x_2_1, model);
             addPairAndConstrint(z_1_2_2, x_1_2, x_2_2, model);
@@ -1275,7 +1397,7 @@ public class ILPSolver {
 
             // Dispose of model and environment
             model.dispose();
-            env.dispose();
+            grb_env.dispose();
 
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());
@@ -1286,19 +1408,24 @@ public class ILPSolver {
 
         try {
 
-            ILPSolver ilps = new ILPSolver();
+            ILPFormuation ilps = new ILPFormuation();
 
-            GRBEnv env = new GRBEnv("bilinear.log");
+            GRBEnv grb_env = new GRBEnv(true);
+            grb_env.set(GRB.IntParam.OutputFlag, 0);
+            grb_env.set(GRB.IntParam.LogToConsole, 0);
+            grb_env.set(GRB.IntParam.TuneOutput, 0);
+            grb_env.set(GRB.IntParam.CSIdleTimeout, 10);
+            grb_env.start();
             System.out.println(String.format("Using Gurobi version: %s",
-                    env.getClass().getPackage().getSpecificationVersion()));
+                    grb_env.getClass().getPackage().getSpecificationVersion()));
             try {
-                System.out.println(String.format("Gurobi Loc: %s", env.getClass()
+                System.out.println(String.format("Gurobi Loc: %s", grb_env.getClass()
                         .getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
             } catch (URISyntaxException e1) {
                 // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
-            GRBModel model = new GRBModel(env);
+            GRBModel model = new GRBModel(grb_env);
 
             // Example implementation for 4 tasks with the following dependencies and mapping
             //
@@ -1548,7 +1675,7 @@ public class ILPSolver {
 
             // Dispose of model and environment
             model.dispose();
-            env.dispose();
+            grb_env.dispose();
 
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());
@@ -1559,19 +1686,24 @@ public class ILPSolver {
 
         try {
 
-            ILPSolver ilps = new ILPSolver();
+            ILPFormuation ilps = new ILPFormuation();
 
-            GRBEnv env = new GRBEnv("bilinear.log");
+            GRBEnv grb_env = new GRBEnv(true);
+            grb_env.set(GRB.IntParam.OutputFlag, 0);
+            grb_env.set(GRB.IntParam.LogToConsole, 0);
+            grb_env.set(GRB.IntParam.TuneOutput, 0);
+            grb_env.set(GRB.IntParam.CSIdleTimeout, 10);
+            grb_env.start();
             System.out.println(String.format("Using Gurobi version: %s",
-                    env.getClass().getPackage().getSpecificationVersion()));
+                    grb_env.getClass().getPackage().getSpecificationVersion()));
             try {
-                System.out.println(String.format("Gurobi Loc: %s", env.getClass()
+                System.out.println(String.format("Gurobi Loc: %s", grb_env.getClass()
                         .getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
             } catch (URISyntaxException e1) {
                 // TODO Auto-generated catch block
                 e1.printStackTrace();
             }
-            GRBModel model = new GRBModel(env);
+            GRBModel model = new GRBModel(grb_env);
 
             // Example implementation for 4 tasks with the following dependencies and mapping
             //
@@ -1821,7 +1953,7 @@ public class ILPSolver {
             model.addConstr(Z34_4_2, GRB.LESS_EQUAL, X4_2, "Z34_4_2");
 
             // Communication times
-            GRBQuadExpr C12 = new GRBQuadExpr();
+            // GRBQuadExpr C12 = new GRBQuadExpr();
 
 
             // Resource constraints for each resource and each pair of tasks
@@ -1892,7 +2024,7 @@ public class ILPSolver {
 
             // Dispose of model and environment
             model.dispose();
-            env.dispose();
+            grb_env.dispose();
 
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());

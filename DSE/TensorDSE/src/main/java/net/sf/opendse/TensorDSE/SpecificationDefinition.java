@@ -26,7 +26,6 @@ import net.sf.opendse.model.Mappings;
 import net.sf.opendse.model.Resource;
 import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
-import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
  * The {@code SpecificationDefinition} is the class defining the Specification that corresponds to
@@ -42,24 +41,80 @@ import net.sf.opendse.visualization.SpecificationViewer;
  */
 public class SpecificationDefinition {
 
-	public Specification specification = null;
-	// ******************************************************************************
-	// op_costs is set with the csv file containing the latest tests we have
-	// conducted
-	// and which is included in the resources folder of this project
-	// *******************************************************************************
-	private OperationCosts op_costs = null;
-
-	// First hashmap takes the model's index in the model summary
-	public HashMap<Integer, HashMap<Integer, Task>> application_graphs =
-			new HashMap<Integer, HashMap<Integer, Task>>();
-	private HashMap<String, List<Resource>> resources = new HashMap<String, List<Resource>>();
-
+	/**
+	 *
+	 */
 	public final List<String> supported_layers =
 			Arrays.asList("conv_2d", "max_pool_2d", "reshape", "fully_connected", "softmax");
 
-	public Integer longest_model;
-	public List<Task> starting_tasks = new ArrayList<Task>();
+	/**
+	 *
+	 */
+	private Specification specification = null;
+
+	/**
+	 *
+	 */
+	private OperationCosts operation_costs = null;
+
+	/**
+	 * Top level HashMap takes the model's index as the key, then the target layer's index is used
+	 * to access the layer's Task
+	 */
+	private HashMap<Integer, HashMap<Integer, Task>> application_graphs =
+			new HashMap<Integer, HashMap<Integer, Task>>();
+
+	/**
+	 *
+	 */
+	private HashMap<String, List<Resource>> resources = new HashMap<String, List<Resource>>();
+
+
+	// public Integer longest_model;
+	/**
+	 *
+	 */
+	private ArrayList<Task> starting_tasks = new ArrayList<Task>();
+
+	/**
+	 * @param model_summary_path
+	 * @param benchmarking_results_path
+	 */
+	public SpecificationDefinition(String model_summary_path, String benchmarking_results_path,
+			String architecture_summary_path) {
+		this.operation_costs = new OperationCosts(benchmarking_results_path);
+		this.specification =
+				GetSpecificationFromTFLiteModel(model_summary_path, architecture_summary_path);
+
+	}
+
+	/**
+	 * @brief Creates the OpenDSE specification which is the combination of the architecture and
+	 *        application graph with the set of possible mappings. The architecture and application
+	 *        graphs are generated from the provided
+	 * @param models_description_path Path to the JSON file containing a summary of the NN models
+	 *        from which the application graph is to be built
+	 * @param hardware_description_path Path to the JSON file containing the number of execution
+	 *        units on the target hardware platform
+	 * @return Specification
+	 */
+	public Specification GetSpecificationFromTFLiteModel(String models_description_path,
+			String hardware_description_path) {
+
+		Architecture<Resource, Link> architecture =
+				GetArchitectureFromArchitectureSummary(hardware_description_path);
+		Application<Task, Dependency> application =
+				GetApplicationFromModelSummary(models_description_path);
+		Mappings<Task, Resource> mappings = CreateMappingOptions();
+
+		Specification specification = new Specification(application, architecture, mappings);
+
+		SpecificationWriter writer = new SpecificationWriter();
+		writer.write(specification, "src/main/resources/generatedspecs/spec_"
+				+ new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date()) + ".xml");
+
+		return specification;
+	}
 
 	/**
 	 * @param task_name
@@ -86,25 +141,6 @@ public class SpecificationDefinition {
 
 
 	/**
-	 * @return OperationCosts
-	 */
-	public OperationCosts GetOperationCosts() {
-		return this.op_costs;
-	}
-
-	/**
-	 * @param model_summary_path
-	 * @param benchmarking_results_path
-	 */
-	public SpecificationDefinition(String model_summary_path, String benchmarking_results_path,
-			String architecture_summary_path) {
-		this.op_costs = new OperationCosts(benchmarking_results_path);
-		this.specification =
-				GetSpecificationFromTFLiteModel(model_summary_path, architecture_summary_path);
-
-	}
-
-	/**
 	 * @param model_summary_path
 	 * @return
 	 */
@@ -119,88 +155,82 @@ public class SpecificationDefinition {
 		try {
 			JsonReader jr = new JsonReader(new FileReader(model_summary_path));
 			model_json = gson.fromJson(jr, ModelJSON.class);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 
-		Integer longest_model = 0;
+			List<Model> models = model_json.getModels();
 
-		List<Model> models = model_json.getModels();
+			for (int k = 0; k < models.size(); k++) {
 
-		for (int k = 0; k < models.size(); k++) {
+				Model model = models.get(k);
+				List<Layer> layers = model.getLayers();
 
-			Model model = models.get(k);
-			List<Layer> layers = model.getLayers();
+				application_graphs.put(k, new HashMap<Integer, Task>());
 
-			if (layers.size() > longest_model)
-				longest_model = layers.size();
+				// Create task nodes in Application and populate hashmap
+				for (int i = 0; i < layers.size(); i++) {
+					Task t = CreateTaskNode(layers.get(i), k);
 
-			application_graphs.put(k, new HashMap<Integer, Task>());
+					// We want to keep track of our entry point tasks to our models such
+					// that they can be traveresed more easily
+					if (i == 0)
+						this.starting_tasks.add(t);
 
-			// Create task nodes in Application and populate hashmap
-			for (int i = 0; i < layers.size(); i++) {
-				Task t = CreateTaskNode(layers.get(i), k);
+					application_graphs.get(k).put(i, t);
+					application.addVertex(t);
+				}
 
-				// We want to keep track of our entry point tasks to our models such
-				// that they can be traveresed more easily
-				if (i == 0)
-					this.starting_tasks.add(t);
+				Integer output_tensor = model.getFinishing_tensor();
 
-				application_graphs.get(k).put(i, t);
-				application.addVertex(t);
-			}
+				for (int i = 0; i < layers.size(); i++) {
+					Layer l = layers.get(i);
 
-			Integer output_tensor = model.getFinishing_tensor();
+					// Step through all output tensors
+					List<Integer> layer_output_tensors = l.getOutputTensorArray();
 
-			for (int i = 0; i < layers.size(); i++) {
-				Layer l = layers.get(i);
+					// Task to create communication from
+					if (layer_output_tensors.size() > 0) {
 
-				// Step through all output tensors
-				List<Integer> layer_output_tensors = l.getOutputTensorArray();
+						Integer layer_task_index = l.getIndex();
+						Task layer_task = application_graphs.get(k).get(layer_task_index);
+						Integer output_size =
+								l.getOutputs().get(l.getOutputs().size() - 1).getShapeProduct();
 
-				// Task to create communication from
-				if (layer_output_tensors.size() > 0) {
+						for (int j = 0; j < layer_output_tensors.size(); j++) {
 
-					Integer layer_task_index = l.getIndex();
-					Task layer_task = application_graphs.get(k).get(layer_task_index);
-					Integer output_size =
-							l.getOutputs().get(l.getOutputs().size() - 1).getShapeProduct();
+							Integer target_tensor = layer_output_tensors.get(j);
 
-					for (int j = 0; j < layer_output_tensors.size(); j++) {
+							if (target_tensor != output_tensor) {
+								Layer target_layer = model.getLayerWithInputTensor(target_tensor);
 
-						Integer target_tensor = layer_output_tensors.get(j);
+								// Get OpenDSE task and set input shape
+								Integer target_task_index = target_layer.getIndex();
+								Task target_task = application_graphs.get(k).get(target_task_index);
+								target_task.setAttribute("input_shape", output_size);
 
-						if (target_tensor != output_tensor) {
-							Layer target_layer = model.getLayerWithInputTensor(target_tensor);
+								Communication comm = new Communication(String.format("comm%d_%s_%s",
+										j, layer_task.getId(), target_task.getId()));
+								application.addVertex(comm);
 
-							// Get OpenDSE task and set input shape
-							Integer target_task_index = target_layer.getIndex();
-							Task target_task = application_graphs.get(k).get(target_task_index);
-							target_task.setAttribute("input_shape", output_size);
-
-							Communication comm = new Communication(String.format("comm%d_%s_%s", j,
-									layer_task.getId(), target_task.getId()));
-							application.addVertex(comm);
-
-							// Create dependencies from:
-							// - current task -> communication
-							// - communication -> target task
-							application.addEdge(
-									new Dependency(String.format("%s[%s] -> comm_%s",
-											layer_task.getId(), layer_task_index, comm.getId())),
-									layer_task, comm);
-							application.addEdge(
-									new Dependency(String.format("comm_%s -> %s[%d]", comm.getId(),
-											target_task.getId(), target_task_index)),
-									comm, target_task);
+								// Create dependencies from:
+								// - current task -> communication
+								// - communication -> target task
+								application.addEdge(new Dependency(
+										String.format("%s[%s] -> comm_%s", layer_task.getId(),
+												layer_task_index, comm.getId())),
+										layer_task, comm);
+								application.addEdge(
+										new Dependency(
+												String.format("comm_%s -> %s[%d]", comm.getId(),
+														target_task.getId(), target_task_index)),
+										comm, target_task);
+							}
 						}
 					}
 				}
 			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-
-		this.longest_model = longest_model;
 
 		return application;
 	}
@@ -223,6 +253,7 @@ public class SpecificationDefinition {
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return null;
 		}
 
 		// System only has 2 busses independant of the number of execution units
@@ -301,7 +332,6 @@ public class SpecificationDefinition {
 	}
 
 
-
 	/**
 	 * @brief Creates a set of possible mappings, ie. all tasks can be mapped onto the CPU + GPU,
 	 *        compatible tasks can be mapped to the TPU.
@@ -322,8 +352,8 @@ public class SpecificationDefinition {
 					Resource resource = cpus.get(i);
 					Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 							String.format("%s:%s", task_id, resource.getId()), task, resource);
-					m.setAttribute("cost", this.op_costs.GetOpCost("cpu", task.getAttribute("type"),
-							task.getAttribute("dtype")));
+					m.setAttribute("cost", this.operation_costs.GetOpCost("cpu",
+							task.getAttribute("type"), task.getAttribute("dtype")));
 					mappings.add(m);
 				}
 
@@ -332,8 +362,8 @@ public class SpecificationDefinition {
 					Resource resource = gpus.get(i);
 					Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 							String.format("%s:%s", task_id, resource.getId()), task, resource);
-					m.setAttribute("cost", this.op_costs.GetOpCost("gpu", task.getAttribute("type"),
-							task.getAttribute("dtype")));
+					m.setAttribute("cost", this.operation_costs.GetOpCost("gpu",
+							task.getAttribute("type"), task.getAttribute("dtype")));
 					mappings.add(m);
 				}
 
@@ -344,7 +374,7 @@ public class SpecificationDefinition {
 						Resource resource = tpus.get(i);
 						Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 								String.format("%s:%s", task_id, resource.getId()), task, resource);
-						m.setAttribute("cost", this.op_costs.GetOpCost("tpu",
+						m.setAttribute("cost", this.operation_costs.GetOpCost("tpu",
 								task.getAttribute("type"), task.getAttribute("dtype")));
 						mappings.add(m);
 					}
@@ -354,39 +384,62 @@ public class SpecificationDefinition {
 		return mappings;
 	}
 
-	/**
-	 * @param model_summary_path
-	 * @return
-	 */
-	public Specification GetSpecificationFromTFLiteModel(String model_summary_path,
-			String architecture_summary_path) {
-
-		Architecture<Resource, Link> architecture =
-				GetArchitectureFromArchitectureSummary(architecture_summary_path);
-		Application<Task, Dependency> application =
-				GetApplicationFromModelSummary(model_summary_path);
-		Mappings<Task, Resource> mappings = CreateMappingOptions();
-
-		Specification specification = new Specification(application, architecture, mappings);
-
-		SpecificationWriter writer = new SpecificationWriter();
-		writer.write(specification, "src/main/resources/generatedspecs/spec_"
-				+ new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date()) + ".xml");
-
-		/*
-		 * It is also possible to view the specification in a GUI.
-		 */
-		SpecificationViewer.view(specification);
-
-		return specification;
-	}
-
 
 	/**
 	 * @return Specification
 	 */
 	public Specification getSpecification() {
 		return (specification);
+	}
+
+
+	public void setSpecification(Specification specification) {
+		this.specification = specification;
+	}
+
+
+	public OperationCosts getOperation_costs() {
+		return operation_costs;
+	}
+
+
+	public void setOperation_costs(OperationCosts operation_costs) {
+		this.operation_costs = operation_costs;
+	}
+
+
+	public HashMap<Integer, HashMap<Integer, Task>> getApplication_graphs() {
+		return application_graphs;
+	}
+
+
+	public void setApplication_graphs(HashMap<Integer, HashMap<Integer, Task>> application_graphs) {
+		this.application_graphs = application_graphs;
+	}
+
+
+	public HashMap<String, List<Resource>> getResources() {
+		return resources;
+	}
+
+
+	public void setResources(HashMap<String, List<Resource>> resources) {
+		this.resources = resources;
+	}
+
+
+	public List<String> getSupported_layers() {
+		return supported_layers;
+	}
+
+
+	public ArrayList<Task> getStarting_tasks() {
+		return starting_tasks;
+	}
+
+
+	public void setStarting_tasks(ArrayList<Task> starting_tasks) {
+		this.starting_tasks = starting_tasks;
 	}
 
 }

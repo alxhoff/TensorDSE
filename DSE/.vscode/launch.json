@@ -30,6 +30,7 @@
             "name": "Launch TensorDSE(1)",
             "request": "launch",
             "cwd": "TensorDSE",
+            "args": "-n src/main/resources/multitestconfigs/example.properties",
             "mainClass": "net.sf.opendse.TensorDSE.TensorDSE",
             "projectName": "TensorDSE"
         },
