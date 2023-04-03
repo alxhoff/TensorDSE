@@ -423,6 +423,8 @@ public class TensorDSE {
 							args_namespace.getBoolean("verbose"),
 							args_namespace.getBoolean("visualise"));
 					OptimizationModule optimization_module = new OptimizationModule();
+					optimization_module.setUsePreprocessing(false);
+					optimization_module.setUseVariableOrder(false);
 					Collection<Module> modules = GetModulesCollection(ea_module,
 							specification_module, optimization_module);
 
