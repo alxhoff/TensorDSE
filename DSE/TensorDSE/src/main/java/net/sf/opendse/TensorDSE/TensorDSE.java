@@ -121,7 +121,7 @@ public class TensorDSE {
 	 * @return EvolutionaryAlgorithmModule
 	 */
 	private static EvolutionaryAlgorithmModule GetEAModule(Double crossover_rate,
-			int population_size, int parents_per_generation, int generations,
+			int population_size, int generations, int parents_per_generation,
 			int offsprings_per_generation) {
 
 		EvolutionaryAlgorithmModule ea = new EvolutionaryAlgorithmModule();
@@ -356,6 +356,11 @@ public class TensorDSE {
 								generations.add(gen);
 								parents_per_generation.add((int) (pr * ps));
 								offsprings_per_generation.add((int) (or * ps));
+
+								if (args_namespace.getBoolean("verbose"))
+									System.out.println(String.format(
+											"gens: %d, pop size: %d, cross: %f, parents: %f = %f, offspring: %f = %f",
+											gen, ps, cr, pr, pr * ps, or, or * ps));
 							}
 
 
@@ -418,6 +423,8 @@ public class TensorDSE {
 							args_namespace.getBoolean("verbose"),
 							args_namespace.getBoolean("visualise"));
 					OptimizationModule optimization_module = new OptimizationModule();
+					optimization_module.setUsePreprocessing(false);
+					optimization_module.setUseVariableOrder(false);
 					Collection<Module> modules = GetModulesCollection(ea_module,
 							specification_module, optimization_module);
 
