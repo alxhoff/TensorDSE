@@ -1,4 +1,5 @@
 models/compiled/*
+!models/compiled/.gitkeep
 
 cpu
 gpu
