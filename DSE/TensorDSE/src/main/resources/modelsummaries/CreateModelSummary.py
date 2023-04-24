@@ -56,7 +56,7 @@ def main() -> int:
 
     for line in tensor_lines:
         index = re.findall(r"Op#([0-9]+)", line)[0]
-        input_tensors = re.findall(r"\(((?:T#\d+(?:,\s)?)*)\)", line)[0]
+        input_tensors = re.findall(r"\((.+)\)\s->", line)[0]
         input_tensors_list = re.findall(r"T#(\d+)", input_tensors)
         output_tensors = re.findall(r"\[((?:T#\d+(?:,\s)?)*)\]", line)[0]
         output_tensors_list = re.findall(r"T#(\d+)", output_tensors)
@@ -141,8 +141,11 @@ def main() -> int:
         "layers": layers,
     }
 
-    with open(args.outputdir + "/" + args.output, "w+") as outfile:
-        json.dump(ret, outfile, indent=4)
+    try:
+        with open(args.outputdir + "/" + args.output + ".json", "w+") as outfile:
+            json.dump(ret, outfile, indent=4)
+    except Exception as e:
+        print(e)
 
     return 0
 

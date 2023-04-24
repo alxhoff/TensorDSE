@@ -36,7 +36,8 @@ RUN add-apt-repository -y ppa:wireshark-dev/stable
 RUN apt-get install -y tshark
 
 # Python Libraries
-RUN pip3 install pyshark pyserial pyftdi argparse
+RUN pip3 install git+https://github.com/siliconlabs/mltk.git
+RUN pip3 install pyshark pyserial pyftdi argparse metrics visualization
 RUN pip3 install matplotlib scipy numpy pandas
 # RUN pip3 install tensorflow
 RUN pip3 install --upgrade pip
