@@ -28,5 +28,7 @@ def CompileTFLiteModelsForCoral(layers:list):
         if ret == 0:
             log.info(f"Operation: {op} compiled for the edgetpu successfully")
         else:
+            log.info(f"Operation: {op} failed to compiler for the edgetpu successfully")
+            log.info(f"edgetpu_compiler -s {path} -o {COMPILED_MODELS_FOLDER}")
             raise Exception(f"Error during compilation of {op}")
 

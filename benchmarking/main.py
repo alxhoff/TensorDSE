@@ -35,19 +35,29 @@ def BenchmarkModel(model:str, count:int):
 
     # Create single operation models/layers from the operations in the provided model
     layers = SplitTFLiteModel(model=model)
+    log.info(f"Layers found")
+    log.info(f"{layers}")
     # array of strings, each entry is one of the layers that compose the
     # to-be-benchmarked model
 
     # Compiles created models/layers into Coral models for execution
     CompileTFLiteModelsForCoral(layers)
 
+    print("Model compiled")
+
     # Deploy the generated models/layers onto the target test hardware using docker
     results_dict = DeployModels(model_name, layers, count=count)
 
+    print("Model deployed")
+
     # Process results
     AnalyzeModelResults(model_name, results_dict)
+
+    print("Analyze results")
+
     MergeResults(model_name, layers, clean=True)
 
+    print("Results merged")
 
 def GetArgs() -> argparse.Namespace:
 
