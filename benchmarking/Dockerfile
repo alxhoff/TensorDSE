@@ -35,8 +35,16 @@ RUN apt-get install -y libedgetpu1-std edgetpu-compiler
 RUN add-apt-repository -y ppa:wireshark-dev/stable
 RUN apt-get install -y tshark
 
+# TensorRT
+RUN apt-get install -y tensorrt
+# RUN ln -s /usr/lib/x86_64-linux-gnu/libnvinfer.so.8 /usr/lib/x86_64-linux-gnu/libnvinfer.so.7
+# RUN ln -s /usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so.8 /usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so.7
+RUN find / -name 'libnvinfer_plugin.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/libnvinfer_plugin.so.7"' {} \;
+RUN find / -name 'libnvinfer.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/libnvinfer.so.7"' {} \;
+
 # Python Libraries
-RUN pip3 install git+https://github.com/siliconlabs/mltk.git
+#RUN pip3 install git+https://github.com/siliconlabs/mltk.git
+RUN pip3 install silabs-mltk[full] --upgrade
 RUN pip3 install pyshark pyserial pyftdi argparse metrics visualization
 RUN pip3 install matplotlib scipy numpy pandas
 # RUN pip3 install tensorflow
@@ -81,6 +89,9 @@ RUN /home/install_tf.sh
 
 # Ports
 # EXPOSE 8080
+
+# TensorDSE source
+RUN git clone https://github.com/alxhoff/TensorDSE.git
 
 # ENV Variables
 ENV LANG en_US.UTF-8
