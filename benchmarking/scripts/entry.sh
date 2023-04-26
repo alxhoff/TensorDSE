@@ -39,8 +39,10 @@ test() {
 }
 
 run() {
-    ipdb3 main.py -m models/source/MNIST.tflite \
-                    -c 10
+    ls /home/tensorflow_r2.9/external
+
+    #ipdb3 main.py -m models/source/MNIST.tflite \
+                    #-c 10
 }
 
 main() {
