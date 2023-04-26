@@ -8,11 +8,11 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--outputdir",
     type=str,
-    default="src/main/resources/architecturesummaries",
+    default=".",
     help="Output directory for JSON file, defults to architecturesummaries folder in java resources",
 )
 parser.add_argument(
-    "--output",
+    "--outputname",
     type=str,
     default="outputarchitecturesummary.json",
     help="Filename of output JSON file",
@@ -30,7 +30,7 @@ def main() -> int:
 
     summary = {"CPU_cores": CPU_cores, "GPU_count": GPU_count, "TPU_count": TPU_count}
 
-    with open(args.outputdir + "/" + args.output, "w+") as outfile:
+    with open(args.outputdir + "/" + args.outputname, "w+") as outfile:
         json.dump(summary, outfile, indent=4)
 
 

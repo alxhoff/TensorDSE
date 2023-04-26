@@ -6,7 +6,9 @@ REPO := coral-ubuntu-20.04
 NAME := coral-environment
 REGEX := coral
 
-VOLUME := $(shell pwd)
+# VOLUME := $(shell pwd)
+VOLUME := $(shell cd ../ && pwd)
+
 
 MODE 				:= 0
 DEBUG_MODE 			:= 1
@@ -25,6 +27,8 @@ info:
 	@printf "\n"
 	@printf "%s\n" "RUNNING DOCKERS:"
 	@docker ps -a
+	@echo "Volume"
+	@echo $(VOLUME)
 
 build:
 	@$(info "Grab a coffee, building will take some time...")

@@ -2,23 +2,35 @@ import argparse
 import os
 from utils.log import Log
 
-MODELS_FOLDER           = "models/source/"
-LAYERS_FOLDER           = "models/layers/"
-COMPILED_MODELS_FOLDER  = "models/compiled/"
-RESULTS_FOLDER          = "results/"
+MODELS_FOLDER = "benchmarking/models/source/"
+LAYERS_FOLDER = "benchmarking/models/layers/"
+COMPILED_MODELS_FOLDER = "benchmarking/models/compiled/"
+RESULTS_FOLDER = "benchmarking/results/"
 
 # custom logger to separate TF logs and Ours
 log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))
 
+
 def DisableTFlogging() -> None:
-    """Disable the most annoying logging known to mankind
-    """
+    """Disable the most annoying logging known to mankind"""
     import os
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4' # only report errors
-    os.environ['KMP_WARNINGS'] = '0'         # disable warnings
+
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "4"  # only report errors
+    os.environ["KMP_WARNINGS"] = "0"  # disable warnings
 
 
-def BenchmarkModel(model:str, count:int):
+def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
+    from os import system
+
+    command = "python DSE/TensorDSE/src/main/resources/modelsummaries/CreateModelSummary.py --model {} --outputdir {} --outputname {}".format(
+            model, output_dir, output_name
+        )
+
+    print("Running summary command: {}".format(command))
+    system(command)
+
+
+def BenchmarkModel(model: str, count: int):
     from deploy import DeployModels
     from convert import ImportTFLiteModules, SplitTFLiteModel
     from compile import CompileTFLiteModelsForCoral
@@ -59,8 +71,8 @@ def BenchmarkModel(model:str, count:int):
 
     print("Results merged")
 
-def GetArgs() -> argparse.Namespace:
 
+def GetArgs() -> argparse.Namespace:
     """Argument parser, returns the Namespace containing all of the arguments.
     :raises: None
 
@@ -85,14 +97,26 @@ def GetArgs() -> argparse.Namespace:
         help="Number of times to measure inference.",
     )
 
+    parser.add_argument(
+        "-o",
+        "--summaryoutputdir",
+        default="DSE/TensorDSE/src/main/resources/modelsummaries",
+        help="Directory where model summary should be saved",
+    )
+
+    parser.add_argument(
+        "-n",
+        "--summaryoutputname",
+        default="MNIST",
+        help="Name that the model summary should have",
+    )
+
     args = parser.parse_args()
 
     return args
 
 
-
 if __name__ == "__main__":
-
     """Entry point to execute this script.
 
     Flags
@@ -107,4 +131,9 @@ if __name__ == "__main__":
 
     args = GetArgs()
     DisableTFlogging()
+
+    SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
+    print("Model summarized")
+    
     BenchmarkModel(args.model, args.count)
+    print("Model benchmarked")

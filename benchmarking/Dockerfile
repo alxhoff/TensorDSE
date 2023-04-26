@@ -90,9 +90,6 @@ RUN /home/install_tf.sh
 # Ports
 # EXPOSE 8080
 
-# TensorDSE source
-RUN git clone https://github.com/alxhoff/TensorDSE.git
-
 # ENV Variables
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
@@ -105,4 +102,4 @@ ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 # Work
 RUN mkdir /home/tensorDSE
 WORKDIR /home/tensorDSE
-ENTRYPOINT [ "/home/tensorDSE/scripts/entry.sh" ]
+ENTRYPOINT [ "/home/tensorDSE/benchmarking/scripts/entry.sh" ]
