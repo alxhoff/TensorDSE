@@ -30,18 +30,17 @@ coral_hello_world() {
 }
 
 debug() {
-    ipdb3 scripts/debug.py
+    ipdb3 benchmarking/scripts/debug.py
 }
 
 test() {
-    ipdb3 scripts/test.py -c 2 \
+    ipdb3 benchmarking/scripts/test.py -c 2 \
                           -t 10
 }
 
 run() {
-    ls /home/tensorflow_r2.9/external
-
-    #ipdb3 main.py -m models/source/MNIST.tflite \
+    ls /home/
+    #ipdb3 benchmarking/main.py -m benchmarking/models/source/MNIST.tflite \
                     #-c 10
 }
 

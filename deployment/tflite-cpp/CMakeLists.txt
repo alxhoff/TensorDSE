@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7...3.16)
+cmake_minimum_required(VERSION 3.7...3.23)
 if(${CMAKE_VERSION} VERSION_LESS 3.12)
     cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 endif()
@@ -7,7 +7,7 @@ project(TFLiteApp VERSION 1.0
                     LANGUAGES CXX)
 
 #set (CMAKE_CXX_FLAGS "-lstdc++fs -std=c++17")
-
+set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_STANDARD 14)
 
 #set(CMAKE_BUILD_TYPE Debug)
@@ -62,11 +62,12 @@ message("Inference Type: ${INFERENCE_TYPE}")
 set(TENSORFLOW_VERSION "2.9.1" CACHE STRING "Tensorflow Version")
 message("Tensorflow Version: ${TENSORFLOW_VERSION}")
 
-set(TENSORFLOW_ENV $ENV{HOME}/Downloads/tensorflow_env)
+set(TENSORFLOW_ENV /home/tensorflow_env)
 
-set(TENSORFLOW_SRC_DIR ${TENSORFLOW_ENV}/tensorflow-${TENSORFLOW_VERSION})
+set(TENSORFLOW_SRC_DIR ${TENSORFLOW_ENV}/tensorflow_src)
 
-set(TFLITE_BUILD_DIR ${TENSORFLOW_ENV}//tflite-build)
+set(TFLITE_BUILD_DIR ${TENSORFLOW_ENV}//tflite_build)
+
 
 if(EXISTS ${TENSORFLOW_SRC_DIR}/)
     INCLUDE_DIRECTORIES(${TENSORFLOW_SRC_DIR}/)
@@ -74,22 +75,22 @@ else()
     message( FATAL_ERROR "${TENSORFLOW_SRC_DIR}: No such file or directory found!" )    
 endif()
 
-if (EXISTS ${TENSORFLOW_SRC_DIR}/)
-INCLUDE_DIRECTORIES(${TENSORFLOW_SRC_DIR}/)
-endif()
 
 INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/)
+INCLUDE_DIRECTORIES(${TENSORFLOW_SRC_DIR}/third_party/)
 INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/flatbuffers/include/)
-INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/abseil-cpp)
-INCLUDE_DIRECTORIES(${TENSORFLOW_SRC_DIR}/third_party)
+
+
 
 if( GPU_SUPPORT STREQUAL "ON" )
-    INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/gemmlowp)
     INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/eigen)
+    INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/gemmlowp)
     INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/ruy)
     INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/opencl_headers)
     INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/neon2sse)
     INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/FP16-source/include/)
+    INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/vulkan_headers/include/)
+    INCLUDE_DIRECTORIES(${TFLITE_BUILD_DIR}/abseil-cpp/)
 endif()
 
 #[[INCLUDE_DIRECTORIES(${TENSORFLOW_ENV}/edgetpu_runtime/libedgetpu)]]
