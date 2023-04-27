@@ -1,0 +1,5 @@
+- Quick fixes for Linking issues (Docker image): 
+	- In tensorflow_src/tensorflow/lite/kernels/internal/optimized/optimized_ops.h
+		- Add #undef Success before including Eigen, line 39
+	- In /usr/include/EGL/eglplatform.h
+		- Add #undef Status after including X11/Xutil.h, line 130
