@@ -49,7 +49,8 @@ run: $(if $(call exist-docker-image),,build)
 				   -v "${VOLUME}":/home/tensorDSE \
 				   --detach-keys="ctrl-@" \
 				   --env MODE=${MODE} \
-				   -it ${TAG}:${REPO}; \
+				   -it ${TAG}:${REPO} \
+				   --gpus 'all,capabilities=utility,compute'; \
 	fi
 
 debug:
