@@ -11,7 +11,7 @@
           "args": [
             {
               "key": "Padding",
-              "value": "valid"
+              "value": "Valid"
             },
             {
               "key": "stride",
@@ -19,30 +19,31 @@
             },
             {
               "key": "activation",
-              "value": "none"
+              "value": "None"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["28", "28", "1"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "0"
             },
             {
               "shape": ["3", "3", "1"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "6"
             },
             {
               "shape": ["28"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "7"
             }
           ],
           "outputs": [
             {
               "shape": ["26", "26", "28"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "8"
             }
           ]
@@ -53,7 +54,7 @@
           "args": [
             {
               "key": "Padding",
-              "value": "valid"
+              "value": "Valid"
             },
             {
               "key": "stride",
@@ -65,20 +66,21 @@
             },
             {
               "key": "activation",
-              "value": "none"
+              "value": "None"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["26", "26", "28"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "8"
             }
           ],
           "outputs": [
             {
               "shape": ["13", "13", "28"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "9"
             }
           ]
@@ -92,10 +94,11 @@
               "value": "none"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["13", "13", "28"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "9"
             },
             {
@@ -107,7 +110,7 @@
           "outputs": [
             {
               "shape": ["4732"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "10"
             }
           ]
@@ -118,30 +121,31 @@
           "args": [
             {
               "key": "Activation",
-              "value": "relu"
+              "value": "Relu"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["4732"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "10"
             },
             {
               "shape": ["4732"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "4"
             },
             {
               "shape": ["128"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "1"
             }
           ],
           "outputs": [
             {
               "shape": ["128"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "11"
             }
           ]
@@ -152,30 +156,31 @@
           "args": [
             {
               "key": "Activation",
-              "value": "none"
+              "value": "None"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["128"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "11"
             },
             {
               "shape": ["128"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "5"
             },
             {
               "shape": ["10"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "2"
             }
           ],
           "outputs": [
             {
               "shape": ["10"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "12"
             }
           ]
@@ -189,17 +194,18 @@
               "value": "softmaxoptions"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["10"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "12"
             }
           ],
           "outputs": [
             {
               "shape": ["10"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "13"
             }
           ]
@@ -217,7 +223,7 @@
           "args": [
             {
               "key": "Padding",
-              "value": "valid"
+              "value": "Valid"
             },
             {
               "key": "stride",
@@ -225,30 +231,31 @@
             },
             {
               "key": "activation",
-              "value": "none"
+              "value": "None"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["28", "28", "1"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "0"
             },
             {
               "shape": ["3", "3", "1"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "6"
             },
             {
               "shape": ["28"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "7"
             }
           ],
           "outputs": [
             {
               "shape": ["26", "26", "28"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "8"
             }
           ]
@@ -259,7 +266,7 @@
           "args": [
             {
               "key": "Padding",
-              "value": "valid"
+              "value": "Valid"
             },
             {
               "key": "stride",
@@ -271,20 +278,21 @@
             },
             {
               "key": "activation",
-              "value": "none"
+              "value": "None"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["26", "26", "28"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "8"
             }
           ],
           "outputs": [
             {
               "shape": ["13", "13", "28"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "9"
             }
           ]
@@ -298,10 +306,11 @@
               "value": "none"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["13", "13", "28"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "9"
             },
             {
@@ -313,7 +322,7 @@
           "outputs": [
             {
               "shape": ["4732"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "10"
             }
           ]
@@ -324,30 +333,31 @@
           "args": [
             {
               "key": "Activation",
-              "value": "relu"
+              "value": "Relu"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["4732"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "10"
             },
             {
               "shape": ["4732"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "4"
             },
             {
               "shape": ["128"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "1"
             }
           ],
           "outputs": [
             {
               "shape": ["128"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "11"
             }
           ]
@@ -358,30 +368,31 @@
           "args": [
             {
               "key": "Activation",
-              "value": "none"
+              "value": "None"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["128"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "11"
             },
             {
               "shape": ["128"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "5"
             },
             {
               "shape": ["10"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "2"
             }
           ],
           "outputs": [
             {
               "shape": ["10"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "12"
             }
           ]
@@ -395,17 +406,18 @@
               "value": "softmaxoptions"
             }
           ],
+          "mapping": "",
           "inputs": [
             {
               "shape": ["10"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "12"
             }
           ],
           "outputs": [
             {
               "shape": ["10"],
-              "type": "uint8",
+              "type": "float32",
               "tensor": "13"
             }
           ]

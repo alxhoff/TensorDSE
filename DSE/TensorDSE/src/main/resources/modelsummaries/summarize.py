@@ -9,7 +9,7 @@ def SummarizeGraph(model:str, output_dir:str, output_name:str) -> None:
     analysis = _analyzer_wrapper.ModelAnalyzer(model, True, False).split("\n")
 
     summary = summarize_model(model, tflite=True)
-    summary = [x.strip().split("|") for x in summary.split("\n")][3:-11]
+    summary = [x.strip().split("|") for x in summary.split("\n")][3:-7]
 
     tensor_lines = []
     starting_tensor = "0"
@@ -73,6 +73,7 @@ def SummarizeGraph(model:str, output_dir:str, output_name:str) -> None:
             "index": layer_number,
             "type": layer_type,
             "args": parsed_args,
+            "mapping": "",
             "inputs": [],
             "outputs": [],
         }
