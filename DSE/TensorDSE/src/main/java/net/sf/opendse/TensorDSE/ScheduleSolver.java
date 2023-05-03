@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
+import net.sf.opendse.TensorDSE.JSON.Model.Model;
 import net.sf.opendse.model.Application;
 import net.sf.opendse.model.Dependency;
 import net.sf.opendse.model.Link;
@@ -24,28 +25,42 @@ import gurobi.*;
 
 public class ScheduleSolver {
 
-    // private Architecture<Resource, Link> architecture;
     private Application<Task, Dependency> application;
     private Mappings<Task, Resource> mapping;
     private Routings<Task, Resource, Link> routings;
     private Double K;
     private Boolean verbose;
 
-    // private HashMap<Integer, HashMap<Integer, Task>> application_graphs;
     private List<Task> starting_tasks;
     private OperationCosts operation_costs;
 
-    public ScheduleSolver(Specification specification, List<Task> starting_tasks,
-            OperationCosts operation_costs, Double K, Boolean verbose) {
+    public List<Model> json_models = null;
 
-        // this.architecture = specification.getArchitecture();
-        this.application = specification.getApplication();
-        this.mapping = specification.getMappings();
-        this.routings = specification.getRoutings();
-        this.starting_tasks = starting_tasks;
-        this.operation_costs = operation_costs;
+    public ScheduleSolver(SpecificationDefinition specification_definition, Double K,
+            Boolean verbose) {
+
+        this.application = specification_definition.getSpecification().getApplication();
+        this.mapping = specification_definition.getSpecification().getMappings();
+        this.routings = specification_definition.getSpecification().getRoutings();
+        this.starting_tasks = specification_definition.getStarting_tasks();
+        this.operation_costs = specification_definition.getOperation_costs();
         this.K = K;
         this.verbose = verbose;
+        this.json_models = specification_definition.getJson_models();
+
+        addCommCosts(operation_costs);
+    }
+
+    public ScheduleSolver(SpecificationDefinition specification_definition, Boolean verbose) {
+
+        this.application = specification_definition.getSpecification().getApplication();
+        this.mapping = specification_definition.getSpecification().getMappings();
+        this.routings = specification_definition.getSpecification().getRoutings();
+        this.starting_tasks = specification_definition.getStarting_tasks();
+        this.operation_costs = specification_definition.getOperation_costs();
+        this.K = 100.0;
+        this.verbose = verbose;
+        this.json_models = specification_definition.getJson_models();
 
         addCommCosts(operation_costs);
     }
@@ -53,7 +68,6 @@ public class ScheduleSolver {
     public ScheduleSolver(Specification specification, List<Task> starting_tasks,
             OperationCosts operation_costs, Boolean verbose) {
 
-        // this.architecture = specification.getArchitecture();
         this.application = specification.getApplication();
         this.mapping = specification.getMappings();
         this.routings = specification.getRoutings();
@@ -61,6 +75,7 @@ public class ScheduleSolver {
         this.operation_costs = operation_costs;
         this.K = 100.0;
         this.verbose = verbose;
+        this.json_models = null;
 
         addCommCosts(operation_costs);
     }
@@ -580,7 +595,7 @@ public class ScheduleSolver {
         return -1.0;
     }
 
-    public void solveILPMappingAndSchedule() {
+    public ArrayList<ArrayList<ILPTask>> solveILPMappingAndSchedule() {
 
         // Sequential arrays of models and their tasks
         ArrayList<ArrayList<ILPTask>> models = new ArrayList<ArrayList<ILPTask>>();
@@ -868,6 +883,14 @@ public class ScheduleSolver {
 
             System.out.println(String.format("ObjVal: %f", obj_val));
 
+            // Save mappings into json
+            for (ILPTask task : all_tasks) {
+                for (Map.Entry<Resource, GRBVar> entry : task.getX_vars().entrySet())
+                    if (entry.getValue().get(GRB.DoubleAttr.X) > 0.0) {
+                        task.setTarget_resource_string(entry.getKey().getId());
+                    }
+            }
+
             if (this.verbose == true) {
 
                 HashMap<Resource, ArrayList<Triplet<String, Double, Double>>> per_resource_schedule =
@@ -885,7 +908,6 @@ public class ScheduleSolver {
                         if (entry.getValue().get(GRB.DoubleAttr.X) > 0.0) {
                             System.out.println(
                                     String.format("Mapped to resource %s", entry.getKey().getId()));
-                            task.setTarget_resource_string(entry.getKey().getId());
                         }
 
                     System.out.println("------------------------------------------------");
@@ -1002,6 +1024,64 @@ public class ScheduleSolver {
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());
         }
+
+        return models;
+    }
+
+    public Application<Task, Dependency> getApplication() {
+        return application;
+    }
+
+    public void setApplication(Application<Task, Dependency> application) {
+        this.application = application;
+    }
+
+    public Mappings<Task, Resource> getMapping() {
+        return mapping;
+    }
+
+    public void setMapping(Mappings<Task, Resource> mapping) {
+        this.mapping = mapping;
+    }
+
+    public Routings<Task, Resource, Link> getRoutings() {
+        return routings;
+    }
+
+    public void setRoutings(Routings<Task, Resource, Link> routings) {
+        this.routings = routings;
+    }
+
+    public Double getK() {
+        return K;
+    }
+
+    public void setK(Double k) {
+        K = k;
+    }
+
+    public Boolean getVerbose() {
+        return verbose;
+    }
+
+    public void setVerbose(Boolean verbose) {
+        this.verbose = verbose;
+    }
+
+    public List<Task> getStarting_tasks() {
+        return starting_tasks;
+    }
+
+    public void setStarting_tasks(List<Task> starting_tasks) {
+        this.starting_tasks = starting_tasks;
+    }
+
+    public OperationCosts getOperation_costs() {
+        return operation_costs;
+    }
+
+    public void setOperation_costs(OperationCosts operation_costs) {
+        this.operation_costs = operation_costs;
     }
 
 }

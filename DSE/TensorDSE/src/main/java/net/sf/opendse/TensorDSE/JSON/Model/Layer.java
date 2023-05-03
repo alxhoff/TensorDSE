@@ -8,6 +8,7 @@ public class Layer {
     Integer index;
     String type;
     List<Arg> args;
+    String mapping;
     List<IO> inputs;
     List<IO> outputs;
 
@@ -79,6 +80,14 @@ public class Layer {
 
     public String getOutputTensorString() {
         return this.getOutputTensorArray().toString();
+    }
+
+    public String getMapping() {
+        return mapping;
+    }
+
+    public void setMapping(String mapping) {
+        this.mapping = mapping;
     }
 
 }

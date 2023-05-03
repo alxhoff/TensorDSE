@@ -2,6 +2,8 @@ package net.sf.opendse.TensorDSE;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,6 +11,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonIOException;
 import com.google.gson.stream.JsonReader;
 import net.sf.opendse.TensorDSE.JSON.Architecture.ArchitectureJSON;
 import net.sf.opendse.TensorDSE.JSON.Model.Layer;
@@ -69,12 +73,12 @@ public class SpecificationDefinition {
 	 */
 	private HashMap<String, List<Resource>> resources = new HashMap<String, List<Resource>>();
 
-
-	// public Integer longest_model;
 	/**
 	 *
 	 */
 	private ArrayList<Task> starting_tasks = new ArrayList<Task>();
+
+	public List<Model> json_models = null;
 
 	/**
 	 * @param model_summary_path
@@ -82,10 +86,42 @@ public class SpecificationDefinition {
 	 */
 	public SpecificationDefinition(String model_summary_path, String benchmarking_results_path,
 			String architecture_summary_path) {
+
+		Gson gson = new Gson();
+		ModelJSON model_json = null;
+		JsonReader jr;
+
+		try {
+			jr = new JsonReader(new FileReader(model_summary_path));
+			model_json = gson.fromJson(jr, ModelJSON.class);
+			this.json_models = model_json.getModels();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		this.operation_costs = new OperationCosts(benchmarking_results_path);
 		this.specification =
 				GetSpecificationFromTFLiteModel(model_summary_path, architecture_summary_path);
+	}
 
+	public void WriteJSONModelsToFile(String filename) {
+
+		if (this.json_models != null) {
+
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			try {
+				FileWriter file = new FileWriter(filename);
+				gson.toJson(this.json_models, file);
+				file.close();
+			} catch (JsonIOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 
 	/**
@@ -103,8 +139,7 @@ public class SpecificationDefinition {
 
 		Architecture<Resource, Link> architecture =
 				GetArchitectureFromArchitectureSummary(hardware_description_path);
-		Application<Task, Dependency> application =
-				GetApplicationFromModelSummary(models_description_path);
+		Application<Task, Dependency> application = GetApplicationFromModelSummary();
 		Mappings<Task, Resource> mappings = CreateMappingOptions();
 
 		Specification specification = new Specification(application, architecture, mappings);
@@ -124,8 +159,8 @@ public class SpecificationDefinition {
 	 * @return
 	 */
 	private static Task CreateTaskNode(Layer layer, Integer model_index) {
-		Task ret = new Task(
-				String.format("%s_%d_m%d", layer.getType(), layer.getIndex(), model_index));
+		Task ret = new Task(String.format("%s-index%d_model%d", layer.getType(), layer.getIndex(),
+				model_index));
 		// TODO Input size?
 		ret.setAttribute("type", layer.getType());
 		// TODO 0 tensor for dtype?
@@ -144,23 +179,14 @@ public class SpecificationDefinition {
 	 * @param model_summary_path
 	 * @return
 	 */
-	private Application<Task, Dependency> GetApplicationFromModelSummary(
-			String model_summary_path) {
+	private Application<Task, Dependency> GetApplicationFromModelSummary() {
 
 		Application<Task, Dependency> application = new Application<Task, Dependency>();
 
-		Gson gson = new Gson();
-		ModelJSON model_json = null;
+		if (this.json_models != null)
+			for (int k = 0; k < this.json_models.size(); k++) {
 
-		try {
-			JsonReader jr = new JsonReader(new FileReader(model_summary_path));
-			model_json = gson.fromJson(jr, ModelJSON.class);
-
-			List<Model> models = model_json.getModels();
-
-			for (int k = 0; k < models.size(); k++) {
-
-				Model model = models.get(k);
+				Model model = this.json_models.get(k);
 				List<Layer> layers = model.getLayers();
 
 				application_graphs.put(k, new HashMap<Integer, Task>());
@@ -202,7 +228,12 @@ public class SpecificationDefinition {
 								Layer target_layer = model.getLayerWithInputTensor(target_tensor);
 
 								// Get OpenDSE task and set input shape
-								Integer target_task_index = target_layer.getIndex();
+								Integer target_task_index = 0;
+								try {
+									target_task_index = target_layer.getIndex();
+								} catch (Exception ex) {
+									ex.printStackTrace();
+								}
 								Task target_task = application_graphs.get(k).get(target_task_index);
 								target_task.setAttribute("input_shape", output_size);
 
@@ -227,10 +258,7 @@ public class SpecificationDefinition {
 					}
 				}
 			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+
 
 		return application;
 	}
@@ -440,6 +468,14 @@ public class SpecificationDefinition {
 
 	public void setStarting_tasks(ArrayList<Task> starting_tasks) {
 		this.starting_tasks = starting_tasks;
+	}
+
+	public List<Model> getJson_models() {
+		return json_models;
+	}
+
+	public void setJson_models(List<Model> json_models) {
+		this.json_models = json_models;
 	}
 
 }

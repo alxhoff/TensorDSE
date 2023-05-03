@@ -22,7 +22,6 @@ import org.opt4j.core.optimizer.Archive;
 import org.opt4j.core.start.Opt4JModule;
 import org.opt4j.core.start.Opt4JTask;
 import org.opt4j.optimizers.ea.EvolutionaryAlgorithmModule;
-
 import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 
@@ -37,6 +36,9 @@ import net.sf.opendse.optimization.OptimizationModule;
 import net.sf.opendse.optimization.SpecificationWrapper;
 import net.sf.opendse.optimization.io.SpecificationWrapperInstance;
 import net.sf.opendse.visualization.SpecificationViewer;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Entry point for this project
@@ -62,17 +64,17 @@ public class TensorDSE {
 				.help("Location of config file to be used for running multiple tests");
 		parser.addArgument("-c", "--crossover").setDefault(0.9).type(Double.class)
 				.help("Cross over rate of the EA");
-		parser.addArgument("-s", "--populationsize").setDefault(400).type(int.class)
+		parser.addArgument("-s", "--populationsize").setDefault(100).type(int.class)
 				.help("Pupulation size for the EA");
-		parser.addArgument("-p", "--parentspergeneration").setDefault(100).type(int.class)
+		parser.addArgument("-p", "--parentspergeneration").setDefault(50).type(int.class)
 				.help("Number of parents per generation in the EA");
-		parser.addArgument("-g", "--generations").setDefault(300).type(int.class)
+		parser.addArgument("-g", "--generations").setDefault(25).type(int.class)
 				.help("Number of generations in the EA");
-		parser.addArgument("-o", "--offspringspergeneration").setDefault(100).type(int.class)
+		parser.addArgument("-o", "--offspringspergeneration").setDefault(50).type(int.class)
 				.help("Number of offsprings per generation");
 		parser.addArgument("-v", "--verbose").setDefault(false).type(Boolean.class)
 				.help("Enables verbose output messages");
-		parser.addArgument("-u", "--visualise").setDefault(false).type(Boolean.class)
+		parser.addArgument("-u", "--visualise").setDefault(true).type(Boolean.class)
 				.help("If set, OpenDSE will visualise all specificatons");
 
 		// Other
@@ -80,7 +82,7 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
-				.setDefault("src/main/resources/modelsummaries/MNIST_multi_3.json")
+				.setDefault("src/main/resources/modelsummaries/MNIST_multi_1.json")
 				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary")
 				.setDefault(
@@ -304,7 +306,6 @@ public class TensorDSE {
 		System.out.println("Working Directory: " + System.getProperty("user.dir"));
 		System.out.printf("Runs: %d\n", test_runs);
 
-
 		ArrayList<Double> crossover_rates = new ArrayList<Double>();
 		ArrayList<Integer> population_sizes = new ArrayList<Integer>();
 		ArrayList<Integer> generations = new ArrayList<Integer>();
@@ -385,7 +386,6 @@ public class TensorDSE {
 				SpecificationDefinition specification_definition = new SpecificationDefinition(
 						models_description_path, benchmark_results_path, hardware_description_path);
 
-
 				if (args_namespace.getBoolean("ilpmapping") == true) {
 
 					// Solve for mappings and schedule using only ILP
@@ -397,15 +397,33 @@ public class TensorDSE {
 						// Solver contains the application, architecture, and possible mapping
 						// graphs as well as the list of starting tasks and the operation costs
 						ScheduleSolver schedule_solver =
-								new ScheduleSolver(specification_definition.getSpecification(),
-										specification_definition.getStarting_tasks(),
-										specification_definition.getOperation_costs(),
+								new ScheduleSolver(specification_definition,
 										args_namespace.getDouble("deactivationnumber"),
 										args_namespace.getBoolean("verbose"));
 						long startILP = System.currentTimeMillis();
-						schedule_solver.solveILPMappingAndSchedule();
+						ArrayList<ArrayList<ILPTask>> models =
+								schedule_solver.solveILPMappingAndSchedule();
 						System.out.println(String.format("ILP Exec time: %dms",
 								System.currentTimeMillis() - startILP));
+
+						// Populate model summary with mapping information
+						for (ArrayList<ILPTask> model : models) {
+							for (ILPTask task : model) {
+								Pattern pat =
+										Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
+								Matcher mat = pat.matcher(task.getID());
+								if (mat.matches()) {
+									String layer_type = mat.group(1);
+									String layer_index = mat.group(2);
+									String model_index = mat.group(3);
+
+									specification_definition.json_models
+											.get(Integer.parseInt(model_index)).getLayers()
+											.get(Integer.parseInt(layer_index))
+											.setMapping(task.getTarget_resource_string());;
+								}
+							}
+						}
 					}
 				} else {
 					// Solve for mappings using heuristic and schedule using ILP
@@ -446,6 +464,24 @@ public class TensorDSE {
 							if (args_namespace.getBoolean("visualise"))
 								SpecificationViewer.view(implementation);
 
+							// Write solution to JSON
+							for (Mapping mapping : implementation.getMappings().getAll()) {
+								Pattern pat = Pattern.compile(
+										"([a-z0-9_]+)-index([0-9]+)_model([0-9]+):([a-z0-9]+)");
+								Matcher mat = pat.matcher(mapping.getId());
+								if (mat.matches()) {
+									String layer_type = mat.group(1);
+									String layer_index = mat.group(2);
+									String model_index = mat.group(3);
+									String mapped_device = mat.group(4);
+
+									specification_definition.json_models
+											.get(Integer.parseInt(model_index)).getLayers()
+											.get(Integer.parseInt(layer_index))
+											.setMapping(mapped_device);;
+								}
+							}
+
 							SpecificationWriter writer = new SpecificationWriter();
 							String time_string =
 									new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
@@ -483,6 +519,10 @@ public class TensorDSE {
 						opt4j_task.close();
 					}
 				}
+
+				specification_definition.WriteJSONModelsToFile(models_description_path
+						.substring(0, models_description_path.lastIndexOf('.'))
+						.concat("_with_mappings.json"));
 			}
 
 		try {
