@@ -5,8 +5,10 @@ from typing import Dict, Tuple
 
 from utils.model import Model
 
+
 def isCPUavailable() -> bool:
     return True
+
 
 def isTPUavailable() -> bool:
     # https://github.com/ultralytics/yolov5/issues/5709
@@ -18,6 +20,7 @@ def isTPUavailable() -> bool:
             return True
     return False
 
+
 def isGPUavailable() -> Tuple[bool, str]:
     out = utils.run("lshw -numeric -C display").split("\n")
     for line in out:
@@ -28,7 +31,8 @@ def isGPUavailable() -> Tuple[bool, str]:
             return True, gpu
     return False, ""
 
-def MakeInterpreterTPU(model_file:str, library:str):
+
+def MakeInterpreterTPU(model_file: str, library: str):
     """Creates the interpreter object needed to deploy a model onto the tpu.
 
     Parameters
@@ -51,9 +55,7 @@ def MakeInterpreterTPU(model_file:str, library:str):
 
     device = {"device": device[0]} if device else {}
     shared_library = library
-    experimental_delegates = [
-        tflite.load_delegate(shared_library, device)
-    ]
+    experimental_delegates = [tflite.load_delegate(shared_library, device)]
 
     return tflite.Interpreter(
         model_path=model_file,
@@ -61,7 +63,8 @@ def MakeInterpreterTPU(model_file:str, library:str):
         experimental_delegates=experimental_delegates,
     )
 
-def MakeInterpreterGPU(model_file:str, library:str):
+
+def MakeInterpreterGPU(model_file: str, library: str):
     """Creates the interpreter object needed to deploy a model onto the tpu.
 
     Parameters
@@ -77,9 +80,7 @@ def MakeInterpreterGPU(model_file:str, library:str):
     """
     import tensorflow as tf
 
-    experimental_delegates = [
-        tf.lite.experimental.load_delegate(library=library)
-    ]
+    experimental_delegates = [tf.lite.experimental.load_delegate(library=library)]
 
     return tf.lite.Interpreter(
         model_path=model_file,
@@ -88,7 +89,7 @@ def MakeInterpreterGPU(model_file:str, library:str):
     )
 
 
-def TPUDeploy(m:Model, count:int, timeout:int=10) -> Model:
+def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
     from multiprocessing import Process, Queue
     import queue
     from main import log
@@ -108,7 +109,7 @@ def TPUDeploy(m:Model, count:int, timeout:int=10) -> Model:
     }[platform.system()]
 
     results = []
-    timers  = []
+    timers = []
 
     interpreter = MakeInterpreterTPU(m.model_path, TPU_LIBRARY)
     interpreter.allocate_tensors()
@@ -117,9 +118,9 @@ def TPUDeploy(m:Model, count:int, timeout:int=10) -> Model:
     output_details = interpreter.get_output_details()
 
     input_data = np.array(
-            np.random.random_sample(
-                input_details[0]["shape"]),         # input shape
-                dtype=input_details[0]["dtype"])    # input dtype
+        np.random.random_sample(input_details[0]["shape"]),  # input shape
+        dtype=input_details[0]["dtype"],
+    )  # input dtype
 
     interpreter.set_tensor(input_details[0]["index"], input_data)
     m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
@@ -128,7 +129,10 @@ def TPUDeploy(m:Model, count:int, timeout:int=10) -> Model:
         signalsQ = Queue()
         dataQ = Queue()
 
-        p = Process(target=capture_stream, args=(signalsQ, dataQ, timeout, Log(f"results/{m.model_name}_USB.log")))
+        p = Process(
+            target=capture_stream,
+            args=(signalsQ, dataQ, timeout, Log(f"results/{m.model_name}_USB.log")),
+        )
         p.start()
 
         sig = signalsQ.get()
@@ -137,9 +141,9 @@ def TPUDeploy(m:Model, count:int, timeout:int=10) -> Model:
             break
 
         time.sleep(DEPLOY_WAIT_TIME)
-        start = time.perf_counter()                     # START
-        interpreter.invoke()                            # RUNS
-        inference_time = time.perf_counter() - start    # END
+        start = time.perf_counter()  # START
+        interpreter.invoke()  # RUNS
+        inference_time = time.perf_counter() - start  # END
 
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
         results.append(inference_time)
@@ -159,7 +163,7 @@ def TPUDeploy(m:Model, count:int, timeout:int=10) -> Model:
     return m
 
 
-def GPUDeploy(m:Model, count:int) -> Model:
+def GPUDeploy(m: Model, count: int) -> Model:
     import time
     import sys
     import tensorflow as tf
@@ -175,17 +179,17 @@ def GPUDeploy(m:Model, count:int) -> Model:
     output_details = interpreter.get_output_details()
 
     input_data = np.array(
-            np.random.random_sample(
-                input_details[0]["shape"]),         # input shape
-                dtype=input_details[0]["dtype"])    # input dtype
+        np.random.random_sample(input_details[0]["shape"]),  # input shape
+        dtype=input_details[0]["dtype"],
+    )  # input dtype
 
     interpreter.set_tensor(input_details[0]["index"], input_data)
     m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
 
     for i in range(count):
-        start = time.perf_counter()                     # START
-        interpreter.invoke()                            # RUNS
-        inference_time = time.perf_counter() - start    # END
+        start = time.perf_counter()  # START
+        interpreter.invoke()  # RUNS
+        inference_time = time.perf_counter() - start  # END
 
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
         results.append(inference_time)
@@ -197,7 +201,8 @@ def GPUDeploy(m:Model, count:int) -> Model:
     m.results = results
     return m
 
-def CPUDeploy(m:Model, count:int) -> Model:
+
+def CPUDeploy(m: Model, count: int) -> Model:
     import time
     import sys
     import numpy as np
@@ -213,17 +218,17 @@ def CPUDeploy(m:Model, count:int) -> Model:
     output_details = interpreter.get_output_details()
 
     input_data = np.array(
-            np.random.random_sample(
-                input_details[0]["shape"]),         # input shape
-                dtype=input_details[0]["dtype"])    # input dtype
+        np.random.random_sample(input_details[0]["shape"]),  # input shape
+        dtype=input_details[0]["dtype"],
+    )  # input dtype
 
     interpreter.set_tensor(input_details[0]["index"], input_data)
     m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
 
     for i in range(count):
-        start = time.perf_counter()                     # START
-        interpreter.invoke()                            # RUNS
-        inference_time = time.perf_counter() - start    # END
+        start = time.perf_counter()  # START
+        interpreter.invoke()  # RUNS
+        inference_time = time.perf_counter() - start  # END
 
         _ = interpreter.get_tensor(output_details[0]["index"])  # output data
         results.append(inference_time)
@@ -235,7 +240,10 @@ def CPUDeploy(m:Model, count:int) -> Model:
     m.results = results
     return m
 
-def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
+
+def DeployModels(
+    parent_model: str, layers: list, count=1000, hardware_summary=["cpu"]
+) -> Dict:
     """Manager function responsible for preping and executing the deployment
     of the compiled tflite models.
 
@@ -246,6 +254,8 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
     Parameters
     ----------
     count : Integer
+    hardware_summary : Path to the hardware summary file that is to be used to
+    check which devices need to be benchmarked, if None then all are benchmarked
     Indicates the number of times each model will be deplyed.
     """
     import os
@@ -256,36 +266,43 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
     from usb import init_usbmon
 
     models = {}
-    models["cpu"]   = []
-    models["gpu"]   = []
-    models["tpu"]   = []
+    models["cpu"] = []
+    models["gpu"] = []
+    models["tpu"] = []
     models["count"] = count
 
     # regular quantized tflite files for cpu
     if not isCPUavailable():
         log.warning(f"CPU is NOT available on this machine!")
+    elif "cpu" not in hardware_summary:
+        log.info("No CPU cores in hardware summary, skipping benchmarking")
     else:
         log.info(f"CPU is available on this machine!")
         for d in listdir(LAYERS_FOLDER):
             if isdir(join(LAYERS_FOLDER, d)) and (d in layers):
                 model_name = d
-                model_path = join(LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite")
+                model_path = join(
+                    LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite"
+                )
                 log.info(f"Deploying layer/operation {model_name} onto the cpu")
 
                 m = CPUDeploy(Model(model_path, "cpu", parent_model), count)
                 models["cpu"].append(m)
 
-
     # regular quantized tflite files for gpu
     available, gpu = isGPUavailable()
     if not available:
         log.warning(f"GPU is NOT available on this machine! Type: {gpu}")
+    elif "gpu" not in hardware_summary:
+        log.info("No GPUs in hardware summary, skipping benchmarking")
     else:
         log.info(f"GPU is available on this machine! Type: {gpu}")
         for d in listdir(LAYERS_FOLDER):
             if isdir(join(LAYERS_FOLDER, d)) and (d in layers):
                 model_name = d
-                model_path = join(LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite")
+                model_path = join(
+                    LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite"
+                )
                 log.info(f"Deploying layer/operation {model_name} onto the gpu")
 
                 m = GPUDeploy(Model(model_path, "gpu", parent_model), count)
@@ -294,6 +311,8 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
     # edge compiled quantized tflite files tpu
     if not isTPUavailable():
         log.warning(f"TPU is NOT available on this machine!")
+    elif "tpu" not in hardware_summary:
+        log.info("No TPUs in hardware summary, skipping benchmarking")
     else:
         log.info(f"TPU is available on this machine!")
         if init_usbmon():
@@ -305,13 +324,15 @@ def DeployModels(parent_model:str, layers:list, count=1000)  -> Dict:
             if isfile(join(COMPILED_MODELS_FOLDER, f)) and f.endswith(".tflite"):
                 model_name = (f.split("quant_")[1]).split("_edgetpu.tflite")[0]
                 if model_name not in layers:
-                    continue # skip this iteration
+                    continue  # skip this iteration
                 model_path = join(COMPILED_MODELS_FOLDER, f)
                 log.info(f"Deploying layer/operation {model_name} onto the tpu")
 
                 # m = TPUDeploy(Model(model_path, "tpu", parent_model), count)
                 # models["tpu"].append(m)
-                os.system(f"python3 deploy.py -f single -m {model_path} -p {parent_model} -c {count} -d tpu")
+                os.system(
+                    f"python3 deploy.py -f single -m {model_path} -p {parent_model} -c {count} -d tpu"
+                )
 
     return models
 
@@ -337,7 +358,8 @@ def GetArgs() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "-m", "--model", required=True, help="File path to the .tflite file.")
+        "-m", "--model", required=True, help="File path to the .tflite file."
+    )
 
     parser.add_argument(
         "-p", "--parent", default="", required=False, help="parent model"
@@ -376,15 +398,15 @@ if __name__ == "__main__":
         or a single model (Depends on form).
     """
 
-    from main import  LAYERS_FOLDER, COMPILED_MODELS_FOLDER
+    from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
     from analysis import AnalyzeLayerResults
 
     args = GetArgs()
 
     delegators = {
-        "cpu"   : CPUDeploy,
-        "gpu"   : GPUDeploy,
-        "tpu"   : TPUDeploy,
+        "cpu": CPUDeploy,
+        "gpu": GPUDeploy,
+        "tpu": TPUDeploy,
     }
 
     if args.form == "single":
@@ -412,10 +434,9 @@ if __name__ == "__main__":
                 for d in listdir(LAYERS_FOLDER):
                     if isdir(d):
                         model_name = d
-                        model_path = join(os.getcwd(),
-                                    d,
-                                    "quant",
-                                    f"quant_{model_name}.tflite")
+                        model_path = join(
+                            os.getcwd(), d, "quant", f"quant_{model_name}.tflite"
+                        )
                         m = delegator(Model(model_path, args.delegate), args.count)
                         AnalyzeLayerResults(m, args.delegate)
 

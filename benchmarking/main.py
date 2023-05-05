@@ -23,24 +23,44 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
     from os import system
 
     command = "python DSE/TensorDSE/src/main/resources/modelsummaries/CreateModelSummary.py --model {} --outputdir {} --outputname {}".format(
-            model, output_dir, output_name
-        )
+        model, output_dir, output_name
+    )
 
     print("Running summary command: {}".format(command))
     system(command)
 
 
-def BenchmarkModel(model: str, count: int):
+def BenchmarkModel(model: str, count: int, hardware_summary: str) -> None:
     from deploy import DeployModels
     from convert import ImportTFLiteModules, SplitTFLiteModel
     from compile import CompileTFLiteModelsForCoral
     from analysis import AnalyzeModelResults, MergeResults
+    import json
 
     if not model.endswith(".tflite"):
         raise Exception(f"File: {model} is not a tflite file!")
 
     model_name = (model.split("/")[model.count("/")]).split(".tflite")[0]
     log.info(f"Benchmarking {model_name} for {count} time(s)")
+
+    hardware_to_benchmark = ["cpu", "gpu", "tpu"]
+
+    if hardware_summary is not None:
+        hardware_summary_file = open(hardware_summary)
+        hardware_summary_json = json.load(hardware_summary_file)
+
+        req_hardware = []
+
+        if int(hardware_summary_json["CPU_cores"]) > 0:
+            req_hardware.append("cpu")
+
+        if int(hardware_summary_json["GPU_count"]) > 0:
+            req_hardware.append("gpu")
+
+        if int(hardware_summary_json["TPU_count"]) > 0:
+            req_hardware.append("tpu")
+
+        hardware_to_benchmark = req_hardware
 
     # Imports modules found in the tflite folder, generated from the fattbuffer compiler
     ImportTFLiteModules()
@@ -52,20 +72,26 @@ def BenchmarkModel(model: str, count: int):
     # array of strings, each entry is one of the layers that compose the
     # to-be-benchmarked model
 
-    # Compiles created models/layers into Coral models for execution
-    CompileTFLiteModelsForCoral(layers)
+    if "tpu" in hardware_to_benchmark:
+        # Compiles created models/layers into Coral models for execution
+        CompileTFLiteModelsForCoral(layers)
 
-    print("Model compiled")
+        print("Models compiled")
 
     # Deploy the generated models/layers onto the target test hardware using docker
-    results_dict = DeployModels(model_name, layers, count=count)
+    results_dict = DeployModels(
+        parent_model=model_name,
+        layers=layers,
+        count=count,
+        hardware_summary=hardware_to_benchmark,
+    )
 
-    print("Model deployed")
+    print("Models deployed")
 
     # Process results
     AnalyzeModelResults(model_name, results_dict)
 
-    print("Analyze results")
+    print("Analyzed results")
 
     MergeResults(model_name, layers, clean=True)
 
@@ -85,7 +111,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--model",
-        default="models/source/MNIST.tflite",
+        default="benchmarking/models/source/MNIST.tflite",
         help="File path to the SOURCE .tflite file.",
     )
 
@@ -95,6 +121,14 @@ def GetArgs() -> argparse.Namespace:
         type=int,
         default=1000,
         help="Number of times to measure inference.",
+    )
+
+    parser.add_argument(
+        "-s",
+        "--hardwaresummary",
+        type=str,
+        default="DSE/TensorDSE/src/main/resources/architecturesummaries/exampleoutputarchitecturesummary.json",
+        help="Hardware summary file to tell benchmarking which devices to benchmark, by default all devices will be benchmarked",
     )
 
     parser.add_argument(
@@ -134,6 +168,9 @@ if __name__ == "__main__":
 
     SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
     print("Model summarized")
-    
-    BenchmarkModel(args.model, args.count)
+
+    BenchmarkModel(args.model, args.count, args.hardwaresummary)
     print("Model benchmarked")
+
+    print()
+    print("Finito ☜(⌒▽⌒)=b")
