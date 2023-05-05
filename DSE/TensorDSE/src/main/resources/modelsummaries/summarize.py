@@ -119,5 +119,6 @@ def SummarizeGraph(model:str, output_dir:str, output_name:str) -> None:
             json.dump(ret, outfile, indent=4)
     except Exception as e:
         print(e)
+        return 1
 
     return 0
