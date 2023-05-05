@@ -1,30 +1,13 @@
-import sys
 import csv
 import json
 import time
 import logging
-import argparse
  
-def LoggerInit(filename='optimizer.log'):
+def LoggerInit(filename):
     logging.basicConfig(filename=filename,
                         level=logging.DEBUG,
                         format='%(asctime)s  -  %(levelname)s - %(message)s')
     return logging.getLogger(__name__)
-
-def ParseArgs():
-    # Initialize parser
-    parser = argparse.ArgumentParser()
-    # Adding optional argument
-    parser.add_argument("-model", "--Model", help = "Path to Source Model file to optimize", required=True)
-    parser.add_argument("-map", "--Mapping", help = "Path to CSV file containing mapping", required=True)
-    # Read arguments from command line
-    try:
-        args = parser.parse_args()
-        return args
-    except:
-        print('Wrong or Missing argument!')
-        print('Example Usage: compile_and_map.py -model <path/to/model/file> -map <path/to/csv/file/containing/maping>')
-        sys.exit(1)
 
 def RunTerminalCommand(*cmd, save_output=False, wait_time=0.5):
     """ Execute an arbitrary command and echo its output."""
