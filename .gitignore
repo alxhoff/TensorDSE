@@ -25,7 +25,6 @@ local.properties
 deployment/model_splitting/models/
 deployment/tflite-cpp/backup/*
 *.tflite
-*.json
 .vscode
 
 # External tool builders
