@@ -1,6 +1,7 @@
 import os
 import json
 from .utils import RunTerminalCommand, ReadJSON, CopyFile, MoveFile
+from .logger import log
 
 WORK_DIR      = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR    = os.path.join(WORK_DIR, "models")
@@ -18,6 +19,7 @@ class Model:
         for ext in self.paths.keys():
             if path_to_model.endswith(ext):
                 self.paths[ext] = path_to_model
+        log.info("Current TFlite Path is" + path_to_model)
         self.schema = schema_path
     
     def Convert(self, source_ext: str, target_ext: str):

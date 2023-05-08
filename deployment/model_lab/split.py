@@ -2,17 +2,18 @@ import os
 import json
 import urllib
 from .model import Model, Submodel
-from .utils import LoggerInit, ReadCSV, CopyFile
+from .utils import ReadCSV, CopyFile, RunTerminalCommand
+from .logger import log
 
-log = LoggerInit("splitter.log")
 
-WORK_DIR      = os.path.dirname(os.path.abspath(__file__))
-MODELS_DIR    = os.path.join(WORK_DIR, "models")
-MAPPING_DIR   = os.path.join(WORK_DIR, "mapping")
-RESOURCES_DIR = os.path.join(WORK_DIR, "resources")
-SOURCE_DIR    = os.path.join(MODELS_DIR, "source")
-SUB_DIR       = os.path.join(MODELS_DIR, "sub")
-FINAL_DIR     = os.path.join(MODELS_DIR, "final")
+MODEL_LAB_DIR       = os.path.dirname(os.path.abspath(__file__))
+DEPLOYMENT_DIR      = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR          = os.path.join(MODEL_LAB_DIR, "models")
+MAPPING_DIR         = os.path.join(MODEL_LAB_DIR, "mapping")
+RESOURCES_DIR       = os.path.join(MODEL_LAB_DIR, "resources")
+SOURCE_DIR          = os.path.join(MODELS_DIR, "source")
+SUB_DIR             = os.path.join(MODELS_DIR, "sub")
+FINAL_DIR           = os.path.join(MODELS_DIR, "final")
 
 HW_ID = ["CPU", "GPU", "TPU", "XPU"]
 MODES = ["benchmarking", "deployment"]
@@ -50,8 +51,8 @@ class Splitter:
                 ext_dir = os.path.join(sub_dir, ext)
                 os.mkdir(ext_dir)
 
-        #model_filename = source_model_path.split("/")[len(source_model_path.split("/"))-1]
-        self.source_model_path = os.path.join(SOURCE_DIR, "tflite/")
+        model_filename = source_model_path.split("/")[len(source_model_path.split("/"))-1]
+        self.source_model_path = os.path.join(SOURCE_DIR, "tflite", model_filename)
         CopyFile(source_model_path, self.source_model_path)
         
         os.mkdir(MAPPING_DIR)
@@ -146,4 +147,19 @@ class Splitter:
         self.AnalyseMapping()
         self.ReadSourceModel()
         self.CreateSubmodels()
-        self.CompileForEdgeTPU()
+        #self.CompileForEdgeTPU()
+    
+    def Clean(self, all: bool):
+        log.info("Cleaning Directory ...\n")
+        dirs_to_clean = []
+        if all:
+            dirs_to_clean.extend([MODELS_DIR, MAPPING_DIR])
+        else:
+            dirs_to_clean.append(MAPPING_DIR)
+
+        for directory in dirs_to_clean:
+            if os.path.isdir(directory): 
+                RunTerminalCommand("rm", "-rf", directory)   
+    
+    def __del__(self):
+        self.Clean(False)

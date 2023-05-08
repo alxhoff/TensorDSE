@@ -3,11 +3,6 @@ import json
 import time
 import logging
  
-def LoggerInit(filename):
-    logging.basicConfig(filename=filename,
-                        level=logging.DEBUG,
-                        format='%(asctime)s  -  %(levelname)s - %(message)s')
-    return logging.getLogger(__name__)
 
 def RunTerminalCommand(*cmd, save_output=False, wait_time=0.5):
     """ Execute an arbitrary command and echo its output."""

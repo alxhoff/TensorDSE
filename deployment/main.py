@@ -1,9 +1,8 @@
 import sys
 import argparse
 import model_lab.split as split
-import model_lab.utils as utils
-
-log = utils.LoggerInit("main.log")
+from model_lab.logger import log
+from source_generator.generate_source import GenerateSource
 
 def ParseArgs():
     # Initialize parser
@@ -28,11 +27,14 @@ def main():
         log.info("Running Model Splitter ...")
         splitter.Run()
         log.info("Splitting Process Complete!\n")
+        log.info("Generating Source File ...")
+        #GenerateSource()
+        log.info("Source File Generation Complete!\n")
     except Exception as e:
         splitter.Clean(True)
         log.error("Failed to run splitter! {}".format(str(e)))
     finally:
-        del optimizer
+        del splitter
 
 if __name__ == '__main__':
     main()

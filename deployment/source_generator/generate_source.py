@@ -2,13 +2,14 @@ import os
 import sys
 import jinja2
 import argparse
-from deployment.utils.utils import LoggerInit, ReadJSON
+from ..model_lab.utils import ReadJSON
+from ..model_lab.logger import log
+
+
 
 SOURCE_GEN_DIR = os.path.dirname(os.path.abspath(__file__))
 DEPLOYMENT_DIR = os.path.dirname(SOURCE_GEN_DIR)
-OPTIMIZER_DIR  = os.path.join(DEPLOYMENT_DIR, "model_jigsaw")
-
-log = LoggerInit(filename="create_source.log")
+MODEL_LAB_DIR  = os.path.join(DEPLOYMENT_DIR, "model_lab")
 
 def ParseArgs():
     # Initialize parser
@@ -18,12 +19,12 @@ def ParseArgs():
                         "--ModelsDirectory", 
                         help = "Path to Directory Containing TFLite models", 
                         required=False, 
-                        default=os.path.join(OPTIMIZER_DIR, "models", "sub", "tflite"))
+                        default=os.path.join(MODEL_LAB_DIR, "models", "sub", "tflite"))
     parser.add_argument("-fm", 
                         "--FinalMapping", 
                         help = "Path to JSON file containing Final Mapping", 
                         required=False,
-                        default=os.path.join(OPTIMIZER_DIR, "resources", "final_mapping.json"))
+                        default=os.path.join(MODEL_LAB_DIR, "resources", "final_mapping.json"))
     # Read arguments from command line
     try:
         return parser.parse_args()
