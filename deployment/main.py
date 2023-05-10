@@ -1,8 +1,8 @@
 import sys
 import argparse
-import model_lab.split as split
-from model_lab.logger import log
-from source_generator.generate_source import GenerateSource
+import ModelLab.split as split
+from ModelLab.logger import log
+from deployment.CPPSourceGen.generate import GenerateSource
 
 def ParseArgs():
     # Initialize parser
