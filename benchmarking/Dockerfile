@@ -62,10 +62,6 @@ RUN apt-get install -y nvidia-cuda-dev  nvidia-cuda-toolkit
 # CUBLAS
 # RUN apt-get install -y libcublas10
 
-# Tensorflow + GPU Delegate
-COPY scripts/install_tf.sh /home/install_tf.sh
-RUN chmod +x /home/install_tf.sh
-
 WORKDIR /home/
 
 # see the original bash script for detailed information
@@ -85,6 +81,10 @@ RUN ./bazel-5.0.0-installer-linux-x86_64.sh
 
 # script to build delegates
 RUN apt-get install -y libegl1-mesa-dev
+
+# Tensorflow + GPU Delegate
+COPY scripts/install_tf.sh /home/install_tf.sh
+RUN chmod +x /home/install_tf.sh
 RUN /home/install_tf.sh
 
 # Ports
