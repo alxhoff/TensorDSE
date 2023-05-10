@@ -1,8 +1,8 @@
 SHELL := /bin/bash
 FILE := $(lastword $(MAKEFILE_LIST))
 
-TAG := coral-docker
-REPO := coral-ubuntu-20.04
+TAG := latest-gpu
+REPO := tensorflow/tensorflow
 NAME := coral-environment
 REGEX := coral
 
@@ -15,8 +15,8 @@ DEBUG_MODE 			:= 1
 TEST_MODE 			:= 2
 SHELL_MODE 			:= 3
 
-exist-docker-image = $(shell docker image ls | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
-is-docker-running = $(shell docker ps -a | grep ${TAG} | tr -s ' ' | cut -f2 -d ' ')
+exist-docker-image = $(shell docker image ls | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ')
+is-docker-running = $(shell docker ps -a | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ')
 filter-docker = $(shell docker images --filter=reference="*${REGEX}*" -q)
 
 all:
@@ -33,7 +33,7 @@ info:
 build:
 	@$(info "Grab a coffee, building will take some time...")
 	@sleep 1s
-	@docker build . -t ${TAG}:${REPO}
+	@docker build . -t ${REPO}:${TAG}
 
 run: $(if $(call exist-docker-image),,build)
 	@if [ -n "$(call is-docker-running)" ]; then \
@@ -49,7 +49,7 @@ run: $(if $(call exist-docker-image),,build)
 				   -v "${VOLUME}":/home/tensorDSE \
 				   --detach-keys="ctrl-@" \
 				   --env MODE=${MODE} \
-				   -it ${TAG}:${REPO} \
+				   -it ${REPO}:${TAG} \
 				   --gpus 'all,capabilities=utility,compute'; \
 	fi
 
