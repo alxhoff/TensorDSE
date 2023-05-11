@@ -34,10 +34,10 @@ import net.sf.opendse.model.Task;
 /**
  * The {@code SpecificationDefinition} is the class defining the Specification that corresponds to
  * the graph of the deep learning model to which we want to optimize the performance.
- * 
+ *
  * @author Ines Ben Hmida
  * @author Alex Hoffman
- * 
+ *
  * @param modelsummary user entry of the file path a csv file that summarized the graph of the
  *        considered deep learning model
  * @param costsfile A csv file that contains the costs deducted from running the benchmarks
@@ -145,7 +145,7 @@ public class SpecificationDefinition {
 		Specification specification = new Specification(application, architecture, mappings);
 
 		SpecificationWriter writer = new SpecificationWriter();
-		writer.write(specification, "src/main/resources/generatedspecs/spec_"
+		writer.write(specification, "src/main/resources/generated_specs/spec_"
 				+ new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date()) + ".xml");
 
 		return specification;

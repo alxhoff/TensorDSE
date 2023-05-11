@@ -22,7 +22,7 @@ def DisableTFlogging() -> None:
 def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
     from os import system
 
-    command = "python DSE/TensorDSE/src/main/resources/modelsummaries/CreateModelSummary.py --model {} --outputdir {} --outputname {}".format(
+    command = "python resources/model_summaries/CreateModelSummary.py --model {} --outputdir {} --outputname {}".format(
         model, output_dir, output_name
     )
 
@@ -127,14 +127,14 @@ def GetArgs() -> argparse.Namespace:
         "-s",
         "--hardwaresummary",
         type=str,
-        default="DSE/TensorDSE/src/main/resources/architecturesummaries/exampleoutputarchitecturesummary.json",
+        default="resources/architecture_summaries/example_output_architecture_summary.json",
         help="Hardware summary file to tell benchmarking which devices to benchmark, by default all devices will be benchmarked",
     )
 
     parser.add_argument(
         "-o",
         "--summaryoutputdir",
-        default="DSE/TensorDSE/src/main/resources/modelsummaries",
+        default="resources/model_summaries",
         help="Directory where model summary should be saved",
     )
 

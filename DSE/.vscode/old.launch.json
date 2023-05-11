@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch TensorDSE - DSE",
+            "request": "launch",
+            "cwd": "TensorDSE",
+            "args": ["-n", "src/main/resources/multitestconfigs/example.properties"],
+            "mainClass": "net.sf.opendse.TensorDSE.TensorDSE",
+            "projectName": "TensorDSE"
+        }
+    ]
+}

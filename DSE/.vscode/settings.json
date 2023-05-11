@@ -1,5 +1,5 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
-    "java.format.settings.url": ".vscode/eclipse-java-google-style.xml",
-    "java.compile.nullAnalysis.mode": "automatic"
+    "java.import.gradle.wrapper.enabled": true,
+    "java.import.gradle.version": "6.9.2"
 }

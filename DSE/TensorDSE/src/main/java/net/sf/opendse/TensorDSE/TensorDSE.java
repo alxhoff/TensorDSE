@@ -42,7 +42,7 @@ import java.util.regex.Pattern;
 
 /**
  * Entry point for this project
- * 
+ *
  * @author Ines Ben Hmida
  * @author Alex Hoffman
  *
@@ -82,24 +82,24 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
-				.setDefault("src/main/resources/modelsummaries/MNIST_multi_1.json")
+				.setDefault("../../resources/model_summaries/example_summaries/MNIST_multi_1.json")
 				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary")
 				.setDefault(
-						"src/main/resources/architecturesummaries/outputarchitecturesummary.json")
+						"../../resources/architecture_summaries/example_output_architecture_summary.json")
 				.type(String.class).help("Location of architecture summary JSON");
 		parser.addArgument("-d", "--costfile")
-				.setDefault("src/main/resources/benchmarkingresults/examplebenchmarkresults.json")
+				.setDefault("../../resources/benchmarking_results/example_benchmark_results.json")
 				.type(String.class).help("Directory containing cost files");
 
 		// Output Files
 		parser.addArgument("-f", "--resultsfile").setDefault("results.csv").type(String.class)
 				.help("Results file name");
-		parser.addArgument("-t", "--outputfolder").setDefault("src/main/resources/exampleoutput")
+		parser.addArgument("-t", "--outputfolder").setDefault("src/main/resources/output")
 				.type(String.class);
 
 		// ILP
-		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
+		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(true)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
 		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(100.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
@@ -538,6 +538,6 @@ public class TensorDSE {
 			System.exit(0);
 		}
 		System.out.println("Done!");
-		System.exit(1);
+		System.exit(0);
 	}
 }
