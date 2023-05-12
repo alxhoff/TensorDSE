@@ -16,18 +16,21 @@ if ! command -v cmake &>/dev/null; then
 fi
 
 export TENSORFLOW_VER=r2.9
-export TENSORFLOW_DIR=`pwd`/tensorflow_${TENSORFLOW_VER}
+export TENSORFLOW_SRC=`pwd`/tensorflow_env/tensorflow_src
 
 main() {
-    git clone -b ${TENSORFLOW_VER} --depth 1 https://github.com/tensorflow/tensorflow.git ${TENSORFLOW_DIR}
+    mkdir tensorflow_env
+    cd tensorflow_env
+    git clone -b ${TENSORFLOW_VER} --depth 1 https://github.com/tensorflow/tensorflow.git tensorflow_src
+    git clone https://github.com/google-coral/edgetpu.git
+    
     # download build dependencies
-    cd ${TENSORFLOW_DIR}
-    mkdir external
-    cd external
-    cmake ../tensorflow/lite -DCMAKE_FIND_DEBUG_MODE=1 2>&1 | tee -a log_cmake.txt
+    mkdir tflite_build
+    cd tflite_build
+    cmake ../tensorflow_src/tensorflow/lite -DTFLITE_ENABLE_GPU=ON -DCMAKE_FIND_DEBUG_MODE=1 2>&1 | tee -a log_cmake.txt
 
     # clean up bazel cache, just in case.
-    cd ${TENSORFLOW_DIR}
+    cd ${TENSORFLOW_SRC}
     bazel clean
 
     echo "----------------------------------------------------"
@@ -49,14 +52,14 @@ main() {
     echo " build success."
     echo "----------------------------------------------------"
 
-    cd ${TENSORFLOW_DIR}
+    cd ${TENSORFLOW_SRC}
     #ls -l tensorflow/lite/tools/make/gen/linux_x86_64/lib/
     ls -l bazel-bin/tensorflow/lite/
     ls -l bazel-bin/tensorflow/lite/delegates/gpu/
 
-    mkdir -p /home/lib/tf2.9
-    cp bazel-bin/tensorflow/lite/libtensorflowlite.so /home/lib/tf2.9
-    cp bazel-bin/tensorflow/lite/delegates/gpu/libtensorflowlite_gpu_delegate.so /home/lib/tf2.9
+    mkdir /home/tensorflow_env/bazel-output
+    cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/libtensorflowlite.so /home/tensorflow_env/bazel-output/
+    cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/delegates/gpu/libtensorflowlite_gpu_delegate.so /home/tensorflow_env/bazel-output/
 }
 
 pushd /home/

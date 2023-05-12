@@ -40,7 +40,6 @@ run: $(if $(call exist-docker-image),,build)
 		echo "Docker already exists, run make clean to run new docker instance"; \
 	else \
 		docker run --name ${NAME} \
-				   --rm \
 				   --privileged \
 				   --net host \
 				   --cap-add SYS_ADMIN \

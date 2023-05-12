@@ -13,13 +13,13 @@ RUN set -ex
 # Base System
 RUN apt-get update \
     && apt-get install -y \
-    build-essential locales wget curl gnupg \
+    sudo build-essential locales wget curl gnupg curl zip unzip tar openjdk-11-jdk\
     python3 python3-pip \
     git vim nano \
     usbutils udev lshw \
     software-properties-common \
     && apt-get clean \
-    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen && update-locale
+    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen && update-locale 
 
 # CoralDev Apt Paackages
 RUN echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" \
@@ -79,6 +79,19 @@ RUN wget https://github.com/bazelbuild/bazel/releases/download/5.0.0/bazel-5.0.0
 RUN chmod 755 bazel-5.0.0-installer-linux-x86_64.sh
 RUN ./bazel-5.0.0-installer-linux-x86_64.sh
 
+# flatbuffers
+RUN git clone https://github.com/Microsoft/vcpkg.git
+RUN cd vcpkg
+#RUN ./bootstrap-vcpkg.sh
+#RUN ./vcpkg integrate install
+#RUN ./vcpkg install flatbuffers
+
+# NVIDIA Drivers:
+RUN sudo add-apt-repository ppa:graphics-drivers/ppa
+RUN sudo apt update
+RUN sudo apt install nvidia-driver-530
+RUN sudo apt install -y clinfo
+
 # script to build delegates
 RUN apt-get install -y libegl1-mesa-dev
 
@@ -100,6 +113,7 @@ ENV NVIDIA_VISIBLE_DEVICES all
 ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 
 # Work
-RUN mkdir /home/tensorDSE
+RUN mkdir -p /home/tensorDSE/benchmarking
+RUN mkdir /home/tensorDSE/deployment
 WORKDIR /home/tensorDSE
 ENTRYPOINT [ "/home/tensorDSE/benchmarking/scripts/entry.sh" ]
