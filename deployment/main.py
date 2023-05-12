@@ -1,8 +1,13 @@
 import sys
 import argparse
+import numpy as np
+
 import ModelLab.split as split
 from ModelLab.logger import log
-from deployment.CPPSourceGen.generate import GenerateSource
+#from CPPSourceGen.generate import GenerateSource
+
+sys.path.append('py_backend')
+import cpp_backend
 
 def ParseArgs():
     # Initialize parser
@@ -21,20 +26,25 @@ def ParseArgs():
         sys.exit(1)
 
 def main():
-    args = ParseArgs()
-    splitter = split.Splitter(args.Mode, args.Model, args.Mapping)
-    try:
-        log.info("Running Model Splitter ...")
-        splitter.Run()
-        log.info("Splitting Process Complete!\n")
-        log.info("Generating Source File ...")
-        #GenerateSource()
-        log.info("Source File Generation Complete!\n")
-    except Exception as e:
-        splitter.Clean(True)
-        log.error("Failed to run splitter! {}".format(str(e)))
-    finally:
-        del splitter
+    #args = ParseArgs()
+    #splitter = split.Splitter(args.Mode, args.Model, args.Mapping)
+
+    input_data_vector = np.zeros(10).astype(np.uint8)
+    inference_times = cpp_backend.distributed_inference(input_data_vector, 10)
+    print(inference_times)
+
+    #try:
+    #    log.info("Running Model Splitter ...")
+    #    #splitter.Run()
+    #    log.info("Splitting Process Complete!\n")
+    #    log.info("Generating Source File ...")
+    #    #GenerateSource()
+    #    log.info("Source File Generation Complete!\n")
+    #except Exception as e:
+    #    splitter.Clean(True)
+    #    log.error("Failed to run splitter! {}".format(str(e)))
+    #finally:
+    #    del splitter
 
 if __name__ == '__main__':
     main()
