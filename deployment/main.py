@@ -29,9 +29,11 @@ def main():
     #args = ParseArgs()
     #splitter = split.Splitter(args.Mode, args.Model, args.Mapping)
 
-    input_data_vector = np.zeros(10).astype(np.uint8)
-    inference_times = cpp_backend.distributed_inference(input_data_vector, 10)
-    print(inference_times)
+    input_data_vector = np.zeros(100).astype(np.uint8)
+    output_data_vector = np.zeros(100).astype(np.uint8)
+
+    inference_time = cpp_backend.distributed_inference(input_data_vector, output_data_vector, 100, 100)
+    print(inference_time)
 
     #try:
     #    log.info("Running Model Splitter ...")
