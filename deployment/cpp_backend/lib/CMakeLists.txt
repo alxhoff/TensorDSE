@@ -9,7 +9,7 @@ set(PROJECT_SOURCES
     ${SOURCES} 
 )
 
-set(TENSORFLOW_ENV /home/starkaf/Downloads/tensorflow_env)
+set(TENSORFLOW_ENV /home/tensorflow_env)
 set(TENSORFLOW_SRC_DIR ${TENSORFLOW_ENV}/tensorflow_src/)
 set(TFLITE_BUILD_DIR ${TENSORFLOW_ENV}//tflite_build/)
 set(TENSORFLOWLITE_LIBRARY_PATH ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so)
@@ -22,7 +22,7 @@ set(EDGETPU_LIBRARY_PATH ${LIB_PATH}/libedgetpu.so.1)
 
 
 set(PROJECT_INCLUDES
-    ${PARENT_DIR}/include
+#    ${PARENT_DIR}/include
     ${CMAKE_CURRENT_LIST_DIR}/include
     ${TENSORFLOW_SRC_DIR}/
     ${TFLITE_BUILD_DIR}/
@@ -40,7 +40,6 @@ set(PROJECT_INCLUDES
     ${TENSORFLOW_ENV}/edgetpu/libedgetpu/
     ${TENSORFLOW_ENV}/edgetpu/libedgetpu/direct/k8
 )
-
 
 include_directories(${PROJECT_INCLUDES})
 

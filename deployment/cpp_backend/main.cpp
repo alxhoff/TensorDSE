@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     
     unsigned int inference_time;
 
-    inference_time = distributed_inference_wrapper(input_data.data(), output_data.data(), input_data_size, output_data_size);
+    inference_time = distributed_inference_wrapper("random", input_data.data(), output_data.data(), input_data_size, output_data_size, "TPU", 1);
     
     return 0;
 }
