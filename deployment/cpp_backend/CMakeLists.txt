@@ -38,28 +38,30 @@ set(PROJECT_INCLUDES
     ${TFLITE_BUILD_DIR}/
     ${TENSORFLOW_SRC_DIR}/third_party/
     ${TFLITE_BUILD_DIR}/flatbuffers/include/
+    ${TFLITE_BUILD_DIR}/eigen
+    ${TFLITE_BUILD_DIR}/gemmlowp
+    ${TFLITE_BUILD_DIR}/ruy
+    ${TFLITE_BUILD_DIR}/opencl_headers
+    ${TFLITE_BUILD_DIR}/neon2sse
+    ${TFLITE_BUILD_DIR}/FP16-source/include/
+    ${TFLITE_BUILD_DIR}/vulkan_headers/include/
+    ${TFLITE_BUILD_DIR}/abseil-cpp/
+    ${TENSORFLOW_ENV}/edgetpu/
+    ${TENSORFLOW_ENV}/edgetpu/libedgetpu/
+    ${TENSORFLOW_ENV}/edgetpu/libedgetpu/direct/k8
 )
-#    ${TFLITE_BUILD_DIR}/eigen
-#    ${TFLITE_BUILD_DIR}/gemmlowp
-#    ${TFLITE_BUILD_DIR}/ruy
-#    ${TFLITE_BUILD_DIR}/opencl_headers
-#    ${TFLITE_BUILD_DIR}/neon2sse
-#    ${TFLITE_BUILD_DIR}/FP16-source/include/
-#    ${TFLITE_BUILD_DIR}/vulkan_headers/include/
-#    ${TFLITE_BUILD_DIR}/abseil-cpp/
-#    ${TENSORFLOW_ENV}/edgetpu/
-#    ${TENSORFLOW_ENV}/edgetpu/libedgetpu/
-#    ${TENSORFLOW_ENV}/edgetpu/libedgetpu/direct/k8
 
 
 include_directories(${PROJECT_INCLUDES})
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRARY_NAME} ${TENSORFLOWLITE_LIBRARY_PATH})
-#${TENSORFLOWLITE_GPU_DELEGATE_LIBRARY_PATH}
-#${EGL_LIBRARY_PATH}
-#${GL_LIBRARY_PATH}
-#${GLESv2_LIBRARY_PATH}
-#${EDGETPU_LIBRARY_PATH}
-                                                              
+link_libraries(stdc++fs)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRARY_NAME} ${TENSORFLOWLITE_LIBRARY_PATH}
+                                                              ${TENSORFLOWLITE_GPU_DELEGATE_LIBRARY_PATH}
+                                                              ${EGL_LIBRARY_PATH}
+                                                              ${GL_LIBRARY_PATH}
+                                                              ${GLESv2_LIBRARY_PATH}
+                                                              ${EDGETPU_LIBRARY_PATH}
+)
