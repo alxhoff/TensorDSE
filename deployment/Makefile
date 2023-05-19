@@ -9,14 +9,12 @@ all:
 .PHONY: clean
 clean:
 	rm -rf __pycache__
-	${MAKE} -C cpp_backend/ clean
-	${MAKE} -C py_backend/ clean
+	${MAKE} -C backend/ clean
 
 
-.PHONY: compile
-compile:
-	${MAKE} -C cpp_backend/ build
-	${MAKE} -C py_backend/ build
+.PHONY: build
+build:
+	${MAKE} -C backend/ build
 
 .PHONY: run
 run:
