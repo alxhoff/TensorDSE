@@ -7,7 +7,6 @@ from ModelLab.logger import log
 #from CPPSourceGen.generate import GenerateSource
 
 sys.path.append('py_backend')
-import cpp_backend
 
 def ParseArgs():
     # Initialize parser
@@ -26,13 +25,15 @@ def ParseArgs():
         sys.exit(1)
 
 def main():
+    from backend.distributed_inference import distributed_inference
+
     #args = ParseArgs()
     #splitter = split.Splitter(args.Mode, args.Model, args.Mapping)
 
     input_data_vector = np.zeros(100).astype(np.uint8)
     output_data_vector = np.zeros(100).astype(np.uint8)
 
-    inference_time = cpp_backend.distributed_inference(input_data_vector, output_data_vector, 100, 100)
+    inference_time = distributed_inference(input_data_vector, output_data_vector, 100, 100)
     print(inference_time)
 
     #try:
