@@ -9,7 +9,7 @@ set(PROJECT_SOURCES
     ${SOURCES} 
 )
 
-set(TENSORFLOW_ENV /home/tensorflow_env)
+set(TENSORFLOW_ENV /home/starkaf/Downloads/tensorflow_env)
 set(TENSORFLOW_SRC_DIR ${TENSORFLOW_ENV}/tensorflow_src/)
 set(TFLITE_BUILD_DIR ${TENSORFLOW_ENV}//tflite_build/)
 set(TENSORFLOWLITE_LIBRARY_PATH ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so)
@@ -57,7 +57,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${TENSORFLOWLITE_GPU_DELEGATE_LIBR
                                               ${TENSORFLOWLITE_LIBRARY_PATH})
 
                                                
-
 install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include 
         DESTINATION ${PY_BACKEND_DIR}
         MESSAGE_NEVER FILES_MATCHING PATTERN "*"

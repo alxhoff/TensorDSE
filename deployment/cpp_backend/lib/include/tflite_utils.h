@@ -35,4 +35,8 @@ std::vector<std::pair<int, float>> Sort(const std::vector<float>& scores,
 
 std::unique_ptr<tflite::FlatBufferModel> LoadModelFile(std::string filepath);
 
+int calculateMean(const std::vector<int>& values);
+
+std::vector<uint8_t> GetTensorData(const TfLiteTensor& tensor);
+
 #endif
