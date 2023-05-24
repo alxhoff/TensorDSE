@@ -30,11 +30,17 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
     system(command)
 
 
-def BenchmarkModel(model: str, count: int, hardware_summary: str) -> None:
+def BenchmarkModel(model: str, count: int, hardware_summary: str, model_summary: str) -> None:
     from utils.deploy import DeployModels
     from utils.convert import ImportTFLiteModules, SplitTFLiteModel
     from utils.compile import CompileTFLiteModelsForCoral
     from utils.analysis import AnalyzeModelResults, MergeResults
+
+    from utils.model_lab.utils import ReadJSON, LayerDetails
+    from utils.model_lab.logger import log
+    from utils.model_lab.split import Splitter
+    
+    
     import json
 
     if not model.endswith(".tflite"):
@@ -46,8 +52,7 @@ def BenchmarkModel(model: str, count: int, hardware_summary: str) -> None:
     hardware_to_benchmark = ["cpu", "gpu", "tpu"]
 
     if hardware_summary is not None:
-        hardware_summary_file = open(hardware_summary)
-        hardware_summary_json = json.load(hardware_summary_file)
+        hardware_summary_json = ReadJSON(hardware_summary)
 
         req_hardware = []
 
@@ -62,40 +67,38 @@ def BenchmarkModel(model: str, count: int, hardware_summary: str) -> None:
 
         hardware_to_benchmark = req_hardware
 
-    # Imports modules found in the tflite folder, generated from the fattbuffer compiler
-    ImportTFLiteModules()
-
     # Create single operation models/layers from the operations in the provided model
-    layers = SplitTFLiteModel(model=model)
-    log.info(f"Layers found")
-    log.info(f"{layers}")
-    # array of strings, each entry is one of the layers that compose the
-    # to-be-benchmarked model
+    splitter = Splitter(model, model_summary)
+    try:
+        log.info("Running Model Splitter ...")
+        splitter.Run()
+        log.info("Splitting Process Complete!\n")
+    except Exception as e:
+        splitter.Clean(True)
+        log.error("Failed to run splitter! {}".format(str(e)))
 
     if "tpu" in hardware_to_benchmark:
-        # Compiles created models/layers into Coral models for execution
-        CompileTFLiteModelsForCoral(layers)
-
-        print("Models compiled")
+        #Compiles created models/layers into Coral models for execution
+        splitter.CompileForEdgeTPU()
+        log.info("Models successfully compiled!")
 
     # Deploy the generated models/layers onto the target test hardware using docker
-    results_dict = DeployModels(
-        parent_model=model_name,
-        layers=layers,
-        count=count,
-        hardware_summary=hardware_to_benchmark,
-    )
-
-    print("Models deployed")
-
-    # Process results
-    AnalyzeModelResults(model_name, results_dict)
-
-    print("Analyzed results")
-
-    MergeResults(model_name, layers, clean=True)
-
-    print("Results merged")
+#    results_dict = DeployModels(
+#        model_summary,
+#        count=count,
+#        hardware_summary=hardware_to_benchmark,
+#    )
+#
+#    print("Models deployed")
+#
+#    # Process results
+#    AnalyzeModelResults(model_name, results_dict)
+#
+#    print("Analyzed results")
+#
+#    MergeResults(model_name, layers, clean=True)
+#
+#    print("Results merged")
 
 
 def GetArgs() -> argparse.Namespace:
@@ -124,7 +127,7 @@ def GetArgs() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "-s",
+        "-hs",
         "--hardwaresummary",
         type=str,
         default="resources/architecture_summaries/example_output_architecture_summary.json",
@@ -169,7 +172,7 @@ if __name__ == "__main__":
     SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
     print("Model summarized")
 
-    BenchmarkModel(args.model, args.count, args.hardwaresummary)
+    BenchmarkModel(args.model, args.count, args.hardwaresummary, os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)))
     print("Model benchmarked")
 
     print()
