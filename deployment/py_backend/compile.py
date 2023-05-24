@@ -6,9 +6,9 @@ def compile_interface(verbose:bool = True) -> object:
 
   ffi.set_source("cpp_interface",
                  """#include "interface.h" """,
-                 include_dirs=['include', '/home/starkaf/Downloads/tensorflow_env/tensorflow_src'],
+                 include_dirs=['include', '/home/tensorflow_env/tensorflow_src'],
                  libraries=['stdc++', 'py_backend', 'tensorflowlite', 'tensorflowlite_gpu_delegate'],
-                 library_dirs=['lib', '/home/starkaf/Downloads/tensorflow_env/bazel-output/'],
+                 library_dirs=['lib', '/home/tensorflow_env/bazel-output/'],
                  source_extension='.cpp')
 
   return ffi.compile(verbose=verbose)

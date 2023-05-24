@@ -17,7 +17,7 @@ set(PROJECT_SOURCES
     ${SOURCES} 
 )
 
-set(TENSORFLOW_ENV /home/starkaf/Downloads/tensorflow_env)
+set(TENSORFLOW_ENV /home/tensorflow_env)
 set(TENSORFLOW_SRC_DIR ${TENSORFLOW_ENV}/tensorflow_src/)
 set(TFLITE_BUILD_DIR ${TENSORFLOW_ENV}//tflite_build)
 set(TENSORFLOWLITE_LIBRARY_PATH ${TENSORFLOW_ENV}/bazel-output/libtensorflowlite.so)

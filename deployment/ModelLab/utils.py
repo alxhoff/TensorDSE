@@ -2,8 +2,36 @@ import csv
 import json
 import time
 import logging
- 
 
+class LayerDetails:
+    def __init__(self, summary_path:str) -> None:
+        summary = ReadJSON(summary_path)
+        self.layers = summary["layers"]
+    
+    def ReadLayerDetails(self, layer:dict, layer_index=-1):
+        if (layer_index > 0) and (layer == None):
+            layer = self.layers[layer_index]
+
+        input_tensor = layer["inputs"][0]
+        self.input_tensor_shape = input_tensor["shape"]
+        self.input_tensor_dtype = input_tensor["type"]
+        
+        output_tensor = layer["outputs"][0]
+        self.output_tensor_shape = output_tensor["shape"]
+        self.output_tensor_dtype = output_tensor["type"]
+
+        self.hardware_target = layer["mapping"]
+
+    def GetTensorSize(self, entry:str):
+        if (entry == "Input"):
+            shape = self.input_tensor_shape
+        elif (entry == "Output"):
+            shape = self.output_tensor_shape
+        size = 1
+        for dim in shape:
+            size *= int(dim)
+        return size
+            
 def RunTerminalCommand(*cmd, save_output=False, wait_time=0.5):
     """ Execute an arbitrary command and echo its output."""
     import subprocess
