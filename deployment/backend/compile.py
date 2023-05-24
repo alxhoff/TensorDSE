@@ -2,7 +2,7 @@ from cffi import FFI
 
 def compile_interface(verbose:bool = True) -> object:
   ffi = FFI()
-  ffi.cdef("""int distributed_inference_interface(uint8_t* input_data, uint8_t* output_data, const unsigned int input_data_size, const unsigned int output_data_size);""")
+  ffi.cdef("""int distributed_inference_interface(char* tflite_model_path_ptr, uint8_t* input_data, uint8_t* output_data, const unsigned int input_data_size, const unsigned int output_data_size, char* hardware_target_ptr, const unsigned int benchmarking_count);""")
 
   import os
   print(os.getcwd())

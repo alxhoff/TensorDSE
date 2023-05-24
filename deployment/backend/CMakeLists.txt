@@ -50,6 +50,4 @@ target_link_libraries(${PROJECT_NAME} ${BACKEND_LIB})
 message(STATUS "Installing to: ${LIBRARY_DIR}")
 
 # Install library to lib dir
-install(TARGETS ${BACKEND_LIB}
-    LIBRARY DESTINATION ${LIBRARY_DIR}
-)
+install(TARGETS ${BACKEND_LIB} LIBRARY DESTINATION /usr/lib)
