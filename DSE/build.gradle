@@ -4,7 +4,7 @@ apply plugin: 'application'
 apply plugin: 'eclipse'
 apply plugin: 'jacoco'
 
-version = 'SNAPSHOT-' + new Date().format("yyyyMMdd")
+version '1.0'
 
 def descriptions = [
 	'opendse-generator' : 'The test case generator module of OpenDSE',
