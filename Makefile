@@ -19,7 +19,7 @@ shell:
 	${MAKE} -C docker shell
 
 .PHONY: build
-build: $(if $(call exist-docker-image),,build)
+build: $(if $(call exist-docker-image),,${MAKE} -C docker build)
 	${MAKE} -C deployment build
 
 .PHONY: run
