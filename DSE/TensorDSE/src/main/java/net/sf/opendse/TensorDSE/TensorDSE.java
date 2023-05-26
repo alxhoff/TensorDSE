@@ -68,10 +68,11 @@ public class TensorDSE {
 				.help("Pupulation size for the EA");
 		parser.addArgument("-p", "--parentspergeneration").setDefault(50).type(int.class)
 				.help("Number of parents per generation in the EA");
-		parser.addArgument("-g", "--generations").setDefault(25).type(int.class)
-				.help("Number of generations in the EA");
 		parser.addArgument("-o", "--offspringspergeneration").setDefault(50).type(int.class)
 				.help("Number of offsprings per generation");
+		parser.addArgument("-g", "--generations").setDefault(25).type(int.class)
+				.help("Number of generations in the EA");
+
 		parser.addArgument("-v", "--verbose").setDefault(false).type(Boolean.class)
 				.help("Enables verbose output messages");
 		parser.addArgument("-u", "--visualise").setDefault(true).type(Boolean.class)
@@ -84,11 +85,10 @@ public class TensorDSE {
 		parser.addArgument("-m", "--modelsummary")
 				.setDefault("../../resources/model_summaries/example_summaries/MNIST_multi_1.json")
 				.type(String.class).help("Location of model summary CSV");
-		parser.addArgument("-a", "--architecturesummary")
-				.setDefault(
-						"../../resources/architecture_summaries/example_output_architecture_summary.json")
+		parser.addArgument("-a", "--architecturesummary").setDefault(
+				"../../resources/architecture_summaries/example_output_architecture_summary.json")
 				.type(String.class).help("Location of architecture summary JSON");
-		parser.addArgument("-d", "--costfile")
+		parser.addArgument("-d", "--benchmarkingresults")
 				.setDefault("../../resources/benchmarking_results/example_benchmark_results.json")
 				.type(String.class).help("Directory containing cost files");
 
@@ -203,7 +203,7 @@ public class TensorDSE {
 	 * @return String
 	 */
 	private static String GetBenchmarkingResultsPath(Namespace args_namespace) {
-		String cost_file = args_namespace.getString("costfile");
+		String cost_file = args_namespace.getString("benchmarkingresults");
 		if (cost_file == null) {
 			System.out.println("You need to provide the cost files directory");
 			System.exit(0);
@@ -287,6 +287,9 @@ public class TensorDSE {
 		System.out.printf("Offsprings Per Generations: %d\n", offsprings_per_generation);
 	}
 
+	public static void main(String echo) {
+		System.out.println(echo);
+	}
 
 	/**
 	 * @param args
@@ -313,6 +316,9 @@ public class TensorDSE {
 		ArrayList<Integer> offsprings_per_generation = new ArrayList<Integer>();
 
 		String config_file = args_namespace.getString("config");
+
+		System.out.println(String.format("Bin loc: %s",
+				TensorDSE.class.getProtectionDomain().getCodeSource().getLocation().getPath()));
 
 		if (config_file != null) {
 			FileInputStream propsInput = null;
