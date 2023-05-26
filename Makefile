@@ -11,8 +11,7 @@ all:
 .PHONY: clean
 clean:
 	rm -rf __pycache__
-	${MAKE} -C deployment/ clean
-	${MAKE} -C benchmarking/ clean
+	${MAKE} -C backend/ clean
 
 .PHONY: shell
 shell:
@@ -20,7 +19,7 @@ shell:
 
 .PHONY: build
 build: $(if $(call exist-docker-image),,${MAKE} -C docker build)
-	${MAKE} -C deployment build
+	${MAKE} -C backend build
 
 .PHONY: run
 run:

@@ -242,7 +242,7 @@ def CPUDeploy(m: Model, count: int) -> Model:
 
 
 def DeployModels(
-    parent_model: str, layers: list, count=1000, hardware_summary=["cpu"]
+    hardware_list:list, model_summary:str, count:int
 ) -> Dict:
     """Manager function responsible for preping and executing the deployment
     of the compiled tflite models.
@@ -261,9 +261,14 @@ def DeployModels(
     import os
     from os import listdir
     from os.path import join, isdir, isfile
-    from main import log
+    #from main import log
     from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
     from utils.usb import init_usbmon
+
+    from utils.model_lab.split import LAYERS_DIR, COMPILED_DIR
+    from utils.model_lab.utils import LayerDetails
+    from utils.model_lab.logger import log
+    from ..backend.distributed_inference import distributed_inference
 
     models = {}
     models["cpu"] = []
@@ -271,47 +276,35 @@ def DeployModels(
     models["tpu"] = []
     models["count"] = count
 
+    details = LayerDetails(model_summary)
+
     # regular quantized tflite files for cpu
     if not isCPUavailable():
         log.warning(f"CPU is NOT available on this machine!")
-    elif "cpu" not in hardware_summary:
+    elif "cpu" not in hardware_list:
         log.info("No CPU cores in hardware summary, skipping benchmarking")
     else:
         log.info(f"CPU is available on this machine!")
-        for d in listdir(LAYERS_FOLDER):
-            if isdir(join(LAYERS_FOLDER, d)) and (d in layers):
-                model_name = d
-                model_path = join(
-                    LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite"
-                )
-                log.info(f"Deploying layer/operation {model_name} onto the cpu")
-
-                m = CPUDeploy(Model(model_path, "cpu", parent_model), count)
-                models["cpu"].append(m)
+        for layer in listdir(LAYERS_DIR):
+            # TODO: CPU Deploy
+            models["cpu"].append(m)
 
     # regular quantized tflite files for gpu
     available, gpu = isGPUavailable()
     if not available:
         log.warning(f"GPU is NOT available on this machine! Type: {gpu}")
-    elif "gpu" not in hardware_summary:
+    elif "gpu" not in hardware_list:
         log.info("No GPUs in hardware summary, skipping benchmarking")
     else:
         log.info(f"GPU is available on this machine! Type: {gpu}")
-        for d in listdir(LAYERS_FOLDER):
-            if isdir(join(LAYERS_FOLDER, d)) and (d in layers):
-                model_name = d
-                model_path = join(
-                    LAYERS_FOLDER, d, "quant", f"quant_{model_name}.tflite"
-                )
-                log.info(f"Deploying layer/operation {model_name} onto the gpu")
-
-                m = GPUDeploy(Model(model_path, "gpu", parent_model), count)
-                models["gpu"].append(m)
+        for layer in details.layers:
+            # TODO: GPU Deploy
+            models["gpu"].append(m)
 
     # edge compiled quantized tflite files tpu
     if not isTPUavailable():
         log.warning(f"TPU is NOT available on this machine!")
-    elif "tpu" not in hardware_summary:
+    elif "tpu" not in hardware_list:
         log.info("No TPUs in hardware summary, skipping benchmarking")
     else:
         log.info(f"TPU is available on this machine!")
@@ -320,19 +313,10 @@ def DeployModels(
         else:
             log.info("usbmon module already present")
 
-        for f in listdir(COMPILED_MODELS_FOLDER):
-            if isfile(join(COMPILED_MODELS_FOLDER, f)) and f.endswith(".tflite"):
-                model_name = (f.split("quant_")[1]).split("_edgetpu.tflite")[0]
-                if model_name not in layers:
-                    continue  # skip this iteration
-                model_path = join(COMPILED_MODELS_FOLDER, f)
-                log.info(f"Deploying layer/operation {model_name} onto the tpu")
-
-                # m = TPUDeploy(Model(model_path, "tpu", parent_model), count)
-                # models["tpu"].append(m)
-                os.system(
-                    f"python3 deploy.py -f single -m {model_path} -p {parent_model} -c {count} -d tpu"
-                )
+        for f in listdir(COMPILED_DIR):
+            # TODO: CPU Deploy
+            models["tpu"].append(m)
+            
 
     return models
 

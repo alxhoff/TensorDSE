@@ -8,7 +8,7 @@ COMPILED_MODELS_FOLDER = "benchmarking/models/compiled/"
 RESULTS_FOLDER = "benchmarking/results/"
 
 # custom logger to separate TF logs and Ours
-log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))
+#log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))
 
 
 def DisableTFlogging() -> None:
@@ -30,11 +30,17 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
     system(command)
 
 
-def BenchmarkModel(model: str, count: int, hardware_summary: str) -> None:
+def BenchmarkModel(model: str, count: int, hardware_summary: str, model_summary: str) -> None:
     from utils.deploy import DeployModels
     from utils.convert import ImportTFLiteModules, SplitTFLiteModel
     from utils.compile import CompileTFLiteModelsForCoral
     from utils.analysis import AnalyzeModelResults, MergeResults
+
+    from utils.model_lab.utils import ReadJSON, LayerDetails
+    from utils.model_lab.logger import log
+    from utils.model_lab.split import Splitter
+    
+    
     import json
 
     if not model.endswith(".tflite"):
@@ -46,8 +52,7 @@ def BenchmarkModel(model: str, count: int, hardware_summary: str) -> None:
     hardware_to_benchmark = ["cpu", "gpu", "tpu"]
 
     if hardware_summary is not None:
-        hardware_summary_file = open(hardware_summary)
-        hardware_summary_json = json.load(hardware_summary_file)
+        hardware_summary_json = ReadJSON(hardware_summary)
 
         req_hardware = []
 
@@ -62,40 +67,38 @@ def BenchmarkModel(model: str, count: int, hardware_summary: str) -> None:
 
         hardware_to_benchmark = req_hardware
 
-    # Imports modules found in the tflite folder, generated from the fattbuffer compiler
-    ImportTFLiteModules()
-
     # Create single operation models/layers from the operations in the provided model
-    layers = SplitTFLiteModel(model=model)
-    log.info(f"Layers found")
-    log.info(f"{layers}")
-    # array of strings, each entry is one of the layers that compose the
-    # to-be-benchmarked model
+    splitter = Splitter(model, model_summary)
+    try:
+        log.info("Running Model Splitter ...")
+        splitter.Run()
+        log.info("Splitting Process Complete!\n")
+    except Exception as e:
+        splitter.Clean(True)
+        log.error("Failed to run splitter! {}".format(str(e)))
 
     if "tpu" in hardware_to_benchmark:
-        # Compiles created models/layers into Coral models for execution
-        CompileTFLiteModelsForCoral(layers)
-
-        print("Models compiled")
+        #Compiles created models/layers into Coral models for execution
+        splitter.CompileForEdgeTPU()
+        log.info("Models successfully compiled!")
 
     # Deploy the generated models/layers onto the target test hardware using docker
     results_dict = DeployModels(
-        parent_model=model_name,
-        layers=layers,
-        count=count,
-        hardware_summary=hardware_to_benchmark,
+        hardware_list=hardware_to_benchmark
+        model_summary=model_summary,
+        count=count
     )
 
-    print("Models deployed")
+    #print("Models deployed")
 
     # Process results
-    AnalyzeModelResults(model_name, results_dict)
+    #AnalyzeModelResults(model_name, results_dict)
 
-    print("Analyzed results")
+    #print("Analyzed results")
 
-    MergeResults(model_name, layers, clean=True)
+    #MergeResults(model_name, layers, clean=True)
 
-    print("Results merged")
+    #print("Results merged")
 
 
 def GetArgs() -> argparse.Namespace:
@@ -111,7 +114,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--model",
-        default="benchmarking/models/source/MNIST.tflite",
+        default="resources/example_models/kws_ref_model.tflite",
         help="File path to the SOURCE .tflite file.",
     )
 
@@ -119,12 +122,12 @@ def GetArgs() -> argparse.Namespace:
         "-c",
         "--count",
         type=int,
-        default=1000,
+        default=10,
         help="Number of times to measure inference.",
     )
 
     parser.add_argument(
-        "-s",
+        "-hs",
         "--hardwaresummary",
         type=str,
         default="resources/architecture_summaries/example_output_architecture_summary.json",
@@ -141,7 +144,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-n",
         "--summaryoutputname",
-        default="MNIST",
+        default="kws_ref_model",
         help="Name that the model summary should have",
     )
 
@@ -166,50 +169,50 @@ if __name__ == "__main__":
     args = GetArgs()
     DisableTFlogging()
 
-    SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
+    #SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
     print("Model summarized")
 
-    BenchmarkModel(args.model, args.count, args.hardwaresummary)
+    BenchmarkModel(args.model, args.count, args.hardwaresummary, os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)))
     print("Model benchmarked")
 
-    # Run DSE
-    import os
-
-    os.chdir(os.path.join(os.getcwd(), "DSE/TensorDSE"))
-    print(os.getcwd())
-    model_summary = (
-        "../../resources/model_summaries/example_summaries/MNIST_multi_1.json"
-    )
-    architecture_summary = "../../resources/architecture_summaries/example_output_architecture_summary.json"
-    benchmarking_results = (
-        "../../resources/benchmarking_results/example_benchmark_results.json"
-    )
-    output_folder = "src/main/resources/output"
-    ilp_mapping = "true"
-    runs = "1"
-    crossover = "0.9"
-    population_size = 100
-    parents_per_generation = 50
-    offspring_per_generation = 50
-    generations = 25
-    verbose = "false"
-    os.system(
-        'gradle6 run --args="--modelsummary {} --architecturesummary {} --benchmarkingresults {} --outputfolder {} --ilpmapping {} --runs {} --crossover {} --populationsize {} --parentspergeneration {} --offspringspergeneration {} --generations {} --verbose {}"'.format(
-            model_summary,
-            architecture_summary,
-            benchmarking_results,
-            output_folder,
-            ilp_mapping,
-            runs,
-            crossover,
-            population_size,
-            parents_per_generation,
-            offspring_per_generation,
-            generations,
-            verbose,
-        )
-    )
-    os.chdir(os.path.join(os.getcwd(), "../.."))
+    ## Run DSE
+    #import os
+#
+    #os.chdir(os.path.join(os.getcwd(), "DSE/TensorDSE"))
+    #print(os.getcwd())
+    #model_summary = (
+    #    "../../resources/model_summaries/example_summaries/MNIST_multi_1.json"
+    #)
+    #architecture_summary = "../../resources/architecture_summaries/example_output_architecture_summary.json"
+    #benchmarking_results = (
+    #    "../../resources/benchmarking_results/example_benchmark_results.json"
+    #)
+    #output_folder = "src/main/resources/output"
+    #ilp_mapping = "true"
+    #runs = "1"
+    #crossover = "0.9"
+    #population_size = 100
+    #parents_per_generation = 50
+    #offspring_per_generation = 50
+    #generations = 25
+    #verbose = "false"
+    #os.system(
+    #    'gradle6 run --args="--modelsummary {} --architecturesummary {} --benchmarkingresults {} --outputfolder {} --ilpmapping {} --runs {} --crossover {} --populationsize {} --parentspergeneration {} --offspringspergeneration {} --generations {} --verbose {}"'.format(
+    #        model_summary,
+    #        architecture_summary,
+    #        benchmarking_results,
+    #        output_folder,
+    #        ilp_mapping,
+    #        runs,
+    #        crossover,
+    #        population_size,
+    #        parents_per_generation,
+    #        offspring_per_generation,
+    #        generations,
+    #        verbose,
+    #    )
+    #)
+    #os.chdir(os.path.join(os.getcwd(), "../.."))
 
     # Deploy
 
