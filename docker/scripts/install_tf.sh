@@ -57,7 +57,7 @@ main() {
     ls -l bazel-bin/tensorflow/lite/
     ls -l bazel-bin/tensorflow/lite/delegates/gpu/
 
-    [ -d /home/tensorflow_env/bazel-output ] || mkdir /home/tensorflow_env/bazel-output
+    [ -d /home/tensorflow_env/bazel-output ] || mkdir -p /home/tensorDSE/tensorflow_env/bazel-output
     cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/libtensorflowlite.so /home/tensorDSE/tensorflow_env/bazel-output/
     cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/libtensorflowlite.so /usr/lib/
     cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/delegates/gpu/libtensorflowlite_gpu_delegate.so /home/tensorDSE/tensorflow_env/bazel-output/

@@ -8,7 +8,7 @@ COMPILED_MODELS_FOLDER = "benchmarking/models/compiled/"
 RESULTS_FOLDER = "benchmarking/results/"
 
 # custom logger to separate TF logs and Ours
-log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))
+#log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))
 
 
 def DisableTFlogging() -> None:
@@ -83,22 +83,22 @@ def BenchmarkModel(model: str, count: int, hardware_summary: str, model_summary:
         log.info("Models successfully compiled!")
 
     # Deploy the generated models/layers onto the target test hardware using docker
-#    results_dict = DeployModels(
-#        model_summary,
-#        count=count,
-#        hardware_summary=hardware_to_benchmark,
-#    )
-#
-#    print("Models deployed")
-#
-#    # Process results
-#    AnalyzeModelResults(model_name, results_dict)
-#
-#    print("Analyzed results")
-#
-#    MergeResults(model_name, layers, clean=True)
-#
-#    print("Results merged")
+    results_dict = DeployModels(
+        hardware_list=hardware_to_benchmark
+        model_summary=model_summary,
+        count=count
+    )
+
+    #print("Models deployed")
+
+    # Process results
+    #AnalyzeModelResults(model_name, results_dict)
+
+    #print("Analyzed results")
+
+    #MergeResults(model_name, layers, clean=True)
+
+    #print("Results merged")
 
 
 def GetArgs() -> argparse.Namespace:
@@ -114,7 +114,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--model",
-        default="benchmarking/models/source/MNIST.tflite",
+        default="resources/example_models/kws_ref_model.tflite",
         help="File path to the SOURCE .tflite file.",
     )
 
@@ -122,7 +122,7 @@ def GetArgs() -> argparse.Namespace:
         "-c",
         "--count",
         type=int,
-        default=1000,
+        default=10,
         help="Number of times to measure inference.",
     )
 
@@ -144,7 +144,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-n",
         "--summaryoutputname",
-        default="MNIST",
+        default="kws_ref_model",
         help="Name that the model summary should have",
     )
 
@@ -169,50 +169,50 @@ if __name__ == "__main__":
     args = GetArgs()
     DisableTFlogging()
 
-    SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
+    #SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
     print("Model summarized")
 
     BenchmarkModel(args.model, args.count, args.hardwaresummary, os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)))
     print("Model benchmarked")
 
-    # Run DSE
-    import os
-
-    os.chdir(os.path.join(os.getcwd(), "DSE/TensorDSE"))
-    print(os.getcwd())
-    model_summary = (
-        "../../resources/model_summaries/example_summaries/MNIST_multi_1.json"
-    )
-    architecture_summary = "../../resources/architecture_summaries/example_output_architecture_summary.json"
-    benchmarking_results = (
-        "../../resources/benchmarking_results/example_benchmark_results.json"
-    )
-    output_folder = "src/main/resources/output"
-    ilp_mapping = "true"
-    runs = "1"
-    crossover = "0.9"
-    population_size = 100
-    parents_per_generation = 50
-    offspring_per_generation = 50
-    generations = 25
-    verbose = "false"
-    os.system(
-        'gradle6 run --args="--modelsummary {} --architecturesummary {} --benchmarkingresults {} --outputfolder {} --ilpmapping {} --runs {} --crossover {} --populationsize {} --parentspergeneration {} --offspringspergeneration {} --generations {} --verbose {}"'.format(
-            model_summary,
-            architecture_summary,
-            benchmarking_results,
-            output_folder,
-            ilp_mapping,
-            runs,
-            crossover,
-            population_size,
-            parents_per_generation,
-            offspring_per_generation,
-            generations,
-            verbose,
-        )
-    )
-    os.chdir(os.path.join(os.getcwd(), "../.."))
+    ## Run DSE
+    #import os
+#
+    #os.chdir(os.path.join(os.getcwd(), "DSE/TensorDSE"))
+    #print(os.getcwd())
+    #model_summary = (
+    #    "../../resources/model_summaries/example_summaries/MNIST_multi_1.json"
+    #)
+    #architecture_summary = "../../resources/architecture_summaries/example_output_architecture_summary.json"
+    #benchmarking_results = (
+    #    "../../resources/benchmarking_results/example_benchmark_results.json"
+    #)
+    #output_folder = "src/main/resources/output"
+    #ilp_mapping = "true"
+    #runs = "1"
+    #crossover = "0.9"
+    #population_size = 100
+    #parents_per_generation = 50
+    #offspring_per_generation = 50
+    #generations = 25
+    #verbose = "false"
+    #os.system(
+    #    'gradle6 run --args="--modelsummary {} --architecturesummary {} --benchmarkingresults {} --outputfolder {} --ilpmapping {} --runs {} --crossover {} --populationsize {} --parentspergeneration {} --offspringspergeneration {} --generations {} --verbose {}"'.format(
+    #        model_summary,
+    #        architecture_summary,
+    #        benchmarking_results,
+    #        output_folder,
+    #        ilp_mapping,
+    #        runs,
+    #        crossover,
+    #        population_size,
+    #        parents_per_generation,
+    #        offspring_per_generation,
+    #        generations,
+    #        verbose,
+    #    )
+    #)
+    #os.chdir(os.path.join(os.getcwd(), "../.."))
 
     # Deploy
 

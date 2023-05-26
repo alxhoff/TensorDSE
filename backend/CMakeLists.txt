@@ -21,10 +21,17 @@ set(PROJECT_SOURCES
 )
 
 set(TFL_BUILD_DIR ${TF_ENV}/tflite_build)
-set(LIBRARY_DIR ${TF_ENV}/bazel-output)
-set(TFL_LIB_PATH ${LIBRARY_DIR}/libtensorflowlite.so)
-message(STATUS "TFLite library dir: ${LIBRARY_DIR}")
-set(TFL_GPU_LIB_PATH ${LIBRARY_DIR}/libtensorflowlite_gpu_delegate.so)
+set(TFL_LIBRARY_DIR ${TF_ENV}/bazel-output)
+set(TFL_LIB_PATH ${TFL_LIBRARY_DIR}/libtensorflowlite.so)
+message(STATUS "TFLite library dir: ${TFL_LIBRARY_DIR}")
+set(TFL_GPU_LIB_PATH ${TFL_LIBRARY_DIR}/libtensorflowlite_gpu_delegate.so)
+
+set(LIB_PATH /usr/lib/x86_64-linux-gnu)
+set(EGL_LIBRARY_PATH ${LIB_PATH}/libEGL.so)
+set(GL_LIBRARY_PATH ${LIB_PATH}/libGL.so)
+set(GLESv2_LIBRARY_PATH ${LIB_PATH}/libGLESv2.so)
+set(EDGETPU_LIBRARY_PATH ${LIB_PATH}/libedgetpu.so.1)
+
 
 set(PROJECT_INCLUDES
     ${PROJECT_SOURCE_DIR}/lib/include
@@ -33,6 +40,17 @@ set(PROJECT_INCLUDES
     ${TF_SRC}/third_party/
     ${TFL_BUILD_DIR}/
     ${TFL_BUILD_DIR}/flatbuffers/include/
+    ${TFL_BUILD_DIR}/eigen
+    ${TFL_BUILD_DIR}/gemmlowp
+    ${TFL_BUILD_DIR}/ruy
+    ${TFL_BUILD_DIR}/opencl_headers
+    ${TFL_BUILD_DIR}/neon2sse
+    ${TFL_BUILD_DIR}/FP16-source/include/
+    ${TFL_BUILD_DIR}/vulkan_headers/include/
+    ${TFL_BUILD_DIR}/abseil-cpp/
+    ${TF_ENV}/edgetpu/
+    ${TF_ENV}/edgetpu/libedgetpu/
+    ${TF_ENV}/edgetpu/libedgetpu/direct/k8
 )
 
 include_directories(${PROJECT_INCLUDES})
@@ -41,13 +59,18 @@ include_directories(${PROJECT_INCLUDES})
 set(BACKEND_LIB "backend")
 file(GLOB BACKEND_LIB_SRCS "${PROJECT_SOURCE_DIR}/lib/src/*.cpp")
 add_library(${BACKEND_LIB} SHARED ${BACKEND_LIB_SRCS})
-target_link_libraries(${BACKEND_LIB} PRIVATE ${TFL_LIB_PATH})
+target_link_libraries(${BACKEND_LIB} PRIVATE ${TFL_GPU_LIB_PATH}
+                                             ${EGL_LIBRARY_PATH}
+                                             ${GL_LIBRARY_PATH}
+                                             ${GLESv2_LIBRARY_PATH}
+                                             ${EDGETPU_LIBRARY_PATH}
+                                             ${TFL_LIB_PATH})
 
 # Executable
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 target_link_libraries(${PROJECT_NAME} ${BACKEND_LIB})
 
-message(STATUS "Installing to: ${LIBRARY_DIR}")
+message(STATUS "Installing to: ${TFL_LIBRARY_DIR}")
 
 # Install library to lib dir
 install(TARGETS ${BACKEND_LIB} LIBRARY DESTINATION /usr/lib)

@@ -242,7 +242,7 @@ def CPUDeploy(m: Model, count: int) -> Model:
 
 
 def DeployModels(
-    model_summary:str, count=1000, hardware_summary=["cpu"]
+    hardware_list:list, model_summary:str, count:int
 ) -> Dict:
     """Manager function responsible for preping and executing the deployment
     of the compiled tflite models.
@@ -261,12 +261,14 @@ def DeployModels(
     import os
     from os import listdir
     from os.path import join, isdir, isfile
-    from main import log
+    #from main import log
     from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
     from utils.usb import init_usbmon
 
     from utils.model_lab.split import LAYERS_DIR, COMPILED_DIR
     from utils.model_lab.utils import LayerDetails
+    from utils.model_lab.logger import log
+    from ..backend.distributed_inference import distributed_inference
 
     models = {}
     models["cpu"] = []
@@ -279,7 +281,7 @@ def DeployModels(
     # regular quantized tflite files for cpu
     if not isCPUavailable():
         log.warning(f"CPU is NOT available on this machine!")
-    elif "cpu" not in hardware_summary:
+    elif "cpu" not in hardware_list:
         log.info("No CPU cores in hardware summary, skipping benchmarking")
     else:
         log.info(f"CPU is available on this machine!")
@@ -291,7 +293,7 @@ def DeployModels(
     available, gpu = isGPUavailable()
     if not available:
         log.warning(f"GPU is NOT available on this machine! Type: {gpu}")
-    elif "gpu" not in hardware_summary:
+    elif "gpu" not in hardware_list:
         log.info("No GPUs in hardware summary, skipping benchmarking")
     else:
         log.info(f"GPU is available on this machine! Type: {gpu}")
@@ -302,7 +304,7 @@ def DeployModels(
     # edge compiled quantized tflite files tpu
     if not isTPUavailable():
         log.warning(f"TPU is NOT available on this machine!")
-    elif "tpu" not in hardware_summary:
+    elif "tpu" not in hardware_list:
         log.info("No TPUs in hardware summary, skipping benchmarking")
     else:
         log.info(f"TPU is available on this machine!")

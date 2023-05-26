@@ -9,7 +9,7 @@ MAPPING_DIR   = os.path.join(WORK_DIR, "mapping")
 RESOURCES_DIR = os.path.join(WORK_DIR, "resources")
 SOURCE_DIR    = os.path.join(MODELS_DIR, "source")
 SUB_DIR       = os.path.join(MODELS_DIR, "sub")
-COMPILED_DIR  = os.path.join(MODELS_DIR, "sub", "tflite", "compiled")
+COMPILED_DIR  = os.path.join(MODELS_DIR, "sub", "tflite", "compiled/")
 FINAL_DIR     = os.path.join(MODELS_DIR, "final")
 
 class Model:
@@ -39,8 +39,9 @@ class Model:
     def Compile(self):
         if not os.path.exists(COMPILED_DIR):
             os.mkdir(COMPILED_DIR)
-        compiling_command = "edgetpu_compiler -o {0} -s {1}".format(COMPILED_DIR, self.paths["tflite"])
-        self.RunDockerCommand(compiling_command)
+        compiling_command = "/usr/bin/edgetpu_compiler -o {0} -s {1}".format(COMPILED_DIR, self.paths["tflite"])
+        #RunTerminalCommand(compiling_command)
+        os.system(compiling_command)
         self.paths["edgetpu_tflite"] = self.paths["tflite"].split("/")[-1].split(".")[0] + "_edgetpu.tflite"
 
 class Submodel(Model):
@@ -162,7 +163,7 @@ class Submodel(Model):
             set of sequences to be run on the respective hardware
         """
 
-        submodel_filename = "{0}_{1}_{2}.json".format(op_name, sequence_index, target_hardware.lower())
+        submodel_filename = "{0}_{1}_{2}.json".format(op_name, sequence_index, "bm" if target_hardware.lower() == "" else target_hardware.lower())
         submodel_filepath = os.path.join(SUB_DIR, "json", submodel_filename)
         MoveFile(self.paths["json"], submodel_filepath)
         self.paths["json"] = submodel_filepath

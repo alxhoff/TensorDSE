@@ -43,6 +43,8 @@ class Splitter:
         self.CheckSchema()
         if not os.path.exists(MODELS_DIR):
             os.mkdir(MODELS_DIR)
+        
+        
         for directory in ["source", "sub", "final"]:
             sub_dir = os.path.join(MODELS_DIR, directory)
             if not os.path.exists(sub_dir):
@@ -94,7 +96,10 @@ class Splitter:
 
         for i, model in enumerate(self.final_mapping):
             for j, layer in enumerate(model):
-                log.info("Model #{}, layer #{} mapped to {}".format(i, j, layer))
+                if layer[2] == "":
+                    log.info("Benchmarking Model #{0}, Layer #{1}")
+                elif layer[2] in ["cpu", "gpu", "tpu"]:
+                    log.info("Model #{0}, layer #{1} mapped to {2}".format(i, j, layer[2]))
 
     def CreateSubmodelLayerSequences(self) -> None:
         """ From the mappings created by AnalyseMappings, sequential layers

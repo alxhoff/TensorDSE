@@ -79,13 +79,6 @@ RUN wget https://github.com/bazelbuild/bazel/releases/download/5.0.0/bazel-5.0.0
 RUN chmod 755 bazel-5.0.0-installer-linux-x86_64.sh
 RUN ./bazel-5.0.0-installer-linux-x86_64.sh
 
-# flatbuffers
-RUN git clone https://github.com/Microsoft/vcpkg.git
-RUN cd vcpkg
-#RUN ./bootstrap-vcpkg.sh
-#RUN ./vcpkg integrate install
-#RUN ./vcpkg install flatbuffers
-
 # NVIDIA Drivers:
 RUN sudo add-apt-repository ppa:graphics-drivers/ppa
 RUN sudo apt update
@@ -99,6 +92,14 @@ RUN apt-get install -y libegl1-mesa-dev
 COPY scripts/install_tf.sh /home/install_tf.sh
 RUN chmod +x /home/install_tf.sh
 RUN /home/install_tf.sh
+
+# flatbuffers
+RUN git clone https://github.com/Microsoft/vcpkg.git
+RUN ./vcpkg/bootstrap-vcpkg.sh
+RUN ./vcpkg/vcpkg integrate install
+RUN ./vcpkg/vcpkg install flatbuffers
+RUN ln -s /home/vcpkg/installed/x64-linux/tools/flatbuffers/flatc /usr/local/bin/flatc
+RUN chmod +x /home/vcpkg/installed/x64-linux/tools/flatbuffers/flatc
 
 # Ports
 # EXPOSE 8080
