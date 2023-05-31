@@ -1,7 +1,7 @@
 import csv
 import json
 import time
-import logging
+
 
 class LayerDetails:
     def __init__(self, summary_path:str) -> None:
@@ -21,6 +21,8 @@ class LayerDetails:
         self.output_tensor_dtype = output_tensor["type"]
 
         self.hardware_target = layer["mapping"]
+        self.name = layer["type"]
+        self.index = layer["index"]
 
     def GetTensorSize(self, entry:str):
         if (entry == "Input"):

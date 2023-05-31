@@ -9,12 +9,15 @@ from .logger import log
 MODEL_LAB_DIR       = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR          = os.path.join(MODEL_LAB_DIR, "models")
 MAPPING_DIR         = os.path.join(MODEL_LAB_DIR, "mapping")
-RESOURCES_DIR       = os.path.join(MODEL_LAB_DIR, "resources")
+
 SOURCE_DIR          = os.path.join(MODELS_DIR, "source")
 SUB_DIR             = os.path.join(MODELS_DIR, "sub")
 LAYERS_DIR          = os.path.join(SUB_DIR, "tflite")
 COMPILED_DIR        = os.path.join(MODELS_DIR, "sub", "tflite", "compiled")
-FINAL_DIR           = os.path.join(MODELS_DIR, "final")
+UTILS_DIR           = os.path.dirname(MODEL_LAB_DIR)
+WORK_DIR            = os.path.dirname(UTILS_DIR)
+RESOURCES_DIR       = os.path.join(WORK_DIR, "resources")
+
 
 class Splitter:
     def __init__(self, source_model_path, model_summary_path) -> None:
@@ -56,7 +59,7 @@ class Splitter:
 
         model_filename = source_model_path.split("/")[len(source_model_path.split("/"))-1]
         self.source_model_path = os.path.join(SOURCE_DIR, "tflite", model_filename)
-        CopyFile(source_model_path, self.source_model_path)
+        CopyFile(os.path.join(WORK_DIR, source_model_path), self.source_model_path)
         
         if not os.path.exists(MAPPING_DIR):
             os.mkdir(MAPPING_DIR)
@@ -97,7 +100,7 @@ class Splitter:
         for i, model in enumerate(self.final_mapping):
             for j, layer in enumerate(model):
                 if layer[2] == "":
-                    log.info("Benchmarking Model #{0}, Layer #{1}")
+                    log.info("Benchmarking Model #{0}, Layer #{1}".format(i, j))
                 elif layer[2] in ["cpu", "gpu", "tpu"]:
                     log.info("Model #{0}, layer #{1} mapped to {2}".format(i, j, layer[2]))
 
@@ -145,14 +148,14 @@ class Splitter:
             set of sequences to be run on the respective hardware.
         """
 
-        log.info("Initializing shell model for layer {} from model {}...".format(sequence_index, model_index))
+        log.info("Initializing shell model for layer {} from model {} ...".format(sequence_index, model_index))
         submodel = Submodel(self.source_model.json)
         log.info("OK")
-        log.info("Adding Operations (" + ", ".join(str(op[0]) for op in layer_sequence) + ") to Shell Model ...")
+        log.info("Adding Operations of Index (" + ", ".join(str(op[0]) for op in layer_sequence) + ") to Shell Model ...")
         submodel.AddOps(layer_sequence)
         log.info("OK")
         log.info("Saving Model {} | Submodel {} | Operations: {} | Target HW: {} ...".format(
-            model_index, sequence_index, ", ".join([str(layer[2]) for layer in layer_sequence]), layer_sequence[0][2]))
+            model_index, sequence_index, ", ".join([str(layer[1]) for layer in layer_sequence]), layer_sequence[0][2]))
         submodel.Save(layer_sequence[0][1], layer_sequence[0][2], sequence_index)
         log.info("OK")
         log.info("Converting Submodel {0} from JSON to TFLite ...".format(str(sequence_index)))

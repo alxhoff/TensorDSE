@@ -20,7 +20,6 @@ class Model:
         for ext in self.paths.keys():
             if path_to_model.endswith(ext):
                 self.paths[ext] = path_to_model
-        log.info("Current TFlite Path is" + path_to_model)
         self.schema = schema_path
     
     def Convert(self, source_ext: str, target_ext: str):
@@ -163,7 +162,7 @@ class Submodel(Model):
             set of sequences to be run on the respective hardware
         """
 
-        submodel_filename = "{0}_{1}_{2}.json".format(op_name, sequence_index, "bm" if target_hardware.lower() == "" else target_hardware.lower())
+        submodel_filename = "submodel_{0}_{1}_{2}.json".format(sequence_index, op_name, "bm" if target_hardware.lower() == "" else target_hardware.lower())
         submodel_filepath = os.path.join(SUB_DIR, "json", submodel_filename)
         MoveFile(self.paths["json"], submodel_filepath)
         self.paths["json"] = submodel_filepath
