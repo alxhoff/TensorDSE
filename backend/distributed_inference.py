@@ -30,8 +30,8 @@ def distributed_inference(
     _ffi.memmove(c_str, encoded_string, len(encoded_string))
     hardware_target_ptr = _ffi.cast("char*", c_str)
 
-    input_data_ptr = _ffi.cast("uint8_t*", input_data.ctypes.data)
-    output_data_ptr = _ffi.cast("uint8_t*", output_data.ctypes.data)
+    input_data_ptr = _ffi.cast("int8_t*", input_data.ctypes.data)
+    output_data_ptr = _ffi.cast("int8_t*", output_data.ctypes.data)
     
 
     result = cpp_interface.lib.distributed_inference_interface(tflite_model_path_ptr, input_data_ptr,

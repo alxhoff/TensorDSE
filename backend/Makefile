@@ -11,8 +11,8 @@ clean:
 	if [ -n "$(call isbuildEmpty)" ]; then \
 		rm -rf build/*; \
 	fi
-	mkdir -p build && touch build/.gitkeep \
-	rm *.so
+	mkdir -p build && touch build/.gitkeep
+	
 
 .PHONY: build
 build: clean

@@ -216,3 +216,25 @@ std::unique_ptr<tflite::FlatBufferModel> LoadModelFile(std::string filepath) {
     tflite::FlatBufferModel::BuildFromFile(filepath.c_str());
     return model;
 }
+
+int calculateMean(const std::vector<int>& values) {
+    if (values.empty()) {
+        return 0;
+    }
+
+    int sum = 0;
+    for (int value : values) {
+        sum += value;
+    }
+
+    double mean = static_cast<double>(sum) / values.size();
+    return std::round(mean);
+}
+
+std::vector<int8_t> GetTensorData(const TfLiteTensor& tensor) {
+    const auto* data = reinterpret_cast<const int8_t*>(tensor.data.data);
+    std::vector<int8_t> result(tensor.bytes);
+    for (int i = 0; i < tensor.bytes; ++i)
+        result[i] = data[i];
+    return result;
+}
