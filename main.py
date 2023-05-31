@@ -84,7 +84,7 @@ def BenchmarkModel(model: str, count: int, hardware_summary: str, model_summary:
 
     # Deploy the generated models/layers onto the target test hardware using docker
     results_dict = DeployModels(
-        hardware_list=hardware_to_benchmark
+        hardware_list=hardware_to_benchmark,
         model_summary=model_summary,
         count=count
     )

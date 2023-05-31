@@ -39,7 +39,7 @@ test() {
 }
 
 build(){
-    make -C deployment build
+    make -C backend build
 }
 
 run() {

@@ -571,28 +571,35 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
 /************************************************************/
 
 static void *_cffi_types[] = {
-/*  0 */ _CFFI_OP(_CFFI_OP_FUNCTION, 6), // int()(uint8_t *, uint8_t *, unsigned int, unsigned int)
-/*  1 */ _CFFI_OP(_CFFI_OP_POINTER, 7), // uint8_t *
-/*  2 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
-/*  3 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 8), // unsigned int
-/*  4 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 8),
-/*  5 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
-/*  6 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7), // int
-/*  7 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 18), // uint8_t
+/*  0 */ _CFFI_OP(_CFFI_OP_FUNCTION, 10), // int()(char *, uint8_t *, uint8_t *, unsigned int, unsigned int, char *, unsigned int)
+/*  1 */ _CFFI_OP(_CFFI_OP_POINTER, 9), // char *
+/*  2 */ _CFFI_OP(_CFFI_OP_POINTER, 11), // uint8_t *
+/*  3 */ _CFFI_OP(_CFFI_OP_NOOP, 2),
+/*  4 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 8), // unsigned int
+/*  5 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 8),
+/*  6 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
+/*  7 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 8),
+/*  8 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
+/*  9 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 2), // char
+/* 10 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7), // int
+/* 11 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 18), // uint8_t
 };
 
-static int _cffi_d_distributed_inference_interface(uint8_t * x0, uint8_t * x1, unsigned int x2, unsigned int x3)
+static int _cffi_d_distributed_inference_interface(char * x0, uint8_t * x1, uint8_t * x2, unsigned int x3, unsigned int x4, char * x5, unsigned int x6)
 {
-  return distributed_inference_interface(x0, x1, x2, x3);
+  return distributed_inference_interface(x0, x1, x2, x3, x4, x5, x6);
 }
 #ifndef PYPY_VERSION
 static PyObject *
 _cffi_f_distributed_inference_interface(PyObject *self, PyObject *args)
 {
-  uint8_t * x0;
+  char * x0;
   uint8_t * x1;
-  unsigned int x2;
+  uint8_t * x2;
   unsigned int x3;
+  unsigned int x4;
+  char * x5;
+  unsigned int x6;
   Py_ssize_t datasize;
   struct _cffi_freeme_s *large_args_free = NULL;
   int result;
@@ -601,39 +608,64 @@ _cffi_f_distributed_inference_interface(PyObject *self, PyObject *args)
   PyObject *arg1;
   PyObject *arg2;
   PyObject *arg3;
+  PyObject *arg4;
+  PyObject *arg5;
+  PyObject *arg6;
 
-  if (!PyArg_UnpackTuple(args, "distributed_inference_interface", 4, 4, &arg0, &arg1, &arg2, &arg3))
+  if (!PyArg_UnpackTuple(args, "distributed_inference_interface", 7, 7, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6))
     return NULL;
 
   datasize = _cffi_prepare_pointer_call_argument(
       _cffi_type(1), arg0, (char **)&x0);
   if (datasize != 0) {
-    x0 = ((size_t)datasize) <= 640 ? (uint8_t *)alloca((size_t)datasize) : NULL;
+    x0 = ((size_t)datasize) <= 640 ? (char *)alloca((size_t)datasize) : NULL;
     if (_cffi_convert_array_argument(_cffi_type(1), arg0, (char **)&x0,
             datasize, &large_args_free) < 0)
       return NULL;
   }
 
   datasize = _cffi_prepare_pointer_call_argument(
-      _cffi_type(1), arg1, (char **)&x1);
+      _cffi_type(2), arg1, (char **)&x1);
   if (datasize != 0) {
     x1 = ((size_t)datasize) <= 640 ? (uint8_t *)alloca((size_t)datasize) : NULL;
-    if (_cffi_convert_array_argument(_cffi_type(1), arg1, (char **)&x1,
+    if (_cffi_convert_array_argument(_cffi_type(2), arg1, (char **)&x1,
             datasize, &large_args_free) < 0)
       return NULL;
   }
 
-  x2 = _cffi_to_c_int(arg2, unsigned int);
-  if (x2 == (unsigned int)-1 && PyErr_Occurred())
-    return NULL;
+  datasize = _cffi_prepare_pointer_call_argument(
+      _cffi_type(2), arg2, (char **)&x2);
+  if (datasize != 0) {
+    x2 = ((size_t)datasize) <= 640 ? (uint8_t *)alloca((size_t)datasize) : NULL;
+    if (_cffi_convert_array_argument(_cffi_type(2), arg2, (char **)&x2,
+            datasize, &large_args_free) < 0)
+      return NULL;
+  }
 
   x3 = _cffi_to_c_int(arg3, unsigned int);
   if (x3 == (unsigned int)-1 && PyErr_Occurred())
     return NULL;
 
+  x4 = _cffi_to_c_int(arg4, unsigned int);
+  if (x4 == (unsigned int)-1 && PyErr_Occurred())
+    return NULL;
+
+  datasize = _cffi_prepare_pointer_call_argument(
+      _cffi_type(1), arg5, (char **)&x5);
+  if (datasize != 0) {
+    x5 = ((size_t)datasize) <= 640 ? (char *)alloca((size_t)datasize) : NULL;
+    if (_cffi_convert_array_argument(_cffi_type(1), arg5, (char **)&x5,
+            datasize, &large_args_free) < 0)
+      return NULL;
+  }
+
+  x6 = _cffi_to_c_int(arg6, unsigned int);
+  if (x6 == (unsigned int)-1 && PyErr_Occurred())
+    return NULL;
+
   Py_BEGIN_ALLOW_THREADS
   _cffi_restore_errno();
-  { result = distributed_inference_interface(x0, x1, x2, x3); }
+  { result = distributed_inference_interface(x0, x1, x2, x3, x4, x5, x6); }
   _cffi_save_errno();
   Py_END_ALLOW_THREADS
 
@@ -662,7 +694,7 @@ static const struct _cffi_type_context_s _cffi_type_context = {
   0,  /* num_enums */
   0,  /* num_typenames */
   NULL,  /* no includes */
-  8,  /* num_types */
+  12,  /* num_types */
   0,  /* flags */
 };
 
