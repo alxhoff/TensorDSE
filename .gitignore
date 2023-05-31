@@ -7,8 +7,6 @@ venv
 *.tags/*
 single_layer_models/**
 single_layer_models/*
-results/*
-benchmarking/reading_tflite_model/results/*
 shark/*.pcapng
 shark/*.cap
 .csv
@@ -109,7 +107,6 @@ gradle-app.setting
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 
-<<<<<<< HEAD
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
 # Byte-compiled / optimized / DLL files

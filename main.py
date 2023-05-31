@@ -2,10 +2,10 @@ import argparse
 import os
 from utils.log import Log
 
-MODELS_FOLDER = "benchmarking/models/source/"
-LAYERS_FOLDER = "benchmarking/models/layers/"
-COMPILED_MODELS_FOLDER = "benchmarking/models/compiled/"
-RESULTS_FOLDER = "benchmarking/results/"
+MODELS_FOLDER = "resources/models/source/"
+LAYERS_FOLDER = "resources/models/layers/"
+COMPILED_MODELS_FOLDER = "resources/models/compiled/"
+RESULTS_FOLDER = "resources/results/"
 
 # custom logger to separate TF logs and Ours
 log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))

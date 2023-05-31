@@ -2,8 +2,7 @@ SHELL := /bin/bash
 FILE := $(lastword $(MAKEFILE_LIST))
 CWD := $(shell pwd)
 FOLDER := $(shell basename ${CWD})
-
-exist-docker-image = $(shell docker image ls | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ')
+REPO := tensorflow/tensorflow
 
 .PHONY: all
 all:
@@ -12,14 +11,16 @@ all:
 clean:
 	rm -rf __pycache__
 	${MAKE} -C deployment/ clean
-	${MAKE} -C benchmarking/ clean
 
 .PHONY: shell
 shell:
 	${MAKE} -C docker shell
 
 .PHONY: build
-build: $(if $(call exist-docker-image),,${MAKE} -C docker build)
+build: 
+	@if ! [ $(shell docker image ls | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ') ]; then\
+		${MAKE} -C docker build;\
+	fi
 	${MAKE} -C deployment build
 
 .PHONY: run
