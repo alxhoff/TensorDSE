@@ -22,6 +22,10 @@ build:
 		${MAKE} -C docker build;\
 	fi
 
+.PHONY: forcebuild
+forcebuild:
+	${MAKE} -C docker build;
+
 .PHONY: run
 run:
 	${MAKE} -C docker run
