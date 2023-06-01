@@ -258,17 +258,19 @@ def DeployModels(
     check which devices need to be benchmarked, if None then all are benchmarked
     Indicates the number of times each model will be deplyed.
     """
-    import os
+    import os, sys
     from os import listdir
     from os.path import join, isdir, isfile
     #from main import log
     from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
-    from utils.usb import init_usbmon
+    #from .usb import init_usbmon
+    import numpy as np
+    
 
     from utils.model_lab.split import LAYERS_DIR, COMPILED_DIR
     from utils.model_lab.utils import LayerDetails
     from utils.model_lab.logger import log
-    from ..backend.distributed_inference import distributed_inference
+    from backend.distributed_inference import distributed_inference
 
     models = {}
     models["cpu"] = []
@@ -285,9 +287,26 @@ def DeployModels(
         log.info("No CPU cores in hardware summary, skipping benchmarking")
     else:
         log.info(f"CPU is available on this machine!")
-        for layer in listdir(LAYERS_DIR):
+        for layer_details in details.layers:
             # TODO: CPU Deploy
-            models["cpu"].append(m)
+            details.ReadLayerDetails(layer_details)
+            layer_file = "submodel_{0}_{1}_bm.tflite".format(details.index, details.name)
+            input_data_vector = np.zeros(details.GetTensorSize("Input")).astype(np.int8)
+            output_data_vector = np.zeros(details.GetTensorSize("Output")).astype(np.int8)
+            print("##########################################################")
+            print("Benchmarking: {}\n Target: CPU".format(layer_file))
+            mean_inf = distributed_inference(
+                os.path.join(LAYERS_DIR, layer_file),
+                input_data_vector,
+                output_data_vector, 
+                len(input_data_vector), 
+                len(output_data_vector), 
+                "CPU", 
+                1
+            )
+            print(mean_inf)
+            print("########################################################## \n")
+            #models["cpu"].append(m)
 
     # regular quantized tflite files for gpu
     available, gpu = isGPUavailable()
@@ -297,9 +316,26 @@ def DeployModels(
         log.info("No GPUs in hardware summary, skipping benchmarking")
     else:
         log.info(f"GPU is available on this machine! Type: {gpu}")
-        for layer in details.layers:
+        for layer_details in details.layers:
             # TODO: GPU Deploy
-            models["gpu"].append(m)
+            details.ReadLayerDetails(layer_details)
+            layer_file = "submodel_{0}_{1}_bm.tflite".format(details.index, details.name)
+            input_data_vector = np.zeros(details.GetTensorSize("Input")).astype(np.int8)
+            output_data_vector = np.zeros(details.GetTensorSize("Output")).astype(np.int8)
+            print("##########################################################")
+            print("Benchmarking: {}\n Target: GPU".format(layer_file))
+            mean_inf = distributed_inference(
+                os.path.join(LAYERS_DIR, layer_file),
+                input_data_vector,
+                output_data_vector, 
+                len(input_data_vector), 
+                len(output_data_vector), 
+                "GPU", 
+                1
+            )
+            print(mean_inf)
+            print("########################################################## \n")
+            #models["gpu"].append(m)
 
     # edge compiled quantized tflite files tpu
     if not isTPUavailable():
@@ -308,14 +344,31 @@ def DeployModels(
         log.info("No TPUs in hardware summary, skipping benchmarking")
     else:
         log.info(f"TPU is available on this machine!")
-        if init_usbmon():
-            log.info("Needed to introduce usbmon module")
-        else:
-            log.info("usbmon module already present")
+        #if init_usbmon():
+        #    log.info("Needed to introduce usbmon module")
+        #else:
+        #    log.info("usbmon module already present")
 
-        for f in listdir(COMPILED_DIR):
+        for layer_details in details.layers:
             # TODO: CPU Deploy
-            models["tpu"].append(m)
+            details.ReadLayerDetails(layer_details)
+            layer_file = "submodel_{0}_{1}_bm_edgetpu.tflite".format(details.index, details.name)
+            input_data_vector = np.zeros(details.GetTensorSize("Input")).astype(np.int8)
+            output_data_vector = np.zeros(details.GetTensorSize("Output")).astype(np.int8)
+            print("##########################################################")
+            print("Benchmarking: {}\n Target: TPU".format(layer_file))
+            mean_inf = distributed_inference(
+                os.path.join(COMPILED_DIR, layer_file),
+                input_data_vector,
+                output_data_vector, 
+                len(input_data_vector), 
+                len(output_data_vector), 
+                "TPU", 
+                1
+            )
+            print(mean_inf)
+            print("########################################################## \n")
+            #models["tpu"].append(m)
             
 
     return models

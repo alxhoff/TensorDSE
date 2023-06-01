@@ -114,7 +114,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--model",
-        default="resources/example_models/kws_ref_model.tflite",
+        default="resources/models/example_models/keyword_spotting/kws_ref_model.tflite",
         help="File path to the SOURCE .tflite file.",
     )
 

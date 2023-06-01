@@ -7,8 +7,8 @@
 #include "backend.h"
 
 extern "C" {
-  extern int distributed_inference_interface(char* tflite_model_path_ptr, uint8_t* input_data,
-                                                                          uint8_t* output_data,
+  extern int distributed_inference_interface(char* tflite_model_path_ptr, int8_t* input_data,
+                                                                          int8_t* output_data,
                                                                           const unsigned int input_data_size,
                                                                           const unsigned int output_data_size,
                                                                           char* hardware_target_ptr,
