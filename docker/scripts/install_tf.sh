@@ -19,6 +19,15 @@ export TENSORFLOW_VER=r2.9
 export TENSORFLOW_SRC=`pwd`/tensorflow_env/tensorflow_src
 
 main() {
+
+    # Flatbuffers
+    [ -d vcpkg ] || git clone https://github.com/Microsoft/vcpkg.git
+    ./vcpkg/bootstrap-vcpkg.sh
+    ./vcpkg/vcpkg integrate install
+    ./vcpkg/vcpkg install flatbuffers
+    [ -f /usr/local/bin/flatc ] || ln -s /home/vcpkg/installed/x64-linux/tools/flatbuffers/flatc /usr/local/bin/flatc
+    chmod +x /home/vcpkg/installed/x64-linux/tools/flatbuffers/flatc
+
     [ -d tensorflow_env ] || mkdir tensorflow_env
     cd tensorflow_env
     [ -d tensorflow_src ] || git clone -b ${TENSORFLOW_VER} --depth 1 https://github.com/tensorflow/tensorflow.git tensorflow_src

@@ -93,14 +93,6 @@ COPY scripts/install_tf.sh /home/install_tf.sh
 RUN chmod +x /home/install_tf.sh
 RUN /home/install_tf.sh
 
-# flatbuffers
-RUN git clone https://github.com/Microsoft/vcpkg.git
-RUN ./vcpkg/bootstrap-vcpkg.sh
-RUN ./vcpkg/vcpkg integrate install
-RUN ./vcpkg/vcpkg install flatbuffers
-RUN ln -s /home/vcpkg/installed/x64-linux/tools/flatbuffers/flatc /usr/local/bin/flatc
-RUN chmod +x /home/vcpkg/installed/x64-linux/tools/flatbuffers/flatc
-
 # Ports
 # EXPOSE 8080
 
