@@ -20,15 +20,13 @@ RESOURCES_DIR       = os.path.join(WORK_DIR, "resources")
 
 
 class Splitter:
-    def __init__(self, source_model_path, model_summary_path) -> None:
+    def __init__(self, source_model_path: str, model_summary:dict) -> None:
         log.info("Initializing Environment ...")
-        self.InitializeEnv(source_model_path, model_summary_path)
+        self.InitializeEnv(source_model_path)
         log.info("Initializing Source Model ...")
         self.source_model = Model(self.source_model_path, self.schema_path)
         log.info("Source Model saved under: {}".format(os.path.join(MODELS_DIR, "source", "tflite")))
-        if not(model_summary_path == None):
-            log.info("Reading Mapping ...")
-            self.summary = ReadJSON(self.model_summary_path)
+        self.summary = model_summary
         self.submodel_list = []
 
     def CheckSchema(self):
@@ -42,7 +40,7 @@ class Splitter:
         else:
             log.info("    File schema.fbs found.")
 
-    def InitializeEnv(self, source_model_path, model_summary_path):
+    def InitializeEnv(self, source_model_path):
         self.CheckSchema()
         if not os.path.exists(MODELS_DIR):
             os.mkdir(MODELS_DIR)
@@ -61,13 +59,13 @@ class Splitter:
         self.source_model_path = os.path.join(SOURCE_DIR, "tflite", model_filename)
         CopyFile(os.path.join(WORK_DIR, source_model_path), self.source_model_path)
         
-        if not os.path.exists(MAPPING_DIR):
-            os.mkdir(MAPPING_DIR)
-
-        mapping_filename = model_summary_path.split("/")[len(model_summary_path.split("/"))-1]
-        self.model_summary_path = os.path.join(MAPPING_DIR, mapping_filename)
-        CopyFile(model_summary_path, MAPPING_DIR)
-        log.info("Mapping saved under: {}".format(os.path.join(MAPPING_DIR)))
+        #if not os.path.exists(MAPPING_DIR):
+        #    os.mkdir(MAPPING_DIR)
+        #
+        #mapping_filename = model_summary_path.split("/")[len(model_summary_path.split("/"))-1]
+        #self.model_summary_path = os.path.join(MAPPING_DIR, mapping_filename)
+        #CopyFile(model_summary_path, MAPPING_DIR)
+        #log.info("Mapping saved under: {}".format(os.path.join(MAPPING_DIR)))
     
     def Clean(self, all: bool):
         log.info("Cleaning Directory ...\n")

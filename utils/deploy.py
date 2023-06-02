@@ -5,6 +5,11 @@ from typing import Dict, Tuple
 
 from utils.model import Model
 
+def GetArraySizeFromShape(shape: list) -> int:
+    size = 1
+    for dim in shape:
+        size *= int(dim)
+    return size
 
 def isCPUavailable() -> bool:
     return True
@@ -58,31 +63,6 @@ def MakeInterpreterTPU(model_file: str, library: str):
     experimental_delegates = [tflite.load_delegate(shared_library, device)]
 
     return tflite.Interpreter(
-        model_path=model_file,
-        model_content=None,
-        experimental_delegates=experimental_delegates,
-    )
-
-
-def MakeInterpreterGPU(model_file: str, library: str):
-    """Creates the interpreter object needed to deploy a model onto the tpu.
-
-    Parameters
-    ----------
-    model_file : String
-    Path to the tflite model that will be deployed to the edge tpu.
-
-    system : String
-
-    Returns
-    -------
-    tflite.Interpreter Object
-    """
-    import tensorflow as tf
-
-    experimental_delegates = [tf.lite.experimental.load_delegate(library=library)]
-
-    return tf.lite.Interpreter(
         model_path=model_file,
         model_content=None,
         experimental_delegates=experimental_delegates,
@@ -163,86 +143,42 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
     return m
 
 
-def GPUDeploy(m: Model, count: int) -> Model:
-    import time
-    import sys
-    import tensorflow as tf
+def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
+    import os
     import numpy as np
 
-    GPU_LIBRARY = "/home/lib/tf2.9/libtensorflowlite_gpu_delegate.so"
-    results = []
+    from utils.model_lab.split import LAYERS_DIR
+    from backend.distributed_inference import distributed_inference
 
-    interpreter = MakeInterpreterGPU(m.model_path, GPU_LIBRARY)
-    interpreter.allocate_tensors()
+    m.model_path = os.path.join(LAYERS_DIR, "submodel_{0}_{1}_bm.tflite".format(m.details["index"], m.details["type"]))
 
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
+    input_size  = GetArraySizeFromShape(m.input_shape)
+    output_size = GetArraySizeFromShape(m.output_shape)
 
-    input_data = np.array(
-        np.random.random_sample(input_details[0]["shape"]),  # input shape
-        dtype=input_details[0]["dtype"],
-    )  # input dtype
+    input_data_vector = np.zeros(input_size).astype(m.get_np_dtype(m.input_datatype))
+    output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
+    inference_times_vector = np.zeros(count).astype(np.uint32)
 
-    interpreter.set_tensor(input_details[0]["index"], input_data)
-    m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
+    mean_inference_time = distributed_inference(
+        m.model_path,
+        input_data_vector,
+        output_data_vector, 
+        inference_times_vector,
+        len(input_data_vector), 
+        len(output_data_vector), 
+        hardware_target, 
+        count
+    )
 
-    for i in range(count):
-        start = time.perf_counter()  # START
-        interpreter.invoke()  # RUNS
-        inference_time = time.perf_counter() - start  # END
+    print(mean_inference_time)
 
-        _ = interpreter.get_tensor(output_details[0]["index"])  # output data
-        results.append(inference_time)
-
-        sys.stdout.write(f"\r {i+1}/{count} for GPU ran -> {m.model_name}")
-        sys.stdout.flush()
-    sys.stdout.write("\n")
-
-    m.results = results
+    m.results = inference_times_vector.tolist()
+    
     return m
 
 
-def CPUDeploy(m: Model, count: int) -> Model:
-    import time
-    import sys
-    import numpy as np
-    import tensorflow as tf
-
-    results = []
-
-    # Interpreter Object.
-    interpreter = tf.lite.Interpreter(model_path=m.model_path)
-    interpreter.allocate_tensors()
-
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-
-    input_data = np.array(
-        np.random.random_sample(input_details[0]["shape"]),  # input shape
-        dtype=input_details[0]["dtype"],
-    )  # input dtype
-
-    interpreter.set_tensor(input_details[0]["index"], input_data)
-    m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
-
-    for i in range(count):
-        start = time.perf_counter()  # START
-        interpreter.invoke()  # RUNS
-        inference_time = time.perf_counter() - start  # END
-
-        _ = interpreter.get_tensor(output_details[0]["index"])  # output data
-        results.append(inference_time)
-
-        sys.stdout.write(f"\r {i+1}/{count} for CPU ran -> {m.model_name}")
-        sys.stdout.flush()
-
-    sys.stdout.write("\n")
-    m.results = results
-    return m
-
-
-def DeployModels(
-    hardware_list:list, model_summary:str, count:int
+def BenchmarkModelLayers(
+    parent_model: str, hardware_list:list, model_summary:dict, count:int
 ) -> Dict:
     """Manager function responsible for preping and executing the deployment
     of the compiled tflite models.
@@ -258,27 +194,16 @@ def DeployModels(
     check which devices need to be benchmarked, if None then all are benchmarked
     Indicates the number of times each model will be deplyed.
     """
-    import os, sys
-    from os import listdir
-    from os.path import join, isdir, isfile
-    #from main import log
-    from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
-    #from .usb import init_usbmon
-    import numpy as np
-    
 
-    from utils.model_lab.split import LAYERS_DIR, COMPILED_DIR
-    from utils.model_lab.utils import LayerDetails
+    #from .usb import init_usbmon
     from utils.model_lab.logger import log
-    from backend.distributed_inference import distributed_inference
+    
 
     models = {}
     models["cpu"] = []
     models["gpu"] = []
     models["tpu"] = []
     models["count"] = count
-
-    details = LayerDetails(model_summary)
 
     # regular quantized tflite files for cpu
     if not isCPUavailable():
@@ -287,26 +212,9 @@ def DeployModels(
         log.info("No CPU cores in hardware summary, skipping benchmarking")
     else:
         log.info(f"CPU is available on this machine!")
-        for layer_details in details.layers:
-            # TODO: CPU Deploy
-            details.ReadLayerDetails(layer_details)
-            layer_file = "submodel_{0}_{1}_bm.tflite".format(details.index, details.name)
-            input_data_vector = np.zeros(details.GetTensorSize("Input")).astype(np.int8)
-            output_data_vector = np.zeros(details.GetTensorSize("Output")).astype(np.int8)
-            print("##########################################################")
-            print("Benchmarking: {}\n Target: CPU".format(layer_file))
-            mean_inf = distributed_inference(
-                os.path.join(LAYERS_DIR, layer_file),
-                input_data_vector,
-                output_data_vector, 
-                len(input_data_vector), 
-                len(output_data_vector), 
-                "CPU", 
-                1
-            )
-            print(mean_inf)
-            print("########################################################## \n")
-            #models["cpu"].append(m)
+        for layer in model_summary["layers"]:
+            m = BenchmarkLayer(Model(layer, "cpu", parent_model), count, "CPU")
+            models["cpu"].append(m)
 
     # regular quantized tflite files for gpu
     available, gpu = isGPUavailable()
@@ -316,26 +224,9 @@ def DeployModels(
         log.info("No GPUs in hardware summary, skipping benchmarking")
     else:
         log.info(f"GPU is available on this machine! Type: {gpu}")
-        for layer_details in details.layers:
-            # TODO: GPU Deploy
-            details.ReadLayerDetails(layer_details)
-            layer_file = "submodel_{0}_{1}_bm.tflite".format(details.index, details.name)
-            input_data_vector = np.zeros(details.GetTensorSize("Input")).astype(np.int8)
-            output_data_vector = np.zeros(details.GetTensorSize("Output")).astype(np.int8)
-            print("##########################################################")
-            print("Benchmarking: {}\n Target: GPU".format(layer_file))
-            mean_inf = distributed_inference(
-                os.path.join(LAYERS_DIR, layer_file),
-                input_data_vector,
-                output_data_vector, 
-                len(input_data_vector), 
-                len(output_data_vector), 
-                "GPU", 
-                1
-            )
-            print(mean_inf)
-            print("########################################################## \n")
-            #models["gpu"].append(m)
+        for layer in model_summary["layers"]:
+            m = BenchmarkLayer(Model(layer, "gpu", parent_model), count, "GPU")
+            models["gpu"].append(m)
 
     # edge compiled quantized tflite files tpu
     if not isTPUavailable():
@@ -349,26 +240,9 @@ def DeployModels(
         #else:
         #    log.info("usbmon module already present")
 
-        for layer_details in details.layers:
-            # TODO: CPU Deploy
-            details.ReadLayerDetails(layer_details)
-            layer_file = "submodel_{0}_{1}_bm_edgetpu.tflite".format(details.index, details.name)
-            input_data_vector = np.zeros(details.GetTensorSize("Input")).astype(np.int8)
-            output_data_vector = np.zeros(details.GetTensorSize("Output")).astype(np.int8)
-            print("##########################################################")
-            print("Benchmarking: {}\n Target: TPU".format(layer_file))
-            mean_inf = distributed_inference(
-                os.path.join(COMPILED_DIR, layer_file),
-                input_data_vector,
-                output_data_vector, 
-                len(input_data_vector), 
-                len(output_data_vector), 
-                "TPU", 
-                1
-            )
-            print(mean_inf)
-            print("########################################################## \n")
-            #models["tpu"].append(m)
+        for layer in model_summary["layers"]:
+            m = BenchmarkLayer(Model(layer, "tpu", parent_model), count, "TPU")
+            models["tpu"].append(m)
             
 
     return models
@@ -441,9 +315,9 @@ if __name__ == "__main__":
     args = GetArgs()
 
     delegators = {
-        "cpu": CPUDeploy,
-        "gpu": GPUDeploy,
-        "tpu": TPUDeploy,
+        "cpu": BenchmarkLayer,
+        "gpu": BenchmarkLayer,
+        "tpu": BenchmarkLayer,
     }
 
     if args.form == "single":

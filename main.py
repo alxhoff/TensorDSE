@@ -30,29 +30,24 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
     system(command)
 
 
-def BenchmarkModel(model: str, count: int, hardware_summary: str, model_summary: str) -> None:
-    from utils.deploy import DeployModels
-    from utils.convert import ImportTFLiteModules, SplitTFLiteModel
-    from utils.compile import CompileTFLiteModelsForCoral
-    from utils.analysis import AnalyzeModelResults, MergeResults
+def BenchmarkModel(model_path: str, count: int, hardware_summary_path: str, model_summary_path: str) -> None:
+    
+    from utils.deploy import BenchmarkModelLayers
 
-    from utils.model_lab.utils import ReadJSON, LayerDetails
+    from utils.model_lab.utils import ReadJSON
     from utils.model_lab.logger import log
     from utils.model_lab.split import Splitter
 
+    if not model_path.endswith(".tflite"):
+        raise Exception(f"File: {model_path} is not a tflite file!")
 
-    import json
-
-    if not model.endswith(".tflite"):
-        raise Exception(f"File: {model} is not a tflite file!")
-
-    model_name = (model.split("/")[model.count("/")]).split(".tflite")[0]
+    model_name = (model_path.split("/")[model_path.count("/")]).split(".tflite")[0]
     log.info(f"Benchmarking {model_name} for {count} time(s)")
 
     hardware_to_benchmark = ["cpu", "gpu", "tpu"]
 
-    if hardware_summary is not None:
-        hardware_summary_json = ReadJSON(hardware_summary)
+    if hardware_summary_path is not None:
+        hardware_summary_json = ReadJSON(hardware_summary_path)
 
         req_hardware = []
 
@@ -67,8 +62,11 @@ def BenchmarkModel(model: str, count: int, hardware_summary: str, model_summary:
 
         hardware_to_benchmark = req_hardware
 
+    if model_summary_path is not None:
+        model_summary_json = ReadJSON(model_summary_path)
+
     # Create single operation models/layers from the operations in the provided model
-    splitter = Splitter(model, model_summary)
+    splitter = Splitter(model_path, model_summary_json)
     try:
         log.info("Running Model Splitter ...")
         splitter.Run()
@@ -83,9 +81,10 @@ def BenchmarkModel(model: str, count: int, hardware_summary: str, model_summary:
         log.info("Models successfully compiled!")
 
     # Deploy the generated models/layers onto the target test hardware using docker
-    results_dict = DeployModels(
+    results_dict = BenchmarkModelLayers(
+        parent_model=model_name,
         hardware_list=hardware_to_benchmark,
-        model_summary=model_summary,
+        model_summary=model_summary_json,
         count=count
     )
 
@@ -122,7 +121,7 @@ def GetArgs() -> argparse.Namespace:
         "-c",
         "--count",
         type=int,
-        default=10,
+        default=2,
         help="Number of times to measure inference.",
     )
 

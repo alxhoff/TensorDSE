@@ -1,42 +1,43 @@
 class Model:
-    def __init__(self, file:str, delegate:str, parent:str=""):
+    def __init__(self, layer:dict, delegate:str, parent:str=""):
+        self.details        = layer
         self.delegate       = delegate
         self.parent         = parent
-        self.model_path     = file
-        self.model_name     = self._get_model_name(file)
+        self.model_path     = ""
+        self.model_name     = layer["type"]
         self.results        = []
         self.timers         = []
+        self.set_input_details()
+        self.set_output_details()
 
-    def  _get_model_name (self, file_path:str) -> str:
-        file = file_path.split("/")[file_path.count("/")]
-        if (not file.startswith("quant_") or
-            not file.endswith(".tflite")):
-               raise Exception(
-                       f"File: {file_path} not a tflite file")
-        return (
-         file.split("quant_")[1]
-        ).split("_edgetpu.tflite"
-           if self.delegate == "tpu"
-           else ".tflite" )[0]
+    def set_input_details(self):
+        input_tensor = self.details["inputs"][0]
+        self.input_shape = input_tensor["shape"]
+        self.input_datatype = input_tensor["type"]
+        
 
-    def set_input(self, shape, datatype):
+    def set_output_details(self):
+        output_tensor = self.details["outputs"][0]
+        self.output_shape = output_tensor["shape"]
+        self.output_datatype = output_tensor["type"]
+    
+
+    def get_np_dtype(self, datatype: str):
         import numpy as np
         types = {
-                np.uint8    : "uint8",
-                np.uint16   : "uint16",
-                np.uint32   : "uint32",
-                np.uint64   : "uint64",
-                np.int8     : "int8",
-                np.int16    : "int16",
-                np.int32    : "int32",
-                np.int64    : "int64",
-                np.float16  : "float16",
-                np.float32  : "float32",
-                np.float64  : "float64",
-                np.float128 : "float128",
+            "uint8"     :  np.uint8,
+            "uint16"    :  np.uint16,
+            "uint32"    :  np.uint32,
+            "uint64"    :  np.uint64,
+            "int8"      :  np.int8,
+            "int16"     :  np.int16,
+            "int32"     :  np.int32,
+            "int64"     :  np.int64,
+            "float16"   :  np.float16,
+            "float32"   :  np.float32,
+            "float64"   :  np.float64,
+            "float128"  :  np.float128
         }
 
         t = types.get(datatype, ValueError("Input datatype is unknown!"))
-        self.input_shape    = shape.tolist()
-        self.input_datatype = t
-
+        return t
