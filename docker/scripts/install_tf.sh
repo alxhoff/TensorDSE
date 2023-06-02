@@ -15,6 +15,9 @@ if ! command -v cmake &>/dev/null; then
     exit 1
 fi
 
+[ -d /home/tensorDSE ] || mkdir /home/tensorDSE
+pushd /home/tensorDSE
+
 export TENSORFLOW_VER=r2.9
 export TENSORFLOW_SRC=`pwd`/tensorflow_env/tensorflow_src
 
@@ -26,8 +29,8 @@ main() {
     ./vcpkg/bootstrap-vcpkg.sh
     ./vcpkg/vcpkg integrate install
     ./vcpkg/vcpkg install flatbuffers
-    [ -f /usr/local/bin/flatc ] || ln -s /home/vcpkg/installed/x64-linux/tools/flatbuffers/flatc /usr/local/bin/flatc
-    chmod +x /home/vcpkg/installed/x64-linux/tools/flatbuffers/flatc
+    [ -f /usr/local/bin/flatc ] || ln -s /home/tensorDSE/vcpkg/installed/x64-linux/tools/flatbuffers/flatc /usr/local/bin/flatc
+    chmod +x /home/tensorDSE/vcpkg/installed/x64-linux/tools/flatbuffers/flatc
 
     [ -d tensorflow_env ] || mkdir tensorflow_env
     cd tensorflow_env
@@ -74,6 +77,5 @@ main() {
     cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/delegates/gpu/libtensorflowlite_gpu_delegate.so /usr/lib/
 }
 
-pushd /home/tensorDSE
 main "$@"
 popd
