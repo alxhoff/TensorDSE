@@ -6,6 +6,7 @@
 
 int distributed_inference_wrapper(std::string tflite_model_path, int8_t* input_data,
                                                                  int8_t* output_data,
+                                                                 uint32_t* inference_times,
                                                                  const unsigned int input_data_size,
                                                                  const unsigned int output_data_size,
                                                                  std::string hardware_target,

@@ -5,7 +5,8 @@ from cffi import FFI
 def distributed_inference(
     tflite_model_path:str,
     input_data:np.array,
-    output_data:np.array, 
+    output_data:np.array,
+    inference_times:np.array, 
     input_data_size:int, 
     output_data_size:int, 
     hardware_target:str, 
@@ -32,10 +33,12 @@ def distributed_inference(
 
     input_data_ptr = _ffi.cast("int8_t*", input_data.ctypes.data)
     output_data_ptr = _ffi.cast("int8_t*", output_data.ctypes.data)
+    inference_times_ptr = _ffi.cast("uint32_t*", inference_times.ctypes.data)
     
 
     result = cpp_interface.lib.distributed_inference_interface(tflite_model_path_ptr, input_data_ptr,
-                                                                                      output_data_ptr, 
+                                                                                      output_data_ptr,
+                                                                                      inference_times_ptr, 
                                                                                       input_data_size, 
                                                                                       output_data_size,
                                                                                       hardware_target_ptr,

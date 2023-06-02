@@ -1,13 +1,12 @@
 #include <algorithm>
 #include <cassert>
 #include <fstream>
-//#include <iomanip>
 #include <iostream>
 #include <numeric>
 #include <string>
-//#include <utility>
 #include <vector>
-//#include <chrono>
+#include <random>
+
 #include <stdlib.h>
 #include <filesystem>
 #include <experimental/filesystem>
@@ -217,7 +216,7 @@ std::unique_ptr<tflite::FlatBufferModel> LoadModelFile(std::string filepath) {
     return model;
 }
 
-int calculateMean(const std::vector<int>& values) {
+int calculateMean(const std::vector<uint32_t>& values) {
     if (values.empty()) {
         return 0;
     }
@@ -237,4 +236,19 @@ std::vector<int8_t> GetTensorData(const TfLiteTensor& tensor) {
     for (int i = 0; i < tensor.bytes; ++i)
         result[i] = data[i];
     return result;
+}
+
+std::vector<int8_t> generateRandomVector(int vectorSize) {
+    std::random_device rd;
+    std::mt19937 gen(rd());  // Initialize random number generator
+
+    std::vector<int8_t> randomVector(vectorSize);
+
+    // Generate random values for each element of the vector
+    for (int i = 0; i < vectorSize; ++i) {
+        std::uniform_int_distribution<int8_t> distribution(-128, 127);
+        randomVector[i] = distribution(gen);
+    }
+
+    return randomVector;
 }
