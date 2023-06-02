@@ -20,6 +20,7 @@ export TENSORFLOW_SRC=`pwd`/tensorflow_env/tensorflow_src
 
 main() {
 
+    echo "Working Dir: $PWD"
     # Flatbuffers
     [ -d vcpkg ] || git clone https://github.com/Microsoft/vcpkg.git
     ./vcpkg/bootstrap-vcpkg.sh
@@ -73,6 +74,6 @@ main() {
     cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/delegates/gpu/libtensorflowlite_gpu_delegate.so /usr/lib/
 }
 
-pushd /home/
+pushd /home/tensorDSE
 main "$@"
 popd
