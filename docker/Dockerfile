@@ -93,6 +93,12 @@ COPY scripts/install_tf.sh /home/install_tf.sh
 RUN chmod +x /home/install_tf.sh
 RUN /home/install_tf.sh
 
+# Patches
+COPY patches /home/patches
+RUN ls /home/tensorflow_env
+RUN chmod +x /home/patches/patch.sh
+RUN /home/patches/patch.sh
+
 # Ports
 # EXPOSE 8080
 

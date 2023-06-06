@@ -1,0 +1,11 @@
+--- tensorflow_src/tensorflow/lite/kernels/internal/optimized/optimized_ops.h	2023-05-15 16:09:21.475021270 +0200
++++ optimized_ops.h	2023-06-06 14:07:31.133897077 +0200
+@@ -36,6 +36,8 @@
+ #include <Accelerate/Accelerate.h>
+ #endif
+ 
++#undef Success
++
+ #include "third_party/eigen3/Eigen/Core"
+ #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
+ #include "fixedpoint/fixedpoint.h"
