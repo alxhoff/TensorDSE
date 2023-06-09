@@ -113,7 +113,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--model",
-        default="resources/models/example_models/kws_ref_model.tflite",
+        default="resources/models/example_models/keyword_spotting/kws_ref_model.tflite",
         help="File path to the SOURCE .tflite file.",
     )
 
@@ -143,7 +143,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-n",
         "--summaryoutputname",
-        default="kws_ref_model",
+        default="kws_summary",
         help="Name that the model summary should have",
     )
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     args = GetArgs()
     DisableTFlogging()
 
-    #SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
+    SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
     print("Model summarized")
 
     BenchmarkModel(args.model, args.count, args.hardwaresummary, os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)))

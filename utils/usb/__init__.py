@@ -1,7 +1,8 @@
 from utils.usb.usb import capture_stream, START_DEPLOYMENT, END_DEPLOYMENT
 
 import sys
-from main import log
+#from main import log
+from ..model_lab.logger import log
 
 def init_usbmon() -> bool:
     import os

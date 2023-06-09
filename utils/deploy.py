@@ -159,6 +159,9 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
     output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
     inference_times_vector = np.zeros(count).astype(np.uint32)
 
+    if (hardware_target == "tpu"):
+        timers = []
+
     mean_inference_time = distributed_inference(
         m.model_path,
         input_data_vector,
@@ -171,6 +174,7 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
     )
 
     print(mean_inference_time)
+    print(inference_times_vector)
 
     m.results = inference_times_vector.tolist()
     
@@ -195,7 +199,7 @@ def BenchmarkModelLayers(
     Indicates the number of times each model will be deplyed.
     """
 
-    #from .usb import init_usbmon
+    from .usb import init_usbmon
     from utils.model_lab.logger import log
     
 
@@ -235,10 +239,10 @@ def BenchmarkModelLayers(
         log.info("No TPUs in hardware summary, skipping benchmarking")
     else:
         log.info(f"TPU is available on this machine!")
-        #if init_usbmon():
-        #    log.info("Needed to introduce usbmon module")
-        #else:
-        #    log.info("usbmon module already present")
+        if init_usbmon():
+            log.info("Needed to introduce usbmon module")
+        else:
+            log.info("usbmon module already present")
 
         for layer in model_summary["layers"]:
             m = BenchmarkLayer(Model(layer, "tpu", parent_model), count, "TPU")

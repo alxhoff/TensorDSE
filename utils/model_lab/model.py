@@ -62,7 +62,7 @@ class Submodel(Model):
         """
 
         #Read Main Graph
-        source_graph = self.source_model_json["subgraphs"][0]
+        source_graph = self.source_model_json["subgraphs"][0].copy()
 
         #Add version
         new_version = self.source_model_json["version"]
@@ -76,7 +76,7 @@ class Submodel(Model):
         new_opcodes = []
         for new_op in new_ops:
             if self.source_model_json["operator_codes"][new_op["opcode_index"]] not in new_opcodes:
-                new_opcodes.append(self.source_model_json["operator_codes"][new_op["opcode_index"]])
+                new_opcodes.append(self.source_model_json["operator_codes"][new_op["opcode_index"]].copy())
                 new_op["opcode_index"] = len(new_opcodes) - 1
             else:
                 new_op["opcode_index"] = new_opcodes.index(self.source_model_json["operator_codes"][new_op["opcode_index"]])
@@ -92,7 +92,7 @@ class Submodel(Model):
                         continue
                     else:
                         tensor_indexes.append(op_entry)
-                        new_tensors.append(source_graph["tensors"][op_entry])
+                        new_tensors.append(source_graph["tensors"][op_entry].copy())
                         new_op[entry][i] = len(new_tensors) - 1
 
         #Add Submodel Input and Output Tensors
@@ -112,17 +112,17 @@ class Submodel(Model):
         new_description = self.source_model_json["description"]
 
         #Add Buffers according to the newly added Tensors
-        new_buffers = []
+        new_buffers = [{}]
         for i,new_tensor in enumerate(new_tensors):
             buffer_index = new_tensor["buffer"]
-            new_buffers.append(self.source_model_json["buffers"][buffer_index])
+            new_buffers.append(self.source_model_json["buffers"][buffer_index].copy())
             new_tensor["buffer"] = len(new_buffers) - 1
         
         #Add metadata
         new_metadata = []
         if "metadata" in self.source_model_json.keys():
             for i, source_metadata in enumerate(self.source_model_json["metadata"]):
-                new_buffers.append(self.source_model_json["buffers"][source_metadata["buffer"]])
+                new_buffers.append(self.source_model_json["buffers"][source_metadata["buffer"]].copy())
                 new_metadata.append(source_metadata)
                 new_metadata[-1]["buffer"] = len(new_buffers) - 1
             self.json["metadata"]                    =   new_metadata
