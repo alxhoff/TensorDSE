@@ -9,6 +9,8 @@
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
 
+
+
 // GPU
 #define CL_TARGET_OPENCL_VERSION 220
 #include "tensorflow/lite/delegates/gpu/delegate.h"
@@ -28,11 +30,12 @@ int distributed_inference_cpu(std::string tflite_model_path, int8_t* input_data,
                                                              const unsigned int output_data_size,
                                                              const unsigned int benchmarking_count) {
     
+
     // Load the model
     std::cout << "Loading TFLite Model ..." << std::endl;
     std::unique_ptr<tflite::FlatBufferModel> model;
     model = LoadModelFile(tflite_model_path);
-    if (!model) {
+    if (model == nullptr) {
         std::cerr << "Failed to load model from " << tflite_model_path << std::endl;
         return -1;
     }
@@ -104,11 +107,12 @@ int distributed_inference_gpu(std::string tflite_model_path, int8_t* input_data,
                                                              const unsigned int output_data_size,
                                                              const unsigned int benchmarking_count) {
     
+
     // Load the model
     std::cout << "Loading TFLite Model ..." << std::endl;
     std::unique_ptr<tflite::FlatBufferModel> model;
     model = LoadModelFile(tflite_model_path);
-    if (!model) {
+    if (model == nullptr) {
         std::cerr << "Failed to load model from " << tflite_model_path << std::endl;
         return -1;
     }
@@ -186,7 +190,7 @@ int distributed_inference_tpu(std::string tflite_model_path, int8_t* input_data,
                                                              const unsigned int input_data_size, 
                                                              const unsigned int output_data_size,
                                                              const unsigned int benchmarking_count) {
-    
+
     // Find TPU device.
     std::cout << "Detecting Edge TPUs Devices ..." << std::endl;
     size_t num_devices;
@@ -204,7 +208,7 @@ int distributed_inference_tpu(std::string tflite_model_path, int8_t* input_data,
     std::cout << "Loading TFLite Model ..." << std::endl;
     std::unique_ptr<tflite::FlatBufferModel> model;
     model = LoadModelFile(tflite_model_path);
-    if (!model) {
+    if (model == nullptr) {
         std::cerr << "Failed to load model from " << tflite_model_path << std::endl;
         return -1;
     }
