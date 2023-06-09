@@ -31,7 +31,7 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
 
 
 def BenchmarkModel(model_path: str, count: int, hardware_summary_path: str, model_summary_path: str) -> None:
-    
+
     from utils.deploy import BenchmarkModelLayers
 
     from utils.model_lab.utils import ReadJSON
@@ -113,7 +113,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--model",
-        default="resources/models/example_models/keyword_spotting/kws_ref_model.tflite",
+        default="resources/models/example_models/kws_ref_model.tflite",
         help="File path to the SOURCE .tflite file.",
     )
 

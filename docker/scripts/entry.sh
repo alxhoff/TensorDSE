@@ -43,7 +43,7 @@ build(){
 }
 
 run() {
-    python3 main.py -m resources/example_models/MNIST.tflite \
+    python3 main.py -m resources/models/example_models/MNIST.tflite \
                     -c 10
 }
 
