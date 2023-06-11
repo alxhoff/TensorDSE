@@ -22,7 +22,7 @@ def DisableTFlogging() -> None:
 def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
     from os import system
 
-    command = "python resources/model_summaries/CreateModelSummary.py --model {} --outputdir {} --outputname {}".format(
+    command = "python3 resources/model_summaries/CreateModelSummary.py --model {} --outputdir {} --outputname {}".format(
         model, output_dir, output_name
     )
 

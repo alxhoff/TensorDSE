@@ -98,8 +98,11 @@ class Submodel(Model):
         #Add Submodel Input and Output Tensors
         new_inputs = []
         new_outputs = []
-        new_inputs.append(new_ops[0]["inputs"][0])
-        new_outputs.append(new_ops[-1]["outputs"][0])
+        for op_input in new_ops[0]["inputs"]:
+            new_inputs.append(op_input)
+        for op_output in new_ops[-1]["outputs"]:
+            new_outputs.append(op_output)
+        
 
         #Add Subgraph Name
         if "name" in source_graph.keys():
@@ -115,8 +118,9 @@ class Submodel(Model):
         new_buffers = [{}]
         for i,new_tensor in enumerate(new_tensors):
             buffer_index = new_tensor["buffer"]
-            new_buffers.append(self.source_model_json["buffers"][buffer_index].copy())
-            new_tensor["buffer"] = len(new_buffers) - 1
+            if (buffer_index > 0):
+                new_buffers.append(self.source_model_json["buffers"][buffer_index].copy())
+                new_tensor["buffer"] = len(new_buffers) - 1
         
         #Add metadata
         new_metadata = []

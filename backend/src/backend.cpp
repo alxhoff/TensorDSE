@@ -80,7 +80,7 @@ int distributed_inference_cpu(std::string tflite_model_path, int8_t* input_data,
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
         auto inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(inference_end - inference_start).count();
-        inference_times_vec.push_back(inference_time_ns);
+        inference_times_vec[i] = inference_time_ns;
     }
     
     if (benchmarking_count > 1) {
@@ -92,6 +92,7 @@ int distributed_inference_cpu(std::string tflite_model_path, int8_t* input_data,
     std::vector<int8_t> final_data = GetTensorData(*interpreter->output_tensor(0));
     
     std::copy(final_data.begin(), final_data.end(), output_data);
+    
     std::copy(inference_times_vec.begin(), inference_times_vec.end(), inference_times);
 
     int mean = calculateMean(inference_times_vec);
@@ -164,7 +165,7 @@ int distributed_inference_gpu(std::string tflite_model_path, int8_t* input_data,
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
         auto inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(inference_end - inference_start).count();
-        inference_times_vec.push_back(inference_time_ns);
+        inference_times_vec[i] = inference_time_ns;
     }
     
     if (benchmarking_count > 1) {
@@ -256,7 +257,7 @@ int distributed_inference_tpu(std::string tflite_model_path, int8_t* input_data,
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
         auto inference_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(inference_end - inference_start).count();
-        inference_times_vec.push_back(inference_time_ns);
+        inference_times_vec[i] = inference_time_ns;
     }
 
     if (benchmarking_count > 1) {

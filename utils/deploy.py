@@ -81,29 +81,15 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
     import numpy as np
     import platform
 
+    from backend.distributed_inference import distributed_inference
+
     DEPLOY_WAIT_TIME = 10
-    TPU_LIBRARY = {
-        "Linux": "libedgetpu.so.1",
-        "Darwin": "libedgetpu.1.dylib",
-        "Windows": "edgetpu.dll",
-    }[platform.system()]
 
     results = []
     timers = []
 
-    interpreter = MakeInterpreterTPU(m.model_path, TPU_LIBRARY)
-    interpreter.allocate_tensors()
-
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-
-    input_data = np.array(
-        np.random.random_sample(input_details[0]["shape"]),  # input shape
-        dtype=input_details[0]["dtype"],
-    )  # input dtype
-
-    interpreter.set_tensor(input_details[0]["index"], input_data)
-    m.set_input(input_details[0]["shape"], input_details[0]["dtype"])
+    input_size  = GetArraySizeFromShape(m.input_shape)
+    output_size = GetArraySizeFromShape(m.output_shape)
 
     for i in range(count):
         signalsQ = Queue()
@@ -120,13 +106,27 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
             p.join()
             break
 
-        time.sleep(DEPLOY_WAIT_TIME)
-        start = time.perf_counter()  # START
-        interpreter.invoke()  # RUNS
-        inference_time = time.perf_counter() - start  # END
+        input_data_vector = np.array(
+            np.random.random_sample(input_size),
+            dtype=m.get_np_dtype(m.input_datatype),
+        )
+        output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
+        inference_times_vector = np.zeros(count).astype(np.uint32)
 
-        _ = interpreter.get_tensor(output_details[0]["index"])  # output data
-        results.append(inference_time)
+        time.sleep(DEPLOY_WAIT_TIME)
+
+        mean_inference_time = distributed_inference(
+            m.model_path,
+            input_data_vector,
+            output_data_vector, 
+            inference_times_vector,
+            len(input_data_vector), 
+            len(output_data_vector), 
+            "TPU", 
+            1
+        )
+
+        results.append(mean_inference_time)
 
         data = dataQ.get()
         if not data == {}:
@@ -152,31 +152,30 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
 
     m.model_path = os.path.join(LAYERS_DIR, "submodel_{0}_{1}_bm.tflite".format(m.details["index"], m.details["type"]))
 
-    input_size  = GetArraySizeFromShape(m.input_shape)
-    output_size = GetArraySizeFromShape(m.output_shape)
-
-    input_data_vector = np.zeros(input_size).astype(m.get_np_dtype(m.input_datatype))
-    output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
-    inference_times_vector = np.zeros(count).astype(np.uint32)
-
     if (hardware_target == "tpu"):
-        timers = []
+        m = TPUDeploy(m=m, count=count)
+    else:
+        input_size  = GetArraySizeFromShape(m.input_shape)
+        output_size = GetArraySizeFromShape(m.output_shape)
 
-    mean_inference_time = distributed_inference(
-        m.model_path,
-        input_data_vector,
-        output_data_vector, 
-        inference_times_vector,
-        len(input_data_vector), 
-        len(output_data_vector), 
-        hardware_target, 
-        count
-    )
+        input_data_vector = np.zeros(input_size).astype(m.get_np_dtype(m.input_datatype))
+        output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
+        inference_times_vector = np.zeros(count).astype(np.uint32)
 
-    print(mean_inference_time)
-    print(inference_times_vector)
+        mean_inference_time = distributed_inference(
+            m.model_path,
+            input_data_vector,
+            output_data_vector, 
+            inference_times_vector,
+            len(input_data_vector), 
+            len(output_data_vector), 
+            hardware_target, 
+            count
+        )
+        print(mean_inference_time)
+        print(inference_times_vector)
 
-    m.results = inference_times_vector.tolist()
+        m.results = inference_times_vector.tolist()
     
     return m
 
@@ -200,6 +199,7 @@ def BenchmarkModelLayers(
     """
 
     from .usb import init_usbmon
+    from .analysis import AnalyzeLayerResults
     from utils.model_lab.logger import log
     
 
@@ -246,8 +246,7 @@ def BenchmarkModelLayers(
 
         for layer in model_summary["layers"]:
             m = BenchmarkLayer(Model(layer, "tpu", parent_model), count, "TPU")
-            models["tpu"].append(m)
-            
+            #AnalyzeLayerResults(m, "tpu")
 
     return models
 
