@@ -38,10 +38,6 @@ test() {
                           -t 10
 }
 
-build(){
-    make -C backend build
-}
-
 run() {
     python3 main.py -m resources/models/example_models/MNIST.tflite \
                     -c 10
@@ -55,7 +51,6 @@ main() {
     elif [ "$mode" -eq $SHELL_MODE ]; then
         bash
     else
-        build
         run
     fi
 }

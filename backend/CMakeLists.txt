@@ -8,13 +8,21 @@ endif()
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-set(TF_ENV ${PROJECT_SOURCE_DIR}/../tensorflow_env)
-set(TF_SRC ${TF_ENV}/tensorflow_src)
-set(SKIP_TF_LIB TRUE)
-set(FB_SRC ${TF_SRC}/third_party/flatbuffers)
+if(NOT DEFINED TF_ENV)
+    set(TF_ENV ${PROJECT_SOURCE_DIR}/../tensorflow_env)
+endif()
+message(STATUS "TF_ENV: ${TF_ENV}")
 
-find_package(TFLite REQUIRED)
+if(NOT DEFINED TF_SRC)
+    set(TF_SRC ${TF_ENV}/tensorflow_src)
+endif()
+message(STATUS "TF_SRC: ${TF_SRC}")
+
+set(SKIP_TF_LIB TRUE)
+set(FB_SRC ${TF_ENV}/flatbuffers)
+
 find_package(Flatbuffers REQUIRED)
+find_package(TFLite REQUIRED)
 
 set(LIB_SOURCES)
 

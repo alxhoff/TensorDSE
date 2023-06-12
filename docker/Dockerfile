@@ -1,9 +1,9 @@
 # Installer
 # FROM ubuntu:20.04
 FROM tensorflow/tensorflow:latest-gpu
-LABEL Author="Daniel Duclos-Cavalcanti"
-LABEL Email="daniel.duclos-cavalcanti@gmail.com"
-LABEL Maintainer="Daniel Duclos-Cavalcanti"
+LABEL Author="Daniel Duclos-Cavalcanti & Alex Hoffman"
+LABEL Email="daniel.duclos-cavalcanti@gmail.com & alxhoff@gmail.com"
+LABEL Maintainer="Alex Hoffman"
 
 ARG USER_NAME="coral-docker"
 ARG DEBIAN_FRONTEND="noninteractive"
@@ -19,7 +19,7 @@ RUN apt-get update \
     usbutils udev lshw \
     software-properties-common \
     && apt-get clean \
-    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen && update-locale 
+    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen && update-locale
 
 # CoralDev Apt Paackages
 RUN echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" \
@@ -56,7 +56,7 @@ RUN apt-get install -y python3-pycoral
 # RUN pip install --extra-index-url https://google-coral.github.io/py-repo/ pycoral~=2.0
 
 # CUDA
-RUN apt-get install -y nvidia-cuda-dev  nvidia-cuda-toolkit 
+RUN apt-get install -y nvidia-cuda-dev  nvidia-cuda-toolkit
 # RUN apt-get install -y libcudnn8
 
 # CUBLAS
@@ -88,6 +88,21 @@ RUN sudo apt install -y clinfo
 # script to build delegates
 RUN apt-get install -y libegl1-mesa-dev
 
+# Flatbuffers
+COPY scripts/install_flatbuffers.sh /home/install_flatbuffers.sh
+RUN chmod +x /home/install_flatbuffers.sh
+RUN /home/install_flatbuffers.sh
+
+# Sources
+COPY scripts/pull_sources.sh /home/pull_sources.sh
+RUN chmod +x /home/pull_sources.sh
+RUN /home/pull_sources.sh
+
+# TF Deps
+COPY scripts/download_tf_deps.sh /home/download_tf_deps.sh
+RUN chmod +x /home/download_tf_deps.sh
+RUN /home/download_tf_deps.sh
+
 # Tensorflow + GPU Delegate
 COPY scripts/install_tf.sh /home/install_tf.sh
 RUN chmod +x /home/install_tf.sh
@@ -95,9 +110,13 @@ RUN /home/install_tf.sh
 
 # Patches
 COPY patches /home/patches
-RUN ls /home/tensorflow_env
 RUN chmod +x /home/patches/patch.sh
 RUN /home/patches/patch.sh
+
+# Build and install backend
+COPY scripts/build_backend.sh /home/build_backend.sh
+RUN chmod +x /home/build_backend.sh
+RUN /home/build_backend.sh
 
 # Ports
 # EXPOSE 8080

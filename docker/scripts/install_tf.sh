@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# see the original bash script for more detailed information
-# https://github.com/terryky/tflite_gles_app/blob/master/tools/scripts/tf2.9/build_libtflite_r2.9.sh
-
 set -e
 
 if ! command -v bazel &>/dev/null; then
@@ -23,24 +20,7 @@ export TENSORFLOW_SRC=`pwd`/tensorflow_env/tensorflow_src
 
 main() {
 
-    echo "Working Dir: $PWD"
-    # Flatbuffers
-    [ -d vcpkg ] || git clone https://github.com/Microsoft/vcpkg.git
-    ./vcpkg/bootstrap-vcpkg.sh
-    ./vcpkg/vcpkg integrate install
-    ./vcpkg/vcpkg install flatbuffers
-    [ -f /usr/local/bin/flatc ] || ln -s /home/tensorDSE/vcpkg/installed/x64-linux/tools/flatbuffers/flatc /usr/local/bin/flatc
-    chmod +x /home/tensorDSE/vcpkg/installed/x64-linux/tools/flatbuffers/flatc
-
-    [ -d tensorflow_env ] || mkdir tensorflow_env
-    cd tensorflow_env
-    [ -d tensorflow_src ] || git clone -b ${TENSORFLOW_VER} --depth 1 https://github.com/tensorflow/tensorflow.git tensorflow_src
-    [ -d edgetpu ] || git clone https://github.com/google-coral/edgetpu.git
-
-    # download build dependencies
-    [ -d tflite_build ] || mkdir tflite_build
-    cd tflite_build
-    cmake ../tensorflow_src/tensorflow/lite -DTFLITE_ENABLE_GPU=ON -DCMAKE_FIND_DEBUG_MODE=1 2>&1 | tee -a log_cmake.txt
+    echo "Working Dir: $(pwd)"
 
     # clean up bazel cache, just in case.
     cd ${TENSORFLOW_SRC}
@@ -50,7 +30,6 @@ main() {
     echo " (configure) press ENTER-KEY several times.         "
     echo "----------------------------------------------------"
     ./configure
-
 
     # ---------------
     #  Bazel build

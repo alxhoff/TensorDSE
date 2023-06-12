@@ -8,9 +8,9 @@ def compile_interface(verbose:bool = True) -> object:
   print(os.getcwd())
   ffi.set_source("cpp_interface",
                  """#include "interface.h" """,
-                 include_dirs=['../../tensorflow_env/tensorflow_src', 'include'],
+                 include_dirs=['/home/tensorDSE/tensorflow_env/tensorflow_src', 'include'],
                  libraries=['backend', 'tensorflowlite', 'tensorflowlite_gpu_delegate'],
-                 library_dirs=['../tensorflow_env/bazel-output/'],
+                 library_dirs=['/usr/lib'],
                  source_extension='.cpp')
 
   return ffi.compile(verbose=verbose)

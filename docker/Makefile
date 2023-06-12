@@ -55,6 +55,7 @@ run: $(if $(call exist-docker-image),,build)
 		docker stop ${NAME}; \
 		docker rm ${NAME}; \
 	fi; \
+	docker rm $(docker ps -aq --filter name=${NAME}); \
 	docker run --name ${NAME} \
 			   --privileged \
 			   --net host \
@@ -74,7 +75,7 @@ test:
 	$(MAKE) -f ${FILE} run MODE=${TEST_MODE}
 
 shell:
-	$(MAKE) -f ${FILE} run MODE=${SHELL_MODE} 
+	$(MAKE) -f ${FILE} run MODE=${SHELL_MODE}
 
 capture:
 	ipdb3 scripts/capture.py
@@ -111,4 +112,3 @@ clean:
 purge: stop rm
 
 purge-all: stop-all rm-all purge
-
