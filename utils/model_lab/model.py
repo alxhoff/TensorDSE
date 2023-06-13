@@ -98,10 +98,8 @@ class Submodel(Model):
         #Add Submodel Input and Output Tensors
         new_inputs = []
         new_outputs = []
-        for op_input in new_ops[0]["inputs"]:
-            new_inputs.append(op_input)
-        for op_output in new_ops[-1]["outputs"]:
-            new_outputs.append(op_output)
+        new_inputs.append(new_ops[0]["inputs"][0])
+        new_outputs.append(new_ops[-1]["outputs"][0])
         
 
         #Add Subgraph Name

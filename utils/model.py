@@ -5,6 +5,7 @@ class Model:
         self.parent         = parent
         self.model_path     = ""
         self.model_name     = layer["type"]
+        self.index          = layer["index"]
         self.results        = []
         self.timers         = []
         self.set_input_details()

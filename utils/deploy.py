@@ -71,15 +71,12 @@ def MakeInterpreterTPU(model_file: str, library: str):
 
 def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
     from multiprocessing import Process, Queue
-    import queue
-    from main import log
     from utils.log import Log
     from utils.usb import END_DEPLOYMENT
     from utils.usb.usb import capture_stream
     import sys
     import time
     import numpy as np
-    import platform
 
     from backend.distributed_inference import distributed_inference
 
@@ -97,7 +94,7 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
 
         p = Process(
             target=capture_stream,
-            args=(signalsQ, dataQ, timeout, Log(f"results/{m.model_name}_USB.log")),
+            args=(signalsQ, dataQ, timeout, Log(f"resources/results/layer_{m.index}_{m.model_name}_USB.log")),
         )
         p.start()
 
@@ -128,10 +125,18 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
 
         results.append(mean_inference_time)
 
-        data = dataQ.get()
+        try:
+            data = dataQ.get(block=False)
+            if dataQ.empty:
+                raise Exception
+        except Exception as e:
+            data = None
+
         if not data == {}:
             timers.append(data)
-        p.join()
+            
+        if p.is_alive():
+            p.join()
 
         sys.stdout.write(f"\r {i+1}/{count} for TPU ran -> {m.model_name}")
         sys.stdout.flush()
@@ -152,7 +157,7 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
 
     m.model_path = os.path.join(LAYERS_DIR, "submodel_{0}_{1}_bm.tflite".format(m.details["index"], m.details["type"]))
 
-    if (hardware_target == "tpu"):
+    if (hardware_target == "TPU"):
         m = TPUDeploy(m=m, count=count)
     else:
         input_size  = GetArraySizeFromShape(m.input_shape)
