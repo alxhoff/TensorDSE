@@ -1,5 +1,5 @@
 {
-    "name": "kws_summary",
+    "name": "kws_ref_summary",
     "starting_tensor": "0",
     "finishing_tensor": "34",
     "layers": [
