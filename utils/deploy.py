@@ -126,17 +126,18 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
         results.append(mean_inference_time)
 
         try:
-            data = dataQ.get(block=False)
+            data = dataQ.get(block=False, timeout=0.1)
             if dataQ.empty:
                 raise Exception
         except Exception as e:
+            print("DATA QUEUE IS EMPTY!")
             data = None
 
         if not data == {}:
             timers.append(data)
             
         if p.is_alive():
-            p.join()
+            p.join(timeout=0.1)
 
         sys.stdout.write(f"\r {i+1}/{count} for TPU ran -> {m.model_name}")
         sys.stdout.flush()
@@ -152,14 +153,17 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
     import os
     import numpy as np
 
-    from utils.model_lab.split import LAYERS_DIR
+    from utils.model_lab.split import LAYERS_DIR, COMPILED_DIR
     from backend.distributed_inference import distributed_inference
 
-    m.model_path = os.path.join(LAYERS_DIR, "submodel_{0}_{1}_bm.tflite".format(m.details["index"], m.details["type"]))
 
     if (hardware_target == "TPU"):
+        m.model_path = os.path.join(COMPILED_DIR, "submodel_{0}_{1}_bm_edgetpu.tflite".format(m.details["index"], m.details["type"]))
         m = TPUDeploy(m=m, count=count)
     else:
+        
+        m.model_path = os.path.join(LAYERS_DIR, "submodel_{0}_{1}_bm.tflite".format(m.details["index"], m.details["type"]))
+
         input_size  = GetArraySizeFromShape(m.input_shape)
         output_size = GetArraySizeFromShape(m.output_shape)
 
@@ -167,6 +171,7 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
         output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
         inference_times_vector = np.zeros(count).astype(np.uint32)
 
+        print(m.model_path)
         mean_inference_time = distributed_inference(
             m.model_path,
             input_data_vector,

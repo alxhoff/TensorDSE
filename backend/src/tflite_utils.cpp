@@ -17,7 +17,7 @@
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
-#include <tensorflow/lite/core/api/error_reporter.h> 
+#include <tensorflow/lite/core/api/error_reporter.h>
 
 
 #include "tflite_utils.h"
@@ -210,12 +210,6 @@ std::vector<std::pair<int, float>> Sort(const std::vector<float>& scores,
     for (auto it = ptrs.begin(); it != end; ++it)
         result.emplace_back(*it - scores.data(), **it);
     return result;
-}
-
-std::unique_ptr<tflite::FlatBufferModel> LoadModelFile(std::string filepath) {
-    std::unique_ptr<tflite::FlatBufferModel> model =
-    tflite::FlatBufferModel::BuildFromFile(filepath.c_str());
-    return model;
 }
 
 int calculateMean(const std::vector<uint32_t>& values) {

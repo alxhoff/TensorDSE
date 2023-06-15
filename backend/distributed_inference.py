@@ -21,21 +21,13 @@ def distributed_inference(
 
     _ffi = FFI()
 
-    encoded_string = tflite_model_path.encode("utf-8")
-    c_str = _ffi.new("char[]", len(encoded_string) + 1)
-    _ffi.memmove(c_str, encoded_string, len(encoded_string))
-    tflite_model_path_ptr = _ffi.cast("char*", c_str)
-
-    encoded_string = hardware_target.encode("utf-8")
-    c_str = _ffi.new("char[]", len(encoded_string) + 1)
-    _ffi.memmove(c_str, encoded_string, len(encoded_string))
-    hardware_target_ptr = _ffi.cast("char*", c_str)
-
+    tflite_model_path_ptr = _ffi.new("char[]", tflite_model_path.encode("utf-8"))
+    hardware_target_ptr = _ffi.new("char[]", hardware_target.encode("utf-8"))
+    
     input_data_ptr = _ffi.cast("int8_t*", input_data.ctypes.data)
     output_data_ptr = _ffi.cast("int8_t*", output_data.ctypes.data)
     inference_times_ptr = _ffi.cast("uint32_t*", inference_times.ctypes.data)
     
-
     result = cpp_interface.lib.distributed_inference_interface(tflite_model_path_ptr, input_data_ptr,
                                                                                       output_data_ptr,
                                                                                       inference_times_ptr, 

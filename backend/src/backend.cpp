@@ -23,7 +23,7 @@
 #include "tflite_utils.h"
 #include "backend.h"
 
-int distributed_inference_cpu(std::string tflite_model_path, int8_t* input_data, 
+int distributed_inference_cpu(std::string& tflite_model_path, int8_t* input_data, 
                                                              int8_t* output_data,
                                                              uint32_t* inference_times, 
                                                              const unsigned int input_data_size, 
@@ -101,7 +101,7 @@ int distributed_inference_cpu(std::string tflite_model_path, int8_t* input_data,
 
 }
 
-int distributed_inference_gpu(std::string tflite_model_path, int8_t* input_data, 
+int distributed_inference_gpu(std::string& tflite_model_path, int8_t* input_data, 
                                                              int8_t* output_data,
                                                              uint32_t* inference_times, 
                                                              const unsigned int input_data_size, 
@@ -185,7 +185,7 @@ int distributed_inference_gpu(std::string tflite_model_path, int8_t* input_data,
 
 }
 
-int distributed_inference_tpu(std::string tflite_model_path, int8_t* input_data, 
+int distributed_inference_tpu(std::string& tflite_model_path, int8_t* input_data, 
                                                              int8_t* output_data,
                                                              uint32_t* inference_times, 
                                                              const unsigned int input_data_size, 
@@ -278,14 +278,13 @@ int distributed_inference_tpu(std::string tflite_model_path, int8_t* input_data,
 }
 
 
-int distributed_inference_wrapper(std::string tflite_model_path, int8_t* input_data, 
+int distributed_inference_wrapper(std::string& tflite_model_path, int8_t* input_data, 
                                                                  int8_t* output_data,
                                                                  uint32_t* inference_times, 
                                                                  const unsigned int input_data_size, 
                                                                  const unsigned int output_data_size,
-                                                                 std::string hardware_target,
+                                                                 std::string& hardware_target,
                                                                  const unsigned int benchmarking_count) {
-    std::cout << hardware_target << std::endl;
     int result = 0;
     if (hardware_target.compare("CPU") == 0) {
         result = distributed_inference_cpu(tflite_model_path, input_data, 

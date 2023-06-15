@@ -143,7 +143,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-n",
         "--summaryoutputname",
-        default="kws_summary",
+        default="kws_ref_summary",
         help="Name that the model summary should have",
     )
 

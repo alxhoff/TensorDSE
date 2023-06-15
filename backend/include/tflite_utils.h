@@ -33,7 +33,7 @@ std::vector<float> Dequantize(const TfLiteTensor& tensor);
 std::vector<std::pair<int, float>> Sort(const std::vector<float>& scores,
                                         float threshold);
 
-std::unique_ptr<tflite::FlatBufferModel> LoadModelFile(std::string filepath);
+std::unique_ptr<tflite::FlatBufferModel> LoadModelFile(std::string& filepath);
 
 int calculateMean(const std::vector<uint32_t>& values);
 
