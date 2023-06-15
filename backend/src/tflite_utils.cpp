@@ -212,6 +212,13 @@ std::vector<std::pair<int, float>> Sort(const std::vector<float>& scores,
     return result;
 }
 
+std::unique_ptr<tflite::FlatBufferModel> LoadModelFile(std::string& filepath) {
+    tflite::ErrorReporter* error_reporter;
+    std::unique_ptr<tflite::FlatBufferModel> model =
+    tflite::FlatBufferModel::BuildFromFile(filepath.c_str(), error_reporter);
+    return model;
+}
+
 int calculateMean(const std::vector<uint32_t>& values) {
     if (values.empty()) {
         return 0;
