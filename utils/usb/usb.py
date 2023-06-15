@@ -59,30 +59,41 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
 
     timer = Timer(MAX_TIME_CAPTURE, start_now=True)
     ctimer = ConditionalTimer(timeout)
-    for raw_packet in capture.sniff_continuously():
-        p = UsbPacket(raw_packet, id, addr)
 
+    for i, raw_packet in enumerate(capture.sniff_continuously()):
+        print("Processing packet Nr. {}".format(i))
+        p = UsbPacket(raw_packet, id, addr)
+        
         if ctimer.reached_timeout():
+            print("Conditional Timer reached timeout!")
             context.timed_out()
             break
 
         elif timer.reached_timeout():
+            print("Timer reached timeout!")
             context.maxed_out()
             break
 
         else:
             if context.stream_valid(p):
+                print("Context is valid!")
                 if context.has_data_trafficked(): # only returns true once at most
+                    print("Context has data trafficked!")
                     ctimer.set_conditional_flag()
                     ctimer.start()
 
                 if context.contains_host_data(p):
+                    print("Context contains host data!")
                     context.timestamp_host_data(p)
                     continue
 
                 if context.contains_tpu_data(p):
+                    print("Context contains tpu data!")
                     context.timestamp_tpu_data(p)
                     ctimer.restart()
                     continue
+            else:
+                print("Context stream not valid!")
 
+    print("Current Data Queue size is: {0}".format(dataQ.qsize()))
     dataQ.put(context.conclude())

@@ -126,18 +126,15 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
         results.append(mean_inference_time)
 
         try:
-            data = dataQ.get(block=False, timeout=0.1)
-            if dataQ.empty:
-                raise Exception
+            data = dataQ.get()
         except Exception as e:
-            print("DATA QUEUE IS EMPTY!")
             data = None
 
         if not data == {}:
             timers.append(data)
             
         if p.is_alive():
-            p.join(timeout=0.1)
+            p.join()
 
         sys.stdout.write(f"\r {i+1}/{count} for TPU ran -> {m.model_name}")
         sys.stdout.flush()
