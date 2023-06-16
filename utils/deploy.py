@@ -94,7 +94,7 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
 
         p = Process(
             target=capture_stream,
-            args=(signalsQ, dataQ, timeout, Log(f"resources/results/layer_{m.index}_{m.model_name}_USB.log")),
+            args=(signalsQ, dataQ, timeout, Log(f"resources/logs/layer_{m.index}_{m.model_name}_USB.log")),
         )
         p.start()
 
@@ -168,7 +168,6 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
         output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
         inference_times_vector = np.zeros(count).astype(np.uint32)
 
-        print(m.model_path)
         mean_inference_time = distributed_inference(
             m.model_path,
             input_data_vector,
@@ -179,8 +178,6 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
             hardware_target, 
             count
         )
-        print(mean_inference_time)
-        print(inference_times_vector)
 
         m.results = inference_times_vector.tolist()
     

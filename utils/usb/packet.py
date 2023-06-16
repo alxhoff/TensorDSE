@@ -95,9 +95,9 @@ class UsbPacket:
 
     def verify_data_presence(self):
         """Finds if the overloaded packet contains actual DATA being sent."""
-        if self.data_flag in ('>', '<'):
+        if (('>' in self.data_flag) or ('<' in self.data_flag)):
             self.present_data = False
-        elif self.data_flag == 'present (0)':
+        elif (self.data_flag == 'present (0)') or ('\\0' in self.data_flag):
             self.present_data = True
         elif 'not present' in self.data_flag:
             self.present_data = False
