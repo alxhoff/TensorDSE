@@ -48,7 +48,9 @@ info:
 build:
 	@$(info "Grab a coffee, building will take some time...")
 	@sleep 1s
-	@docker build . -t ${REPO}:${TAG}
+	@echo "Input Gurobi 'grbgetkey' code, see 'https://portal.gurobi.com/iam/licenses/list/' for a list of your licences"; \
+	read -p "Key:" GUROBI_KEY; \
+	docker build -t ${REPO}:${TAG} --build-arg GKEY=$$GUROBI_KEY .
 
 run: $(if $(call exist-docker-image),,build)
 	@if [ -n "$(call is-docker-running)" ]; then \

@@ -91,6 +91,24 @@ RUN chmod +x /home/patches/patch.sh && /home/patches/patch.sh
 COPY scripts/build_backend.sh /home/build_backend.sh
 RUN chmod +x /home/build_backend.sh && /home/build_backend.sh
 
+# Gradle for DSE
+RUN curl -s "https://get.sdkman.io" | bash && \
+chmod +x /root/.sdkman/bin/sdkman-init.sh && \
+source /root/.sdkman/bin/sdkman-init.sh && sdk install gradle 6.9.4 && \
+ln -sf /root/.sdkman/candidates/gradle/6.9.4/bin/gradle /usr/bin/gradle6
+
+# Gurobi
+WORKDIR /opt
+RUN echo $GKEY
+RUN wget https://packages.gurobi.com/9.5/gurobi9.5.2_linux64.tar.gz && \
+tar -xzf gurobi9.5.2_linux64.tar.gz && \
+export GUROBI_HOME=/opt/gurobi952/linux64 && \
+echo "export GUROBI_HOME=/opt/gurobi952/linux64" >> /root/.bashrc && \
+export PATH=$GUROBI_HOME/bin:$PATH && \
+echo "export PATH=$GUROBI_HOME/bin:$PATH" >> /root/.bashrc && \
+export LD_LIBRARY_PATH=$GUROBI_HOME/lib:$LD_LIBRARY_PATH && \
+echo "export LD_LIBRARY_PATH=$GUROBI_HOME/lib:$LD_LIBRARY_PATH" >> /root/.bashrc && \
+grbgetkey $GKEY
 
 
 # ENV Variables
