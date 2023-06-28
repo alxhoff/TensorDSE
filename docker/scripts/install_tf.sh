@@ -45,9 +45,6 @@ main() {
     echo "----------------------------------------------------"
 
     cd ${TENSORFLOW_SRC}
-    #ls -l tensorflow/lite/tools/make/gen/linux_x86_64/lib/
-    ls -l bazel-bin/tensorflow/lite/
-    ls -l bazel-bin/tensorflow/lite/delegates/gpu/
 
     [ -d /home/tensorDSE/tensorflow_env/bazel-output ] || mkdir -p /home/tensorDSE/tensorflow_env/bazel-output
     cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/libtensorflowlite.so /home/tensorDSE/tensorflow_env/bazel-output/
