@@ -80,7 +80,7 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
 
     from backend.distributed_inference import distributed_inference
 
-    DEPLOY_WAIT_TIME = 10
+    DEPLOY_WAIT_TIME = 1
 
     results = []
     timers = []

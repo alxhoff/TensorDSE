@@ -12,7 +12,8 @@ MAX_TIME_CAPTURE=90 # minute and a half
 
 def get_filter(addr:str) -> str:
     return (
-    f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
+    #f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
+    f"usb.device_address=={addr}"
     )
 
 def get_tpu_ids():
@@ -30,7 +31,7 @@ def get_tpu_ids():
     device = line.split()[3].split(":")[0]
 
     while device.startswith("0"):
-        device = device[1:]
+        device = device[-1]
 
     return bus, device
 
@@ -57,43 +58,25 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
     capture = pyshark.LiveCapture(interface='usbmon0', display_filter=get_filter(addr))
     signalsQ.put(START_DEPLOYMENT)
 
-    timer = Timer(MAX_TIME_CAPTURE, start_now=True)
-    ctimer = ConditionalTimer(timeout)
-
+    l.info("- Packet Capture is started -")
     for i, raw_packet in enumerate(capture.sniff_continuously()):
-        print("Processing packet Nr. {}".format(i))
+        l.info("   - Frame Nr. {} -   ".format(i))
         p = UsbPacket(raw_packet, id, addr)
-        
-        if ctimer.reached_timeout():
-            print("Conditional Timer reached timeout!")
-            context.timed_out()
-            break
+        context.set_phase(p)
+        l.info("   - Current Communication phase is: {} -   ".format(context.current_phase))
 
-        elif timer.reached_timeout():
-            print("Timer reached timeout!")
-            context.maxed_out()
+        if (context.is_inference_ended()):
             break
 
         else:
             if context.stream_valid(p):
-                print("Context is valid!")
-                if context.has_data_trafficked(): # only returns true once at most
-                    print("Context has data trafficked!")
-                    ctimer.set_conditional_flag()
-                    ctimer.start()
-
                 if context.contains_host_data(p):
-                    print("Context contains host data!")
+                    l.info("        - Host is communicating Data to Edge TPU -        ")
                     context.timestamp_host_data(p)
-                    continue
 
                 if context.contains_tpu_data(p):
-                    print("Context contains tpu data!")
+                    l.info("        - Edge TPU is communicating Data to Host -        ")
                     context.timestamp_tpu_data(p)
-                    ctimer.restart()
-                    continue
-            else:
-                print("Context stream not valid!")
 
-    print("Current Data Queue size is: {0}".format(dataQ.qsize()))
+    l.info("- Packet Capture is complete -")
     dataQ.put(context.conclude())

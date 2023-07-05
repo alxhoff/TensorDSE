@@ -5,6 +5,7 @@ class StreamContext:
         self.interrupts = []
         self.timeout = False
         self.max_timeout = False
+        self.current_phase = 'WAITING_IN'
 
         self.BEGIN = False
         self.END = False
@@ -143,3 +144,16 @@ class StreamContext:
                     "reason" : "unknown"
                 },
             }
+    
+    def set_phase(self, p:UsbPacket):
+        if (self.current_phase == 'WAITING_IN'):
+            if ('BULK' in p.transfer_type) or ('INTERRUPT' in p.transfer_type):
+                self.current_phase = 'TRANSFER'
+        elif (self.current_phase == 'TRANSFER'):
+            if ('CONTROL' in p.transfer_type):
+                self.current_phase = 'WAITING_OUT'
+
+    def is_inference_ended(self):
+        return (self.current_phase == 'WAITING_OUT')
+
+        
