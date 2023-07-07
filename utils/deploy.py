@@ -250,7 +250,7 @@ def BenchmarkModelLayers(
 
         for layer in model_summary["layers"]:
             m = BenchmarkLayer(Model(layer, "tpu", parent_model), count, "TPU")
-            #AnalyzeLayerResults(m, "tpu")
+            AnalyzeLayerResults(m, "tpu")
 
     return models
 
