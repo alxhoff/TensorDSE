@@ -78,7 +78,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
 
     packets = []
     context = StreamContext()
-    capture = pyshark.LiveCapture(interface='usbmon4', display_filter=get_filter(addr))
+    capture = pyshark.LiveCapture(interface='usbmon0', display_filter=get_filter(addr))
     signalsQ.put(START_DEPLOYMENT)
 
     max_timer = Timer(MAX_TIME_CAPTURE, start_now=True)

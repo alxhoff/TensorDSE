@@ -1,5 +1,5 @@
 {
-    "CPU_cores": "0",
-    "GPU_count": "0",
+    "CPU_cores": "1",
+    "GPU_count": "1",
     "TPU_count": "1"
 }

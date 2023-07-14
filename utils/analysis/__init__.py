@@ -9,7 +9,8 @@ def ExportResults(file:str, data:Dict) -> None:
         json.dump(json_data, json_file, indent=4)
 
 def AnalyzeModelResults(parent_model:str, models_dict:Dict):
-    from main import log, RESULTS_FOLDER
+    from main import RESULTS_FOLDER
+    from utils.model_lab.logger import log
     from utils import device_count
     from utils.usb.process import process_streams
     from utils.analysis.analysis import Analyzer
@@ -29,6 +30,8 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
        log.error(f"{RESULTS_FOLDER} is not a valid folder to store results!")
        sys.exit(-1)
 
+    names = []
+
     for delegate in ("cpu", "gpu", "tpu"):
         if not models_dict[delegate]:
             log.warning(f"Models dictionary does not contain results for delegate: {delegate}")
@@ -36,70 +39,45 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
             continue
 
         for m in models_dict[delegate]:
-            log.info(f"Analyzing results of operation: {m.model_name} ran on {delegate}")
+            log.info(f"Analyzing results of operation: {m.model_name} ran on {delegate} on index {m.index}")
             a = Analyzer(m.results, find_distribution=True)
 
             model = data["models"][0] # hacky for now
-            names = [i["name"] for i in model["layers"]]
 
-            if not m.model_name in names:
-                d = {
-                    "name"                  : m.model_name,
-                    "path"                  : { m.delegate : m.model_path },
-                    "delegates"             : [
-                        {
-                            "device"                      : m.delegate,
-                            "count"                       : device_count(m.delegate),
-                            "input"                     : {
-                                    "shape"   : m.input_shape,
-                                    "type"    : m.input_datatype
-                             },
-                            "mean"                      : a.mean,
-                            "median"                    : a.median,
-                            "standard_deviation"        : a.std_deviation,
-                            "avg_absolute_deviation"    : a.avg_absolute_deviation,
-                            "distribution"              : a.distribution_name,
-                            "usb"                       : process_streams(m.timers, m.results)
-                        }
-                    ]
-                }
+            name = f"{m.model_name}_{m.index}"
 
+            d = {
+                "name"                  : name,
+                "path"                  : { m.delegate : m.model_path },
+                "delegates"             : [
+                    {
+                        "device"                      : m.delegate,
+                        "count"                       : device_count(m.delegate),
+                        "input"                     : {
+                                "shape"   : m.input_shape,
+                                "type"    : m.input_datatype
+                            },
+                        "mean"                      : a.mean,
+                        "median"                    : a.median,
+                        "standard_deviation"        : a.std_deviation,
+                        "avg_absolute_deviation"    : a.avg_absolute_deviation,
+                        "distribution"              : a.distribution_name,
+                        "usb"                       : process_streams(m.timers, m.results)
+                    }
+                ]
+            }            
+            if not name in names:
+                names.append(name)
                 model["layers"].append(d)
                 data["models"][0] = model
                 continue
-
-            model_dict  = [ d for d in model["layers"] if d["name"] == m.model_name][0]
-            delegates   = [ d["name"] for d in model_dict["delegates"]]
-            paths       = [ d["path"] for d in model_dict["delegates"]]
-            if not m.delegate in delegates:
-                if m.delegate not in paths:
-                    for i,j in enumerate(model["layers"]):
-                        if j["name"] == m.model_name:
-                            model["layers"][i]["path"][m.delegate] = m.model_path
-                            break
-                d = {
-                            "device"                    : m.delegate,
-                            "count"                     : device_count(m.delegate),
-                            "input"                     : {
-                                    "shape"   : m.input_shape,
-                                    "type"    : m.input_datatype
-                             },
-                            "mean"                      : a.mean,
-                            "median"                    : a.median,
-                            "standard_deviation"        : a.std_deviation,
-                            "avg_absolute_deviation"    : a.avg_absolute_deviation,
-                            "distribution"              : a.distribution_name,
-                            "usb"                       : process_streams(m.timers, m.results)
-                }
-
+            else:
                 for i,j in enumerate(model["layers"]):
-                    if j["name"] == m.model_name:
-                        model["layers"][i]["delegates"].append(d)
+                    if j["name"] == f"{m.model_name}_{m.index}":
+                        model["layers"][i]["path"][m.delegate] = m.model_path
+                        model["layers"][i]["delegates"].append(d["delegates"])
                         data["models"][0] = model
                         break
-                continue
-
-            raise Exception(f"Apparently attempt to overwrite data from model: {m.model_name} run on: {delegate}!")
 
     for d in unavailable_delegates:
         for i,m in enumerate(data["models"][0]["layers"]):
@@ -126,12 +104,12 @@ def AnalyzeLayerResults(m:Model, delegate:str):
         "path"                  : { m.delegate : m.model_path },
         "delegates"             : [
             {
-                "device"                      : m.delegate,
+                "device"                    : m.delegate,
                 "count"                     : device_count(m.delegate),
                 "input"                     : {
-                        "shape"   : m.input_shape,
-                        "type"    : m.input_datatype
-                 },
+                                                "shape"   : m.input_shape,
+                                                "type"    : m.input_datatype
+                                              },
                 "mean"                      : a.mean,
                 "median"                    : a.median,
                 "standard_deviation"        : a.std_deviation,
@@ -142,10 +120,11 @@ def AnalyzeLayerResults(m:Model, delegate:str):
         ]
     }
 
-    ExportResults(os.path.join(RESULTS_FOLDER, f"{m.model_name}_LAYER_{delegate.upper()}.json"), data)
+    ExportResults(os.path.join(RESULTS_FOLDER, f"layer_{m.index}_{m.model_name}_{delegate.upper()}.json"), data)
 
-def MergeResults(parent_model:str, layers:List, clean:bool=True):
-    from main import RESULTS_FOLDER, log
+def MergeResults(parent_model:str, layers:dict, clean:bool=True):
+    from main import RESULTS_FOLDER
+    from ..model_lab.logger import log
     from utils import load_json
     import os
 
@@ -154,9 +133,9 @@ def MergeResults(parent_model:str, layers:List, clean:bool=True):
     names = [i["name"] for i in d]
 
     for device in ("cpu", "gpu", "tpu"):
-        for l in layers:
-            file = os.path.join(RESULTS_FOLDER, f"{l.upper()}_LAYER_{device.upper()}.json")
-            name = l.upper()
+        for l in layers[device]:
+            file = os.path.join(RESULTS_FOLDER, f"layer_{l.index}_{l.model_name}_{device.upper()}_USB.json")
+            name = f"{l.model_name}_{l.index}"
             if (os.path.isfile(file) and name in names):
                     j = load_json(file)
                     for k,v in enumerate(d):

@@ -33,6 +33,7 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
 def BenchmarkModel(model_path: str, count: int, hardware_summary_path: str, model_summary_path: str) -> None:
 
     from utils.deploy import BenchmarkModelLayers
+    from utils.analysis import AnalyzeModelResults, MergeResults
 
     from utils.model_lab.utils import ReadJSON
     from utils.model_lab.logger import log
@@ -88,14 +89,14 @@ def BenchmarkModel(model_path: str, count: int, hardware_summary_path: str, mode
         count=count
     )
 
-    #print("Models deployed")
+    log.info("Models deployed")
 
     # Process results
-    #AnalyzeModelResults(model_name, results_dict)
+    AnalyzeModelResults(model_name, results_dict)
 
-    #print("Analyzed results")
+    log.info("Analyzed and merged results")
 
-    #MergeResults(model_name, layers, clean=True)
+    #MergeResults(model_name, results_dict, clean=True)
 
     #print("Results merged")
 

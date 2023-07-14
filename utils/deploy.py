@@ -80,7 +80,7 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
 
     from backend.distributed_inference import distributed_inference
 
-    DEPLOY_WAIT_TIME = 1
+    DEPLOY_WAIT_TIME = 10
 
     results = []
     timers = []
@@ -223,6 +223,8 @@ def BenchmarkModelLayers(
         for layer in model_summary["layers"]:
             m = BenchmarkLayer(Model(layer, "cpu", parent_model), count, "CPU")
             models["cpu"].append(m)
+            #AnalyzeLayerResults(m, "cpu")
+
 
     # regular quantized tflite files for gpu
     available, gpu = isGPUavailable()
@@ -235,6 +237,8 @@ def BenchmarkModelLayers(
         for layer in model_summary["layers"]:
             m = BenchmarkLayer(Model(layer, "gpu", parent_model), count, "GPU")
             models["gpu"].append(m)
+            #AnalyzeLayerResults(m, "gpu")
+
 
     # edge compiled quantized tflite files tpu
     if not isTPUavailable():
@@ -250,7 +254,8 @@ def BenchmarkModelLayers(
 
         for layer in model_summary["layers"]:
             m = BenchmarkLayer(Model(layer, "tpu", parent_model), count, "TPU")
-            AnalyzeLayerResults(m, "tpu")
+            models["tpu"].append(m)
+            #AnalyzeLayerResults(m, "tpu")
 
     return models
 
