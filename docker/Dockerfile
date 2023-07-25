@@ -5,9 +5,11 @@ LABEL Author="Daniel Duclos-Cavalcanti & Alex Hoffman"
 LABEL Email="daniel.duclos-cavalcanti@gmail.com & alxhoff@gmail.com"
 LABEL Maintainer="Alex Hoffman"
 
-ARG GKEY
+ARG WLSACCESSID
+ARG WLSSECRET
+ARG LICENSEID
 
-SHELL ["/bin/bash", "-c"] 
+SHELL ["/bin/bash", "-l", "-c"] 
 
 RUN set -ex
 
@@ -99,7 +101,9 @@ ln -sf /root/.sdkman/candidates/gradle/6.9.4/bin/gradle /usr/bin/gradle6
 
 # Gurobi
 WORKDIR /opt
-RUN echo $GKEY
+RUN echo $WLSACCESSID
+RUN echo $WLSSECRET
+RUN echo $LICENSEID
 RUN wget https://packages.gurobi.com/9.5/gurobi9.5.2_linux64.tar.gz && \
 tar -xzf gurobi9.5.2_linux64.tar.gz && \
 export GUROBI_HOME=/opt/gurobi952/linux64 && \
@@ -107,9 +111,11 @@ echo "export GUROBI_HOME=/opt/gurobi952/linux64" >> /root/.bashrc && \
 export PATH=$GUROBI_HOME/bin:$PATH && \
 echo "export PATH=$GUROBI_HOME/bin:$PATH" >> /root/.bashrc && \
 export LD_LIBRARY_PATH=$GUROBI_HOME/lib:$LD_LIBRARY_PATH && \
-echo "export LD_LIBRARY_PATH=$GUROBI_HOME/lib:$LD_LIBRARY_PATH" >> /root/.bashrc && \
-grbgetkey $GKEY
+echo "export LD_LIBRARY_PATH=$GUROBI_HOME/lib:$LD_LIBRARY_PATH" >> /root/.bashrc
 
+RUN echo "WLSACCESSID=$WLSACCESSID" > /opt/gurobi952/gurobi.lic && \
+echo "WLSSECRET=$WLSSECRET" >> /opt/gurobi952/gurobi.lic && \
+echo "LICENSEID=$LICENSEID" >> /opt/gurobi952/gurobi.lic
 
 # ENV Variables
 ENV LANG en_US.UTF-8
@@ -124,4 +130,4 @@ ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 RUN mkdir -p /home/tensorDSE/benchmarking && \
 mkdir -p /home/tensorDSE/deployment
 WORKDIR /home/tensorDSE
-ENTRYPOINT [ "/home/tensorDSE/docker/scripts/entry.sh" ]
+ENTRYPOINT ["bash", "-i", "/home/tensorDSE/docker/scripts/entry.sh" ]

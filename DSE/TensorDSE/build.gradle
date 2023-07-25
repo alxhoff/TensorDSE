@@ -7,7 +7,7 @@ apply plugin: 'application'
 
 repositories {
     flatDir {
-        dirs '/usr/share/java', 'libs'
+        dirs '/usr/share/java', 'libs', '/opt/gurobi952/linux64/lib/'
     }
 
     jcenter()
@@ -16,7 +16,8 @@ repositories {
 
 dependencies {
     compile files('libs/gurobi95.jar')
-
+    compile fileTree(include: ['*.jar'], dir: '/opt/gurobi952/linux64/lib/')
+    
     compile project(':opendse-model')
     compile project(':opendse-io')
     compile project(':opendse-visualization')

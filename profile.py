@@ -1,5 +1,6 @@
 import argparse
 import os
+print(os.getcwd())
 from utils.log import Log
 
 MODELS_FOLDER = "resources/models/source/"
@@ -30,7 +31,7 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
     system(command)
 
 
-def BenchmarkModel(model_path: str, count: int, hardware_summary_path: str, model_summary_path: str) -> None:
+def ProfileModel(model_path: str, count: int, hardware_summary_path: str, model_summary_path: str) -> None:
 
     from utils.deploy import BenchmarkModelLayers
 
@@ -171,47 +172,51 @@ if __name__ == "__main__":
     SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
     print("Model summarized")
 
-    BenchmarkModel(args.model, args.count, args.hardwaresummary, os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)))
+    ProfileModel(args.model, args.count, args.hardwaresummary, os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)))
     print("Model benchmarked")
 
     ## Run DSE
     #import os
-#
-    os.chdir(os.path.join(os.getcwd(), "DSE/TensorDSE"))
-    print(os.getcwd())
-    model_summary = (
-       "../../resources/model_summaries/example_summaries/MNIST_multi_1.json"
-    )
-    architecture_summary = "../../resources/architecture_summaries/example_output_architecture_summary.json"
-    benchmarking_results = (
-       "../../resources/benchmarking_results/example_benchmark_results.json"
-    )
-    output_folder = "src/main/resources/output"
-    ilp_mapping = "true"
-    runs = "1"
-    crossover = "0.9"
-    population_size = 100
-    parents_per_generation = 50
-    offspring_per_generation = 50
-    generations = 25
-    verbose = "false"
-    os.system(
-       'gradle6 run --args="--modelsummary {} --architecturesummary {} --benchmarkingresults {} --outputfolder {} --ilpmapping {} --runs {} --crossover {} --populationsize {} --parentspergeneration {} --offspringspergeneration {} --generations {} --verbose {}"'.format(
-           model_summary,
-           architecture_summary,
-           benchmarking_results,
-           output_folder,
-           ilp_mapping,
-           runs,
-           crossover,
-           population_size,
-           parents_per_generation,
-           offspring_per_generation,
-           generations,
-           verbose,
-       )
-    )
-    os.chdir(os.path.join(os.getcwd(), "../.."))
+
+    # os.chdir(os.path.join(os.getcwd(), "DSE/TensorDSE"))
+    # print(os.getcwd())
+    # model_summary = (
+    #    "../../resources/model_summaries/example_summaries/MNIST_multi_1.json"
+    # )
+    # architecture_summary = "../../resources/architecture_summaries/example_output_architecture_summary.json"
+    # benchmarking_results = (
+    #    "../../resources/benchmarking_results/example_benchmark_results.json"
+    # )
+    # output_folder = "src/main/resources/output"
+    # ilp_mapping = "true"
+    # runs = "1"
+    # crossover = "0.9"
+    # population_size = 100
+    # parents_per_generation = 50
+    # offspring_per_generation = 50
+    # generations = 25
+    # verbose = "false"
+    # gurobi_command = 'gradle6 run --args="--modelsummary {} --architecturesummary {} --benchmarkingresults {} --outputfolder {} --ilpmapping {} --runs {} --crossover {} --populationsize {} --parentspergeneration {} --offspringspergeneration {} --generations {} --verbose {}"'.format(
+    #        model_summary,
+    #        architecture_summary,
+    #        benchmarking_results,
+    #        output_folder,
+    #        ilp_mapping,
+    #        runs,
+    #        crossover,
+    #        population_size,
+    #        parents_per_generation,
+    #        offspring_per_generation,
+    #        generations,
+    #        verbose,
+    #    )
+    # print(gurobi_command)
+
+    # import subprocess
+
+    # subprocess.run("echo $LD_LIBRARY_PATH")
+    # subprocess.run(gurobi_command)
+    # os.chdir(os.path.join(os.getcwd(), "../.."))
 
     # Deploy
 

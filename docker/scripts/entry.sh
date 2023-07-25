@@ -1,14 +1,70 @@
 #!/bin/bash
 
-## Set ENV variables
-
-## Set Git Config
-# git config --global
-# git config --global
-# git config --global
+source /root/.bashrc
 
 ## Exec shell
 set +xe
+
+for i in "$@"; do
+  case $i in
+    -m=*|--MODEL_SUMMARY=*)
+      MODEL_SUMMARY="${i#*=}"
+      shift # past argument=value
+      ;;
+    -a=*|--ARCHITECTURE_SUMMARY=*)
+      ARCHITECTURE_SUMMARY="${i#*=}"
+      shift # past argument=value
+      ;;
+    -b=*|--BENCHMARKING_RESULTS=*)
+      BENCHMARKING_RESULTS="${i#*=}"
+      shift # past argument=value
+      ;;
+    -o=*|--OUTPUT_FOLDER=*)
+      OUTPUT_FOLDER="${i#*=}"
+      shift # past argument=value
+      ;;
+    -i=*|--ILP_MAPPING=*)
+      ILP_MAPPING="${i#*=}"
+      shift # past argument=value
+      ;;
+    -r=*|--RUNS=*)
+      RUNS="${i#*=}"
+      shift # past argument=value
+      ;;
+    -c=*|--CROSSOVER=*)
+      CROSSOVER="${i#*=}"
+      shift # past argument=value
+      ;;
+    -p=*|--POPULATION_SIZE=*)
+      POPULATION_SIZE="${i#*=}"
+      shift # past argument=value
+      ;;
+    -n=*|--PARENTS_PER_GENERATION=*)
+      PARENTS_PER_GENERATION="${i#*=}"
+      shift # past argument=value
+      ;;
+    -s=*|--OFFSPRING_PER_GENERATION=*)
+      OFFSPRING_PER_GENERATION="${i#*=}"
+      shift # past argument=value
+      ;;
+    -g=*|--GENERATIONS=*)
+      GENERATIONS="${i#*=}"
+      shift # past argument=value
+      ;;
+    -v=*|--VERBOSE=*)
+      VERBOSE="${i#*=}"
+      shift # past argument=value
+      ;;
+    --default)
+      DEFAULT=YES
+      shift # past argument with no value
+      ;;
+    -*|--*)
+      ;;
+    *)
+      ;;
+  esac
+done
 
 DEBUG_MODE=1
 TEST_MODE=2
@@ -39,11 +95,15 @@ test() {
 }
 
 run() {
-    python3 main.py -m resources/models/example_models/MNIST.tflite \
-                    -c 10
+    python3 profile.py -m resources/models/example_models/MNIST.tflite -c 10
+    pushd DSE/TensorDSE
+    gradle6 run --args="--modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --benchmarkingresults $BENCHMARKING_RESULTS --outputfolder $OUTPUT_FOLDER --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    popd
+    python3 deploy.py
 }
 
 main() {
+    echo $LD_LIBRARY_PATH
     if [ "$mode" -eq $DEBUG_MODE ]; then
         debug
     elif [ "$mode" -eq $TEST_MODE ]; then
