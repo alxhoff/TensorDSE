@@ -1,8 +1,9 @@
 import os
-import json
 import urllib
+import multiprocessing
+
 from .model import Model, Submodel
-from .utils import ReadJSON, CopyFile, RunTerminalCommand
+from .utils import CopyFile, RunTerminalCommand
 from .logger import log
 
 
@@ -13,7 +14,7 @@ MAPPING_DIR         = os.path.join(MODEL_LAB_DIR, "mapping")
 SOURCE_DIR          = os.path.join(MODELS_DIR, "source")
 SUB_DIR             = os.path.join(MODELS_DIR, "sub")
 LAYERS_DIR          = os.path.join(SUB_DIR, "tflite")
-COMPILED_DIR        = os.path.join(MODELS_DIR, "sub", "tflite", "compiled")
+COMPILED_DIR        = os.path.join(MODELS_DIR, "sub", "compiled")
 UTILS_DIR           = os.path.dirname(MODEL_LAB_DIR)
 WORK_DIR            = os.path.dirname(UTILS_DIR)
 RESOURCES_DIR       = os.path.join(WORK_DIR, "resources")
@@ -27,7 +28,7 @@ class Splitter:
         self.source_model = Model(self.source_model_path, self.schema_path)
         log.info("Source Model saved under: {}".format(os.path.join(MODELS_DIR, "source", "tflite")))
         self.summary = model_summary
-        self.submodel_list = []
+        self.submodel_list = multiprocessing.Manager().list()
 
     def CheckSchema(self):
         log.info("Checking schema ...")
@@ -147,14 +148,14 @@ class Splitter:
         """
 
         log.info("Initializing shell model for layer {} from model {} ...".format(sequence_index, model_index))
-        submodel = Submodel(self.source_model.json)
+        submodel = Submodel(self.source_model.json, layer_sequence[0][1], layer_sequence[0][2], sequence_index)
         log.info("OK")
         log.info("Adding Operations of Index (" + ", ".join(str(op[0]) for op in layer_sequence) + ") to Shell Model ...")
         submodel.AddOps(layer_sequence)
         log.info("OK")
         log.info("Saving Model {} | Submodel {} | Operations: {} | Target HW: {} ...".format(
             model_index, sequence_index, ", ".join([str(layer[1]) for layer in layer_sequence]), layer_sequence[0][2]))
-        submodel.Save(layer_sequence[0][1], layer_sequence[0][2], sequence_index)
+        submodel.Save()
         log.info("OK")
         log.info("Converting Submodel {0} from JSON to TFLite ...".format(str(sequence_index)))
         submodel.Convert("json", "tflite")
@@ -182,10 +183,12 @@ class Splitter:
         # which gives clearer overhead vs. execution time numbers
         else:
             for i, model in enumerate(self.final_mapping):
-                for j, layer in enumerate(model):
-                    self.CompileAndSaveSubmodel(layer_sequence=[layer],
-                                                model_index=i, sequence_index=j)
-    
+                with multiprocessing.Pool() as pool:
+                    items = [([layer], i, j) for j, layer in enumerate(model)]
+                    pool.starmap(self.CompileAndSaveSubmodel, items)
+                    #for j, layer in enumerate(model):
+                        #self.CompileAndSaveSubmodel(layer_sequence=[layer], model_index=i, sequence_index=j)
+
     def CompileForEdgeTPU(self):
         for submodel in self.submodel_list:
             submodel_path = submodel.paths["tflite"]

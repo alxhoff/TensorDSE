@@ -33,17 +33,17 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
 
 def ProfileModel(model_path: str, count: int, hardware_summary_path: str, model_summary_path: str) -> None:
 
-    from utils.deploy import BenchmarkModelLayers
+    from utils.benchmark import BenchmarkModelLayers
     from utils.analysis import AnalyzeModelResults, MergeResults
 
-    from utils.model_lab.utils import ReadJSON
-    from utils.model_lab.logger import log
-    from utils.model_lab.split import Splitter
+    from utils.splitter.utils import ReadJSON
+    from utils.splitter.logger import log
+    from utils.splitter.split import Splitter
 
     if not model_path.endswith(".tflite"):
         raise Exception(f"File: {model_path} is not a tflite file!")
 
-    model_name = (model_path.split("/")[model_path.count("/")]).split(".tflite")[0]
+    model_name = (model_path.split("/")[-1]).split(".tflite")[0]
     log.info(f"Benchmarking {model_name} for {count} time(s)")
 
     hardware_to_benchmark = ["cpu", "gpu", "tpu"]
@@ -97,10 +97,6 @@ def ProfileModel(model_path: str, count: int, hardware_summary_path: str, model_
 
     log.info("Analyzed and merged results")
 
-    #MergeResults(model_name, results_dict, clean=True)
-
-    #print("Results merged")
-
 
 def GetArgs() -> argparse.Namespace:
     """Argument parser, returns the Namespace containing all of the arguments.
@@ -115,7 +111,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--model",
-        default="resources/models/example_models/keyword_spotting/kws_ref_model.tflite",
+        default="resources/models/example_models/kws_ref_model.tflite",
         help="File path to the SOURCE .tflite file.",
     )
 

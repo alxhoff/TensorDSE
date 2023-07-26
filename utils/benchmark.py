@@ -1,5 +1,5 @@
-import argparse
 import utils
+import argparse
 
 from typing import Dict, Tuple
 
@@ -37,38 +37,6 @@ def isGPUavailable() -> Tuple[bool, str]:
     return False, ""
 
 
-def MakeInterpreterTPU(model_file: str, library: str):
-    """Creates the interpreter object needed to deploy a model onto the tpu.
-
-    Parameters
-    ----------
-    model_file : String
-    Path to the tflite model that will be deployed to the edge tpu.
-
-    system : String
-
-    Returns
-    -------
-    tflite.Interpreter Object
-    """
-    # https://github.com/ultralytics/yolov5/issues/5709
-    # https://github.com/google-coral/pycoral/issues/57
-    # import tensorflow as tf
-    import tflite_runtime.interpreter as tflite
-
-    model_file, *device = model_file.split("@")
-
-    device = {"device": device[0]} if device else {}
-    shared_library = library
-    experimental_delegates = [tflite.load_delegate(shared_library, device)]
-
-    return tflite.Interpreter(
-        model_path=model_file,
-        model_content=None,
-        experimental_delegates=experimental_delegates,
-    )
-
-
 def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
     from multiprocessing import Process, Queue
     from utils.log import Log
@@ -87,6 +55,8 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
 
     input_size  = GetArraySizeFromShape(m.input_shape)
     output_size = GetArraySizeFromShape(m.output_shape)
+
+    time.sleep(DEPLOY_WAIT_TIME)
 
     for i in range(count):
         signalsQ = Queue()
@@ -109,8 +79,6 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
         )
         output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
         inference_times_vector = np.zeros(count).astype(np.uint32)
-
-        time.sleep(DEPLOY_WAIT_TIME)
 
         mean_inference_time = distributed_inference(
             m.model_path,
@@ -150,16 +118,25 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
     import os
     import numpy as np
 
-    from utils.model_lab.split import LAYERS_DIR, COMPILED_DIR
+    from utils.splitter.split import SUB_DIR, COMPILED_DIR
     from backend.distributed_inference import distributed_inference
 
 
     if (hardware_target == "TPU"):
         m.model_path = os.path.join(COMPILED_DIR, "submodel_{0}_{1}_bm_edgetpu.tflite".format(m.details["index"], m.details["type"]))
-        m = TPUDeploy(m=m, count=count)
+        if (os.path.isfile(m.model_path)):
+            m = TPUDeploy(m=m, count=count)
+        else:
+            m.results = [-1] * count
+            m.timers = {
+                "error" : {
+                    "name" : "maxed_out",
+                    "reason" : "timed out with no traffic found"
+                },
+            }
     else:
         
-        m.model_path = os.path.join(LAYERS_DIR, "submodel_{0}_{1}_bm.tflite".format(m.details["index"], m.details["type"]))
+        m.model_path = os.path.join(SUB_DIR, "tflite", "submodel_{0}_{1}_bm".format(m.details["index"], m.details["type"]),"submodel_{0}_{1}_bm.tflite".format(m.details["index"], m.details["type"]))
 
         input_size  = GetArraySizeFromShape(m.input_shape)
         output_size = GetArraySizeFromShape(m.output_shape)
@@ -204,7 +181,7 @@ def BenchmarkModelLayers(
 
     from .usb import init_usbmon
     from .analysis import AnalyzeLayerResults
-    from utils.model_lab.logger import log
+    from utils.splitter.logger import log
     
 
     models = {}
@@ -321,7 +298,7 @@ if __name__ == "__main__":
         or a single model (Depends on form).
     """
 
-    from main import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
+    from ..profiler import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
     from analysis import AnalyzeLayerResults
 
     args = GetArgs()

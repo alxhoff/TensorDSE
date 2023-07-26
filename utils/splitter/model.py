@@ -9,7 +9,7 @@ MAPPING_DIR   = os.path.join(WORK_DIR, "mapping")
 RESOURCES_DIR = os.path.join(WORK_DIR, "resources")
 SOURCE_DIR    = os.path.join(MODELS_DIR, "source")
 SUB_DIR       = os.path.join(MODELS_DIR, "sub")
-COMPILED_DIR  = os.path.join(MODELS_DIR, "sub", "tflite", "compiled/")
+COMPILED_DIR  = os.path.join(MODELS_DIR, "sub", "compiled")
 FINAL_DIR     = os.path.join(MODELS_DIR, "final")
 
 class Model:
@@ -25,12 +25,12 @@ class Model:
     def Convert(self, source_ext: str, target_ext: str):
         if ([source_ext, target_ext] == ["json", "tflite"]):
             RunTerminalCommand("flatc", "-b", self.schema, self.paths["json"])
-            tmp_filename = self.paths["json"].split("/")[len(self.paths["json"].split("/"))-1].split(".")[0] + ".tflite"
+            tmp_filename = self.paths["json"].split("/")[-1].split(".")[0] + ".tflite"
             self.paths["tflite"] = self.paths["json"].replace(source_ext, target_ext)
             MoveFile(tmp_filename, self.paths["tflite"])
         elif ([source_ext, target_ext] == ["tflite", "json"]):
             RunTerminalCommand("flatc", "-t", "--strict-json", "--defaults-json", self.schema, "--", self.paths["tflite"])
-            tmp_filename = self.paths["tflite"].split("/")[len(self.paths["tflite"].split("/"))-1].split(".")[0] + ".json"
+            tmp_filename = self.paths["tflite"].split("/")[-1].split(".")[0] + ".json"
             self.paths["json"] = self.paths["tflite"].replace(source_ext, target_ext)
             MoveFile(tmp_filename, self.paths["json"])
             self.json = ReadJSON(self.paths["json"])
@@ -39,15 +39,19 @@ class Model:
         if not os.path.exists(COMPILED_DIR):
             os.mkdir(COMPILED_DIR)
         compiling_command = "/usr/bin/edgetpu_compiler -o {0} -s {1}".format(COMPILED_DIR, self.paths["tflite"])
-        #RunTerminalCommand(compiling_command)
         os.system(compiling_command)
-        self.paths["edgetpu_tflite"] = self.paths["tflite"].split("/")[-1].split(".")[0] + "_edgetpu.tflite"
+        self.paths["edgetpu_tflite"] = os.path.join(COMPILED_DIR, self.paths["tflite"].split("/")[-1].split(".")[0] + "_edgetpu.tflite")
 
 class Submodel(Model):
-    def __init__(self, source_model_json: dict):
+    def __init__(self, source_model_json: dict, op_name: str, target_hardware: str, sequence_index: int):
+        self.name = "submodel_{0}_{1}_{2}".format(sequence_index, op_name, "bm" if target_hardware.lower() == "" else target_hardware.lower())
+        self.dirs = {"json": os.path.join(SUB_DIR, "json", self.name),
+                      "tflite": os.path.join(SUB_DIR, "tflite", self.name)}
+        os.mkdir(self.dirs["json"])
+        os.mkdir(self.dirs["tflite"])
         CopyFile(os.path.join(RESOURCES_DIR, "shell", "shell_model.json"),
-                 os.path.join(SUB_DIR, "json", "shell_model.json"))
-        super().__init__(path_to_model=os.path.join(SUB_DIR, "json", "shell_model.json"), 
+                 os.path.join(self.dirs["json"], "shell_model.json"))
+        super().__init__(path_to_model=os.path.join(self.dirs["json"], "shell_model.json"), 
                           schema_path=os.path.join(RESOURCES_DIR, "schema", "schema.fbs"))
         self.json = ReadJSON(self.paths["json"])
         self.source_model_json = source_model_json
@@ -153,7 +157,7 @@ class Submodel(Model):
         self.json["description"]                 =   new_description
         self.json["buffers"]                     =   new_buffers
         
-    def Save(self, op_name: str, target_hardware: str, sequence_index: int):
+    def Save(self):
         """Saves a submodel to a JSON file, labeled using the target hardware,
         the index of the sequence, and the indexes of the layers (in their model)
         that are contained withing the submodel.
@@ -163,9 +167,8 @@ class Submodel(Model):
             sequence_index (int): The index at where the sequence appears in the
             set of sequences to be run on the respective hardware
         """
-
-        submodel_filename = "submodel_{0}_{1}_{2}.json".format(sequence_index, op_name, "bm" if target_hardware.lower() == "" else target_hardware.lower())
-        submodel_filepath = os.path.join(SUB_DIR, "json", submodel_filename)
+        submodel_filename = f"{self.name}.json"
+        submodel_filepath = os.path.join(self.dirs["json"], submodel_filename)
         MoveFile(self.paths["json"], submodel_filepath)
         self.paths["json"] = submodel_filepath
         with open(submodel_filepath, "w") as fout:
