@@ -9,7 +9,6 @@ REGEX := coral
 # VOLUME := $(shell pwd)
 VOLUME := $(shell cd ../ && pwd)
 
-
 MODE 				:= 0
 DEBUG_MODE 			:= 1
 TEST_MODE 			:= 2
@@ -45,17 +44,28 @@ info:
 	@echo "Volume"
 	@echo $(VOLUME)
 
+.ONESHELL:
 build:
-	@$(info "Grab a coffee, building will take some time...")
+	@echo "Grab a coffee, building will take some time..."
 	@sleep 1s
-	@docker build . -t ${REPO}:${TAG}
+	@echo "Docker requires a Gurobi WLS Compute Server licence." 
+	@echo "These can be requested at 'https://portal.gurobi.com/iam/licenses/list/' under 'WLS Academic'." 
+	@echo "Then going to 'https://license.gurobi.com/manager/keys' request an API key and download the generated licence." 
+	@echo "The licence file will contain three values: 'WLSACCESSID', 'WLSSECRET', and 'LICENSEID', please enter them now." 
+	read -p "WLSACCESSID:" GUROBI_ACCESSID 
+	read -p "WLSSECRET:" GUROBI_SECRET 
+	read -p "LICENSEID:" GUROBI_LICENCEID 
+	@echo $$GUROBI_ACCESSID 
+	@echo $$GUROBI_SECRET 
+	@echo $$GUROBI_LICENCEID 
+	docker build -t ${REPO}:${TAG} --build-arg WLSACCESSID=$$GUROBI_ACCESSID --build-arg WLSSECRET=$$GUROBI_SECRET --build-arg LICENSEID=$$GUROBI_LICENCEID .
 
 run: $(if $(call exist-docker-image),,build)
 	@if [ -n "$(call is-docker-running)" ]; then \
 		docker stop ${NAME}; \
 		docker rm ${NAME}; \
 	fi; \
-	docker rm $(docker ps -aq --filter name=${NAME}); \
+	# docker rm $(docker ps -aq --filter name=${NAME}); \
 	docker run --name ${NAME} \
 			   --privileged \
 			   --net host \
@@ -66,7 +76,20 @@ run: $(if $(call exist-docker-image),,build)
 			   --detach-keys="ctrl-@" \
 			   --env MODE=${MODE} \
 			   -it ${REPO}:${TAG} \
-			   --gpus 'all,capabilities=utility,compute'; \
+			   --gpus 'all,capabilities=utility,compute' \
+			   --MODEL_SUMMARY=$$MODEL_SUMMARY \
+			   --ARCHITECTURE_SUMMARY=$$ARCHITECTURE_SUMMARY \
+			   --BENCHMARKING_RESULTS=$$BENCHMARKING_RESULTS \
+			   --OUTPUT_FOLDER=$$OUTPUT_FOLDER \
+			   --ILP_MAPPING=$$ILP_MAPPING \
+			   --RUNS=$$RUNS \
+			   --CROSSOVER=$$CROSSOVER \
+			   --POPULATION_SIZE=$$POPULATION_SIZE \
+			   --PARENTS_PER_GENERATION=$$PARENTS_PER_GENERATION \
+			   --OFFSPRING_PER_GENERATION=$$OFFSPRING_PER_GENERATION \
+			   --GENERATIONS=$$GENERATIONS \
+			   --VERBOSE=$$VERBOSE \
+			   ; \
 
 debug:
 	$(MAKE) -f ${FILE} run MODE=${DEBUG_MODE}

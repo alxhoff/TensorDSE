@@ -5,8 +5,11 @@ LABEL Author="Daniel Duclos-Cavalcanti & Alex Hoffman"
 LABEL Email="daniel.duclos-cavalcanti@gmail.com & alxhoff@gmail.com"
 LABEL Maintainer="Alex Hoffman"
 
-ARG USER_NAME="coral-docker"
-ARG DEBIAN_FRONTEND="noninteractive"
+ARG WLSACCESSID
+ARG WLSSECRET
+ARG LICENSEID
+
+SHELL ["/bin/bash", "-l", "-c"] 
 
 RUN set -ex
 
@@ -19,107 +22,100 @@ RUN apt-get update \
     usbutils udev lshw \
     software-properties-common \
     && apt-get clean \
-    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen && update-locale
+    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \ 
+    && locale-gen && update-locale
 
-# CoralDev Apt Paackages
+# CoralDev APT Paackages
 RUN echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" \
-    | tee /etc/apt/sources.list.d/coral-edgetpu.list
-
-RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-    | apt-key add -
-
-RUN apt-get update
-RUN apt-get install -y libedgetpu1-std edgetpu-compiler
+    | tee /etc/apt/sources.list.d/coral-edgetpu.list && \
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+    | apt-key add - && \
+apt-get update && \
+apt-get install -y libedgetpu1-std edgetpu-compiler
 
 # Wireshark/Tshark
-RUN add-apt-repository -y ppa:wireshark-dev/stable
-RUN apt-get install -y tshark
+RUN add-apt-repository -y ppa:wireshark-dev/stable && \
+apt-get install -y tshark
 
 # TensorRT
-RUN apt-get install -y tensorrt
-# RUN ln -s /usr/lib/x86_64-linux-gnu/libnvinfer.so.8 /usr/lib/x86_64-linux-gnu/libnvinfer.so.7
-# RUN ln -s /usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so.8 /usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so.7
-RUN find / -name 'libnvinfer_plugin.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/libnvinfer_plugin.so.7"' {} \;
-RUN find / -name 'libnvinfer.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/libnvinfer.so.7"' {} \;
+RUN apt-get install -y tensorrt && \
+find / -name 'libnvinfer_plugin.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/libnvinfer_plugin.so.7"' {} \; && \
+find / -name 'libnvinfer.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/libnvinfer.so.7"' {} \;
 
 # Python Libraries
-#RUN pip3 install git+https://github.com/siliconlabs/mltk.git
-RUN pip3 install silabs-mltk[full] --upgrade
-RUN pip3 install pyshark pyserial pyftdi argparse metrics visualization
-RUN pip3 install matplotlib scipy numpy pandas
-# RUN pip3 install tensorflow
-RUN pip3 install --upgrade pip
-RUN apt-get install -y python3-ipdb python3-tabulate
-
-# Pycoral
-RUN apt-get install -y python3-pycoral
-# RUN pip install --extra-index-url https://google-coral.github.io/py-repo/ pycoral~=2.0
+RUN pip3 install --upgrade pip && \
+pip3 install silabs-mltk[full] --upgrade && \
+pip3 install pyshark pyserial pyftdi argparse metrics visualization matplotlib scipy numpy pandas && \
+apt-get install -y python3-ipdb python3-tabulate python3-pycoral
 
 # CUDA
 RUN apt-get install -y nvidia-cuda-dev  nvidia-cuda-toolkit
-# RUN apt-get install -y libcudnn8
-
-# CUBLAS
-# RUN apt-get install -y libcublas10
 
 WORKDIR /home/
 
-# see the original bash script for detailed information
-# https://github.com/terryky/tflite_gles_app/blob/master/tools/scripts/tf2.9/build_libtflite_r2.9.sh
-
 # cmake
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-x86_64.sh
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-aarch64.sh
-RUN chmod 755 cmake-3.22.1-linux-x86_64.sh
-RUN ./cmake-3.22.1-linux-x86_64.sh --skip-license --prefix=/usr/local
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-x86_64.sh && \ 
+wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-aarch64.sh && \
+chmod 755 cmake-3.22.1-linux-x86_64.sh && \
+./cmake-3.22.1-linux-x86_64.sh --skip-license --prefix=/usr/local
 
 # bazel
-RUN apt-get install -y unzip
-RUN wget https://github.com/bazelbuild/bazel/releases/download/5.0.0/bazel-5.0.0-installer-linux-x86_64.sh
-RUN chmod 755 bazel-5.0.0-installer-linux-x86_64.sh
-RUN ./bazel-5.0.0-installer-linux-x86_64.sh
+RUN apt-get install -y unzip && \
+wget https://github.com/bazelbuild/bazel/releases/download/5.0.0/bazel-5.0.0-installer-linux-x86_64.sh && \
+chmod 755 bazel-5.0.0-installer-linux-x86_64.sh && \
+./bazel-5.0.0-installer-linux-x86_64.sh
 
 # NVIDIA Drivers:
-RUN sudo add-apt-repository ppa:graphics-drivers/ppa
-RUN sudo apt update
-# RUN sudo apt install nvidia-driver-530
-RUN sudo apt install -y clinfo
-
-# script to build delegates
-RUN apt-get install -y libegl1-mesa-dev
+RUN sudo add-apt-repository ppa:graphics-drivers/ppa && \
+sudo apt update && sudo apt install -y clinfo libegl1-mesa-dev
 
 # Flatbuffers
 COPY scripts/install_flatbuffers.sh /home/install_flatbuffers.sh
-RUN chmod +x /home/install_flatbuffers.sh
-RUN /home/install_flatbuffers.sh
+RUN chmod +x /home/install_flatbuffers.sh && /home/install_flatbuffers.sh
 
 # Sources
 COPY scripts/pull_sources.sh /home/pull_sources.sh
-RUN chmod +x /home/pull_sources.sh
-RUN /home/pull_sources.sh
+RUN chmod +x /home/pull_sources.sh && /home/pull_sources.sh
 
 # TF Deps
 COPY scripts/download_tf_deps.sh /home/download_tf_deps.sh
-RUN chmod +x /home/download_tf_deps.sh
-RUN /home/download_tf_deps.sh
+RUN chmod +x /home/download_tf_deps.sh && /home/download_tf_deps.sh
 
 # Tensorflow + GPU Delegate
 COPY scripts/install_tf.sh /home/install_tf.sh
-RUN chmod +x /home/install_tf.sh
-RUN /home/install_tf.sh
+RUN chmod +x /home/install_tf.sh && /home/install_tf.sh
 
 # Patches
 COPY patches /home/patches
-RUN chmod +x /home/patches/patch.sh
-RUN /home/patches/patch.sh
+RUN chmod +x /home/patches/patch.sh && /home/patches/patch.sh
 
 # Build and install backend
 COPY scripts/build_backend.sh /home/build_backend.sh
-RUN chmod +x /home/build_backend.sh
-RUN /home/build_backend.sh
+RUN chmod +x /home/build_backend.sh && /home/build_backend.sh
 
-# Ports
-# EXPOSE 8080
+# Gradle for DSE
+RUN curl -s "https://get.sdkman.io" | bash && \
+chmod +x /root/.sdkman/bin/sdkman-init.sh && \
+source /root/.sdkman/bin/sdkman-init.sh && sdk install gradle 6.9.4 && \
+ln -sf /root/.sdkman/candidates/gradle/6.9.4/bin/gradle /usr/bin/gradle6
+
+# Gurobi
+WORKDIR /opt
+RUN echo $WLSACCESSID
+RUN echo $WLSSECRET
+RUN echo $LICENSEID
+RUN wget https://packages.gurobi.com/9.5/gurobi9.5.2_linux64.tar.gz && \
+tar -xzf gurobi9.5.2_linux64.tar.gz && \
+export GUROBI_HOME=/opt/gurobi952/linux64 && \
+echo "export GUROBI_HOME=/opt/gurobi952/linux64" >> /root/.bashrc && \
+export PATH=$GUROBI_HOME/bin:$PATH && \
+echo "export PATH=$GUROBI_HOME/bin:$PATH" >> /root/.bashrc && \
+export LD_LIBRARY_PATH=$GUROBI_HOME/lib:$LD_LIBRARY_PATH && \
+echo "export LD_LIBRARY_PATH=$GUROBI_HOME/lib:$LD_LIBRARY_PATH" >> /root/.bashrc
+
+RUN echo "WLSACCESSID=$WLSACCESSID" > /opt/gurobi952/gurobi.lic && \
+echo "WLSSECRET=$WLSSECRET" >> /opt/gurobi952/gurobi.lic && \
+echo "LICENSEID=$LICENSEID" >> /opt/gurobi952/gurobi.lic
 
 # ENV Variables
 ENV LANG en_US.UTF-8
@@ -131,7 +127,7 @@ ENV NVIDIA_VISIBLE_DEVICES all
 ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 
 # Work
-RUN mkdir -p /home/tensorDSE/benchmarking
-RUN mkdir -p /home/tensorDSE/deployment
+RUN mkdir -p /home/tensorDSE/benchmarking && \
+mkdir -p /home/tensorDSE/deployment
 WORKDIR /home/tensorDSE
-ENTRYPOINT [ "/home/tensorDSE/docker/scripts/entry.sh" ]
+ENTRYPOINT ["bash", "-i", "/home/tensorDSE/docker/scripts/entry.sh" ]

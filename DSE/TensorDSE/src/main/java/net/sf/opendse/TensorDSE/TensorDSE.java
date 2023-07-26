@@ -529,6 +529,7 @@ public class TensorDSE {
 				specification_definition.WriteJSONModelsToFile(models_description_path
 						.substring(0, models_description_path.lastIndexOf('.'))
 						.concat("_with_mappings.json"));
+				specification_definition.WriteJSONModelsToFile(output_directory.getPath().concat("/mappings.json"));
 			}
 
 		try {

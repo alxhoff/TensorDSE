@@ -1,41 +1,41 @@
 tensorflow_env
-TensorDSE
 vcpkg
+.gradle
 tags
 ./venv
 venv
 *.tags
 *.tags/
 *.tags/*
-single_layer_models/**
-single_layer_models/*
-shark/*.pcapng
-shark/*.cap
-.csv
-.metadata
-bin/
-tmp/
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
-.settings/
-.loadpath
-.recommenders
-deployment/model_splitting/models/
-deployment/tflite-cpp/backup/*
-*.tflite
-.vscode
+         single_layer_models/**
+         single_layer_models/*
+         shark/*.pcapng
+         shark/*.cap
+         .csv
+         .metadata
+         bin/
+         tmp/
+       *.tmp
+       *.bak
+       *.swp
+       *~.nib
+       local.properties
+       .settings/
+       .loadpath
+       .recommenders
+       deployment/model_splitting/models/
+       deployment/tflite-cpp/backup/*
+       *.tflite
+       .vscode
 
 # External tool builders
 .externalToolBuilders/
 
 # Locally stored "Eclipse launch configurations"
-*.launch
+       *.launch
 
 # PyDev specific (Python IDE for Eclipse)
-*.pydevproject
+       *.pydevproject
 
 # CDT-specific (C/C++ Development Tooling)
 .cproject
@@ -85,10 +85,10 @@ __pycache__
 .history/
 
 # Built Visual Studio Code Extensions
-*.vsix
+                                    *.vsix
 
-.gradle
-**/build/
+                                    .gradle
+                                    **/build/
 !src/**/build/
 
 # Ignore Gradle GUI config
