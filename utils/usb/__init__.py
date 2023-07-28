@@ -7,7 +7,7 @@ from ..splitter.logger import log
 def init_usbmon() -> bool:
     import os
     dirs = os.listdir("/dev/")
-    if "usbmon0" in dirs:
+    if "usbmon4" in dirs:
         return False
 
     log.error("usbmon module has to be loaded!!!")

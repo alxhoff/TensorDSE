@@ -1,3 +1,5 @@
+import numpy as np
+
 class Model:
     def __init__(self, layer:dict, delegate:str, parent:str=""):
         self.details        = layer
@@ -8,6 +10,8 @@ class Model:
         self.index          = layer["index"]
         self.results        = []
         self.timers         = []
+        self.input_vector   = None
+        self.output_vector   = None
         self.set_input_details()
         self.set_output_details()
 
@@ -24,7 +28,6 @@ class Model:
     
 
     def get_np_dtype(self, datatype: str):
-        import numpy as np
         types = {
             "uint8"     :  np.uint8,
             "uint16"    :  np.uint16,

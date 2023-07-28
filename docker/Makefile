@@ -70,7 +70,7 @@ run: $(if $(call exist-docker-image),,build)
 			   --privileged \
 			   --net host \
 			   --cap-add SYS_ADMIN \
-			   -v /dev/usbmon0:/dev/usbmon0 \
+			   -v /dev/usbmon4:/dev/usbmon4 \
 			   -v /dev/bus/usb:/dev/bus/usb \
 			   -v "${VOLUME}":/home/tensorDSE \
 			   --detach-keys="ctrl-@" \

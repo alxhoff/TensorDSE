@@ -9,13 +9,15 @@ def ExportResults(file:str, data:Dict) -> None:
         json.dump(json_data, json_file, indent=4)
 
 def AnalyzeModelResults(parent_model:str, models_dict:Dict):
-    from ...profiler import RESULTS_FOLDER
+
     from utils.splitter.logger import log
     from utils import device_count
     from utils.usb.process import process_streams
     from utils.analysis.analysis import Analyzer
     import os
-
+    
+    RESULTS_FOLDER = "resources/results/"
+    
     unavailable_delegates = []
     data = {
             "models": [{

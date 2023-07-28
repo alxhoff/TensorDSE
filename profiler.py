@@ -1,7 +1,7 @@
-import argparse
 import os
-print(os.getcwd())
-from utils.log import Log
+import sys
+import argparse
+
 
 MODELS_FOLDER = "resources/models/source/"
 LAYERS_FOLDER = "resources/models/layers/"
@@ -51,21 +51,30 @@ def ProfileModel(model_path: str, count: int, hardware_summary_path: str, model_
     if hardware_summary_path is not None:
         hardware_summary_json = ReadJSON(hardware_summary_path)
 
-        req_hardware = []
+        if hardware_summary_json is not None:
+            req_hardware = []
 
-        if int(hardware_summary_json["CPU_cores"]) > 0:
-            req_hardware.append("cpu")
+            if int(hardware_summary_json["CPU_cores"]) > 0:
+                req_hardware.append("cpu")
 
-        if int(hardware_summary_json["GPU_count"]) > 0:
-            req_hardware.append("gpu")
+            if int(hardware_summary_json["GPU_count"]) > 0:
+                req_hardware.append("gpu")
 
-        if int(hardware_summary_json["TPU_count"]) > 0:
-            req_hardware.append("tpu")
+            if int(hardware_summary_json["TPU_count"]) > 0:
+                req_hardware.append("tpu")
 
-        hardware_to_benchmark = req_hardware
+            hardware_to_benchmark = req_hardware
+        else:
+            log.error("The provided Hardware Summary is empty!")
+            sys.exit(-1)
+            
 
     if model_summary_path is not None:
         model_summary_json = ReadJSON(model_summary_path)
+        if model_summary_json is None:
+            log.error("The provided Model Summary is empty!")
+            sys.exit(-1)
+
 
     # Create single operation models/layers from the operations in the provided model
     splitter = Splitter(model_path, model_summary_json)
@@ -141,7 +150,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-n",
         "--summaryoutputname",
-        default="kws_ref_summary",
+        default="kws_ref_model_summary",
         help="Name that the model summary should have",
     )
 
@@ -167,10 +176,8 @@ if __name__ == "__main__":
     DisableTFlogging()
 
     SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
-    print("Model summarized")
 
     ProfileModel(args.model, args.count, args.hardwaresummary, os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)))
-    print("Model benchmarked")
 
     ## Run DSE
     #import os
