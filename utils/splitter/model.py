@@ -93,17 +93,22 @@ class Submodel(Model):
                 for i, op_entry in enumerate(new_op[entry]):
                     if op_entry in tensor_indexes:
                         new_op[entry][i] = new_tensors.index(source_graph["tensors"][op_entry])
-                        continue
                     else:
                         tensor_indexes.append(op_entry)
                         new_tensors.append(source_graph["tensors"][op_entry].copy())
                         new_op[entry][i] = len(new_tensors) - 1
 
-        #Add Submodel Input and Output Tensors
+        #Add Submodel Input and Output Tensors 
         new_inputs = []
         new_outputs = []
-        new_inputs.append(new_ops[0]["inputs"][0])
-        new_outputs.append(new_ops[-1]["outputs"][0])
+        if new_opcodes[new_ops[0]["opcode_index"]]["deprecated_builtin_code"] == 0:
+            for i_t in new_ops[0]["inputs"]:
+                new_inputs.append(i_t)
+        else:
+            new_inputs.append(new_ops[0]["inputs"][0])
+
+        new_outputs.append(new_ops[-1]["outputs"][0])   
+        
         
 
         #Add Subgraph Name

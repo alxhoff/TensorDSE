@@ -19,8 +19,27 @@ def ReadCSV(csv_file_path: str):
         return data
 
 def ReadJSON(file_path: str):
-    with open(file_path) as fin:
-        return json.load(fin)
+    from .logger import log
+    # List of encodings to try
+    encodings_to_try = ['utf-8', 'utf-16', 'latin-1', 'iso-8859-1', 'cp1252']
+
+    data = None
+    for encoding in encodings_to_try:
+        try:
+            with open(file_path, 'r', encoding=encoding) as file:
+                data = json.load(file)
+            # If the JSON file is successfully loaded, break out of the loop
+            break
+        except UnicodeDecodeError:
+            log.error(f"Failed to read with encoding: {encoding}")
+        except json.JSONDecodeError:
+            log.error(f"JSONDecodeError with encoding: {encoding}")
+        except FileNotFoundError:
+            log.error(f"File not found: {file_path}")
+        except Exception as e:
+            log.error(f"An error occurred: {e}")
+
+    return data
 
 def CopyFile(source: str, destination: str):
     RunTerminalCommand("cp", source, destination)
