@@ -73,9 +73,9 @@ public class TensorDSE {
 		parser.addArgument("-g", "--generations").setDefault(25).type(int.class)
 				.help("Number of generations in the EA");
 
-		parser.addArgument("-v", "--verbose").setDefault(false).type(Boolean.class)
+		parser.addArgument("-v", "--verbose").setDefault(true).type(Boolean.class)
 				.help("Enables verbose output messages");
-		parser.addArgument("-u", "--visualise").setDefault(true).type(Boolean.class)
+		parser.addArgument("-u", "--visualise").setDefault(false).type(Boolean.class)
 				.help("If set, OpenDSE will visualise all specificatons");
 
 		// Other
@@ -83,7 +83,7 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
-				.setDefault("../../resources/model_summaries/example_summaries/MNIST_multi_1.json")
+				.setDefault("../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization.json")
 				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary").setDefault(
 				"../../resources/architecture_summaries/example_output_architecture_summary.json")
@@ -501,7 +501,7 @@ public class TensorDSE {
 
 							objective_values[i] = individual.getObjectives().getValues().iterator()
 									.next().getDouble();
-							System.out.println(objective_values[i]);
+							System.out.println(String.format("Objective: %f", objective_values[i]));
 							System.out.println();
 
 							csv_writer.append(String.join(",", Integer.toString(i), time_string,

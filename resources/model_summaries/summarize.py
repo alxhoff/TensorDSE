@@ -1,5 +1,4 @@
-
-def SummarizeGraph(model:str, output_dir:str, output_name:str) -> None:
+def SummarizeGraph(model: str, output_dir: str, output_name: str) -> None:
     from mltk.core import summarize_model
     import json, re
     from tensorflow.lite.python.analyzer_wrapper import (
@@ -94,24 +93,33 @@ def SummarizeGraph(model:str, output_dir:str, output_name:str) -> None:
                     {"shape": input_shape, "type": input_type, "tensor": input_tensor}
                 )
             if output != []:
-                output_shape = output[0].split("x")
-                output_type = output[1]
-                output_tensor = ops_tensors.get(layer_number).get("output_tensors")[i]
-                layer.get("outputs", []).append(
-                    {
-                        "shape": output_shape,
-                        "type": output_type,
-                        "tensor": output_tensor,
-                    }
-                )
+                try:
+                    output_shape = output[0].split("x")
+                    output_type = output[1]
+                    output_tensor = ops_tensors.get(layer_number).get("output_tensors")[
+                        i
+                    ]
+                    layer.get("outputs", []).append(
+                        {
+                            "shape": output_shape,
+                            "type": output_type,
+                            "tensor": output_tensor,
+                        }
+                    )
+                except Exception as e:
+                    print(e)
 
         layers.append(layer)
 
     ret = {
-        "name": output_name,
-        "starting_tensor": starting_tensor,
-        "finishing_tensor": finishing_tensor,
-        "layers": layers,
+        "models": [
+            {
+                "name": output_name,
+                "starting_tensor": starting_tensor,
+                "finishing_tensor": finishing_tensor,
+                "layers": layers,
+            }
+        ]
     }
 
     try:
