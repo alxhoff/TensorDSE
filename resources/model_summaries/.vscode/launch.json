@@ -12,11 +12,11 @@
       "console": "integratedTerminal",
       "args": [
         "--model",
-        "resources/examplemodels/mobilenet_v1_1_0_224_quant.tflite",
+        "../models/example_models/MNIST_full_quanitization.tflite",
         "--outputdir",
-        "resources/modelsummaries",
+        "example_summaries",
         "--outputname",
-        "mobilenet_v1_1_0_224_quant"
+        "MNIST_full_quanitization"
       ],
       "justMyCode": false,
       "purpose": ["debug-in-terminal"]
