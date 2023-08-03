@@ -30,6 +30,7 @@ import net.sf.opendse.model.Mappings;
 import net.sf.opendse.model.Resource;
 import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
+// import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
  * The {@code SpecificationDefinition} is the class defining the Specification that corresponds to
@@ -82,9 +83,9 @@ public class SpecificationDefinition {
 
 	/**
 	 * @param model_summary_path
-	 * @param benchmarking_results_path
+	 * @param profiling_costs_file_path
 	 */
-	public SpecificationDefinition(String model_summary_path, String benchmarking_results_path,
+	public SpecificationDefinition(String model_summary_path, String profiling_costs_file_path,
 			String architecture_summary_path) {
 
 		Gson gson = new Gson();
@@ -100,7 +101,7 @@ public class SpecificationDefinition {
 			e.printStackTrace();
 		}
 
-		this.operation_costs = new OperationCosts(benchmarking_results_path);
+		this.operation_costs = new OperationCosts(profiling_costs_file_path);
 		this.specification =
 				GetSpecificationFromTFLiteModel(model_summary_path, architecture_summary_path);
 	}
@@ -144,6 +145,9 @@ public class SpecificationDefinition {
 
 		Specification specification = new Specification(application, architecture, mappings);
 
+		// For debugging
+		// SpecificationViewer.view(specification);
+
 		SpecificationWriter writer = new SpecificationWriter();
 		writer.write(specification, "src/main/resources/generated_specs/spec_"
 				+ new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date()) + ".xml");
@@ -184,11 +188,15 @@ public class SpecificationDefinition {
 		Application<Task, Dependency> application = new Application<Task, Dependency>();
 
 		if (this.json_models != null)
+			// For each model in the application graph
 			for (int k = 0; k < this.json_models.size(); k++) {
 
+				// Python structure of model JSON
 				Model model = this.json_models.get(k);
 				List<Layer> layers = model.getLayers();
 
+				// Hashmap for each graph in application graph, containing a
+				// hashmap of each layer in specific graph
 				application_graphs.put(k, new HashMap<Integer, Task>());
 
 				// Create task nodes in Application and populate hashmap
