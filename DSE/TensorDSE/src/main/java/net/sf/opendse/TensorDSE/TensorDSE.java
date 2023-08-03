@@ -88,7 +88,7 @@ public class TensorDSE {
 		parser.addArgument("-a", "--architecturesummary").setDefault(
 				"../../resources/architecture_summaries/example_output_architecture_summary.json")
 				.type(String.class).help("Location of architecture summary JSON");
-		parser.addArgument("-d", "--benchmarkingresults")
+		parser.addArgument("-d", "--profilingcosts")
 				.setDefault("../../resources/benchmarking_results/example_benchmark_results.json")
 				.type(String.class).help("Directory containing cost files");
 
@@ -172,7 +172,7 @@ public class TensorDSE {
 	 * @param args_namespace
 	 * @return String
 	 */
-	private static String GetModelSummaryPath(Namespace args_namespace) {
+	private static String GetModelSummaryFilePath(Namespace args_namespace) {
 		String model_summary_loc = args_namespace.getString("modelsummary");
 		if (model_summary_loc == null) {
 			System.out.println("You need to provide the model summary file");
@@ -187,7 +187,7 @@ public class TensorDSE {
 	 * @param args_namespace
 	 * @return String
 	 */
-	private static String GetArchitectureSummaryPath(Namespace args_namespace) {
+	private static String GetArchitectureSummaryFilePath(Namespace args_namespace) {
 		String architecture_summary_loc = args_namespace.getString("architecturesummary");
 		if (architecture_summary_loc == null) {
 			System.out.println("You need to provide the architecture summary file");
@@ -202,13 +202,13 @@ public class TensorDSE {
 	 * @param args_namespace
 	 * @return String
 	 */
-	private static String GetBenchmarkingResultsPath(Namespace args_namespace) {
-		String cost_file = args_namespace.getString("benchmarkingresults");
+	private static String GetProfilingCostsFilePath(Namespace args_namespace) {
+		String cost_file = args_namespace.getString("profilingcosts");
 		if (cost_file == null) {
 			System.out.println("You need to provide the cost files directory");
 			System.exit(0);
 		}
-		System.out.printf("Cost Directory: %s\n", cost_file);
+		System.out.printf("Profiling costs: %s\n", cost_file);
 		return cost_file;
 	}
 

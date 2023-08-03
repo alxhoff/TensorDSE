@@ -215,14 +215,14 @@ public class OperationCosts {
         return model;
     }
 
-    public OperationCosts(String cost_file_path) {
+    public OperationCosts(String profiling_costs_file_path) {
 
         this.communication_costs = this.CreateEmptyCommDeviceTypeTable();
         this.operation_costs = this.CreateEmptyDeviceTypeTable();
 
         try {
 
-            BenchmarkJSON benchmark = GetBenchmarkResultsFromJSON(cost_file_path);
+            BenchmarkJSON benchmark = GetBenchmarkResultsFromJSON(profiling_costs_file_path);
 
             for (Model model : benchmark.getModels()) {
 
@@ -242,9 +242,9 @@ public class OperationCosts {
 
                         if (count == 0) {
                             data_type = "null";
-                            mean_exec_cost = 1000.0;
-                            comm_send_cost = 1000.0;
-                            comm_recv_cost = 1000.0;
+                            mean_exec_cost = 10000.0;
+                            comm_send_cost = 10000.0;
+                            comm_recv_cost = 10000.0;
                         } else {
                             data_type = deligate.getInput().getType().toLowerCase();
                             mean_exec_cost = deligate.getMean();

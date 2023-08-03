@@ -223,7 +223,7 @@ public class ScheduleSolver {
     /**
      * @return Double
      */
-    public Double solveDSESchedule(Mappings<Task, Resource> possible_mappings) {
+    public Double solveGASchedule(Mappings<Task, Resource> possible_mappings) {
 
         // Sequential arrays of models and their tasks
         ArrayList<ArrayList<ILPTask>> models = new ArrayList<ArrayList<ILPTask>>();
