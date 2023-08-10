@@ -1,12 +1,11 @@
 import argparse
 import os
-print(os.getcwd())
 from utils.log import Log
 
 MODELS_FOLDER = "resources/models/source/"
 LAYERS_FOLDER = "resources/models/layers/"
 COMPILED_MODELS_FOLDER = "resources/models/compiled/"
-RESULTS_FOLDER = "resources/results/"
+RESULTS_FOLDER = "resources/profiling_results/"
 
 # custom logger to separate TF logs and Ours
 #log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))
@@ -114,7 +113,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--model",
-        default="resources/models/example_models/keyword_spotting/kws_ref_model.tflite",
+        default="resources/models/example_models/MNIST_full_quanitization.tflite",
         help="File path to the SOURCE .tflite file.",
     )
 
@@ -137,14 +136,14 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-o",
         "--summaryoutputdir",
-        default="resources/model_summaries",
+        default="resources/model_summaries/example_summaries/MNIST",
         help="Directory where model summary should be saved",
     )
 
     parser.add_argument(
         "-n",
         "--summaryoutputname",
-        default="kws_ref_summary",
+        default="MNIST_full_quanitization_summary",
         help="Name that the model summary should have",
     )
 
@@ -174,51 +173,6 @@ if __name__ == "__main__":
 
     ProfileModel(args.model, args.count, args.hardwaresummary, os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)))
     print("Model benchmarked")
-
-    ## Run DSE
-    #import os
-
-    # os.chdir(os.path.join(os.getcwd(), "DSE/TensorDSE"))
-    # print(os.getcwd())
-    # model_summary = (
-    #    "../../resources/model_summaries/example_summaries/MNIST_multi_1.json"
-    # )
-    # architecture_summary = "../../resources/architecture_summaries/example_output_architecture_summary.json"
-    # benchmarking_results = (
-    #    "../../resources/benchmarking_results/example_benchmark_results.json"
-    # )
-    # output_folder = "src/main/resources/output"
-    # ilp_mapping = "true"
-    # runs = "1"
-    # crossover = "0.9"
-    # population_size = 100
-    # parents_per_generation = 50
-    # offspring_per_generation = 50
-    # generations = 25
-    # verbose = "false"
-    # gurobi_command = 'gradle6 run --args="--modelsummary {} --architecturesummary {} --benchmarkingresults {} --outputfolder {} --ilpmapping {} --runs {} --crossover {} --populationsize {} --parentspergeneration {} --offspringspergeneration {} --generations {} --verbose {}"'.format(
-    #        model_summary,
-    #        architecture_summary,
-    #        benchmarking_results,
-    #        output_folder,
-    #        ilp_mapping,
-    #        runs,
-    #        crossover,
-    #        population_size,
-    #        parents_per_generation,
-    #        offspring_per_generation,
-    #        generations,
-    #        verbose,
-    #    )
-    # print(gurobi_command)
-
-    # import subprocess
-
-    # subprocess.run("echo $LD_LIBRARY_PATH")
-    # subprocess.run(gurobi_command)
-    # os.chdir(os.path.join(os.getcwd(), "../.."))
-
-    # Deploy
 
     print()
     print("Finito ☜(⌒▽⌒)=b")

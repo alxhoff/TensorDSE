@@ -127,7 +127,5 @@ ENV NVIDIA_VISIBLE_DEVICES all
 ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 
 # Work
-RUN mkdir -p /home/tensorDSE/benchmarking && \
-mkdir -p /home/tensorDSE/deployment
-WORKDIR /home/tensorDSE
-ENTRYPOINT ["bash", "-i", "/home/tensorDSE/docker/scripts/entry.sh" ]
+WORKDIR /home/sources/TensorDSE
+ENTRYPOINT ["bash", "-i", "/home/sources/TensorDSE/docker/scripts/entry.sh" ]

@@ -79,7 +79,7 @@ run: $(if $(call exist-docker-image),,build)
 			   --gpus 'all,capabilities=utility,compute' \
 			   --MODEL_SUMMARY=$$MODEL_SUMMARY \
 			   --ARCHITECTURE_SUMMARY=$$ARCHITECTURE_SUMMARY \
-			   --BENCHMARKING_RESULTS=$$BENCHMARKING_RESULTS \
+			   --PROFILING_RESULTS=$$PROFILING_RESULTS \
 			   --OUTPUT_FOLDER=$$OUTPUT_FOLDER \
 			   --ILP_MAPPING=$$ILP_MAPPING \
 			   --RUNS=$$RUNS \
