@@ -197,7 +197,7 @@ def BenchmarkModelLayers(
         log.info("No CPU cores in hardware summary, skipping benchmarking")
     else:
         log.info(f"CPU is available on this machine!")
-        for layer in model_summary["layers"]:
+        for layer in model_summary["models"][0]["layers"]:
             m = BenchmarkLayer(Model(layer, "cpu", parent_model), count, "CPU")
             models["cpu"].append(m)
             #AnalyzeLayerResults(m, "cpu")

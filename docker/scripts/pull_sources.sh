@@ -2,16 +2,13 @@
 
 set -e
 
-[ -d /home/tensorDSE ] || mkdir /home/tensorDSE
-pushd /home/tensorDSE
+[ -d /home/sources ] || mkdir /home/sources
+pushd /home/sources
 
 export TENSORFLOW_VER=r2.9
 export TENSORFLOW_SRC=`pwd`/tensorflow_env/tensorflow_src
 
 main() {
-
-    echo "Working Dir: $(pwd)"
-
     [ -d TensorDSE ] || git clone https://github.com/alxhoff/TensorDSE.git
     [ -d tensorflow_env ] || mkdir tensorflow_env
     cd tensorflow_env

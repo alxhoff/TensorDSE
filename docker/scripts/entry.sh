@@ -15,8 +15,8 @@ for i in "$@"; do
       ARCHITECTURE_SUMMARY="${i#*=}"
       shift # past argument=value
       ;;
-    -b=*|--BENCHMARKING_RESULTS=*)
-      BENCHMARKING_RESULTS="${i#*=}"
+    -b=*|--PROFILING_RESULTS=*)
+      PROFILING_RESULTS="${i#*=}"
       shift # past argument=value
       ;;
     -o=*|--OUTPUT_FOLDER=*)
@@ -95,22 +95,25 @@ test() {
 }
 
 run() {
-    python3 profile.py -m resources/models/example_models/MNIST.tflite -c 10
+    python3 profile.py -m resources/models/example_models/MNIST_full_quanitization.tflite -c 10
     pushd DSE/TensorDSE
-    gradle6 run --args="--modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --benchmarkingresults $BENCHMARKING_RESULTS --outputfolder $OUTPUT_FOLDER --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    gradle6 run --args="--modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingresults $PROFILING_RESULTS --outputfolder $OUTPUT_FOLDER --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
     popd
     python3 deploy.py
 }
 
 main() {
-    echo $LD_LIBRARY_PATH
+
     if [ "$mode" -eq $DEBUG_MODE ]; then
+        ./docker/scripts/build_backend.sh
         debug
     elif [ "$mode" -eq $TEST_MODE ]; then
+        ./docker/scripts/build_backend.sh
         test
     elif [ "$mode" -eq $SHELL_MODE ]; then
         bash
     else
+        ./docker/scripts/build_backend.sh
         run
     fi
 }
