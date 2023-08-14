@@ -71,6 +71,13 @@ std::vector<uint8_t> decode_bmp(const uint8_t* input, int row_size, int width,
     return output;
 }
 
+std::unique_ptr<tflite::FlatBufferModel> LoadModelFile(std::string& filepath) {
+    tflite::ErrorReporter* error_reporter;
+    std::unique_ptr<tflite::FlatBufferModel> model =
+    tflite::FlatBufferModel::BuildFromFile(filepath.c_str(), error_reporter);
+    return model;
+}
+
 std::vector<uint8_t> read_bmp(const std::string& input_bmp_name, int* width,
                             int* height, int* channels) {
     int begin, end;
@@ -210,13 +217,6 @@ std::vector<std::pair<int, float>> Sort(const std::vector<float>& scores,
     for (auto it = ptrs.begin(); it != end; ++it)
         result.emplace_back(*it - scores.data(), **it);
     return result;
-}
-
-std::unique_ptr<tflite::FlatBufferModel> LoadModelFile(std::string& filepath) {
-    tflite::ErrorReporter* error_reporter;
-    std::unique_ptr<tflite::FlatBufferModel> model =
-    tflite::FlatBufferModel::BuildFromFile(filepath.c_str(), error_reporter);
-    return model;
 }
 
 int calculateMean(const std::vector<uint32_t>& values) {
