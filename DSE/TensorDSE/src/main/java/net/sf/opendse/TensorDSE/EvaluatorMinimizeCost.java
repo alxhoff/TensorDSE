@@ -58,7 +58,7 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		ScheduleSolver schedule_solver = new ScheduleSolver(solution_specification,
 				this.starting_tasks, this.operation_costs, this.verbose);
 
-		double cost_of_mapping = schedule_solver.solveDSESchedule(getPossible_mappings());
+		double cost_of_mapping = schedule_solver.solveGASchedule(getPossible_mappings());
 
 		objectives.add(map.get("cost_of_mapping"), cost_of_mapping);
 		/*

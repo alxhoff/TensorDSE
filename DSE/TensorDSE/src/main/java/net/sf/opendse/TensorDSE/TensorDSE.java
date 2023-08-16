@@ -73,9 +73,9 @@ public class TensorDSE {
 		parser.addArgument("-g", "--generations").setDefault(25).type(int.class)
 				.help("Number of generations in the EA");
 
-		parser.addArgument("-v", "--verbose").setDefault(false).type(Boolean.class)
+		parser.addArgument("-v", "--verbose").setDefault(true).type(Boolean.class)
 				.help("Enables verbose output messages");
-		parser.addArgument("-u", "--visualise").setDefault(true).type(Boolean.class)
+		parser.addArgument("-u", "--visualise").setDefault(false).type(Boolean.class)
 				.help("If set, OpenDSE will visualise all specificatons");
 
 		// Other
@@ -83,12 +83,12 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
-				.setDefault("../../resources/model_summaries/example_summaries/MNIST_multi_1.json")
+				.setDefault("../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization.json")
 				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary").setDefault(
 				"../../resources/architecture_summaries/example_output_architecture_summary.json")
 				.type(String.class).help("Location of architecture summary JSON");
-		parser.addArgument("-d", "--benchmarkingresults")
+		parser.addArgument("-d", "--profilingcosts")
 				.setDefault("../../resources/benchmarking_results/example_benchmark_results.json")
 				.type(String.class).help("Directory containing cost files");
 
@@ -99,7 +99,7 @@ public class TensorDSE {
 				.type(String.class);
 
 		// ILP
-		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(true)
+		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
 		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(100.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
@@ -172,7 +172,7 @@ public class TensorDSE {
 	 * @param args_namespace
 	 * @return String
 	 */
-	private static String GetModelSummaryPath(Namespace args_namespace) {
+	private static String GetModelSummaryFilePath(Namespace args_namespace) {
 		String model_summary_loc = args_namespace.getString("modelsummary");
 		if (model_summary_loc == null) {
 			System.out.println("You need to provide the model summary file");
@@ -187,7 +187,7 @@ public class TensorDSE {
 	 * @param args_namespace
 	 * @return String
 	 */
-	private static String GetArchitectureSummaryPath(Namespace args_namespace) {
+	private static String GetArchitectureSummaryFilePath(Namespace args_namespace) {
 		String architecture_summary_loc = args_namespace.getString("architecturesummary");
 		if (architecture_summary_loc == null) {
 			System.out.println("You need to provide the architecture summary file");
@@ -202,13 +202,13 @@ public class TensorDSE {
 	 * @param args_namespace
 	 * @return String
 	 */
-	private static String GetBenchmarkingResultsPath(Namespace args_namespace) {
-		String cost_file = args_namespace.getString("benchmarkingresults");
+	private static String GetProfilingCostsFilePath(Namespace args_namespace) {
+		String cost_file = args_namespace.getString("profilingcosts");
 		if (cost_file == null) {
 			System.out.println("You need to provide the cost files directory");
 			System.exit(0);
 		}
-		System.out.printf("Cost Directory: %s\n", cost_file);
+		System.out.printf("Profiling costs: %s\n", cost_file);
 		return cost_file;
 	}
 
@@ -302,153 +302,157 @@ public class TensorDSE {
 		double[] objective_values = new double[test_runs];
 		File output_directory = GetOutputFolder(args_namespace);
 		FileWriter csv_writer = GetResultsWriter(args_namespace);
-		String models_description_path = GetModelSummaryPath(args_namespace);
-		String benchmark_results_path = GetBenchmarkingResultsPath(args_namespace);
-		String hardware_description_path = GetArchitectureSummaryPath(args_namespace);
+		String models_description_file_path = GetModelSummaryFilePath(args_namespace);
+		String profiling_costs_file_path = GetProfilingCostsFilePath(args_namespace);
+		String hardware_description_file_path = GetArchitectureSummaryFilePath(args_namespace);
 
 		System.out.println("Working Directory: " + System.getProperty("user.dir"));
 		System.out.printf("Runs: %d\n", test_runs);
 
-		ArrayList<Double> crossover_rates = new ArrayList<Double>();
-		ArrayList<Integer> population_sizes = new ArrayList<Integer>();
-		ArrayList<Integer> generations = new ArrayList<Integer>();
-		ArrayList<Integer> parents_per_generation = new ArrayList<Integer>();
-		ArrayList<Integer> offsprings_per_generation = new ArrayList<Integer>();
-
 		String config_file = args_namespace.getString("config");
 
-		System.out.println(String.format("Bin loc: %s",
+		System.out.println(String.format("Binary loc: %s",
 				TensorDSE.class.getProtectionDomain().getCodeSource().getLocation().getPath()));
 
-		if (config_file != null) {
-			FileInputStream propsInput = null;
-			try {
-				propsInput = new FileInputStream(config_file);
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		// Specification contains, architecture and application graph as well as a generated
+		// set of possible mappings
+		SpecificationDefinition specification_definition =
+				new SpecificationDefinition(models_description_file_path, profiling_costs_file_path,
+						hardware_description_file_path);
 
-			Properties prop = new Properties();
-			try {
-				prop.load(propsInput);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-			ArrayList<Double> crs = new ArrayList<Double>(
-					Arrays.asList(prop.getProperty("CROSSOVER").toString().split(",")).stream()
-							.map(Double::parseDouble).collect(Collectors.toList()));
-			ArrayList<Integer> pop_sizes = new ArrayList<Integer>(
-					Arrays.asList(prop.getProperty("POPULATION_SIZE").toString().split(","))
-							.stream().map(Integer::parseInt).collect(Collectors.toList()));
-			ArrayList<Integer> gens = new ArrayList<Integer>(
-					Arrays.asList(prop.getProperty("GENERATIONS").toString().split(",")).stream()
-							.map(Integer::parseInt).collect(Collectors.toList()));
-			ArrayList<Double> parent_ratios = new ArrayList<Double>(
-					Arrays.asList(prop.getProperty("PARENTS_PER_GENERATION").toString().split(","))
-							.stream().map(Double::parseDouble).collect(Collectors.toList()));
-			ArrayList<Double> offspring_ratios = new ArrayList<Double>(Arrays
-					.asList(prop.getProperty("OFFSPRING_PER_GENERATION").toString().split(","))
-					.stream().map(Double::parseDouble).collect(Collectors.toList()));
-
-			for (Double cr : crs)
-				for (Integer ps : pop_sizes)
-					for (Integer gen : gens)
-						for (Double pr : parent_ratios)
-							for (Double or : offspring_ratios) {
-								crossover_rates.add(cr);
-								population_sizes.add(ps);
-								generations.add(gen);
-								parents_per_generation.add((int) (pr * ps));
-								offsprings_per_generation.add((int) (or * ps));
-
-								if (args_namespace.getBoolean("verbose"))
-									System.out.println(String.format(
-											"gens: %d, pop size: %d, cross: %f, parents: %f = %f, offspring: %f = %f",
-											gen, ps, cr, pr, pr * ps, or, or * ps));
-							}
-
-
-			System.out.println();
-		} else {
-			crossover_rates.add(args_namespace.getDouble("crossover"));
-			population_sizes.add(args_namespace.getInt("populationsize"));
-			generations.add(args_namespace.getInt("generations"));
-			parents_per_generation.add(args_namespace.getInt("parentspergeneration"));
-			offsprings_per_generation.add(args_namespace.getInt("offspringspergeneration"));
-		}
-
-		for (int j = 0; j < crossover_rates.size(); j++)
+		if (args_namespace.getBoolean("ilpmapping") == true) {
 			for (int i = 0; i < test_runs; i++) {
-
-				System.out.println("#########################################################");
-				System.out.println(String.format("Test %d/%d", j + 1, crossover_rates.size()));
 				System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
 
-				// Specification contains, architecture and application graph as well as a generated
-				// set of possible mappings
-				SpecificationDefinition specification_definition = new SpecificationDefinition(
-						models_description_path, benchmark_results_path, hardware_description_path);
+				// Solve for mappings and schedule using only ILP
+				if (args_namespace.getBoolean("demo") == true) {
+					// Run an ILP demo
+					ILPFormuation ilp_formulation = new ILPFormuation();
+					ilp_formulation.gurobiDSEExampleSixTask();
+				} else {
+					// Solver contains the application, architecture, and possible mapping
+					// graphs as well as the list of starting tasks and the operation costs
+					ScheduleSolver schedule_solver = new ScheduleSolver(specification_definition,
+							args_namespace.getDouble("deactivationnumber"),
+							args_namespace.getBoolean("verbose"));
+					long startILP = System.currentTimeMillis();
+					ArrayList<ArrayList<ILPTask>> models =
+							schedule_solver.solveILPMappingAndSchedule();
+					System.out.println(String.format("ILP Exec time: %dms",
+							System.currentTimeMillis() - startILP));
 
-				if (args_namespace.getBoolean("ilpmapping") == true) {
+					// Populate model summary with mapping information
+					for (ArrayList<ILPTask> model : models) {
+						for (ILPTask task : model) {
+							Pattern pat =
+									Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
+							Matcher mat = pat.matcher(task.getID());
+							if (mat.matches()) {
+								String layer_index = mat.group(2);
+								String model_index = mat.group(3);
 
-					// Solve for mappings and schedule using only ILP
-					if (args_namespace.getBoolean("demo") == true) {
-						// Run an ILP demo
-						ILPFormuation ilp_formulation = new ILPFormuation();
-						ilp_formulation.gurobiDSEExampleSixTask();
-					} else {
-						// Solver contains the application, architecture, and possible mapping
-						// graphs as well as the list of starting tasks and the operation costs
-						ScheduleSolver schedule_solver =
-								new ScheduleSolver(specification_definition,
-										args_namespace.getDouble("deactivationnumber"),
-										args_namespace.getBoolean("verbose"));
-						long startILP = System.currentTimeMillis();
-						ArrayList<ArrayList<ILPTask>> models =
-								schedule_solver.solveILPMappingAndSchedule();
-						System.out.println(String.format("ILP Exec time: %dms",
-								System.currentTimeMillis() - startILP));
-
-						// Populate model summary with mapping information
-						for (ArrayList<ILPTask> model : models) {
-							for (ILPTask task : model) {
-								Pattern pat =
-										Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
-								Matcher mat = pat.matcher(task.getID());
-								if (mat.matches()) {
-									String layer_type = mat.group(1);
-									String layer_index = mat.group(2);
-									String model_index = mat.group(3);
-
-									specification_definition.json_models
-											.get(Integer.parseInt(model_index)).getLayers()
-											.get(Integer.parseInt(layer_index))
-											.setMapping(task.getTarget_resource_string());;
-								}
+								specification_definition.json_models
+										.get(Integer.parseInt(model_index)).getLayers()
+										.get(Integer.parseInt(layer_index))
+										.setMapping(task.getTarget_resource_string());;
 							}
 						}
 					}
-				} else {
-					// Solve for mappings using heuristic and schedule using ILP
+				}
+			}
+		} else {
+			// Solve for mappings using heuristic and schedule using ILP
+			ArrayList<Double> crossover_rates = new ArrayList<Double>();
+			ArrayList<Integer> population_sizes = new ArrayList<Integer>();
+			ArrayList<Integer> generations = new ArrayList<Integer>();
+			ArrayList<Integer> parents_per_generation = new ArrayList<Integer>();
+			ArrayList<Integer> offsprings_per_generation = new ArrayList<Integer>();
+
+
+			if (config_file != null) {
+				FileInputStream propsInput = null;
+				try {
+					propsInput = new FileInputStream(config_file);
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				Properties prop = new Properties();
+				try {
+					prop.load(propsInput);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				ArrayList<Double> crs = new ArrayList<Double>(
+						Arrays.asList(prop.getProperty("CROSSOVER").toString().split(",")).stream()
+								.map(Double::parseDouble).collect(Collectors.toList()));
+				ArrayList<Integer> pop_sizes = new ArrayList<Integer>(
+						Arrays.asList(prop.getProperty("POPULATION_SIZE").toString().split(","))
+								.stream().map(Integer::parseInt).collect(Collectors.toList()));
+				ArrayList<Integer> gens = new ArrayList<Integer>(
+						Arrays.asList(prop.getProperty("GENERATIONS").toString().split(","))
+								.stream().map(Integer::parseInt).collect(Collectors.toList()));
+				ArrayList<Double> parent_ratios = new ArrayList<Double>(Arrays
+						.asList(prop.getProperty("PARENTS_PER_GENERATION").toString().split(","))
+						.stream().map(Double::parseDouble).collect(Collectors.toList()));
+				ArrayList<Double> offspring_ratios = new ArrayList<Double>(Arrays
+						.asList(prop.getProperty("OFFSPRING_PER_GENERATION").toString().split(","))
+						.stream().map(Double::parseDouble).collect(Collectors.toList()));
+
+				for (Double cr : crs)
+					for (Integer ps : pop_sizes)
+						for (Integer gen : gens)
+							for (Double pr : parent_ratios)
+								for (Double or : offspring_ratios) {
+									crossover_rates.add(cr);
+									population_sizes.add(ps);
+									generations.add(gen);
+									parents_per_generation.add((int) (pr * ps));
+									offsprings_per_generation.add((int) (or * ps));
+
+									if (args_namespace.getBoolean("verbose"))
+										System.out.println(String.format(
+												"gens: %d, pop size: %d, cross: %f, parents: %f = %f, offspring: %f = %f",
+												gen, ps, cr, pr, pr * ps, or, or * ps));
+								}
+
+				System.out.println();
+
+			} else {
+				crossover_rates.add(args_namespace.getDouble("crossover"));
+				population_sizes.add(args_namespace.getInt("populationsize"));
+				generations.add(args_namespace.getInt("generations"));
+				parents_per_generation.add(args_namespace.getInt("parentspergeneration"));
+				offsprings_per_generation.add(args_namespace.getInt("offspringspergeneration"));
+			}
+
+			for (int c = 0; c < crossover_rates.size(); c++) {
+				System.out.println(String.format("Test %d/%d", c + 1, crossover_rates.size()));
+				for (int i = 0; i < test_runs; i++) {
+					System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
+
 					if (args_namespace.getBoolean("verbose"))
-						PrintEAParameters(crossover_rates.get(j), population_sizes.get(j),
-								generations.get(j), parents_per_generation.get(j),
-								offsprings_per_generation.get(j));
+						PrintEAParameters(crossover_rates.get(c), population_sizes.get(c),
+								generations.get(c), parents_per_generation.get(c),
+								offsprings_per_generation.get(c));
 
 					// Opt4J Modules
-					EvolutionaryAlgorithmModule ea_module = GetEAModule(crossover_rates.get(j),
-							population_sizes.get(j), generations.get(j),
-							parents_per_generation.get(j), offsprings_per_generation.get(j));
+					EvolutionaryAlgorithmModule ea_module = GetEAModule(crossover_rates.get(c),
+							population_sizes.get(c), generations.get(c),
+							parents_per_generation.get(c), offsprings_per_generation.get(c));
+
 					// Bind the evaluator to the specification
 					Module specification_module = GetSpecificationModule(specification_definition,
 							args_namespace.getBoolean("verbose"),
 							args_namespace.getBoolean("visualise"));
+
 					OptimizationModule optimization_module = new OptimizationModule();
 					optimization_module.setUsePreprocessing(false);
 					optimization_module.setUseVariableOrder(false);
+
 					Collection<Module> modules = GetModulesCollection(ea_module,
 							specification_module, optimization_module);
 
@@ -497,7 +501,7 @@ public class TensorDSE {
 
 							objective_values[i] = individual.getObjectives().getValues().iterator()
 									.next().getDouble();
-							System.out.println(objective_values[i]);
+							System.out.println(String.format("Objective: %f", objective_values[i]));
 							System.out.println();
 
 							csv_writer.append(String.join(",", Integer.toString(i), time_string,
@@ -518,19 +522,21 @@ public class TensorDSE {
 											+ m.getTarget().getId());
 								}
 						}
-
 					} catch (Exception ex) {
 						ex.printStackTrace();
 					} finally {
 						opt4j_task.close();
 					}
 				}
-
-				specification_definition.WriteJSONModelsToFile(models_description_path
-						.substring(0, models_description_path.lastIndexOf('.'))
-						.concat("_with_mappings.json"));
-				specification_definition.WriteJSONModelsToFile(output_directory.getPath().concat("/mappings.json"));
 			}
+		}
+
+		specification_definition.WriteJSONModelsToFile(models_description_file_path
+				.substring(0, models_description_file_path.lastIndexOf('.'))
+				.concat("_with_mappings.json"));
+		specification_definition
+				.WriteJSONModelsToFile(output_directory.getPath().concat("/mappings.json"));
+
 
 		try {
 			csv_writer.flush();

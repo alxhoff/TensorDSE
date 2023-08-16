@@ -18,7 +18,6 @@ import net.sf.opendse.TensorDSE.JSON.Architecture.ArchitectureJSON;
 import net.sf.opendse.TensorDSE.JSON.Model.Layer;
 import net.sf.opendse.TensorDSE.JSON.Model.Model;
 import net.sf.opendse.TensorDSE.JSON.Model.ModelJSON;
-
 import net.sf.opendse.io.SpecificationWriter;
 import net.sf.opendse.model.Application;
 import net.sf.opendse.model.Architecture;
@@ -30,6 +29,7 @@ import net.sf.opendse.model.Mappings;
 import net.sf.opendse.model.Resource;
 import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
+// import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
  * The {@code SpecificationDefinition} is the class defining the Specification that corresponds to
@@ -82,9 +82,9 @@ public class SpecificationDefinition {
 
 	/**
 	 * @param model_summary_path
-	 * @param benchmarking_results_path
+	 * @param profiling_costs_file_path
 	 */
-	public SpecificationDefinition(String model_summary_path, String benchmarking_results_path,
+	public SpecificationDefinition(String model_summary_path, String profiling_costs_file_path,
 			String architecture_summary_path) {
 
 		Gson gson = new Gson();
@@ -100,7 +100,7 @@ public class SpecificationDefinition {
 			e.printStackTrace();
 		}
 
-		this.operation_costs = new OperationCosts(benchmarking_results_path);
+		this.operation_costs = new OperationCosts(profiling_costs_file_path);
 		this.specification =
 				GetSpecificationFromTFLiteModel(model_summary_path, architecture_summary_path);
 	}
@@ -144,6 +144,9 @@ public class SpecificationDefinition {
 
 		Specification specification = new Specification(application, architecture, mappings);
 
+		// For debugging
+		// SpecificationViewer.view(specification);
+
 		SpecificationWriter writer = new SpecificationWriter();
 		writer.write(specification, "src/main/resources/generated_specs/spec_"
 				+ new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date()) + ".xml");
@@ -184,11 +187,15 @@ public class SpecificationDefinition {
 		Application<Task, Dependency> application = new Application<Task, Dependency>();
 
 		if (this.json_models != null)
+			// For each model in the application graph
 			for (int k = 0; k < this.json_models.size(); k++) {
 
+				// Python structure of model JSON
 				Model model = this.json_models.get(k);
 				List<Layer> layers = model.getLayers();
 
+				// Hashmap for each graph in application graph, containing a
+				// hashmap of each layer in specific graph
 				application_graphs.put(k, new HashMap<Integer, Task>());
 
 				// Create task nodes in Application and populate hashmap
@@ -204,61 +211,60 @@ public class SpecificationDefinition {
 					application.addVertex(t);
 				}
 
-				Integer output_tensor = model.getFinishing_tensor();
-
+				// Create connections between verticies
 				for (int i = 0; i < layers.size(); i++) {
-					Layer l = layers.get(i);
+					// JSON parsed layer object
+					Layer sending_layer = layers.get(i);
+					Task sending_layer_task =
+							application_graphs.get(k).get(sending_layer.getIndex());
 
 					// Step through all output tensors
-					List<Integer> layer_output_tensors = l.getOutputTensorArray();
+					List<Integer> sending_layer_output_tensor_indices =
+							sending_layer.getOutputTensorArray();
 
-					// Task to create communication from
-					if (layer_output_tensors.size() > 0) {
+					// Task to create communication from, ie. sending layer
+					for (Integer sending_layer_output_tensor_index : sending_layer_output_tensor_indices) {
 
-						Integer layer_task_index = l.getIndex();
-						Task layer_task = application_graphs.get(k).get(layer_task_index);
-						Integer output_size =
-								l.getOutputs().get(l.getOutputs().size() - 1).getShapeProduct();
+						// Output tensor doesn't send to anything
+						if (sending_layer_output_tensor_index != model.getFinishing_tensor()) {
 
-						for (int j = 0; j < layer_output_tensors.size(); j++) {
-
-							Integer target_tensor = layer_output_tensors.get(j);
-
-							if (target_tensor != output_tensor) {
-								Layer target_layer = model.getLayerWithInputTensor(target_tensor);
-
-								// Get OpenDSE task and set input shape
-								Integer target_task_index = 0;
-								try {
-									target_task_index = target_layer.getIndex();
-								} catch (Exception ex) {
-									ex.printStackTrace();
-								}
-								Task target_task = application_graphs.get(k).get(target_task_index);
-								target_task.setAttribute("input_shape", output_size);
-
-								Communication comm = new Communication(String.format("comm%d_%s_%s",
-										j, layer_task.getId(), target_task.getId()));
-								application.addVertex(comm);
-
-								// Create dependencies from:
-								// - current task -> communication
-								// - communication -> target task
-								application.addEdge(new Dependency(
-										String.format("%s[%s] -> comm_%s", layer_task.getId(),
-												layer_task_index, comm.getId())),
-										layer_task, comm);
-								application.addEdge(
-										new Dependency(
-												String.format("comm_%s -> %s[%d]", comm.getId(),
-														target_task.getId(), target_task_index)),
-										comm, target_task);
+							// Get OpenDSE task and set input shape
+							Integer target_task_index = 0;
+							try {
+								target_task_index = model
+										.getLayerWithInputTensor(sending_layer_output_tensor_index)
+										.getIndex();
+							} catch (Exception ex) {
+								ex.printStackTrace();
+								System.exit(1);
 							}
+
+							Task target_task = application_graphs.get(k).get(target_task_index);
+							target_task.setAttribute("input_shape", sending_layer.getOutputs()
+									.get(sending_layer.getOutputs().size() - 1).getShapeProduct());
+
+							// Comm task between two layers
+							Communication comm = new Communication(String.format("comm_%s_TO_%s",
+									sending_layer_task.getId(), target_task.getId()));
+							application.addVertex(comm);
+
+							// Create dependencies from:
+							// - sending task -> communication
+							// - communication -> target task
+							application
+									.addEdge(
+											new Dependency(String.format("%s[%s] -> comm_%s",
+													sending_layer_task.getId(),
+													sending_layer.getIndex(), comm.getId())),
+											sending_layer_task, comm);
+							application.addEdge(
+									new Dependency(String.format("comm_%s -> %s[%d]", comm.getId(),
+											target_task.getId(), target_task_index)),
+									comm, target_task);
 						}
 					}
 				}
 			}
-
 
 		return application;
 	}
@@ -297,64 +303,68 @@ public class SpecificationDefinition {
 		architecture.addEdge(link_usb_pci, bus_usb, bus_pci);
 
 		// Create CPU Cores
-		List<Resource> cpu_cores = new ArrayList<Resource>();
-		for (int i = 0; i < architecture_json.getCPU_cores(); i++) {
-			String r_id = String.format("cpu%d", i);
-			Resource core = new Resource(r_id);
-			architecture.addVertex(core);
-			cpu_cores.add(core);
+		if (architecture_json.getCPU_cores() > 0) {
+			List<Resource> cpu_cores = new ArrayList<Resource>();
+			for (int i = 0; i < architecture_json.getCPU_cores(); i++) {
+				String r_id = String.format("cpu%d", i);
+				Resource core = new Resource(r_id);
+				architecture.addVertex(core);
+				cpu_cores.add(core);
+			}
+			resources.put("cpu", cpu_cores);
+
+			// Link to bus
+			cpu_cores.forEach((core) -> {
+				Link link_to_dev = new Link(String.format("link_pci_%s", core.getId()));
+				link_to_dev.setAttribute("cost", 0.0);
+				architecture.addEdge(link_to_dev, bus_pci, core);
+				Link link_to_pci = new Link(String.format("link_%s_pci", core.getId()));
+				link_to_pci.setAttribute("cost", 0.0);
+				architecture.addEdge(link_to_pci, core, bus_pci);
+			});
 		}
-		resources.put("cpu", cpu_cores);
 
 		// Create GPUs
-		List<Resource> gpus = new ArrayList<Resource>();
-		for (int i = 0; i < architecture_json.getGPU_count(); i++) {
-			String r_id = String.format("gpu%d", i);
-			Resource gpu = new Resource(r_id);
-			architecture.addVertex(gpu);
-			gpus.add(gpu);
+		if (architecture_json.getGPU_count() > 0) {
+			List<Resource> gpus = new ArrayList<Resource>();
+			for (int i = 0; i < architecture_json.getGPU_count(); i++) {
+				String r_id = String.format("gpu%d", i);
+				Resource gpu = new Resource(r_id);
+				architecture.addVertex(gpu);
+				gpus.add(gpu);
+			}
+			resources.put("gpu", gpus);
+
+			gpus.forEach((gpu) -> {
+				Link link_to_dev = new Link(String.format("link_pci_%s", gpu.getId()));
+				link_to_dev.setAttribute("cost", 0.0);
+				architecture.addEdge(link_to_dev, bus_pci, gpu);
+				Link link_to_pci = new Link(String.format("link_%s_pci", gpu.getId()));
+				link_to_pci.setAttribute("cost", 0.0);
+				architecture.addEdge(link_to_pci, gpu, bus_pci);
+			});
 		}
-		resources.put("gpu", gpus);
 
 		// Create TPUs
-		List<Resource> tpus = new ArrayList<Resource>();
-		for (int i = 0; i < architecture_json.getTPU_count(); i++) {
-			String r_id = String.format("tpu%d", i);
-			Resource tpu = new Resource(r_id);
-			architecture.addVertex(tpu);
-			tpus.add(tpu);
+		if (architecture_json.getTPU_count() > 0) {
+			List<Resource> tpus = new ArrayList<Resource>();
+			for (int i = 0; i < architecture_json.getTPU_count(); i++) {
+				String r_id = String.format("tpu%d", i);
+				Resource tpu = new Resource(r_id);
+				architecture.addVertex(tpu);
+				tpus.add(tpu);
+			}
+			resources.put("tpu", tpus);
+
+			tpus.forEach((tpu) -> {
+				Link link_to_dev = new Link(String.format("link_usb_%s", tpu.getId()));
+				link_to_dev.setAttribute("cost", 0.0);
+				architecture.addEdge(link_to_dev, bus_usb, tpu);
+				Link link_to_usb = new Link(String.format("link_%s_usb", tpu.getId()));
+				link_to_usb.setAttribute("cost", 0.0);
+				architecture.addEdge(link_to_usb, tpu, bus_usb);
+			});
 		}
-		resources.put("tpu", tpus);
-
-		// Link CPUs and GPUs to PCI bus
-		cpu_cores.forEach((core) -> {
-			Link link_to_dev = new Link(String.format("link_pci_%s", core.getId()));
-			link_to_dev.setAttribute("cost", 0.0);
-			architecture.addEdge(link_to_dev, bus_pci, core);
-			Link link_to_pci = new Link(String.format("link_%s_pci", core.getId()));
-			link_to_pci.setAttribute("cost", 0.0);
-			architecture.addEdge(link_to_pci, core, bus_pci);
-		});
-
-		gpus.forEach((gpu) -> {
-			Link link_to_dev = new Link(String.format("link_pci_%s", gpu.getId()));
-			link_to_dev.setAttribute("cost", 0.0);
-			architecture.addEdge(link_to_dev, bus_pci, gpu);
-			Link link_to_pci = new Link(String.format("link_%s_pci", gpu.getId()));
-			link_to_pci.setAttribute("cost", 0.0);
-			architecture.addEdge(link_to_pci, gpu, bus_pci);
-		});
-
-		// Link TPUs to USB bus
-		// TODO set attribute costs for USB comm
-		tpus.forEach((tpu) -> {
-			Link link_to_dev = new Link(String.format("link_usb_%s", tpu.getId()));
-			link_to_dev.setAttribute("cost", 0.0);
-			architecture.addEdge(link_to_dev, bus_usb, tpu);
-			Link link_to_usb = new Link(String.format("link_%s_usb", tpu.getId()));
-			link_to_usb.setAttribute("cost", 0.0);
-			architecture.addEdge(link_to_usb, tpu, bus_usb);
-		});
 
 		return architecture;
 	}
@@ -375,37 +385,44 @@ public class SpecificationDefinition {
 				String task_id = task.getId();
 
 				// All tasks can be mapped to CPU + GPU
-				List<Resource> cpus = resources.get("cpu");
-				for (int i = 0; i < cpus.size(); i++) {
-					Resource resource = cpus.get(i);
-					Mapping<Task, Resource> m = new Mapping<Task, Resource>(
-							String.format("%s:%s", task_id, resource.getId()), task, resource);
-					m.setAttribute("cost", this.operation_costs.GetOpCost("cpu",
-							task.getAttribute("type"), task.getAttribute("dtype")));
-					mappings.add(m);
-				}
-
-				List<Resource> gpus = resources.get("gpu");
-				for (int i = 0; i < gpus.size(); i++) {
-					Resource resource = gpus.get(i);
-					Mapping<Task, Resource> m = new Mapping<Task, Resource>(
-							String.format("%s:%s", task_id, resource.getId()), task, resource);
-					m.setAttribute("cost", this.operation_costs.GetOpCost("gpu",
-							task.getAttribute("type"), task.getAttribute("dtype")));
-					mappings.add(m);
-				}
-
-				// Compatible tasks can be mapped to TPU
-				List<Resource> tpus = resources.get("tpu");
-				if (supported_layers.contains(task.getAttribute("type")))
-					for (int i = 0; i < tpus.size(); i++) {
-						Resource resource = tpus.get(i);
+				if (resources.containsKey("cpu")) {
+					List<Resource> cpus = resources.get("cpu");
+					for (int i = 0; i < cpus.size(); i++) {
+						Resource resource = cpus.get(i);
 						Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 								String.format("%s:%s", task_id, resource.getId()), task, resource);
-						m.setAttribute("cost", this.operation_costs.GetOpCost("tpu",
+						m.setAttribute("cost", this.operation_costs.GetOpCost("cpu",
 								task.getAttribute("type"), task.getAttribute("dtype")));
 						mappings.add(m);
 					}
+				}
+
+				if (resources.containsKey("gpu")) {
+					List<Resource> gpus = resources.get("gpu");
+					for (int i = 0; i < gpus.size(); i++) {
+						Resource resource = gpus.get(i);
+						Mapping<Task, Resource> m = new Mapping<Task, Resource>(
+								String.format("%s:%s", task_id, resource.getId()), task, resource);
+						m.setAttribute("cost", this.operation_costs.GetOpCost("gpu",
+								task.getAttribute("type"), task.getAttribute("dtype")));
+						mappings.add(m);
+					}
+				}
+
+				// Compatible tasks can be mapped to TPU
+				if (resources.containsKey("tpu")) {
+					List<Resource> tpus = resources.get("tpu");
+					if (supported_layers.contains(task.getAttribute("type")))
+						for (int i = 0; i < tpus.size(); i++) {
+							Resource resource = tpus.get(i);
+							Mapping<Task, Resource> m = new Mapping<Task, Resource>(
+									String.format("%s:%s", task_id, resource.getId()), task,
+									resource);
+							m.setAttribute("cost", this.operation_costs.GetOpCost("tpu",
+									task.getAttribute("type"), task.getAttribute("dtype")));
+							mappings.add(m);
+						}
+				}
 			}
 		}
 

@@ -14,11 +14,11 @@ import java.io.*;
 /**
  * The {@code OpCosts} is a class that would be later used when defining the specification for
  * initializing the cost of mapping. It allows updating the costs in case of further benchmarks.
- * 
+ *
  * @param costfilepath The path to the csv file that is a summary of cosr results obtained from
  *        benchmarks and tests
- * 
- * 
+ *
+ *
  * @author Ines Ben Hmida
  * @author Alex Hoffman
  *
@@ -168,7 +168,7 @@ public class OperationCosts {
                 this.GetOpDataTypeTable(device_type, operation_type);
 
         if (!data_type_table.containsKey(data_type)) {
-            data_type_table.put(data_type, 1000.0);
+            data_type_table.put(data_type, 10000.0);
         }
 
         return (Double) data_type_table.get(data_type);
@@ -188,7 +188,7 @@ public class OperationCosts {
                 this.GetCommDataTypeTable(device_type, operation_type);
 
         if (!data_type_table.containsKey(data_type)) {
-            data_type_table.put(data_type, new Pair<>(1000.0, 1000.0));
+            data_type_table.put(data_type, new Pair<>(10000.0, 10000.0));
         }
 
         return (Pair<Double, Double>) data_type_table.get(data_type);
@@ -215,14 +215,14 @@ public class OperationCosts {
         return model;
     }
 
-    public OperationCosts(String cost_file_path) {
+    public OperationCosts(String profiling_costs_file_path) {
 
         this.communication_costs = this.CreateEmptyCommDeviceTypeTable();
         this.operation_costs = this.CreateEmptyDeviceTypeTable();
 
         try {
 
-            BenchmarkJSON benchmark = GetBenchmarkResultsFromJSON(cost_file_path);
+            BenchmarkJSON benchmark = GetBenchmarkResultsFromJSON(profiling_costs_file_path);
 
             for (Model model : benchmark.getModels()) {
 
@@ -242,9 +242,9 @@ public class OperationCosts {
 
                         if (count == 0) {
                             data_type = "null";
-                            mean_exec_cost = 1000.0;
-                            comm_send_cost = 1000.0;
-                            comm_recv_cost = 1000.0;
+                            mean_exec_cost = 10000.0;
+                            comm_send_cost = 10000.0;
+                            comm_recv_cost = 10000.0;
                         } else {
                             data_type = deligate.getInput().getType().toLowerCase();
                             mean_exec_cost = deligate.getMean();

@@ -12,16 +12,13 @@ if ! command -v cmake &>/dev/null; then
     exit 1
 fi
 
-[ -d /home/tensorDSE ] || mkdir /home/tensorDSE
-pushd /home/tensorDSE
+[ -d /home/sources ] || mkdir /home/sources
+pushd /home/sources
 
 export TENSORFLOW_VER=r2.9
 export TENSORFLOW_SRC=`pwd`/tensorflow_env/tensorflow_src
 
 main() {
-
-    echo "Working Dir: $(pwd)"
-
     # clean up bazel cache, just in case.
     cd ${TENSORFLOW_SRC}
     bazel clean
@@ -46,10 +43,10 @@ main() {
 
     cd ${TENSORFLOW_SRC}
 
-    [ -d /home/tensorDSE/tensorflow_env/bazel-output ] || mkdir -p /home/tensorDSE/tensorflow_env/bazel-output
-    cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/libtensorflowlite.so /home/tensorDSE/tensorflow_env/bazel-output/
+    [ -d /home/sources/tensorflow_env/bazel-output ] || mkdir -p /home/sources/tensorflow_env/bazel-output
+    cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/libtensorflowlite.so /home/sources/tensorflow_env/bazel-output/
     cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/libtensorflowlite.so /usr/lib/
-    cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/delegates/gpu/libtensorflowlite_gpu_delegate.so /home/tensorDSE/tensorflow_env/bazel-output/
+    cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/delegates/gpu/libtensorflowlite_gpu_delegate.so /home/sources/tensorflow_env/bazel-output/
     cp ${TENSORFLOW_SRC}/bazel-bin/tensorflow/lite/delegates/gpu/libtensorflowlite_gpu_delegate.so /usr/lib/
 }
 

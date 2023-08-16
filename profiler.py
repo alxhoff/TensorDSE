@@ -1,15 +1,15 @@
 import os
 import sys
 import argparse
-
+from utils.log import Log
 
 MODELS_FOLDER = "resources/models/source/"
 LAYERS_FOLDER = "resources/models/layers/"
 COMPILED_MODELS_FOLDER = "resources/models/compiled/"
-RESULTS_FOLDER = "resources/results/"
+RESULTS_FOLDER = "resources/profiling_results/"
 
 # custom logger to separate TF logs and Ours
-#log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))
+# log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))
 
 
 def DisableTFlogging() -> None:
@@ -31,8 +31,9 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
     system(command)
 
 
-def ProfileModel(model_path: str, count: int, hardware_summary_path: str, model_summary_path: str) -> None:
-
+def ProfileModel(
+    model_path: str, count: int, hardware_summary_path: str, model_summary_path: str
+) -> None:
     from utils.benchmark import BenchmarkModelLayers
     from utils.analysis import AnalyzeModelResults, MergeResults
 
@@ -67,14 +68,12 @@ def ProfileModel(model_path: str, count: int, hardware_summary_path: str, model_
         else:
             log.error("The provided Hardware Summary is empty!")
             sys.exit(-1)
-            
 
     if model_summary_path is not None:
         model_summary_json = ReadJSON(model_summary_path)
         if model_summary_json is None:
             log.error("The provided Model Summary is empty!")
             sys.exit(-1)
-
 
     # Create single operation models/layers from the operations in the provided model
     splitter = Splitter(model_path, model_summary_json)
@@ -87,7 +86,7 @@ def ProfileModel(model_path: str, count: int, hardware_summary_path: str, model_
         log.error("Failed to run splitter! {}".format(str(e)))
 
     if "tpu" in hardware_to_benchmark:
-        #Compiles created models/layers into Coral models for execution
+        # Compiles created models/layers into Coral models for execution
         splitter.CompileForEdgeTPU()
         log.info("Models successfully compiled!")
 
@@ -96,7 +95,7 @@ def ProfileModel(model_path: str, count: int, hardware_summary_path: str, model_
         parent_model=model_name,
         hardware_list=hardware_to_benchmark,
         model_summary=model_summary_json,
-        count=count
+        count=count,
     )
 
     log.info("Models deployed")
@@ -120,7 +119,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--model",
-        default="resources/models/example_models/kws_ref_model.tflite",
+        default="resources/models/example_models/MNIST_full_quanitization.tflite",
         help="File path to the SOURCE .tflite file.",
     )
 
@@ -143,14 +142,14 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-o",
         "--summaryoutputdir",
-        default="resources/model_summaries",
+        default="resources/model_summaries/example_summaries/MNIST",
         help="Directory where model summary should be saved",
     )
 
     parser.add_argument(
         "-n",
         "--summaryoutputname",
-        default="kws_ref_model_summary",
+        default="MNIST_full_quanitization_summary",
         help="Name that the model summary should have",
     )
 
@@ -177,52 +176,12 @@ if __name__ == "__main__":
 
     SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
 
-    ProfileModel(args.model, args.count, args.hardwaresummary, os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)))
-
-    ## Run DSE
-    #import os
-
-    # os.chdir(os.path.join(os.getcwd(), "DSE/TensorDSE"))
-    # print(os.getcwd())
-    # model_summary = (
-    #    "../../resources/model_summaries/example_summaries/MNIST_multi_1.json"
-    # )
-    # architecture_summary = "../../resources/architecture_summaries/example_output_architecture_summary.json"
-    # benchmarking_results = (
-    #    "../../resources/benchmarking_results/example_benchmark_results.json"
-    # )
-    # output_folder = "src/main/resources/output"
-    # ilp_mapping = "true"
-    # runs = "1"
-    # crossover = "0.9"
-    # population_size = 100
-    # parents_per_generation = 50
-    # offspring_per_generation = 50
-    # generations = 25
-    # verbose = "false"
-    # gurobi_command = 'gradle6 run --args="--modelsummary {} --architecturesummary {} --benchmarkingresults {} --outputfolder {} --ilpmapping {} --runs {} --crossover {} --populationsize {} --parentspergeneration {} --offspringspergeneration {} --generations {} --verbose {}"'.format(
-    #        model_summary,
-    #        architecture_summary,
-    #        benchmarking_results,
-    #        output_folder,
-    #        ilp_mapping,
-    #        runs,
-    #        crossover,
-    #        population_size,
-    #        parents_per_generation,
-    #        offspring_per_generation,
-    #        generations,
-    #        verbose,
-    #    )
-    # print(gurobi_command)
-
-    # import subprocess
-
-    # subprocess.run("echo $LD_LIBRARY_PATH")
-    # subprocess.run(gurobi_command)
-    # os.chdir(os.path.join(os.getcwd(), "../.."))
-
-    # Deploy
+    ProfileModel(
+        args.model,
+        args.count,
+        args.hardwaresummary,
+        os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
+    )
 
     print()
     print("Finito ☜(⌒▽⌒)=b")
