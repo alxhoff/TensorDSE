@@ -95,7 +95,7 @@ test() {
 }
 
 run() {
-    python3 profile.py -m resources/models/example_models/MNIST_full_quanitization.tflite -c 10
+    python3 profiler.py -m resources/models/example_models/MNIST_full_quanitization.tflite -c 10
     pushd DSE/TensorDSE
     gradle6 run --args="--modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingresults $PROFILING_RESULTS --outputfolder $OUTPUT_FOLDER --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
     popd
