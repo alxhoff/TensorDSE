@@ -26,16 +26,21 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+
 def main() -> int:
     from summarize import SummarizeGraph
-    import os
 
-    print(os.getcwd())
-    print("Converting {} into {}/{}".format(args.model, args.outputdir, args.outputname))
+    print(
+        "Converting {} into {}/{}...".format(args.model, args.outputdir, args.outputname),
+        end="",
+    )
 
     SummarizeGraph(args.model, args.outputdir, args.outputname)
 
+    print("Graph summarized")
+
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

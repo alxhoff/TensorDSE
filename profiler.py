@@ -176,6 +176,8 @@ if __name__ == "__main__":
 
     SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
 
+    print("Profiling model")
+
     ProfileModel(
         args.model,
         args.count,
