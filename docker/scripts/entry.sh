@@ -105,15 +105,12 @@ run() {
 main() {
 
     if [ "$mode" -eq $DEBUG_MODE ]; then
-        ./docker/scripts/build_backend.sh
         debug
     elif [ "$mode" -eq $TEST_MODE ]; then
-        ./docker/scripts/build_backend.sh
         test
     elif [ "$mode" -eq $SHELL_MODE ]; then
         bash
     else
-        ./docker/scripts/build_backend.sh
         run
     fi
 }
