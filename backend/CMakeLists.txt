@@ -30,8 +30,11 @@ set(TFL_BUILD_DIR ${TF_ENV}/tflite_build)
 set(TFL_LIB_PATH /usr/lib/libtensorflowlite.so)
 set(TFL_GPU_LIB_PATH /usr/lib/libtensorflowlite_gpu_delegate.so)
 
-#set(LIB_PATH /usr/lib/x86_64-linux-gnu)
-set(LIB_PATH /usr/lib/aarch64-linux-gnu)
+#Docker
+set(LIB_PATH /usr/lib/x86_64-linux-gnu)
+
+#Not sure what
+# set(LIB_PATH /usr/lib/aarch64-linux-gnu)
 
 set(EGL_LIBRARY_PATH ${LIB_PATH}/libEGL.so)
 set(GL_LIBRARY_PATH ${LIB_PATH}/libGL.so)
