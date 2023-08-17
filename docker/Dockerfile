@@ -16,14 +16,21 @@ RUN set -ex
 # Base System
 RUN apt-get update \
     && apt-get install -y \
-    sudo build-essential locales wget curl gnupg curl zip unzip tar openjdk-11-jdk\
+    sudo build-essential locales wget curl gnupg curl zip unzip tar openjdk-11-jdk \
     python3 python3-pip \
-    git vim nano \
+    git vim \
     usbutils udev lshw \
     software-properties-common \
     && apt-get clean \
     && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \ 
     && locale-gen && update-locale
+
+# Python Libraries
+RUN pip3 install --upgrade pip && \
+pip3 install silabs-mltk[full] --upgrade && \
+apt-get install -y python3-pandas python3-ipdb python3-tabulate python3-matplotlib \
+    python3-numpy python3-scipy && \
+pip3 install pyshark metrics pycoral argparse
 
 # CoralDev APT Paackages
 RUN echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" \
@@ -41,12 +48,6 @@ apt-get install -y tshark
 RUN apt-get install -y tensorrt && \
 find / -name 'libnvinfer_plugin.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/libnvinfer_plugin.so.7"' {} \; && \
 find / -name 'libnvinfer.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/libnvinfer.so.7"' {} \;
-
-# Python Libraries
-RUN pip3 install --upgrade pip && \
-pip3 install silabs-mltk[full] --upgrade && \
-pip3 install pyshark pyserial pyftdi argparse metrics visualization matplotlib scipy numpy pandas && \
-apt-get install -y python3-ipdb python3-tabulate python3-pycoral
 
 # CUDA
 RUN apt-get install -y nvidia-cuda-dev  nvidia-cuda-toolkit
@@ -111,11 +112,14 @@ echo "export GUROBI_HOME=/opt/gurobi952/linux64" >> /root/.bashrc && \
 export PATH=$GUROBI_HOME/bin:$PATH && \
 echo "export PATH=$GUROBI_HOME/bin:$PATH" >> /root/.bashrc && \
 export LD_LIBRARY_PATH=$GUROBI_HOME/lib:$LD_LIBRARY_PATH && \
-echo "export LD_LIBRARY_PATH=$GUROBI_HOME/lib:$LD_LIBRARY_PATH" >> /root/.bashrc
+echo "export LD_LIBRARY_PATH=$GUROBI_HOME/lib:$LD_LIBRARY_PATH" >> /root/.bashrc && \
+export GRB_LICENSE_FILE=/opt/gurobi/gurobi.lic && \
+echo "export GRB_LICENSE_FILE=/opt/gurobi/gurobi.lic"
 
-RUN echo "WLSACCESSID=$WLSACCESSID" > /opt/gurobi952/gurobi.lic && \
-echo "WLSSECRET=$WLSSECRET" >> /opt/gurobi952/gurobi.lic && \
-echo "LICENSEID=$LICENSEID" >> /opt/gurobi952/gurobi.lic
+RUN mkdir -p /opt/gurobi && \
+echo "WLSACCESSID=$WLSACCESSID" > /opt/gurobi/gurobi.lic && \
+echo "WLSSECRET=$WLSSECRET" >> /opt/gurobi/gurobi.lic && \
+echo "LICENSEID=$LICENSEID" >> /opt/gurobi/gurobi.lic
 
 # ENV Variables
 ENV LANG en_US.UTF-8

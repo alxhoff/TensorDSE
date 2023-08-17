@@ -31,7 +31,7 @@ def main() -> int:
     from summarize import SummarizeGraph
 
     print(
-        "Converting {} into {}/{}...".format(args.model, args.outputdir, args.outputname),
+        "Converting {} into {}/{}.json...".format(args.model, args.outputdir, args.outputname),
         end="",
     )
 

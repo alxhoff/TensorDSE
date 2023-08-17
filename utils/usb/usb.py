@@ -43,7 +43,7 @@ def peek_queue(q:Queue):
     except queue.Empty:
         return False
 
-def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
+def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log, usbmon:int) -> None:
     """
     """
     from utils.timer import Timer,ConditionalTimer
@@ -55,7 +55,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
         return
 
     context = StreamContext()
-    capture = pyshark.LiveCapture(interface='usbmon2', display_filter=get_filter(addr))
+    capture = pyshark.LiveCapture(interface='usbmon{}'.format(usbmon), display_filter=get_filter(addr))
     signalsQ.put(START_DEPLOYMENT)
 
     l.info("- Packet Capture is started -")

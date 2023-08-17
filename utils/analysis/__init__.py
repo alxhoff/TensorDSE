@@ -16,7 +16,9 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
     from utils.analysis.analysis import Analyzer
     import os
     
-    RESULTS_FOLDER = "resources/results/"
+    RESULTS_FOLDER = os.path.join(os.getcwd(), "resources/profiling_results")
+    results_path = os.path.join(RESULTS_FOLDER, f"{parent_model}.json")
+    print("Results file: {} from {}".format(results_path, os.getcwd()))
     
     unavailable_delegates = []
     data = {
@@ -28,9 +30,12 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
     }
 
     if not os.path.isdir(RESULTS_FOLDER):
-       import sys
-       log.error(f"{RESULTS_FOLDER} is not a valid folder to store results!")
-       sys.exit(-1)
+        import sys
+        print("Results folder {} doesn't exist, creating".format(RESULTS_FOLDER))
+        log.error(f"{RESULTS_FOLDER} is not a valid folder to store results!")
+        os.mkdir(RESULTS_FOLDER)
+        if not os.path.isdir(RESULTS_FOLDER):
+            sys.exit(-1)
 
     names = []
 
@@ -90,8 +95,8 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
             m["delegates"].append(ret)
             data["models"][0]["layers"][i] = m
 
-
-    ExportResults(os.path.join(RESULTS_FOLDER, f"{parent_model}.json"), data)
+    print("Exporting profiling results to: {}".format(results_path))
+    ExportResults(results_path, data)
 
 def AnalyzeLayerResults(m:Model, delegate:str):
     from main import RESULTS_FOLDER

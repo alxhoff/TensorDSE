@@ -1,7 +1,8 @@
+import json
 import os
 import sys
 import argparse
-from utils.log import Log
+from utils.splitter.logger import log
 
 MODELS_FOLDER = "resources/models/source/"
 LAYERS_FOLDER = "resources/models/layers/"
@@ -27,7 +28,6 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
         model, output_dir, output_name
     )
 
-    print("Running summary command: {}".format(command))
     system(command)
 
 
@@ -37,12 +37,12 @@ def ProfileModel(
     hardware_summary_path: str,
     model_summary_path: str,
     platform: str,
+    usbmon: int,
 ) -> None:
-    from utils.benchmark import BenchmarkModelLayers
-    from utils.analysis import AnalyzeModelResults, MergeResults
+    from utils.benchmark import ProfileModelLayers
+    from utils.analysis import AnalyzeModelResults
 
     from utils.splitter.utils import ReadJSON
-    from utils.splitter.logger import log
     from utils.splitter.split import Splitter
 
     if not model_path.endswith(".tflite"):
@@ -89,23 +89,28 @@ def ProfileModel(
         splitter.Clean(True)
         log.error("Failed to run splitter! {}".format(str(e)))
 
+    log.info("[PROFILE MODEL] Splitter created")
+
     if "tpu" in hardware_to_benchmark:
         # Compiles created models/layers into Coral models for execution
         splitter.CompileForEdgeTPU()
-        log.info("Models successfully compiled!")
+        log.info("[PROFILE MODEL] Models successfully compiled!")
 
     # Deploy the generated models/layers onto the target test hardware using docker
-    results_dict = BenchmarkModelLayers(
+
+    results_dict = ProfileModelLayers(
         parent_model=model_name,
         hardware_list=hardware_to_benchmark,
         model_summary=model_summary_json,
         count=count,
         platform=platform,
+        usbmon_bus=args.usbmon
     )
 
     log.info("Models deployed")
 
     # Process results
+    print("[PROFILE MODEL] Analyzing model: {}".format(model_name))
     AnalyzeModelResults(model_name, results_dict)
 
     log.info("Analyzed and merged results")
@@ -165,6 +170,13 @@ def GetArgs() -> argparse.Namespace:
         help="Platform supporting the profiling/deployment process",
     )
 
+    parser.add_argument(
+        "-u",
+        "--usbmon",
+        required=True,
+        help="USB bus on which TPU is attached and thus which usbmon interface should be used for packet sniffing"
+    )
+
     args = parser.parse_args()
 
     return args
@@ -186,17 +198,21 @@ if __name__ == "__main__":
     args = GetArgs()
     DisableTFlogging()
 
+    log.info("[PROFILER] Starting")
+
     SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
 
-    print("Profiling model")
+    log.info("[PROFILER] Model {} summarized".format(args.model))
+    print("[PROFILER] Model summarized")
 
     ProfileModel(
         args.model,
         args.count,
         args.hardwaresummary,
         os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
-        args.platform
+        args.platform,
+        args.usbmon,
     )
 
-    print()
-    print("Finito ☜(⌒▽⌒)=b")
+    log.info("[PROFILER] Model {} profiled".format(args.model))
+    print("[PROFILER] Finished")

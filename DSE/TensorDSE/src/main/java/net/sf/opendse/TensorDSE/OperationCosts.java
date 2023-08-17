@@ -199,12 +199,13 @@ public class OperationCosts {
      * @param json_file_path
      * @return BenchmarkJSON
      */
-    public BenchmarkJSON GetBenchmarkResultsFromJSON(String json_file_path) {
+    public BenchmarkJSON GetProfilingResultsFromJSON(String json_file_path) {
 
         Gson gson = new Gson();
         BenchmarkJSON model = null;
 
         try {
+            System.out.println("Working Directory: " + System.getProperty("user.dir"));
             JsonReader jr = new JsonReader(new FileReader(json_file_path));
             model = gson.fromJson(jr, BenchmarkJSON.class);
         } catch (FileNotFoundException e) {
@@ -222,7 +223,7 @@ public class OperationCosts {
 
         try {
 
-            BenchmarkJSON benchmark = GetBenchmarkResultsFromJSON(profiling_costs_file_path);
+            BenchmarkJSON benchmark = GetProfilingResultsFromJSON(profiling_costs_file_path);
 
             for (Model model : benchmark.getModels()) {
 

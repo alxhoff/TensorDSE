@@ -83,13 +83,13 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary")
-				.setDefault("../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization.json")
+				.setDefault("../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary.json")
 				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary").setDefault(
 				"../../resources/architecture_summaries/example_output_architecture_summary.json")
 				.type(String.class).help("Location of architecture summary JSON");
 		parser.addArgument("-d", "--profilingcosts")
-				.setDefault("../../resources/benchmarking_results/example_benchmark_results.json")
+				.setDefault("../../resources/profiling_results/MNIST_full_quanitization.json")
 				.type(String.class).help("Directory containing cost files");
 
 		// Output Files

@@ -21,7 +21,7 @@ class Model:
             if path_to_model.endswith(ext):
                 self.paths[ext] = path_to_model
         self.schema = schema_path
-    
+
     def Convert(self, source_ext: str, target_ext: str):
         if ([source_ext, target_ext] == ["json", "tflite"]):
             RunTerminalCommand("flatc", "-b", self.schema, self.paths["json"])
@@ -34,7 +34,7 @@ class Model:
             self.paths["json"] = self.paths["tflite"].replace(source_ext, target_ext)
             MoveFile(tmp_filename, self.paths["json"])
             self.json = ReadJSON(self.paths["json"])
-    
+
     def Compile(self):
         if not os.path.exists(COMPILED_DIR):
             os.mkdir(COMPILED_DIR)
@@ -51,7 +51,7 @@ class Submodel(Model):
         os.mkdir(self.dirs["tflite"])
         CopyFile(os.path.join(RESOURCES_DIR, "shell", "shell_model.json"),
                  os.path.join(self.dirs["json"], "shell_model.json"))
-        super().__init__(path_to_model=os.path.join(self.dirs["json"], "shell_model.json"), 
+        super().__init__(path_to_model=os.path.join(self.dirs["json"], "shell_model.json"),
                           schema_path=os.path.join(RESOURCES_DIR, "schema", "schema.fbs"))
         self.json = ReadJSON(self.paths["json"])
         self.source_model_json = source_model_json
@@ -71,12 +71,12 @@ class Submodel(Model):
         #Add version
         new_version = self.source_model_json["version"]
 
-        #Add Operators from Main Graph and add them according to index op 
+        #Add Operators from Main Graph and add them according to index op
         new_ops = []
         for op_index in [layer[0] for layer in layers]:
             new_ops.append(source_graph["operators"][op_index])
 
-        #Add the OperatorCodes of the Newly added Operators and update their opcode_index        
+        #Add the OperatorCodes of the Newly added Operators and update their opcode_index
         new_opcodes = []
         for new_op in new_ops:
             if self.source_model_json["operator_codes"][new_op["opcode_index"]] not in new_opcodes:
@@ -84,7 +84,7 @@ class Submodel(Model):
                 new_op["opcode_index"] = len(new_opcodes) - 1
             else:
                 new_op["opcode_index"] = new_opcodes.index(self.source_model_json["operator_codes"][new_op["opcode_index"]])
-        
+
         #Add Tensors according to added Operators
         new_tensors = []
         tensor_indexes = []
@@ -98,7 +98,7 @@ class Submodel(Model):
                         new_tensors.append(source_graph["tensors"][op_entry].copy())
                         new_op[entry][i] = len(new_tensors) - 1
 
-        #Add Submodel Input and Output Tensors 
+        #Add Submodel Input and Output Tensors
         new_inputs = []
         new_outputs = []
         if new_opcodes[new_ops[0]["opcode_index"]]["deprecated_builtin_code"] == 0:
@@ -107,9 +107,9 @@ class Submodel(Model):
         else:
             new_inputs.append(new_ops[0]["inputs"][0])
 
-        new_outputs.append(new_ops[-1]["outputs"][0])   
-        
-        
+        new_outputs.append(new_ops[-1]["outputs"][0])
+
+
 
         #Add Subgraph Name
         if "name" in source_graph.keys():
@@ -128,7 +128,7 @@ class Submodel(Model):
             if (buffer_index > 0):
                 new_buffers.append(self.source_model_json["buffers"][buffer_index].copy())
                 new_tensor["buffer"] = len(new_buffers) - 1
-        
+
         #Add metadata
         new_metadata = []
         if "metadata" in self.source_model_json.keys():
@@ -157,11 +157,11 @@ class Submodel(Model):
         self.json["subgraphs"][0]["inputs"]      =   new_inputs
         self.json["subgraphs"][0]["outputs"]     =   new_outputs
         self.json["subgraphs"][0]["operators"]   =   new_ops
-        
-        
+
+
         self.json["description"]                 =   new_description
         self.json["buffers"]                     =   new_buffers
-        
+
     def Save(self):
         """Saves a submodel to a JSON file, labeled using the target hardware,
         the index of the sequence, and the indexes of the layers (in their model)

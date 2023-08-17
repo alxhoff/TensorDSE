@@ -5,11 +5,13 @@ from typing import Dict, Tuple
 
 from utils.model import Model
 
+
 def GetArraySizeFromShape(shape: list) -> int:
     size = 1
     for dim in shape:
         size *= int(dim)
     return size
+
 
 def isCPUavailable() -> bool:
     return True
@@ -37,7 +39,7 @@ def isGPUavailable() -> Tuple[bool, str]:
     return False, ""
 
 
-def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
+def TPUDeploy(m: Model, count: int, usbmon:int, timeout: int = 10) -> Model:
     from multiprocessing import Process, Queue
     from utils.log import Log
     from utils.usb import END_DEPLOYMENT
@@ -53,7 +55,7 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
     results = []
     timers = []
 
-    input_size  = GetArraySizeFromShape(m.input_shape)
+    input_size = GetArraySizeFromShape(m.input_shape)
     output_size = GetArraySizeFromShape(m.output_shape)
 
     time.sleep(DEPLOY_WAIT_TIME)
@@ -64,7 +66,13 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
 
         p = Process(
             target=capture_stream,
-            args=(signalsQ, dataQ, timeout, Log(f"resources/logs/layer_{m.index}_{m.model_name}_USB.log")),
+            args=(
+                signalsQ,
+                dataQ,
+                timeout,
+                Log(f"resources/logs/layer_{m.index}_{m.model_name}_USB.log"),
+                usbmon,
+            ),
         )
         p.start()
 
@@ -77,18 +85,20 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
             np.random.random_sample(input_size),
             dtype=m.get_np_dtype(m.input_datatype),
         )
-        output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
+        output_data_vector = np.zeros(output_size).astype(
+            m.get_np_dtype(m.output_datatype)
+        )
         inference_times_vector = np.zeros(count).astype(np.uint32)
 
         mean_inference_time = distributed_inference(
             m.model_path,
             input_data_vector,
-            output_data_vector, 
+            output_data_vector,
             inference_times_vector,
-            len(input_data_vector), 
-            len(output_data_vector), 
-            "TPU", 
-            1
+            len(input_data_vector),
+            len(output_data_vector),
+            "TPU",
+            1,
         )
 
         results.append(mean_inference_time)
@@ -100,7 +110,7 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
 
         if not data == {}:
             timers.append(data)
-            
+
         if p.is_alive():
             p.join()
 
@@ -114,7 +124,7 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
     return m
 
 
-def BenchmarkLayer(m: Model, count: int, hardware_target: str, platform: str) -> Model:
+def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbmon: int=None) -> Model:
     import os
     import numpy as np
 
@@ -122,48 +132,92 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str, platform: str) ->
     from backend.distributed_inference import distributed_inference
 
     if (platform == "desktop") and (hardware_target == "TPU"):
-        m.model_path = os.path.join(COMPILED_DIR, "submodel_{0}_{1}_bm_edgetpu.tflite".format(m.details["index"], m.details["type"]))
-        if (os.path.isfile(m.model_path)):
-            m = TPUDeploy(m=m, count=count)
+        if usbmon == None:
+            raise Exception("usbmon interface not provided to ProfileLayer for TPU device")
+
+        m.model_path = os.path.join(
+            COMPILED_DIR,
+            "submodel_{0}_{1}_bm_edgetpu.tflite".format(
+                m.details["index"], m.details["type"]
+            ),
+        )
+        if os.path.isfile(m.model_path):
+            m = TPUDeploy(m=m, count=count, usbmon=usbmon)
         else:
             m.results = [-1] * count
             m.timers = {
-                "error" : {
-                    "name" : "maxed_out",
-                    "reason" : "timed out with no traffic found"
+                "error": {
+                    "name": "file_not_found",
+                    "reason": "Cannot find model {}".format(m.model_path),
                 },
             }
     else:
-        if (hardware_target == "TPU"):
-            m.model_path = os.path.join(COMPILED_DIR, "submodel_{0}_{1}_bm_edgetpu.tflite".format(m.details["index"], m.details["type"]))
-        else:
-            m.model_path = os.path.join(SUB_DIR, "tflite", "submodel_{0}_{1}_bm".format(m.details["index"], m.details["type"]),"submodel_{0}_{1}_bm.tflite".format(m.details["index"], m.details["type"]))
+        if hardware_target == "TPU":
+            if usbmon == None:
+                raise Exception("usbmon interface not provided to ProfileLayer for TPU device")
 
-        input_size  = GetArraySizeFromShape(m.input_shape)
+            m.model_path = os.path.join(
+                COMPILED_DIR,
+                "submodel_{0}_{1}_bm_edgetpu.tflite".format(
+                    m.details["index"], m.details["type"]
+                ),
+            )
+        else:
+            m.model_path = os.path.join(
+                SUB_DIR,
+                "tflite",
+                "submodel_{0}_{1}_bm".format(m.details["index"], m.details["type"]),
+                "submodel_{0}_{1}_bm.tflite".format(
+                    m.details["index"], m.details["type"]
+                ),
+            )
+
+        input_size = GetArraySizeFromShape(m.input_shape)
         output_size = GetArraySizeFromShape(m.output_shape)
 
-        input_data_vector = np.zeros(input_size).astype(m.get_np_dtype(m.input_datatype))
-        output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
+        input_data_vector = np.zeros(input_size).astype(
+            m.get_np_dtype(m.input_datatype)
+        )
+        output_data_vector = np.zeros(output_size).astype(
+            m.get_np_dtype(m.output_datatype)
+        )
         inference_times_vector = np.zeros(count).astype(np.uint32)
 
-        mean_inference_time = distributed_inference(
-            m.model_path,
-            input_data_vector,
-            output_data_vector, 
-            inference_times_vector,
-            len(input_data_vector), 
-            len(output_data_vector), 
-            hardware_target, 
-            count
+        print(
+            "[PROFILE LAYER] Profiling {} on {}".format(m.model_path, hardware_target)
         )
 
+        tries = 0
+
+        while(tries < 2):
+
+            try:
+                mean_inference_time = distributed_inference(
+                    m.model_path,
+                    input_data_vector,
+                    output_data_vector,
+                    inference_times_vector,
+                    len(input_data_vector),
+                    len(output_data_vector),
+                    hardware_target,
+                    count,
+                )
+            except Exception as e:
+                print(e)
+            tries += 1
+
         m.results = inference_times_vector.tolist()
-    
+
     return m
 
 
-def BenchmarkModelLayers(
-    parent_model: str, hardware_list:list, model_summary:dict, count:int, platform: str
+def ProfileModelLayers(
+    parent_model: str,
+    hardware_list: list,
+    model_summary: dict,
+    count: int,
+    platform: str,
+    usbmon_bus: int
 ) -> Dict:
     """Manager function responsible for preping and executing the deployment
     of the compiled tflite models.
@@ -183,7 +237,6 @@ def BenchmarkModelLayers(
     from .usb import init_usbmon
     from .analysis import AnalyzeLayerResults
     from utils.splitter.logger import log
-    
 
     models = {}
     models["cpu"] = []
@@ -197,62 +250,64 @@ def BenchmarkModelLayers(
     elif "cpu" not in hardware_list:
         log.info("No CPU cores in hardware summary, skipping benchmarking")
     else:
-        log.info(f"CPU is available on this machine!")
+        log.info(f"[PROFILE MODEL LAYERS] CPU is available on this machine!")
         for layer in model_summary["models"][0]["layers"]:
-            m = BenchmarkLayer(Model(layer, "cpu", parent_model), count, "CPU", platform)
+            m = ProfileLayer(Model(layer, "cpu", parent_model), count, "CPU", platform, usbmon=usbmon_bus)
             models["cpu"].append(m)
-            #AnalyzeLayerResults(m, "cpu")
-
+        # AnalyzeLayerResults(m, "cpu")
 
     # regular quantized tflite files for gpu
-    if (platform == "desktop"):
+    if platform == "desktop":
         available, gpu = isGPUavailable()
         if not available:
             log.warning(f"GPU is NOT available on this machine! Type: {gpu}")
         elif "gpu" not in hardware_list:
             log.info("No GPUs in hardware summary, skipping benchmarking")
         else:
-            log.info(f"GPU is available on this machine! Type: {gpu}")
+            log.info(
+                f"[PROFILE MODEL LAYERS] GPU is available on this machine! Type: {gpu}"
+            )
             for layer in model_summary["models"][0]["layers"]:
-                m = BenchmarkLayer(Model(layer, "gpu", parent_model), count, "GPU", platform)
+                m = ProfileLayer(
+                    Model(layer, "gpu", parent_model), count, "GPU", platform, usbmon=usbmon_bus
+                )
                 models["gpu"].append(m)
-                #AnalyzeLayerResults(m, "gpu")
-    elif (platform == "coral"):
+                # AnalyzeLayerResults(m, "gpu")
+    elif platform == "coral":
         for layer in model_summary["models"][0]["layers"]:
-                m = BenchmarkLayer(Model(layer, "gpu", parent_model), count, "GPU", platform)
-                models["gpu"].append(m)
-                #AnalyzeLayerResults(m, "gpu")
-
-
-
+            m = ProfileLayer(Model(layer, "gpu", parent_model), count, "GPU", platform, usbmon=usbmon_bus)
+            models["gpu"].append(m)
+            # AnalyzeLayerResults(m, "gpu")
 
     # edge compiled quantized tflite files tpu
-    if (platform == "desktop"):
+    if platform == "desktop":
         if not isTPUavailable():
             log.warning(f"TPU is NOT available on this machine!")
         elif "tpu" not in hardware_list:
             log.info("No TPUs in hardware summary, skipping benchmarking")
         else:
-            log.info(f"TPU is available on this machine!")
-            if init_usbmon() and (not(platform == "coral")):
+            log.info(f"[PROFILE MODEL LAYERS] TPU is available on this machine!")
+            if init_usbmon(usb_bus=usbmon_bus) and (not (platform == "coral")):
                 log.info("Needed to introduce usbmon module")
             else:
                 log.info("usbmon module already present")
                 for layer in model_summary["models"][0]["layers"]:
-                    m = BenchmarkLayer(Model(layer, "tpu", parent_model), count, "TPU", platform)
+                    m = ProfileLayer(
+                        Model(layer, "tpu", parent_model), count, "TPU", platform, usbmon=usbmon_bus
+                    )
                     models["tpu"].append(m)
-                    #AnalyzeLayerResults(m, "tpu")
-    elif (platform == "coral"):
+                    # AnalyzeLayerResults(m, "tpu")
+    elif platform == "coral":
         for layer in model_summary["models"][0]["layers"]:
-            m = BenchmarkLayer(Model(layer, "tpu", parent_model), count, "TPU", platform)
+            m = ProfileLayer(Model(layer, "tpu", parent_model), count, "TPU", platform, usbmon=usbmon_bus)
             models["tpu"].append(m)
-            #AnalyzeLayerResults(m, "tpu")
-    
+            # AnalyzeLayerResults(m, "tpu")
 
     return models
 
-# Deprecated 
-#def GetArgs() -> argparse.Namespace:
+
+# Deprecated
+# def GetArgs() -> argparse.Namespace:
 #    """Argument parser, returns the Namespace containing all of the arguments.
 #    :raises: None
 #
@@ -289,7 +344,7 @@ def BenchmarkModelLayers(
 #    return args
 #
 #
-#if __name__ == "__main__":
+# if __name__ == "__main__":
 #    """Entry point to execute this script.
 #
 #    Flags
@@ -319,9 +374,9 @@ def BenchmarkModelLayers(
 #    args = GetArgs()
 #
 #    delegators = {
-#        "cpu": BenchmarkLayer,
-#        "gpu": BenchmarkLayer,
-#        "tpu": BenchmarkLayer,
+#        "cpu": ProfileLayer,
+#        "gpu": ProfileLayer,
+#        "tpu": ProfileLayer,
 #    }
 #
 #    if args.form == "single":

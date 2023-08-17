@@ -5,16 +5,16 @@ FOLDER := $(shell basename ${CWD})
 REPO := tensorflow/tensorflow
 
 ifndef MODEL_SUMMARY
-override MODEL_SUMMARY = "../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization.json"
+override MODEL_SUMMARY = "../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary.json"
 $(info Using default MODEL_SUMMARY: $(MODEL_SUMMARY))
 endif
 ifndef ARCHITECTURE_SUMMARY
-override ARCHITECTURE_SUMMARY = "../resources/architecture_summaries/example_output_architecture_summary.json"
+override ARCHITECTURE_SUMMARY = "../../resources/architecture_summaries/example_output_architecture_summary.json"
 $(info Using default ARCHITECTURE_SUMMARY: $(ARCHITECTURE_SUMMARY))
 endif
-ifndef PROFILING_RESULTS
-override PROFILING_RESULTS = "../resources/profiling_results/example_profiling_results.json"
-$(info Using default PROFILING_RESULTS: $(PROFILING_RESULTS))
+ifndef PROFILING_COSTS
+override PROFILING_COSTS = "../../resources/profiling_results/MNIST_full_quanitization.json"
+$(info Using default PROFILING_COSTS: $(PROFILING_COSTS))
 endif
 ifndef OUTPUT_FOLDER
 override OUTPUT_FOLDER = "src/main/resources/output"
@@ -49,7 +49,7 @@ override GENERATIONS = 25
 $(info Using default GENERATIONS: $(GENERATIONS))
 endif
 ifndef VERBOSE
-override VERBOSE = false
+override VERBOSE = true
 $(info Using default VERBOSE: $(VERBOSE))
 endif
 
@@ -77,7 +77,12 @@ forcebuild:
 
 .PHONY: run
 run:
-	@${MAKE} -C docker run MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_RESULTS=$(PROFILING_RESULTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
+	sudo modprobe usbmon
+	git fetch https://git@github.com/alxhoff/TensorDSE.git 
+	git reset --hard origin/master
+	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
+	$(info USBMON is $(USBMON))
+	@${MAKE} -C docker run USBMON=$(USBMON) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
 
 .PHONY: info
 info:

@@ -160,35 +160,6 @@ public class ILPFormuation {
      */
     public void addPairAndConstrint(GRBVar result_var, GRBVar input_var_one, GRBVar input_var_two,
             GRBModel model) {
-        // // y >= x1 + x2 - 1, y <= x1, y <= x2, 0 <= y <= 1
-        // GRBLinExpr exp = new GRBLinExpr();
-        // exp.addTerm(1.0, input_var_one);
-        // exp.addTerm(1.0, input_var_two);
-        // exp.addConstant(-1.0);
-        // try {
-        // model.addConstr(exp, GRB.LESS_EQUAL, result_var, "");
-        // } catch (GRBException e) {
-        // // TODO Auto-generated catch block
-        // e.printStackTrace();
-        // }
-
-        // exp = new GRBLinExpr();
-        // exp.addTerm(1.0, result_var);
-        // try {
-        // model.addConstr(exp, GRB.LESS_EQUAL, input_var_one, "");
-        // } catch (GRBException e) {
-        // // TODO Auto-generated catch block
-        // e.printStackTrace();
-        // }
-
-        // exp = new GRBLinExpr();
-        // exp.addTerm(1.0, result_var);
-        // try {
-        // model.addConstr(exp, GRB.LESS_EQUAL, input_var_two, "");
-        // } catch (GRBException e) {
-        // // TODO Auto-generated catch block
-        // e.printStackTrace();
-        // }
 
         GRBVar[] input_vars = {input_var_one, input_var_two};
         try {
