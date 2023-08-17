@@ -6,64 +6,64 @@ source /root/.bashrc
 set +xe
 
 for i in "$@"; do
-  case $i in
-    -m=*|--MODEL_SUMMARY=*)
-      MODEL_SUMMARY="${i#*=}"
-      shift # past argument=value
-      ;;
-    -a=*|--ARCHITECTURE_SUMMARY=*)
-      ARCHITECTURE_SUMMARY="${i#*=}"
-      shift # past argument=value
-      ;;
-    -b=*|--PROFILING_RESULTS=*)
-      PROFILING_RESULTS="${i#*=}"
-      shift # past argument=value
-      ;;
-    -o=*|--OUTPUT_FOLDER=*)
-      OUTPUT_FOLDER="${i#*=}"
-      shift # past argument=value
-      ;;
-    -i=*|--ILP_MAPPING=*)
-      ILP_MAPPING="${i#*=}"
-      shift # past argument=value
-      ;;
-    -r=*|--RUNS=*)
-      RUNS="${i#*=}"
-      shift # past argument=value
-      ;;
-    -c=*|--CROSSOVER=*)
-      CROSSOVER="${i#*=}"
-      shift # past argument=value
-      ;;
-    -p=*|--POPULATION_SIZE=*)
-      POPULATION_SIZE="${i#*=}"
-      shift # past argument=value
-      ;;
-    -n=*|--PARENTS_PER_GENERATION=*)
-      PARENTS_PER_GENERATION="${i#*=}"
-      shift # past argument=value
-      ;;
-    -s=*|--OFFSPRING_PER_GENERATION=*)
-      OFFSPRING_PER_GENERATION="${i#*=}"
-      shift # past argument=value
-      ;;
-    -g=*|--GENERATIONS=*)
-      GENERATIONS="${i#*=}"
-      shift # past argument=value
-      ;;
-    -v=*|--VERBOSE=*)
-      VERBOSE="${i#*=}"
-      shift # past argument=value
-      ;;
-    --default)
-      DEFAULT=YES
-      shift # past argument with no value
-      ;;
-    -*|--*)
-      ;;
-    *)
-      ;;
-  esac
+    case $i in
+        -m=*|--MODEL_SUMMARY=*)
+            MODEL_SUMMARY="${i#*=}"
+            shift # past argument=value
+        ;;
+        -a=*|--ARCHITECTURE_SUMMARY=*)
+            ARCHITECTURE_SUMMARY="${i#*=}"
+            shift # past argument=value
+        ;;
+        -b=*|--PROFILING_RESULTS=*)
+            PROFILING_RESULTS="${i#*=}"
+            shift # past argument=value
+        ;;
+        -o=*|--OUTPUT_FOLDER=*)
+            OUTPUT_FOLDER="${i#*=}"
+            shift # past argument=value
+        ;;
+        -i=*|--ILP_MAPPING=*)
+            ILP_MAPPING="${i#*=}"
+            shift # past argument=value
+        ;;
+        -r=*|--RUNS=*)
+            RUNS="${i#*=}"
+            shift # past argument=value
+        ;;
+        -c=*|--CROSSOVER=*)
+            CROSSOVER="${i#*=}"
+            shift # past argument=value
+        ;;
+        -p=*|--POPULATION_SIZE=*)
+            POPULATION_SIZE="${i#*=}"
+            shift # past argument=value
+        ;;
+        -n=*|--PARENTS_PER_GENERATION=*)
+            PARENTS_PER_GENERATION="${i#*=}"
+            shift # past argument=value
+        ;;
+        -s=*|--OFFSPRING_PER_GENERATION=*)
+            OFFSPRING_PER_GENERATION="${i#*=}"
+            shift # past argument=value
+        ;;
+        -g=*|--GENERATIONS=*)
+            GENERATIONS="${i#*=}"
+            shift # past argument=value
+        ;;
+        -v=*|--VERBOSE=*)
+            VERBOSE="${i#*=}"
+            shift # past argument=value
+        ;;
+        --default)
+            DEFAULT=YES
+            shift # past argument with no value
+        ;;
+        -*|--*)
+        ;;
+        *)
+        ;;
+    esac
 done
 
 DEBUG_MODE=1
@@ -90,8 +90,7 @@ debug() {
 }
 
 test() {
-    ipdb3 docker/scripts/test.py -c 2 \
-                          -t 10
+    ipdb3 docker/scripts/test.py -c 2 -t 10
 }
 
 run() {
@@ -108,9 +107,9 @@ main() {
 
     if [ "$mode" -eq $DEBUG_MODE ]; then
         debug
-    elif [ "$mode" -eq $TEST_MODE ]; then
+        elif [ "$mode" -eq $TEST_MODE ]; then
         test
-    elif [ "$mode" -eq $SHELL_MODE ]; then
+        elif [ "$mode" -eq $SHELL_MODE ]; then
         bash
     else
         run
