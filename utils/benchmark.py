@@ -114,15 +114,14 @@ def TPUDeploy(m: Model, count: int, timeout: int = 10) -> Model:
     return m
 
 
-def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
+def BenchmarkLayer(m: Model, count: int, hardware_target: str, platform: str) -> Model:
     import os
     import numpy as np
 
     from utils.splitter.split import SUB_DIR, COMPILED_DIR
     from backend.distributed_inference import distributed_inference
 
-
-    if (hardware_target == "TPU"):
+    if (platform == "desktop") and (hardware_target == "TPU"):
         m.model_path = os.path.join(COMPILED_DIR, "submodel_{0}_{1}_bm_edgetpu.tflite".format(m.details["index"], m.details["type"]))
         if (os.path.isfile(m.model_path)):
             m = TPUDeploy(m=m, count=count)
@@ -135,8 +134,10 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
                 },
             }
     else:
-        
-        m.model_path = os.path.join(SUB_DIR, "tflite", "submodel_{0}_{1}_bm".format(m.details["index"], m.details["type"]),"submodel_{0}_{1}_bm.tflite".format(m.details["index"], m.details["type"]))
+        if (hardware_target == "TPU"):
+            m.model_path = os.path.join(COMPILED_DIR, "submodel_{0}_{1}_bm_edgetpu.tflite".format(m.details["index"], m.details["type"]))
+        else:
+            m.model_path = os.path.join(SUB_DIR, "tflite", "submodel_{0}_{1}_bm".format(m.details["index"], m.details["type"]),"submodel_{0}_{1}_bm.tflite".format(m.details["index"], m.details["type"]))
 
         input_size  = GetArraySizeFromShape(m.input_shape)
         output_size = GetArraySizeFromShape(m.output_shape)
@@ -162,7 +163,7 @@ def BenchmarkLayer(m: Model, count: int, hardware_target: str) -> Model:
 
 
 def BenchmarkModelLayers(
-    parent_model: str, hardware_list:list, model_summary:dict, count:int
+    parent_model: str, hardware_list:list, model_summary:dict, count:int, platform: str
 ) -> Dict:
     """Manager function responsible for preping and executing the deployment
     of the compiled tflite models.
@@ -198,147 +199,162 @@ def BenchmarkModelLayers(
     else:
         log.info(f"CPU is available on this machine!")
         for layer in model_summary["models"][0]["layers"]:
-            m = BenchmarkLayer(Model(layer, "cpu", parent_model), count, "CPU")
+            m = BenchmarkLayer(Model(layer, "cpu", parent_model), count, "CPU", platform)
             models["cpu"].append(m)
             #AnalyzeLayerResults(m, "cpu")
 
 
     # regular quantized tflite files for gpu
-    available, gpu = isGPUavailable()
-    if not available:
-        log.warning(f"GPU is NOT available on this machine! Type: {gpu}")
-    elif "gpu" not in hardware_list:
-        log.info("No GPUs in hardware summary, skipping benchmarking")
-    else:
-        log.info(f"GPU is available on this machine! Type: {gpu}")
-        for layer in model_summary["layers"]:
-            m = BenchmarkLayer(Model(layer, "gpu", parent_model), count, "GPU")
-            models["gpu"].append(m)
-            #AnalyzeLayerResults(m, "gpu")
+    if (platform == "desktop"):
+        available, gpu = isGPUavailable()
+        if not available:
+            log.warning(f"GPU is NOT available on this machine! Type: {gpu}")
+        elif "gpu" not in hardware_list:
+            log.info("No GPUs in hardware summary, skipping benchmarking")
+        else:
+            log.info(f"GPU is available on this machine! Type: {gpu}")
+            for layer in model_summary["models"][0]["layers"]:
+                m = BenchmarkLayer(Model(layer, "gpu", parent_model), count, "GPU", platform)
+                models["gpu"].append(m)
+                #AnalyzeLayerResults(m, "gpu")
+    elif (platform == "coral"):
+        for layer in model_summary["models"][0]["layers"]:
+                m = BenchmarkLayer(Model(layer, "gpu", parent_model), count, "GPU", platform)
+                models["gpu"].append(m)
+                #AnalyzeLayerResults(m, "gpu")
+
+
 
 
     # edge compiled quantized tflite files tpu
-    if not isTPUavailable():
-        log.warning(f"TPU is NOT available on this machine!")
-    elif "tpu" not in hardware_list:
-        log.info("No TPUs in hardware summary, skipping benchmarking")
-    else:
-        log.info(f"TPU is available on this machine!")
-        if init_usbmon():
-            log.info("Needed to introduce usbmon module")
+    if (platform == "desktop"):
+        if not isTPUavailable():
+            log.warning(f"TPU is NOT available on this machine!")
+        elif "tpu" not in hardware_list:
+            log.info("No TPUs in hardware summary, skipping benchmarking")
         else:
-            log.info("usbmon module already present")
-
-        for layer in model_summary["layers"]:
-            m = BenchmarkLayer(Model(layer, "tpu", parent_model), count, "TPU")
+            log.info(f"TPU is available on this machine!")
+            if init_usbmon() and (not(platform == "coral")):
+                log.info("Needed to introduce usbmon module")
+            else:
+                log.info("usbmon module already present")
+                for layer in model_summary["models"][0]["layers"]:
+                    m = BenchmarkLayer(Model(layer, "tpu", parent_model), count, "TPU", platform)
+                    models["tpu"].append(m)
+                    #AnalyzeLayerResults(m, "tpu")
+    elif (platform == "coral"):
+        for layer in model_summary["models"][0]["layers"]:
+            m = BenchmarkLayer(Model(layer, "tpu", parent_model), count, "TPU", platform)
             models["tpu"].append(m)
             #AnalyzeLayerResults(m, "tpu")
+    
 
     return models
 
-
-def GetArgs() -> argparse.Namespace:
-    """Argument parser, returns the Namespace containing all of the arguments.
-    :raises: None
-
-    :rtype: argparse.Namespace
-    """
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        "-f", "--form", default="Deploy", required=True, help="Single or Group."
-    )
-
-    parser.add_argument(
-        "-d", "--delegate", default="", required=True, help="cpu or edge."
-    )
-
-    parser.add_argument(
-        "-m", "--model", required=True, help="File path to the .tflite file."
-    )
-
-    parser.add_argument(
-        "-p", "--parent", default="", required=False, help="parent model"
-    )
-
-    parser.add_argument(
-        "-c", "--count", type=int, default=1, help="Number of times to run inference."
-    )
-
-    args = parser.parse_args()
-
-    return args
-
-
-if __name__ == "__main__":
-    """Entry point to execute this script.
-
-    Flags
-    ---------
-    -f or --form
-    Form in which the script should run. Group or Single
-        Single deploys a single model.
-        Group is supposed to be used to deploy a group of models in sequence.
-
-    -d or --delegate
-        Specifies which hardware should be used to delegate a model.
-            cpu => cpu
-            gpu => gpu
-            tpu => edgetpu
-
-    -m or --model
-        Should be used in conjunction with the 'Single' form.
-
-    -c or --count
-        Should be followed by the number of times one wishes to deploy the group of models
-        or a single model (Depends on form).
-    """
-
-    from ..profiler import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
-    from analysis import AnalyzeLayerResults
-
-    args = GetArgs()
-
-    delegators = {
-        "cpu": BenchmarkLayer,
-        "gpu": BenchmarkLayer,
-        "tpu": BenchmarkLayer,
-    }
-
-    if args.form == "single":
-        delegator = delegators.get(args.delegate, None)
-        if not (delegator == None):
-            m = delegator(Model(args.model, args.delegate), args.count)
-            AnalyzeLayerResults(m, args.delegate)
-
-    elif args.form == "group":
-        import os
-        from os import listdir
-        from os.path import join, isdir, isfile
-
-        delegator = delegators.get(args.delegate, None)
-        if args.delegate == "tpu":
-            if delegator:
-                for f in listdir(COMPILED_MODELS_FOLDER):
-                    if isfile(f) and f.endswith(".tflite"):
-                        model_name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
-                        model_path = join(os.getcwd(), COMPILED_MODELS_FOLDER, f)
-                        m = delegator(Model(model_path, args.delegate), args.count)
-                        AnalyzeLayerResults(m, args.delegate)
-        else:
-            if delegator:
-                for d in listdir(LAYERS_FOLDER):
-                    if isdir(d):
-                        model_name = d
-                        model_path = join(
-                            os.getcwd(), d, "quant", f"quant_{model_name}.tflite"
-                        )
-                        m = delegator(Model(model_path, args.delegate), args.count)
-                        AnalyzeLayerResults(m, args.delegate)
-
-    else:
-        raise Exception(f"Invalid mode: {args.mode}")
+# Deprecated 
+#def GetArgs() -> argparse.Namespace:
+#    """Argument parser, returns the Namespace containing all of the arguments.
+#    :raises: None
+#
+#    :rtype: argparse.Namespace
+#    """
+#    import argparse
+#
+#    parser = argparse.ArgumentParser(
+#        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+#    )
+#
+#    parser.add_argument(
+#        "-f", "--form", default="Deploy", required=True, help="Single or Group."
+#    )
+#
+#    parser.add_argument(
+#        "-d", "--delegate", default="", required=True, help="cpu or edge."
+#    )
+#
+#    parser.add_argument(
+#        "-m", "--model", required=True, help="File path to the .tflite file."
+#    )
+#
+#    parser.add_argument(
+#        "-p", "--parent", default="", required=False, help="parent model"
+#    )
+#
+#    parser.add_argument(
+#        "-c", "--count", type=int, default=1, help="Number of times to run inference."
+#    )
+#
+#    args = parser.parse_args()
+#
+#    return args
+#
+#
+#if __name__ == "__main__":
+#    """Entry point to execute this script.
+#
+#    Flags
+#    ---------
+#    -f or --form
+#    Form in which the script should run. Group or Single
+#        Single deploys a single model.
+#        Group is supposed to be used to deploy a group of models in sequence.
+#
+#    -d or --delegate
+#        Specifies which hardware should be used to delegate a model.
+#            cpu => cpu
+#            gpu => gpu
+#            tpu => edgetpu
+#
+#    -m or --model
+#        Should be used in conjunction with the 'Single' form.
+#
+#    -c or --count
+#        Should be followed by the number of times one wishes to deploy the group of models
+#        or a single model (Depends on form).
+#    """
+#
+#    from ..profiler import LAYERS_FOLDER, COMPILED_MODELS_FOLDER
+#    from analysis import AnalyzeLayerResults
+#
+#    args = GetArgs()
+#
+#    delegators = {
+#        "cpu": BenchmarkLayer,
+#        "gpu": BenchmarkLayer,
+#        "tpu": BenchmarkLayer,
+#    }
+#
+#    if args.form == "single":
+#        delegator = delegators.get(args.delegate, None)
+#        if not (delegator == None):
+#            m = delegator(Model(args.model, args.delegate), args.count)
+#            AnalyzeLayerResults(m, args.delegate)
+#
+#    elif args.form == "group":
+#        import os
+#        from os import listdir
+#        from os.path import join, isdir, isfile
+#
+#        delegator = delegators.get(args.delegate, None)
+#        if args.delegate == "tpu":
+#            if delegator:
+#                for f in listdir(COMPILED_MODELS_FOLDER):
+#                    if isfile(f) and f.endswith(".tflite"):
+#                        model_name = (f.split("quant_")[1]).split("edgetpu.tflite")[0]
+#                        model_path = join(os.getcwd(), COMPILED_MODELS_FOLDER, f)
+#                        m = delegator(Model(model_path, args.delegate), args.count)
+#                        AnalyzeLayerResults(m, args.delegate)
+#        else:
+#            if delegator:
+#                for d in listdir(LAYERS_FOLDER):
+#                    if isdir(d):
+#                        model_name = d
+#                        model_path = join(
+#                            os.getcwd(), d, "quant", f"quant_{model_name}.tflite"
+#                        )
+#                        m = delegator(Model(model_path, args.delegate), args.count)
+#                        AnalyzeLayerResults(m, args.delegate)
+#
+#    else:
+#        raise Exception(f"Invalid mode: {args.mode}")
+#

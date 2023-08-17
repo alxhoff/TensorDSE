@@ -32,7 +32,11 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
 
 
 def ProfileModel(
-    model_path: str, count: int, hardware_summary_path: str, model_summary_path: str
+    model_path: str,
+    count: int,
+    hardware_summary_path: str,
+    model_summary_path: str,
+    platform: str,
 ) -> None:
     from utils.benchmark import BenchmarkModelLayers
     from utils.analysis import AnalyzeModelResults, MergeResults
@@ -96,6 +100,7 @@ def ProfileModel(
         hardware_list=hardware_to_benchmark,
         model_summary=model_summary_json,
         count=count,
+        platform=platform,
     )
 
     log.info("Models deployed")
@@ -151,6 +156,13 @@ def GetArgs() -> argparse.Namespace:
         "--summaryoutputname",
         default="MNIST_full_quanitization_summary",
         help="Name that the model summary should have",
+    )
+
+    parser.add_argument(
+        "-p",
+        "--platform",
+        default="desktop",
+        help="Platform supporting the profiling/deployment process",
     )
 
     args = parser.parse_args()
