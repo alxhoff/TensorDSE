@@ -15,8 +15,8 @@ for i in "$@"; do
             ARCHITECTURE_SUMMARY="${i#*=}"
             shift # past argument=value
         ;;
-        -b=*|--PROFILING_RESULTS=*)
-            PROFILING_RESULTS="${i#*=}"
+        -b=*|--PROFILING_COSTS=*)
+            PROFILING_COSTS="${i#*=}"
             shift # past argument=value
         ;;
         -o=*|--OUTPUT_FOLDER=*)
@@ -93,14 +93,23 @@ test() {
     ipdb3 docker/scripts/test.py -c 2 -t 10
 }
 
-run() {
+run_full_flow() {
     git fetch origin
     git reset --hard origin/master
     python3 profiler.py -m resources/models/example_models/MNIST_full_quanitization.tflite -c 10
     pushd DSE/TensorDSE
-    gradle6 run --args="--modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingresults $PROFILING_RESULTS --outputfolder $OUTPUT_FOLDER --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    gradle6 run --args="--modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
     popd
     python3 deploy.py
+}
+
+run_just_dse() {
+    git fetch origin
+    git reset --hard origin/master
+    pushd DSE/TensorDSE
+    gradle6 run --args="--modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    popd
+    cp /home/sources/TensorDSE/resources /home/tensorDSE/resources
 }
 
 main() {
@@ -112,7 +121,7 @@ main() {
         elif [ "$mode" -eq $SHELL_MODE ]; then
         bash
     else
-        run
+        run_full_flow
     fi
 }
 

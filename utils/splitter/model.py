@@ -178,4 +178,3 @@ class Submodel(Model):
         self.paths["json"] = submodel_filepath
         with open(submodel_filepath, "w") as fout:
             json.dump(self.json, fout, indent=2)
-            print("Saved model {} to {}".format(self.name, submodel_filepath))

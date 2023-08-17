@@ -1,7 +1,8 @@
+import json
 import os
 import sys
 import argparse
-from utils.log import Log
+from utils.splitter.logger import log
 
 MODELS_FOLDER = "resources/models/source/"
 LAYERS_FOLDER = "resources/models/layers/"
@@ -27,7 +28,7 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
         model, output_dir, output_name
     )
 
-    print("Running summary command: {}".format(command))
+    print("[SUMMARIZE] Running summary command: {}".format(command))
     system(command)
 
 
@@ -38,11 +39,10 @@ def ProfileModel(
     model_summary_path: str,
     platform: str,
 ) -> None:
-    from utils.benchmark import BenchmarkModelLayers
-    from utils.analysis import AnalyzeModelResults, MergeResults
+    from utils.benchmark import ProfileModelLayers
+    from utils.analysis import AnalyzeModelResults
 
     from utils.splitter.utils import ReadJSON
-    from utils.splitter.logger import log
     from utils.splitter.split import Splitter
 
     if not model_path.endswith(".tflite"):
@@ -89,13 +89,19 @@ def ProfileModel(
         splitter.Clean(True)
         log.error("Failed to run splitter! {}".format(str(e)))
 
+    print("[PROFILE MODEL] Splitter created")
+    log.info("[PROFILE MODEL] Splitter created")
+
     if "tpu" in hardware_to_benchmark:
         # Compiles created models/layers into Coral models for execution
         splitter.CompileForEdgeTPU()
-        log.info("Models successfully compiled!")
+        log.info("[PROFILE MODEL] Models successfully compiled!")
+        print("[PROFILE MODEL] Models successfully compiled!")
 
     # Deploy the generated models/layers onto the target test hardware using docker
-    results_dict = BenchmarkModelLayers(
+    print("[PROFILE MODEL] Profiling model layers")
+
+    results_dict = ProfileModelLayers(
         parent_model=model_name,
         hardware_list=hardware_to_benchmark,
         model_summary=model_summary_json,
@@ -103,12 +109,22 @@ def ProfileModel(
         platform=platform,
     )
 
+    print("[PROFILE MODEL] Models deployed")
     log.info("Models deployed")
 
+    for delegate in ["cpu", "gpu", "tpu"]:
+        for m in results_dict[delegate]:
+            print("{}: {}".format(delegate, m.timers))
+
+
+    os.system('ls resources/results')
+
     # Process results
+    print("[PROFILE MODEL] Analyzing model: {}".format(model_name))
     AnalyzeModelResults(model_name, results_dict)
 
     log.info("Analyzed and merged results")
+
 
 
 def GetArgs() -> argparse.Namespace:
@@ -186,17 +202,24 @@ if __name__ == "__main__":
     args = GetArgs()
     DisableTFlogging()
 
+    log.info("[PROFILER] Starting")
+
     SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
 
-    print("Profiling model")
+    log.info("[PROFILER] Model {} summarized".format(args.model))
+    print("[PROFILER] Model summarized")
 
     ProfileModel(
         args.model,
         args.count,
         args.hardwaresummary,
         os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
-        args.platform
+        args.platform,
     )
 
-    print()
-    print("Finito ☜(⌒▽⌒)=b")
+    log.info("[PROFILER] Model {} profiled".format(args.model))
+    print(
+        "[PROFILER] Profiling finished -> {}/{}.json".format(
+            args.summaryoutputdir, args.summaryoutputname
+        )
+    )
