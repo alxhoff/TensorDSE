@@ -195,6 +195,7 @@ if __name__ == "__main__":
         args.count,
         args.hardwaresummary,
         os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
+        args.platform
     )
 
     print()
