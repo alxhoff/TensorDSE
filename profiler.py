@@ -53,13 +53,15 @@ def ProfileModel(
 
     hardware_to_benchmark = ["cpu", "gpu", "tpu"]
 
+    hardware_summary_json = None 
+
     if hardware_summary_path is not None:
         hardware_summary_json = ReadJSON(hardware_summary_path)
 
         if hardware_summary_json is not None:
+            
             req_hardware = []
-
-            if int(hardware_summary_json["CPU_cores"]) > 0:
+            if int(hardware_summary_json["CPU_count"]) > 0:
                 req_hardware.append("cpu")
 
             if int(hardware_summary_json["GPU_count"]) > 0:
@@ -70,6 +72,9 @@ def ProfileModel(
 
             hardware_to_benchmark = req_hardware
         else:
+            log.error("Could not read provided hardware summary")
+            sys.exit(-1)
+    else:
             log.error("The provided Hardware Summary is empty!")
             sys.exit(-1)
 
@@ -111,7 +116,7 @@ def ProfileModel(
 
     # Process results
     print("[PROFILE MODEL] Analyzing model: {}".format(model_name))
-    AnalyzeModelResults(model_name, results_dict)
+    AnalyzeModelResults(model_name, results_dict, hardware_summary_json)
 
     log.info("Analyzed and merged results")
 
@@ -173,7 +178,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
         "-u",
         "--usbmon",
-        required=True,
+        default="usbmon0",
         help="USB bus on which TPU is attached and thus which usbmon interface should be used for packet sniffing"
     )
 
@@ -204,6 +209,10 @@ if __name__ == "__main__":
 
     log.info("[PROFILER] Model {} summarized".format(args.model))
     print("[PROFILER] Model summarized")
+
+    if args.count < 2:
+        print("Count MUST be greater than 2")
+        sys.exit('Count was not greater than 2')
 
     ProfileModel(
         args.model,

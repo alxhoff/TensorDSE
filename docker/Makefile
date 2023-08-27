@@ -58,7 +58,8 @@ build:
 	@echo $$GUROBI_ACCESSID
 	@echo $$GUROBI_SECRET
 	@echo $$GUROBI_LICENCEID
-	docker build -t ${REPO}:${TAG} --build-arg WLSACCESSID=$$GUROBI_ACCESSID --build-arg WLSSECRET=$$GUROBI_SECRET --build-arg LICENSEID=$$GUROBI_LICENCEID .
+	docker build -t ${REPO}:${TAG} --build-arg WLSACCESSID=$$GUROBI_ACCESSID \
+		--build-arg WLSSECRET=$$GUROBI_SECRET --build-arg LICENSEID=$$GUROBI_LICENCEID .
 
 run: $(if $(call exist-docker-image),,build)
 	@if [ -n "$(call is-docker-running)" ]; then \
@@ -78,7 +79,11 @@ run: $(if $(call exist-docker-image),,build)
 			   -it ${REPO}:${TAG} \
 			   --gpus 'all,capabilities=utility,compute' \
 			   --USBMON=$$USBMON \
+			   --DATASET=$$DATASET \
+			   --COUNT=$$COUNT \
+			   --MODEL=$$MODEL \
 			   --MODEL_SUMMARY=$$MODEL_SUMMARY \
+			   --MODEL_SUMMARY_W_MAPPINGS=$$MODEL_SUMMARY_W_MAPPINGS \
 			   --ARCHITECTURE_SUMMARY=$$ARCHITECTURE_SUMMARY \
 			   --PROFILING_COSTS=$$PROFILING_COSTS \
 			   --OUTPUT_FOLDER=$$OUTPUT_FOLDER \

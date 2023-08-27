@@ -1,16 +1,16 @@
 package net.sf.opendse.TensorDSE.JSON.Architecture;
 
 public class ArchitectureJSON {
-    Integer CPU_cores;
+    Integer CPU_count;
     Integer GPU_count;
     Integer TPU_count;
 
-    public Integer getCPU_cores() {
-        return CPU_cores;
+    public Integer getCPU_count() {
+        return CPU_count;
     }
 
-    public void setCPU_cores(Integer cPU_cores) {
-        CPU_cores = cPU_cores;
+    public void setCPU_count(Integer cPU_cores) {
+        CPU_count = cPU_cores;
     }
 
     public Integer getGPU_count() {

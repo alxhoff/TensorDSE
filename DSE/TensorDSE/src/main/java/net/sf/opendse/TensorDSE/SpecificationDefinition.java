@@ -114,8 +114,11 @@ public class SpecificationDefinition {
 
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 			try {
+				System.out.println(String.format("Storing mapping results: %s", filename));
 				FileWriter file = new FileWriter(filename);
-				gson.toJson(this.json_models, file);
+				ModelJSON model_json = new ModelJSON();
+				model_json.setModels(this.json_models);
+				gson.toJson(model_json, file);
 				file.close();
 			} catch (JsonIOException e) {
 				// TODO Auto-generated catch block
@@ -307,9 +310,9 @@ public class SpecificationDefinition {
 		architecture.addEdge(link_usb_pci, bus_usb, bus_pci);
 
 		// Create CPU Cores
-		if (architecture_json.getCPU_cores() > 0) {
+		if (architecture_json.getCPU_count() > 0) {
 			List<Resource> cpu_cores = new ArrayList<Resource>();
-			for (int i = 0; i < architecture_json.getCPU_cores(); i++) {
+			for (int i = 0; i < architecture_json.getCPU_count(); i++) {
 				String r_id = String.format("cpu%d", i);
 				Resource core = new Resource(r_id);
 				architecture.addVertex(core);

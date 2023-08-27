@@ -17,13 +17,10 @@ RUN set -ex
 RUN apt-get update \
     && apt-get install -y \
     sudo build-essential locales wget curl gnupg curl zip unzip tar openjdk-11-jdk \
-    python3 python3-pip \
-    git vim \
-    usbutils udev lshw \
-    software-properties-common \
-    && apt-get clean \
-    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \ 
-    && locale-gen && update-locale
+    python3 python3-pip git vim usbutils udev lshw software-properties-common && \
+    apt-get clean && \
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen && update-locale
 
 # Python Libraries
 RUN pip3 install --upgrade pip && \
@@ -50,7 +47,7 @@ find / -name 'libnvinfer_plugin.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/
 find / -name 'libnvinfer.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/libnvinfer.so.7"' {} \;
 
 # CUDA
-RUN apt-get install -y nvidia-cuda-dev  nvidia-cuda-toolkit
+RUN apt-get install -y nvidia-cuda-dev nvidia-cuda-toolkit
 
 WORKDIR /home/
 

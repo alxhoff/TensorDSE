@@ -24,11 +24,11 @@ args = parser.parse_args()
 def main() -> int:
     import json
 
-    CPU_cores = input("How many CPU cores are available for use?\n")
+    CPU_count = input("How many CPU cores are available for use?\n")
     GPU_count = input("How many GPUs are available for use?\n")
     TPU_count = input("How many USB TPUs are available for use?\n")
 
-    summary = {"CPU_cores": CPU_cores, "GPU_count": GPU_count, "TPU_count": TPU_count}
+    summary = {"CPU_count": CPU_count, "GPU_count": GPU_count, "TPU_count": TPU_count}
 
     with open(args.outputdir + "/" + args.outputname, "w+") as outfile:
         json.dump(summary, outfile, indent=4)

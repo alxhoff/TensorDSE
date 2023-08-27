@@ -4,9 +4,25 @@ CWD := $(shell pwd)
 FOLDER := $(shell basename ${CWD})
 REPO := tensorflow/tensorflow
 
+ifndef MODEL
+override MODEL = "resources/models/example_models/MNIST_full_quanitization.tflite"
+$(info Using default MODEL: $(MODEL))
+endif
+ifndef DATASET
+override DATASET = "utils.datasets.MNIST"
+$(info Using default DATASET: $(DATASET))
+endif
+ifndef COUNT
+override COUNT = 2
+$(info Using default COUNT: $(COUNT))
+endif
 ifndef MODEL_SUMMARY
 override MODEL_SUMMARY = "../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary.json"
 $(info Using default MODEL_SUMMARY: $(MODEL_SUMMARY))
+endif
+ifndef MODEL_SUMMARY_W_MAPPINGS
+override MODEL_SUMMARY_W_MAPPINGS = "resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json"
+$(info Using default MODEL_SUMMARY_W_MAPPINGS: $(MODEL_SUMMARY_W_MAPPINGS))
 endif
 ifndef ARCHITECTURE_SUMMARY
 override ARCHITECTURE_SUMMARY = "../../resources/architecture_summaries/example_output_architecture_summary.json"
@@ -82,7 +98,7 @@ run:
 	git reset --hard origin/master
 	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
 	$(info USBMON is $(USBMON))
-	@${MAKE} -C docker run USBMON=$(USBMON) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
+	@${MAKE} -C docker run USBMON=$(USBMON) DATASET=$(DATASET) COUNT=$(COUNT) MODEL=$(MODEL) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
 
 .PHONY: info
 info:

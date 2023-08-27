@@ -36,9 +36,11 @@ def distributed_inference(
                                                                                       hardware_target_ptr,
                                                                                       benchmarking_count)
 
-    print("[DISTRIBUTED INFERENCE] Result:{}".format(result))
-
     if result == -1:
         raise Exception("C++ distributed inference failed")
 
-    return result
+    result /= 1000000000.0
+
+    print("[DISTRIBUTED INFERENCE] Result:{}".format(result))
+
+    return result 

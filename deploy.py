@@ -2,6 +2,7 @@ import copy
 import numpy as np
 from utils.model import Model
 import argparse
+import random
 
 def GetInputData(m: Model):
     from utils.benchmark import GetArraySizeFromShape
@@ -10,6 +11,15 @@ def GetInputData(m: Model):
     m.input_vector = np.array(
         np.random.random_sample(input_size), dtype=m.get_np_dtype(m.input_datatype)
     )
+
+
+def GetInputTestDataModule(m: Model, dataset_module: str):
+    module = __import__(dataset_module)
+    for comp in dataset_module.split(".")[1:]:
+        module = getattr(module, comp)
+    dataset = module.GetData()["test_data"]
+    input_shape = module.GetInputShape()
+    m.input_vector = random.choice(dataset)
 
 
 def DeployLayer(m: Model):
@@ -58,7 +68,7 @@ def DeployLayer(m: Model):
     return m
 
 
-def DeployModel(model_path: str, model_summary_path: str) -> None:
+def DeployModel(model_path: str, model_summary_path: str, data_module : str = None) -> None:
     from utils.splitter.utils import ReadJSON
     from utils.splitter.logger import log
 
@@ -73,11 +83,14 @@ def DeployModel(model_path: str, model_summary_path: str) -> None:
     models = []
 
     for i, model in enumerate(model_summary["models"]):
-        for idx, layer in enumerate(model):
+        for idx, layer in enumerate(model["layers"]):
             m = Model(layer, layer["mapping"].upper(), model_name)
 
             if idx == 0:
-                GetInputData(m)
+                if data_module == None:
+                    GetInputData(m)
+                else:
+                    GetInputTestDataModule(m, dataset_module=data_module)
             elif idx < len(model_summary["layers"]):
                 m.input_vector = copy.deepcopy(models[len(models) - 1].output_vector)
 
@@ -96,6 +109,20 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "-s",
+    "--summary",
+    default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json",
+    help="File that contains a model summary with mapping annotations"
+)
+
+parser.add_argument(
+    "-d",
+    "--dataset",
+    default="utils.datasets.MNIST",
+    help="Dataset import module to be used for providing input data"
+)
+
+parser.add_argument(
     "-o",
     "--summaryoutputdir",
     default="resources/model_summaries/example_summaries/MNIST",
@@ -105,7 +132,7 @@ parser.add_argument(
 parser.add_argument(
     "-n",
     "--summaryoutputname",
-    default="MNIST_full_quanitization_summary",
+    default="MNIST_full_quanitization_summary_with_mappings",
     help="Name that the model summary should have",
 )
 
@@ -116,9 +143,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    DeployModel(
-        args.model,
-        os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
-    )
+    if args.summary:
+        print("Deploying: {}".format(args.summary))
+        DeployModel(args.model, args.summary, args.dataset)
+    else:
+        print("Deploying: {}".format(args.summaryoutputdir + "/" + args.summaryoutputname))
+        DeployModel(
+            args.model,
+            os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
+            args.dataset
+        )
 
     print("Model Deployed")

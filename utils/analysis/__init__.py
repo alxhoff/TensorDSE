@@ -8,10 +8,9 @@ def ExportResults(file:str, data:Dict) -> None:
         json_data = data
         json.dump(json_data, json_file, indent=4)
 
-def AnalyzeModelResults(parent_model:str, models_dict:Dict):
+def AnalyzeModelResults(parent_model:str, models_dict:Dict, hardware_summary:Dict):
 
     from utils.splitter.logger import log
-    from utils import device_count
     from utils.usb.process import process_streams
     from utils.analysis.analysis import Analyzer
     import os
@@ -19,15 +18,6 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
     RESULTS_FOLDER = os.path.join(os.getcwd(), "resources/profiling_results")
     results_path = os.path.join(RESULTS_FOLDER, f"{parent_model}.json")
     print("Results file: {} from {}".format(results_path, os.getcwd()))
-    
-    unavailable_delegates = []
-    data = {
-            "models": [{
-                "name"      : parent_model,
-                "runs"      : models_dict["count"],
-                "layers"    : []
-        }]
-    }
 
     if not os.path.isdir(RESULTS_FOLDER):
         import sys
@@ -36,98 +26,62 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
         os.mkdir(RESULTS_FOLDER)
         if not os.path.isdir(RESULTS_FOLDER):
             sys.exit(-1)
-
-    names = []
-
-    for delegate in ("cpu", "gpu", "tpu"):
-        if not models_dict[delegate]:
-            log.warning(f"Models dictionary does not contain results for delegate: {delegate}")
-            unavailable_delegates.append(delegate)
-            continue
-
-        for m in models_dict[delegate]:
-            log.info(f"Analyzing results of operation: {m.model_name} ran on {delegate} on index {m.index}")
-            a = Analyzer(m.results, find_distribution=True)
-
-            model = data["models"][0] # hacky for now
-
-            name = f"{m.model_name}_{m.index}"
-
-            d = {
-                "name"                  : name,
-                "path"                  : { m.delegate : m.model_path },
-                "delegates"             : [
-                    {
-                        "device"                      : m.delegate,
-                        "count"                       : device_count(m.delegate),
-                        "input"                     : {
-                                "shape"   : m.input_shape,
-                                "type"    : m.input_datatype
-                            },
-                        "mean"                      : a.mean,
-                        "median"                    : a.median,
-                        "standard_deviation"        : a.std_deviation,
-                        "avg_absolute_deviation"    : a.avg_absolute_deviation,
-                        "distribution"              : a.distribution_name,
-                        "usb"                       : process_streams(m.timers, m.results)
-                    }
-                ]
-            }            
-            if not name in names:
-                names.append(name)
-                model["layers"].append(d)
-                data["models"][0] = model
-                continue
-            else:
-                for i,j in enumerate(model["layers"]):
-                    if j["name"] == f"{m.model_name}_{m.index}":
-                        model["layers"][i]["path"][m.delegate] = m.model_path
-                        model["layers"][i]["delegates"].append(d["delegates"])
-                        data["models"][0] = model
-                        break
-
-    for d in unavailable_delegates:
-        for i,m in enumerate(data["models"][0]["layers"]):
-            ret = {
-                        "device"                    : d,
-                        "count"                     : 0,
-            }
-            m["delegates"].append(ret)
-            data["models"][0]["layers"][i] = m
-
-    print("Exporting profiling results to: {}".format(results_path))
-    ExportResults(results_path, data)
-
-def AnalyzeLayerResults(m:Model, delegate:str):
-    from main import RESULTS_FOLDER
-    from utils.usb.process import process_streams
-    from utils.analysis.analysis import Analyzer
-    from utils import device_count
-    import os
-
-    a = Analyzer(m.results, find_distribution=True)
+    
     data = {
-        "name"                  : m.model_name,
-        "path"                  : { m.delegate : m.model_path },
-        "delegates"             : [
-            {
-                "device"                    : m.delegate,
-                "count"                     : device_count(m.delegate),
+            "models": [{
+                "name"      : parent_model,
+                "runs"      : models_dict["count"],
+                "layers"    : []
+        }]
+    }
+
+    # layers
+    from itertools import groupby
+    delegates = ["cpu", "gpu", "tpu"]
+    models_dict = {l: {m.delegate: m for m in list(v)} for l, v in groupby(sorted([model for d in delegates for model in list(models_dict[d])], key=lambda x:x.model_name), lambda x:x.model_name)}
+
+    for layer_name, layer in models_dict.items():
+
+        layer_dict = {
+            "name"                  : layer_name,
+            "path"                  : {},
+            "delegates"             : []
+            }
+
+        for delegate_name, delegate in layer.items():
+
+            a = Analyzer(delegate.results, find_distribution=True)
+
+            delegate_dict = {
+                "device"                      : delegate_name,
+                "count"                       : hardware_summary["{}_count".format(delegate_name.upper())],
                 "input"                     : {
-                                                "shape"   : m.input_shape,
-                                                "type"    : m.input_datatype
-                                              },
+                        "shape"   : delegate.input_shape,
+                        "type"    : delegate.input_datatype
+                    },
                 "mean"                      : a.mean,
                 "median"                    : a.median,
                 "standard_deviation"        : a.std_deviation,
                 "avg_absolute_deviation"    : a.avg_absolute_deviation,
                 "distribution"              : a.distribution_name,
-                "usb"                       : process_streams(m.timers, m.results)
+                "usb"                       : process_streams(delegate.timers, delegate.results)         
             }
-        ]
-    }
 
-    ExportResults(os.path.join(RESULTS_FOLDER, f"layer_{m.index}_{m.model_name}_{delegate.upper()}.json"), data)
+            layer_dict["delegates"].append(delegate_dict)
+            layer_dict["path"][delegate_name] = delegate.model_path
+
+        for delegate in list(set(delegates) - set(layer.keys())):
+
+            delegate_dict = {
+                "device"                    : delegate,
+                "count"                     : 0,
+            }
+            layer_dict["delegates"].append(delegate_dict)
+
+        data["models"][0]["layers"].append(layer_dict)
+
+    print("Exporting profiling results to: {}".format(results_path))
+    ExportResults(results_path, data)
 
 def MergeResults(parent_model:str, layers:dict, clean:bool=True):
     from main import RESULTS_FOLDER

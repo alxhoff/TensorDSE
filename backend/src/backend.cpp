@@ -193,7 +193,7 @@ int distributed_inference_tpu(std::string& tflite_model_path, int8_t* input_data
                                                              const unsigned int benchmarking_count) {
 
     // Find TPU device.
-    std::cout << "Detecting Edge TPUs Devices ..." << std::endl;
+    std::cout << " Detecting Edge TPUs Devices ..." << std::endl;
     size_t num_devices;
     std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)> devices(
         edgetpu_list_devices(&num_devices), &edgetpu_free_devices);
