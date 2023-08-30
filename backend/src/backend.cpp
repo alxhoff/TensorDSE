@@ -215,7 +215,7 @@ int distributed_inference_tpu(std::string& tflite_model_path, int8_t* input_data
     }
     std::cout << "Model successfully loaded! " << std::endl;
 
-    std::cout << "Initializing Edge TPU Context ... " << std::endl;
+    /*std::cout << "Initializing Edge TPU Context ... " << std::endl;
     const std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(available_tpus[0].type, available_tpus[0].path);
     tflite::ops::builtin::BuiltinOpResolver resolver;
     resolver.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
@@ -225,8 +225,20 @@ int distributed_inference_tpu(std::string& tflite_model_path, int8_t* input_data
     builder(&interpreter);
     interpreter->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context.get());
     interpreter->SetNumThreads(1);
-    std::cout << "Edge TPU Interpreter successfully built!" << std::endl;
+    std::cout << "Edge TPU Interpreter successfully built!" << std::endl;*/
     
+    // Create interpreter.
+    tflite::ops::builtin::BuiltinOpResolver resolver;
+    std::unique_ptr<tflite::Interpreter> interpreter;
+    if (tflite::InterpreterBuilder(*model, resolver)(&interpreter) != kTfLiteOk) {
+        std::cerr << "Cannot create interpreter" << std::endl;
+        return -1;
+    }
+
+    auto* delegate = edgetpu_create_delegate(device.type, device.path, nullptr, 0);
+    interpreter->ModifyGraphWithDelegate(delegate);
+
+
     // Allocate tensors 
     std::cout << "Allocating Tensors... " << std::endl;
     if (interpreter->AllocateTensors() != kTfLiteOk) {
@@ -268,6 +280,8 @@ int distributed_inference_tpu(std::string& tflite_model_path, int8_t* input_data
 
     std::vector<int8_t> final_data = GetTensorData(*interpreter->output_tensor(0));
     
+    edgetpu_free_delegate(delegate);
+
     std::copy(final_data.begin(), final_data.end(), output_data);
     std::copy(inference_times_vec.begin(), inference_times_vec.end(), inference_times);
 

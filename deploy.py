@@ -20,19 +20,19 @@ def DeployLayer(m: Model):
     if m.delegate == "tpu":
         m.model_path = os.path.join(
             COMPILED_DIR,
-            "submodel_{0}_{1}_{2}_edgetpu.tflite".format(
-                m.details["index"], m.details["type"], m.delegate
+            "submodel_{0}_{1}_bm_edgetpu.tflite".format(
+                m.details["index"], m.details["type"]
             ),
         )
     else:
         m.model_path = os.path.join(
             SUB_DIR,
             "tflite",
-            "submodel_{0}_{1}_{2}".format(
-                m.details["index"], m.details["type"], m.delegate
+            "submodel_{0}_{1}_bm".format(
+                m.details["index"], m.details["type"]
             ),
-            "submodel_{0}_{1}_{2}.tflite".format(
-                m.details["index"], m.details["type"], m.delegate
+            "submodel_{0}_{1}_bm.tflite".format(
+                m.details["index"], m.details["type"]
             ),
         )
 
@@ -73,12 +73,12 @@ def DeployModel(model_path: str, model_summary_path: str) -> None:
     models = []
 
     for i, model in enumerate(model_summary["models"]):
-        for idx, layer in enumerate(model):
+        for idx, layer in enumerate(model["layers"]):
             m = Model(layer, layer["mapping"].upper(), model_name)
 
             if idx == 0:
                 GetInputData(m)
-            elif idx < len(model_summary["layers"]):
+            elif idx < len(model["layers"]):
                 m.input_vector = copy.deepcopy(models[len(models) - 1].output_vector)
 
             m = DeployLayer(m)

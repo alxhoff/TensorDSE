@@ -89,17 +89,14 @@ def ProfileModel(
         splitter.Clean(True)
         log.error("Failed to run splitter! {}".format(str(e)))
 
-    print("[PROFILE MODEL] Splitter created")
     log.info("[PROFILE MODEL] Splitter created")
 
     if "tpu" in hardware_to_benchmark:
         # Compiles created models/layers into Coral models for execution
         splitter.CompileForEdgeTPU()
         log.info("[PROFILE MODEL] Models successfully compiled!")
-        print("[PROFILE MODEL] Models successfully compiled!")
 
     # Deploy the generated models/layers onto the target test hardware using docker
-    print("[PROFILE MODEL] Profiling model layers")
 
     results_dict = ProfileModelLayers(
         parent_model=model_name,
@@ -109,18 +106,9 @@ def ProfileModel(
         platform=platform,
     )
 
-    print("[PROFILE MODEL] Models deployed")
     log.info("Models deployed")
 
-    for delegate in ["cpu", "gpu", "tpu"]:
-        for m in results_dict[delegate]:
-            print("{}: {}".format(delegate, m.timers))
-
-
-    os.system('ls resources/results')
-
     # Process results
-    print("[PROFILE MODEL] Analyzing model: {}".format(model_name))
     AnalyzeModelResults(model_name, results_dict)
 
     log.info("Analyzed and merged results")
