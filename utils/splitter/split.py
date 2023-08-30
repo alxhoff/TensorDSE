@@ -111,7 +111,6 @@ class Splitter:
                 elif layer[2] in ["cpu", "gpu", "tpu"]:
                     log.info(
                         "Model #{0}, layer #{1} mapped to {2}".format(i, j, layer[2])
-                    )
 
     def CreateSubmodelLayerSequences(self) -> None:
         """From the mappings created by CreateLayerMatrix, sequential layers

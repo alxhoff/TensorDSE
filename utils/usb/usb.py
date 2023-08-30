@@ -47,6 +47,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
     """
     """
     from utils.timer import Timer,ConditionalTimer
+    from .detect_tpu_bus import detect
     import pyshark
 
     id, addr = get_tpu_ids()
@@ -55,7 +56,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
         return
 
     context = StreamContext()
-    capture = pyshark.LiveCapture(interface='usbmon2', display_filter=get_filter(addr))
+    capture = pyshark.LiveCapture(interface='usbmon0', display_filter=get_filter(addr))
     signalsQ.put(START_DEPLOYMENT)
 
     l.info("- Packet Capture is started -")

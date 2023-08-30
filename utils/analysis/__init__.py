@@ -64,10 +64,16 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                         "standard_deviation"        : a.std_deviation,
                         "avg_absolute_deviation"    : a.avg_absolute_deviation,
                         "distribution"              : a.distribution_name,
-                        "usb"                       : process_streams(m.timers, m.results)
+                        "usb"                       : process_streams(m.timers, m.results),
+                        "mean_computation"          : 0
                     }
                 ]
-            }            
+            }
+
+            if (delegate == "tpu"):
+                d["delegates"][0]["mean_computation"] = d["delegates"][0]["mean"] - (d["delegates"][0]["usb"]["total"]["mean"] * 10**9)
+
+
             if not name in names:
                 names.append(name)
                 model["layers"].append(d)
@@ -80,6 +86,8 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict):
                         model["layers"][i]["delegates"].append(d["delegates"])
                         data["models"][0] = model
                         break
+            
+            
 
     for d in unavailable_delegates:
         for i,m in enumerate(data["models"][0]["layers"]):
