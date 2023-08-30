@@ -90,6 +90,9 @@ def TPUDeploy(m: Model, count: int, usbmon:int, timeout: int = 10) -> Model:
         )
         inference_times_vector = np.zeros(count).astype(np.uint32)
 
+        delegate_type  = m.delegate[:3]
+        delegate_index = m.delegate[-1]
+
         mean_inference_time = distributed_inference(
             m.model_path,
             input_data_vector,
@@ -99,6 +102,7 @@ def TPUDeploy(m: Model, count: int, usbmon:int, timeout: int = 10) -> Model:
             len(output_data_vector),
             "TPU",
             1,
+            delegate_index
         )
 
         results.append(mean_inference_time)
@@ -187,6 +191,9 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
             "[PROFILE LAYER] Profiling {} on {}".format(m.model_path, hardware_target)
         )
 
+        delegate_type  = m.delegate[:3]
+        delegate_index = m.delegate[-1]
+
         tries = 0
 
         while(tries < 2):
@@ -201,6 +208,7 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
                     len(output_data_vector),
                     hardware_target,
                     count,
+                    0
                 )
             except Exception as e:
                 print(e)

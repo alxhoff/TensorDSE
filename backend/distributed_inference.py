@@ -10,7 +10,8 @@ def distributed_inference(
     input_data_size:int,
     output_data_size:int,
     hardware_target:str,
-    benchmarking_count: int
+    benchmarking_count: int,
+    core_index: int
 ):
     try:
         from backend import cpp_interface
@@ -34,7 +35,8 @@ def distributed_inference(
                                                                                       input_data_size,
                                                                                       output_data_size,
                                                                                       hardware_target_ptr,
-                                                                                      benchmarking_count)
+                                                                                      benchmarking_count,
+                                                                                      core_index)
 
     if result == -1:
         raise Exception("C++ distributed inference failed")

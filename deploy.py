@@ -51,6 +51,9 @@ def DeployLayer(m: Model):
 
     inference_times_vector = np.zeros(1).astype(np.uint32)
 
+    delegate_type  = m.delegate[:3]
+    delegate_index = m.delegate[-1]
+
     mean_inference_time = distributed_inference(
         m.model_path,
         m.input_vector,
@@ -58,8 +61,9 @@ def DeployLayer(m: Model):
         inference_times_vector,
         len(m.input_vector),
         len(output_data_vector),
-        m.delegate,
+        delegate_type,
         1,
+        int(delegate_index)
     )
 
     m.output_vector = output_data_vector

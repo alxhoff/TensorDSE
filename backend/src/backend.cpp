@@ -190,7 +190,8 @@ int distributed_inference_tpu(std::string& tflite_model_path, int8_t* input_data
                                                              uint32_t* inference_times, 
                                                              const unsigned int input_data_size, 
                                                              const unsigned int output_data_size,
-                                                             const unsigned int benchmarking_count) {
+                                                             const unsigned int benchmarking_count,
+                                                             const unsigned int core_index) {
 
     // Find TPU device.
     std::cout << " Detecting Edge TPUs Devices ..." << std::endl;
@@ -201,7 +202,7 @@ int distributed_inference_tpu(std::string& tflite_model_path, int8_t* input_data
         std::cerr << "No connected USB Accelerator is found!" << std::endl;
         return -1;
     }
-    const auto& device = devices.get()[0];
+    const auto& device = devices.get()[core_index];
     const auto& available_tpus = edgetpu::EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
     std::cout << "Number of available Edge TPU USB Accelerators: " << available_tpus.size() << std::endl; // hopefully we'll see 1 here
 
@@ -284,7 +285,8 @@ int distributed_inference_wrapper(std::string& tflite_model_path, int8_t* input_
                                                                  const unsigned int input_data_size, 
                                                                  const unsigned int output_data_size,
                                                                  std::string& hardware_target,
-                                                                 const unsigned int benchmarking_count) {
+                                                                 const unsigned int benchmarking_count,
+                                                                 const unsigned int core_index) {
     int result = 0;
     if (hardware_target.compare("CPU") == 0) {
         result = distributed_inference_cpu(tflite_model_path, input_data, 
@@ -306,7 +308,8 @@ int distributed_inference_wrapper(std::string& tflite_model_path, int8_t* input_
                                                               inference_times,
                                                               input_data_size, 
                                                               output_data_size,
-                                                              benchmarking_count);
+                                                              benchmarking_count,
+                                                              core_index);
     } else {
         std::cerr << "This Hardware Target is not supported!" << std::endl;
         result = -1;
