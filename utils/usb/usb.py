@@ -12,9 +12,9 @@ MAX_TIME_CAPTURE=90 # minute and a half
 
 def get_filter(addr:str) -> str:
     return (
-    #f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
-    f"usb.device_address=={addr}"
-    )
+            #f"usb.transfer_type==URB_BULK || usb.transfer_type==URB_INTERRUPT && usb.device_address=={addr}"
+            f"usb.device_address=={addr}"
+            )
 
 def get_tpu_ids():
     import utils
@@ -47,6 +47,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log, usbmon:int) 
     """
     """
     from utils.timer import Timer,ConditionalTimer
+    from .detect_tpu_bus import detect
     import pyshark
 
     id, addr = get_tpu_ids()
