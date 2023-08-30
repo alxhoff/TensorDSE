@@ -65,15 +65,15 @@ def TPUDeploy(m: Model, count: int, usbmon:int, timeout: int = 10, core_index: i
         dataQ = Queue()
 
         p = Process(
-            target=capture_stream,
-            args=(
-                signalsQ,
-                dataQ,
-                timeout,
-                Log(f"resources/logs/layer_{m.index}_{m.model_name}_USB.log"),
-                usbmon,
-            ),
-        )
+                target=capture_stream,
+                args=(
+                    signalsQ,
+                    dataQ,
+                    timeout,
+                    Log(f"resources/logs/layer_{m.index}_{m.model_name}_USB.log"),
+                    usbmon,
+                    ),
+                )
         p.start()
 
         sig = signalsQ.get()
@@ -82,25 +82,25 @@ def TPUDeploy(m: Model, count: int, usbmon:int, timeout: int = 10, core_index: i
             break
 
         input_data_vector = np.array(
-            np.random.random_sample(input_size),
-            dtype=m.get_np_dtype(m.input_datatype),
-        )
+                np.random.random_sample(input_size),
+                dtype=m.get_np_dtype(m.input_datatype),
+                )
         output_data_vector = np.zeros(output_size).astype(
-            m.get_np_dtype(m.output_datatype)
-        )
+                m.get_np_dtype(m.output_datatype)
+                )
         inference_times_vector = np.zeros(count).astype(np.uint32)
 
         mean_inference_time = distributed_inference(
-            m.model_path,
-            input_data_vector,
-            output_data_vector,
-            inference_times_vector,
-            len(input_data_vector),
-            len(output_data_vector),
-            "tpu",
-            1,
-            core_index
-        )
+                m.model_path,
+                input_data_vector,
+                output_data_vector,
+                inference_times_vector,
+                len(input_data_vector),
+                len(output_data_vector),
+                "tpu",
+                1,
+                core_index
+                )
 
         results.append(mean_inference_time)
 
@@ -125,98 +125,90 @@ def TPUDeploy(m: Model, count: int, usbmon:int, timeout: int = 10, core_index: i
     return m
 
 
-def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbmon: int=None) -> Model:
-    import os
+def StandardDeploy(m: Model, count: int, hardware_target: str) -> Model:
     import numpy as np
-
-    from utils.splitter.split import SUB_DIR, COMPILED_DIR
     from backend.distributed_inference import distributed_inference
 
-    if (platform == "desktop") and (hardware_target == "tpu"):
-        if usbmon == None:
-            raise Exception("usbmon interface not provided to ProfileLayer for TPU device")
+    input_size = GetArraySizeFromShape(m.input_shape)
+    output_size = GetArraySizeFromShape(m.output_shape)
 
+    input_data_vector = np.zeros(input_size).astype(
+            m.get_np_dtype(m.input_datatype)
+            )
+    output_data_vector = np.zeros(output_size).astype(
+            m.get_np_dtype(m.output_datatype)
+            )
+    inference_times_vector = np.zeros(count).astype(np.uint32)
+
+    try:
+        mean_inference_time = distributed_inference(
+                m.model_path,
+                input_data_vector,
+                output_data_vector,
+                inference_times_vector,
+                len(input_data_vector),
+                len(output_data_vector),
+                hardware_target,
+                count,
+                )
+    except Exception as e:
+        print(e)
+
+    m.results = inference_times_vector.tolist()
+
+    return m
+
+
+def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str) -> Model:
+    import os
+    from utils.splitter.split import SUB_DIR, COMPILED_DIR
+
+    if (hardware_target == "TPU"):
         m.model_path = os.path.join(
-            COMPILED_DIR,
-            "submodel_{0}_{1}_bm_edgetpu.tflite".format(
-                m.details["index"], m.details["type"]
-            ),
-        )
-        if os.path.isfile(m.model_path):
-            m = TPUDeploy(m=m, count=count, usbmon=usbmon)
-        else:
-            m.results = [-1] * count
-            m.timers = {
-                "error": {
-                    "name": "file_not_found",
-                    "reason": "Cannot find model {}".format(m.model_path),
-                },
-            }
-    else:
-        if hardware_target == "tpu":
-            if usbmon == None:
-                raise Exception("usbmon interface not provided to ProfileLayer for TPU device")
-
-            m.model_path = os.path.join(
                 COMPILED_DIR,
                 "submodel_{0}_{1}_bm_edgetpu.tflite".format(
                     m.details["index"], m.details["type"]
-                ),
-            )
-        else:
-            m.model_path = os.path.join(
+                    ),
+                )
+    else:
+        m.model_path = os.path.join(
                 SUB_DIR,
                 "tflite",
                 "submodel_{0}_{1}_bm".format(m.details["index"], m.details["type"]),
                 "submodel_{0}_{1}_bm.tflite".format(
                     m.details["index"], m.details["type"]
-                ),
-            )
-
-        input_size = GetArraySizeFromShape(m.input_shape)
-        output_size = GetArraySizeFromShape(m.output_shape)
-
-        input_data_vector = np.zeros(input_size).astype(
-            m.get_np_dtype(m.input_datatype)
-        )
-        output_data_vector = np.zeros(output_size).astype(
-            m.get_np_dtype(m.output_datatype)
-        )
-        inference_times_vector = np.zeros(count).astype(np.uint32)
-
-        tries = 0
-
-        while(tries < 2):
-
-            try:
-                mean_inference_time = distributed_inference(
-                    m.model_path,
-                    input_data_vector,
-                    output_data_vector,
-                    inference_times_vector,
-                    len(input_data_vector),
-                    len(output_data_vector),
-                    hardware_target,
-                    count,
-                    0
+                    ),
                 )
-            except Exception as e:
-                print(e)
-            tries += 1
 
-        m.results = inference_times_vector.tolist()
+    if ((platform == "desktop") or (platform == "rpi")):
+        if os.path.isfile(m.model_path):
+            if (hardware_target == "TPU"):
+                m = TPUDeploy(m=m, count=count)
+            else:
+                m = StandardDeploy(m=m, count=count, hardware_target=hardware_target)
+
+        else:
+            m.results = [-1] * count
+            m.timers = {
+                    "error": {
+                        "name": "file_not_found",
+                        "reason": "Cannot find model {}".format(m.model_path),
+                        },
+                    }
+    else:
+        m = StandardDeploy(m=m, count=count, hardware_target=hardware_target)
 
     return m
 
 
 def ProfileModelLayers(
-    parent_model: str,
-    hardware_list: list,
-    model_summary: dict,
-    count: int,
-    platform: str,
-    usbmon_bus: int
-) -> Dict:
+        parent_model: str,
+        hardware_list: list,
+        model_summary: dict,
+        count: int,
+        platform: str,
+        usbmon_bus: int
+        ) -> Dict:
     """Manager function responsible for preping and executing the deployment
     of the compiled tflite models.
 
@@ -255,7 +247,7 @@ def ProfileModelLayers(
         # AnalyzeLayerResults(m, "cpu")
 
     # regular quantized tflite files for gpu
-    if platform == "desktop":
+    if (platform == "desktop"):
         available, gpu = isGPUavailable()
         if not available:
             log.warning(f"GPU is NOT available on this machine! Type: {gpu}")
@@ -263,22 +255,26 @@ def ProfileModelLayers(
             log.info("No GPUs in hardware summary, skipping benchmarking")
         else:
             log.info(
-                f"[PROFILE MODEL LAYERS] GPU is available on this machine! Type: {gpu}"
-            )
+                    f"[PROFILE MODEL LAYERS] GPU is available on this machine! Type: {gpu}"
+                    )
             for layer in model_summary["models"][0]["layers"]:
                 m = ProfileLayer(
-                    Model(layer, "gpu", parent_model), count, "gpu", platform, usbmon=usbmon_bus
-                )
+                        Model(layer, "gpu", parent_model), count, "gpu", platform, usbmon=usbmon_bus
+                        )
                 models["gpu"].append(m)
                 # AnalyzeLayerResults(m, "gpu")
-    elif platform == "coral":
+            print("[PROFILE MODEL LAYERS] GPUs profiled")
+
+    elif (platform == "coral") or (platform == "rpi"):
         for layer in model_summary["models"][0]["layers"]:
-            m = ProfileLayer(Model(layer, "gpu", parent_model), count, "gpu", platform, usbmon=usbmon_bus)
+            m = ProfileLayer(
+                    Model(layer, "gpu", parent_model), count, "GPU", platform
+                    )
             models["gpu"].append(m)
             # AnalyzeLayerResults(m, "gpu")
 
     # edge compiled quantized tflite files tpu
-    if platform == "desktop":
+    if (platform == "desktop") or (platform == "rpi"):
         if not isTPUavailable():
             log.warning(f"TPU is NOT available on this machine!")
         elif "tpu" not in hardware_list:
@@ -291,13 +287,17 @@ def ProfileModelLayers(
                 log.info("usbmon module already present")
                 for layer in model_summary["models"][0]["layers"]:
                     m = ProfileLayer(
-                        Model(layer, "tpu", parent_model), count, "tpu", platform, usbmon=usbmon_bus
-                    )
+                            Model(layer, "tpu", parent_model), count, "tpu", platform, usbmon=usbmon_bus
+                            )
                     models["tpu"].append(m)
                     # AnalyzeLayerResults(m, "tpu")
-    elif platform == "coral":
+            print("[PROFILE MODEL LAYERS] TPUs profiled")
+
+    elif (platform == "coral"):
         for layer in model_summary["models"][0]["layers"]:
-            m = ProfileLayer(Model(layer, "tpu", parent_model), count, "tpu", platform, usbmon=usbmon_bus)
+            m = ProfileLayer(
+                    Model(layer, "tpu", parent_model), count, "TPU", platform
+                    )
             models["tpu"].append(m)
             # AnalyzeLayerResults(m, "tpu")
 

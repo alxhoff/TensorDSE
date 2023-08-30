@@ -9,8 +9,8 @@ def GetInputData(m: Model):
 
     input_size = GetArraySizeFromShape(m.input_shape)
     m.input_vector = np.array(
-        np.random.random_sample(input_size), dtype=m.get_np_dtype(m.input_datatype)
-    )
+            np.random.random_sample(input_size), dtype=m.get_np_dtype(m.input_datatype)
+            )
 
 
 def GetInputTestDataModule(m: Model, dataset_module: str):
@@ -32,21 +32,21 @@ def DeployLayer(m: Model):
 
     if delegate_type == "tpu":
         m.model_path = os.path.join(
-            COMPILED_DIR,
-            "submodel_{0}_{1}_bm_edgetpu.tflite".format(
-                m.details["index"], m.details["type"]),
-        )
+                COMPILED_DIR,
+                "submodel_{0}_{1}_bm_edgetpu.tflite".format(
+                    m.details["index"], m.details["type"]),
+                )
     else:
         m.model_path = os.path.join(
-            SUB_DIR,
-            "tflite",
-            "submodel_{0}_{1}_bm".format(
-                m.details["index"], m.details["type"]
-            ),
-            "submodel_{0}_{1}_bm.tflite".format(
-                m.details["index"], m.details["type"]
-            ),
-        )
+                SUB_DIR,
+                "tflite",
+                "submodel_{0}_{1}_bm".format(
+                    m.details["index"], m.details["type"]
+                    ),
+                "submodel_{0}_{1}_bm.tflite".format(
+                    m.details["index"], m.details["type"]
+                    ),
+                )
 
     output_size = GetArraySizeFromShape(m.output_shape)
     output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
@@ -54,16 +54,16 @@ def DeployLayer(m: Model):
     inference_times_vector = np.zeros(1).astype(np.uint32)
 
     mean_inference_time = distributed_inference(
-        m.model_path,
-        m.input_vector,
-        output_data_vector,
-        inference_times_vector,
-        len(m.input_vector),
-        len(output_data_vector),
-        delegate_type,
-        1,
-        delegate_index
-    )
+            m.model_path,
+            m.input_vector,
+            output_data_vector,
+            inference_times_vector,
+            len(m.input_vector),
+            len(output_data_vector),
+            delegate_type,
+            1,
+            delegate_index
+            )
 
     m.output_vector = output_data_vector
     m.results = inference_times_vector.tolist()
@@ -102,42 +102,42 @@ def DeployModel(model_path: str, model_summary_path: str, data_module : str = No
 
 parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+        )
 
 parser.add_argument(
-    "-m",
-    "--model",
-    default="resources/models/example_models/MNIST_full_quanitization.tflite",
-    help="File path to the SOURCE .tflite file.",
-)
+        "-m",
+        "--model",
+        default="resources/models/example_models/MNIST_full_quanitization.tflite",
+        help="File path to the SOURCE .tflite file.",
+        )
 
 parser.add_argument(
-    "-s",
-    "--summary",
-    default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json",
-    help="File that contains a model summary with mapping annotations"
-)
+        "-s",
+        "--summary",
+        default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json",
+        help="File that contains a model summary with mapping annotations"
+        )
 
 parser.add_argument(
-    "-d",
-    "--dataset",
-    default="utils.datasets.MNIST",
-    help="Dataset import module to be used for providing input data"
-)
+        "-d",
+        "--dataset",
+        default="utils.datasets.MNIST",
+        help="Dataset import module to be used for providing input data"
+        )
 
 parser.add_argument(
-    "-o",
-    "--summaryoutputdir",
-    default="resources/model_summaries/example_summaries/MNIST",
-    help="Directory where model summary should be saved",
-)
+        "-o",
+        "--summaryoutputdir",
+        default="resources/model_summaries/example_summaries/MNIST",
+        help="Directory where model summary should be saved",
+        )
 
 parser.add_argument(
-    "-n",
-    "--summaryoutputname",
-    default="MNIST_full_quanitization_summary_with_mappings",
-    help="Name that the model summary should have",
-)
+        "-n",
+        "--summaryoutputname",
+        default="MNIST_full_quanitization_summary_with_mappings",
+        help="Name that the model summary should have",
+        )
 
 
 if __name__ == "__main__":
@@ -150,9 +150,9 @@ if __name__ == "__main__":
         DeployModel(args.model, args.summary, args.dataset)
     else:
         DeployModel(
-            args.model,
-            os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
-            args.dataset
-        )
+                args.model,
+                os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
+                args.dataset
+                )
 
     print("Model Deployed")
