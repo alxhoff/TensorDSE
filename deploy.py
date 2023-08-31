@@ -40,11 +40,11 @@ def DeployLayer(m: Model):
         m.model_path = os.path.join(
             SUB_DIR,
             "tflite",
-            "submodel_{0}_{1}_{2}".format(
-                m.details["index"], m.details["type"], delegate_type
+            "submodel_{0}_{1}_bm".format(
+                m.details["index"], m.details["type"]
             ),
-            "submodel_{0}_{1}_{2}.tflite".format(
-                m.details["index"], m.details["type"], delegate_type
+            "submodel_{0}_{1}_bm.tflite".format(
+                m.details["index"], m.details["type"]
             ),
         )
 
@@ -147,10 +147,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.summary:
-        print("Deploying: {}".format(args.summary))
         DeployModel(args.model, args.summary, args.dataset)
     else:
-        print("Deploying: {}".format(args.summaryoutputdir + "/" + args.summaryoutputname))
         DeployModel(
             args.model,
             os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),

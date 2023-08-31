@@ -33,11 +33,11 @@ override PROFILING_COSTS = "../../resources/profiling_results/MNIST_full_quaniti
 $(info Using default PROFILING_COSTS: $(PROFILING_COSTS))
 endif
 ifndef OUTPUT_FOLDER
-override OUTPUT_FOLDER = "src/main/resources/output"
+override OUTPUT_FOLDER = "../../resources/GA_results"
 $(info Using default OUTPUT_FOLDER: $(OUTPUT_FOLDER))
 endif
 ifndef ILP_MAPPING
-override ILP_MAPPING = true
+override ILP_MAPPING = false
 $(info Using default ILP_MAPPING: $(ILP_MAPPING))
 endif
 ifndef RUNS
@@ -65,7 +65,7 @@ override GENERATIONS = 25
 $(info Using default GENERATIONS: $(GENERATIONS))
 endif
 ifndef VERBOSE
-override VERBOSE = true
+override VERBOSE = false
 $(info Using default VERBOSE: $(VERBOSE))
 endif
 
@@ -92,13 +92,22 @@ forcebuild:
 	${MAKE} -C docker build;
 
 .PHONY: run
+ifdef GA_CONFIG
 run:
 	sudo modprobe usbmon
-	git fetch https://git@github.com/alxhoff/TensorDSE.git 
+	git fetch https://git@github.com/alxhoff/TensorDSE.git
+	git reset --hard origin/master
+	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
+	$(info USBMON is $(USBMON))
+	@${MAKE} -C docker run GA_CONFIG=$(GA_CONFIG) USBMON=$(USBMON) DATASET=$(DATASET) COUNT=$(COUNT) MODEL_SUMMARY_W_MAPPINGS=$(MODEL_SUMMARY_W_MAPPINGS) MODEL=$(MODEL) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
+else
+run:
+	git fetch https://git@github.com/alxhoff/TensorDSE.git
 	git reset --hard origin/master
 	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
 	$(info USBMON is $(USBMON))
 	@${MAKE} -C docker run USBMON=$(USBMON) DATASET=$(DATASET) COUNT=$(COUNT) MODEL_SUMMARY_W_MAPPINGS=$(MODEL_SUMMARY_W_MAPPINGS) MODEL=$(MODEL) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
+endif
 
 .PHONY: info
 info:

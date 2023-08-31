@@ -10,7 +10,8 @@
             "request": "launch",
             "cwd": "${workspaceRoot}/TensorDSE",
             "mainClass": "net.sf.opendse.TensorDSE.TensorDSE",
-            "projectName": "TensorDSE"
+            "projectName": "TensorDSE",
+            "args": "-n  resources/multitest_configs/example.properties"
         }
     ]
 }

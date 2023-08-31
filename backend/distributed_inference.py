@@ -43,6 +43,4 @@ def distributed_inference(
 
     result /= 1000000000.0
 
-    print("[DISTRIBUTED INFERENCE] Result:{}".format(result))
-
-    return result 
+    return result
