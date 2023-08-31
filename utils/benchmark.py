@@ -184,10 +184,6 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
         )
         inference_times_vector = np.zeros(count).astype(np.uint32)
 
-        print(
-            "[PROFILE LAYER] Profiling {} on {}".format(m.model_path, hardware_target)
-        )
-
         tries = 0
 
         while(tries < 2):
@@ -306,4 +302,3 @@ def ProfileModelLayers(
             # AnalyzeLayerResults(m, "tpu")
 
     return models
-

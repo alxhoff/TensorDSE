@@ -17,6 +17,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
+import org.javatuples.Pair;
 import org.opt4j.core.Individual;
 import org.opt4j.core.optimizer.Archive;
 import org.opt4j.core.start.Opt4JModule;
@@ -50,7 +51,6 @@ import java.util.regex.Pattern;
 
 public class TensorDSE {
 
-
 	/**
 	 * @param args
 	 * @return Namespace
@@ -67,9 +67,9 @@ public class TensorDSE {
 		parser.addArgument("-s", "--populationsize").setDefault(100).type(int.class)
 				.help("Pupulation size for the EA");
 		parser.addArgument("-p", "--parentspergeneration").setDefault(50).type(int.class)
-				.help("Number of parents per generation in the EA");
+				.help("Perfecntage of parents per generation in the EA");
 		parser.addArgument("-o", "--offspringspergeneration").setDefault(50).type(int.class)
-				.help("Number of offsprings per generation");
+				.help("Perfecntage of offsprings per generation");
 		parser.addArgument("-g", "--generations").setDefault(25).type(int.class)
 				.help("Number of generations in the EA");
 
@@ -82,8 +82,8 @@ public class TensorDSE {
 		parser.addArgument("-r", "--runs").setDefault(1).type(int.class).help("Number of runs");
 
 		// Input Files
-		parser.addArgument("-m", "--modelsummary")
-				.setDefault("../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary.json")
+		parser.addArgument("-m", "--modelsummary").setDefault(
+				"../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary.json")
 				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary").setDefault(
 				"../../resources/architecture_summaries/example_output_architecture_summary.json")
@@ -95,11 +95,11 @@ public class TensorDSE {
 		// Output Files
 		parser.addArgument("-f", "--resultsfile").setDefault("results.csv").type(String.class)
 				.help("Results file name");
-		parser.addArgument("-t", "--outputfolder").setDefault("src/main/resources/output")
+		parser.addArgument("-t", "--outputfolder").setDefault("../../resources/GA_results")
 				.type(String.class);
 
 		// ILP
-		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
+		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(true)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
 		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(100.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
@@ -117,7 +117,6 @@ public class TensorDSE {
 		return ns;
 	}
 
-
 	/**
 	 * @param args_namespace
 	 * @return EvolutionaryAlgorithmModule
@@ -129,16 +128,16 @@ public class TensorDSE {
 		EvolutionaryAlgorithmModule ea = new EvolutionaryAlgorithmModule();
 		ea.setGenerations(generations);
 		ea.setPopulationSize(population_size);
-		ea.setParentsPerGeneration(parents_per_generation);
-		ea.setOffspringsPerGeneration(offsprings_per_generation);
+		ea.setParentsPerGeneration(population_size * parents_per_generation / 100);
+		ea.setOffspringsPerGeneration(population_size * offsprings_per_generation / 100);
 		ea.setCrossoverRate(crossover_rate);
 
 		return ea;
 	}
 
-
 	/**
-	 * @brief The specification module binds an evaluator to the problem's specification
+	 * @brief The specification module binds an evaluator to the problem's
+	 *        specification
 	 * @param specification_definition
 	 * @return Module
 	 */
@@ -149,16 +148,15 @@ public class TensorDSE {
 
 			@Override
 			protected void config() {
-				SpecificationWrapperInstance specification_wrapper =
-						new SpecificationWrapperInstance(
-								specification_definition.getSpecification());
+				SpecificationWrapperInstance specification_wrapper = new SpecificationWrapperInstance(
+						specification_definition.getSpecification());
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
 
 				EvaluatorMinimizeCost evaluator = new EvaluatorMinimizeCost("cost_of_mapping",
 						specification_definition, verbose, visualise);
 
-				Multibinder<ImplementationEvaluator> multibinder =
-						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
+				Multibinder<ImplementationEvaluator> multibinder = Multibinder.newSetBinder(binder(),
+						ImplementationEvaluator.class);
 				multibinder.addBinding().toInstance(evaluator);
 
 			}
@@ -166,7 +164,6 @@ public class TensorDSE {
 
 		return specification_module;
 	}
-
 
 	/**
 	 * @param args_namespace
@@ -182,7 +179,6 @@ public class TensorDSE {
 		return model_summary_loc;
 	}
 
-
 	/**
 	 * @param args_namespace
 	 * @return String
@@ -196,7 +192,6 @@ public class TensorDSE {
 		System.out.printf("Architecture Summary: %s\n", architecture_summary_loc);
 		return architecture_summary_loc;
 	}
-
 
 	/**
 	 * @param args_namespace
@@ -212,14 +207,11 @@ public class TensorDSE {
 		return cost_file;
 	}
 
-
 	/**
 	 * @param args_namespace
 	 * @return FileWriter
 	 */
-	private static FileWriter GetResultsWriter(Namespace args_namespace) {
-		String results_file = String.format("%s/%s/%s", System.getProperty("user.dir"),
-				args_namespace.getString("outputfolder"), args_namespace.getString("resultsfile"));
+	private static FileWriter GetResultsWriter(String results_file) {
 		System.out.printf("Results File: %s\n", results_file);
 		FileWriter csvWriter = null;
 		try {
@@ -232,7 +224,6 @@ public class TensorDSE {
 		return csvWriter;
 	}
 
-
 	/**
 	 * @param args_namespace
 	 * @return File
@@ -244,7 +235,6 @@ public class TensorDSE {
 		file.mkdir();
 		return file;
 	}
-
 
 	/**
 	 * @param ea
@@ -262,7 +252,6 @@ public class TensorDSE {
 		return ret;
 	}
 
-
 	/**
 	 * @param modules
 	 * @return Opt4JTask
@@ -274,17 +263,16 @@ public class TensorDSE {
 		return task;
 	}
 
-
 	/**
 	 * @param args_namespace
 	 */
 	private static void PrintEAParameters(Double crossover_rate, int population_size,
 			int parents_per_generation, int generations, int offsprings_per_generation) {
-		System.out.printf("Crossover Rate: %.2f\n", crossover_rate);
-		System.out.printf("Population Size: %d\n", population_size);
-		System.out.printf("Parents Per Generation: %d\n", parents_per_generation);
 		System.out.printf("Generations: %d\n", generations);
-		System.out.printf("Offsprings Per Generations: %d\n", offsprings_per_generation);
+		System.out.printf("Population Size: %d\n", population_size);
+		System.out.printf("Crossover Rate: %.2f\n", crossover_rate);
+		System.out.printf("Parents Per Generation: %d%%\n", parents_per_generation);
+		System.out.printf("Offsprings Per Generations: %d%%\n", offsprings_per_generation);
 	}
 
 	public static void main(String echo) {
@@ -301,7 +289,10 @@ public class TensorDSE {
 		int test_runs = args_namespace.getInt("runs");
 		double[] objective_values = new double[test_runs];
 		File output_directory = GetOutputFolder(args_namespace);
-		FileWriter csv_writer = GetResultsWriter(args_namespace);
+		String results_file = String.format("%s/%s/%s", System.getProperty("user.dir"),
+				output_directory, args_namespace.getString("resultsfile"));
+		FileWriter csv_writer = GetResultsWriter(results_file);
+
 		String models_description_file_path = GetModelSummaryFilePath(args_namespace);
 		String profiling_costs_file_path = GetProfilingCostsFilePath(args_namespace);
 		String hardware_description_file_path = GetArchitectureSummaryFilePath(args_namespace);
@@ -310,19 +301,34 @@ public class TensorDSE {
 		System.out.printf("Runs: %d\n", test_runs);
 
 		String config_file = args_namespace.getString("config");
+		System.out.println(String.format("CONFIG FILE: %s", config_file));
 
 		System.out.println(String.format("Binary loc: %s",
 				TensorDSE.class.getProtectionDomain().getCodeSource().getLocation().getPath()));
 
-		// Specification contains, architecture and application graph as well as a generated
+		// Specification contains, architecture and application graph as well as a
+		// generated
 		// set of possible mappings
-		SpecificationDefinition specification_definition =
-				new SpecificationDefinition(models_description_file_path, profiling_costs_file_path,
-						hardware_description_file_path);
+		SpecificationDefinition specification_definition = new SpecificationDefinition(models_description_file_path,
+				profiling_costs_file_path,
+				hardware_description_file_path);
+
+		String time_string = new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
 
 		if (args_namespace.getBoolean("ilpmapping") == true) {
+			try {
+				csv_writer.append(String.join(",", "Test", "Time", "Objective", "Exec Time", "Application"));
+				csv_writer.write("\n");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			Double obj_val = 0.0;
+
 			for (int i = 0; i < test_runs; i++) {
 				System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
+				long exec_time = 0;
 
 				// Solve for mappings and schedule using only ILP
 				if (args_namespace.getBoolean("demo") == true) {
@@ -336,16 +342,17 @@ public class TensorDSE {
 							args_namespace.getDouble("deactivationnumber"),
 							args_namespace.getBoolean("verbose"));
 					long startILP = System.currentTimeMillis();
-					ArrayList<ArrayList<ILPTask>> models =
-							schedule_solver.solveILPMappingAndSchedule();
-					System.out.println(String.format("ILP Exec time: %dms",
-							System.currentTimeMillis() - startILP));
+					Pair<Double, ArrayList<ArrayList<ILPTask>>> ret = schedule_solver.solveILPMappingAndSchedule();
+					// Incremental average for all tests
+					obj_val = obj_val + ((ret.getValue0() - obj_val) / (test_runs + 1));
+					ArrayList<ArrayList<ILPTask>> models = ret.getValue1();
+					exec_time = System.currentTimeMillis() - startILP;
+					System.out.println(String.format("ILP Exec time: %dms", exec_time));
 
 					// Populate model summary with mapping information
 					for (ArrayList<ILPTask> model : models) {
 						for (ILPTask task : model) {
-							Pattern pat =
-									Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
+							Pattern pat = Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
 							Matcher mat = pat.matcher(task.getID());
 							if (mat.matches()) {
 								String layer_index = mat.group(2);
@@ -354,13 +361,34 @@ public class TensorDSE {
 								specification_definition.json_models
 										.get(Integer.parseInt(model_index)).getLayers()
 										.get(Integer.parseInt(layer_index))
-										.setMapping(task.getTarget_resource_string());;
+										.setMapping(task.getTarget_resource_string());
+								;
 							}
 						}
 					}
 				}
+
+				try {
+					csv_writer.append(String.join(",", Integer.toString(i + 1), time_string,
+							Double.toString(obj_val),
+							Double.toString(exec_time),
+							models_description_file_path));
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		} else {
+			try {
+				csv_writer.append(String.join(",", "Test", "Time", "Generations", "Population Size",
+						"Parents per Generation", "Offspring per Generation", "Crossover Rate",
+						"Objective", "Exec Time", "Application"));
+				csv_writer.write("\n");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
 			// Solve for mappings using heuristic and schedule using ILP
 			ArrayList<Double> crossover_rates = new ArrayList<Double>();
 			ArrayList<Integer> population_sizes = new ArrayList<Integer>();
@@ -368,8 +396,8 @@ public class TensorDSE {
 			ArrayList<Integer> parents_per_generation = new ArrayList<Integer>();
 			ArrayList<Integer> offsprings_per_generation = new ArrayList<Integer>();
 
-
 			if (config_file != null) {
+				System.out.println(String.format("Running GA config: %s", config_file));
 				FileInputStream propsInput = null;
 				try {
 					propsInput = new FileInputStream(config_file);
@@ -413,10 +441,9 @@ public class TensorDSE {
 									parents_per_generation.add((int) (pr * ps));
 									offsprings_per_generation.add((int) (or * ps));
 
-									if (args_namespace.getBoolean("verbose"))
-										System.out.println(String.format(
-												"gens: %d, pop size: %d, cross: %f, parents: %f = %f, offspring: %f = %f",
-												gen, ps, cr, pr, pr * ps, or, or * ps));
+									System.out.println(String.format(
+											"Configuration created -> gens: %d, pop size: %d, cross: %f, parents: %f = %f, offspring: %f = %f",
+											gen, ps, cr, pr, pr * ps, or, or * ps));
 								}
 
 				System.out.println();
@@ -434,10 +461,9 @@ public class TensorDSE {
 				for (int i = 0; i < test_runs; i++) {
 					System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
 
-					if (args_namespace.getBoolean("verbose"))
-						PrintEAParameters(crossover_rates.get(c), population_sizes.get(c),
-								generations.get(c), parents_per_generation.get(c),
-								offsprings_per_generation.get(c));
+					PrintEAParameters(crossover_rates.get(c), population_sizes.get(c),
+							parents_per_generation.get(c), generations.get(c),
+							offsprings_per_generation.get(c));
 
 					// Opt4J Modules
 					EvolutionaryAlgorithmModule ea_module = GetEAModule(crossover_rates.get(c),
@@ -467,9 +493,8 @@ public class TensorDSE {
 
 						for (Individual individual : archive) {
 
-							Specification implementation =
-									((ImplementationWrapper) individual.getPhenotype())
-											.getImplementation();
+							Specification implementation = ((ImplementationWrapper) individual.getPhenotype())
+									.getImplementation();
 
 							if (args_namespace.getBoolean("visualise"))
 								SpecificationViewer.view(implementation);
@@ -488,13 +513,12 @@ public class TensorDSE {
 									specification_definition.json_models
 											.get(Integer.parseInt(model_index)).getLayers()
 											.get(Integer.parseInt(layer_index))
-											.setMapping(mapped_device);;
+											.setMapping(mapped_device);
+									;
 								}
 							}
 
 							SpecificationWriter writer = new SpecificationWriter();
-							String time_string =
-									new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
 
 							writer.write(implementation,
 									output_directory + "/" + time_string + "_solution.xml");
@@ -504,14 +528,18 @@ public class TensorDSE {
 							System.out.println(String.format("Objective: %f", objective_values[i]));
 							System.out.println();
 
-							csv_writer.append(String.join(",", Integer.toString(i), time_string,
+							System.out.println(
+									String.format("Writing GA results to: %s", results_file));
+
+							csv_writer.append(String.join(",", Integer.toString(i + 1), time_string,
 									Integer.toString(ea_module.getGenerations()),
 									Integer.toString(ea_module.getPopulationSize()),
 									Integer.toString(ea_module.getParentsPerGeneration()),
 									Integer.toString(ea_module.getOffspringsPerGeneration()),
 									Double.toString(ea_module.getCrossoverRate()),
 									Double.toString(objective_values[i]),
-									Double.toString(exec_time)));
+									Double.toString(exec_time),
+									models_description_file_path));
 							csv_writer.append("\n");
 							csv_writer.flush();
 
@@ -536,7 +564,6 @@ public class TensorDSE {
 				.concat("_with_mappings.json"));
 		specification_definition
 				.WriteJSONModelsToFile(output_directory.getPath().concat("/mappings.json"));
-
 
 		try {
 			csv_writer.flush();

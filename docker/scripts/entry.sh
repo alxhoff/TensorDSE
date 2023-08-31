@@ -7,6 +7,10 @@ set +xe
 
 for i in "$@"; do
     case $i in
+    -f=* | --GA_CONFIG=*)
+        GA_CONFIG="${i#*=}"
+        shift # past argument=value
+        ;;
     -w=* | --MODEL_SUMMARY_W_MAPPINGS=*)
         MODEL_SUMMARY_W_MAPPINGS="${i#*=}"
         shift # past argument=value
@@ -41,6 +45,10 @@ for i in "$@"; do
         ;;
     -o=* | --OUTPUT_FOLDER=*)
         OUTPUT_FOLDER="${i#*=}"
+        shift # past argument=value
+        ;;
+    -z=* | --OUTPUT_NAME=*)
+        OUTPUT_NAME="${i#*=}"
         shift # past argument=value
         ;;
     -i=* | --ILP_MAPPING=*)
@@ -119,23 +127,37 @@ run_full_flow() {
     python3 profiler.py -u $USBMON -m $MODEL -c $COUNT
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
     pushd DSE/TensorDSE
-    gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    if [ -z ${GA_CONFIG+x} ];
+    then
+      echo gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+      gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    else
+      echo gradle6 run --args="--model $MODEL --config $GA_CONFIG --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+      gradle6 run --args="--model $MODEL --config $GA_CONFIG --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    fi
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
     popd
-    python3 deploy.py -m $MODEL -s $MODEL_SUMMARY_W_MAPPINGS -d $DATASET
+    # python3 deploy.py -m $MODEL -s $MODEL_SUMMARY_W_MAPPINGS -d $DATASET
 }
 
 run_just_dse() {
     git fetch origin
     git reset --hard origin/master
     pushd DSE/TensorDSE
-    gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    gradle6 run --args="--model $MODEL --config $GA_CONFIG --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
     popd
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
 }
 
 main() {
+    MODULE="usbmon"
 
+    if lsmod | grep -wq "$MODULE"; then
+    echo "$MODULE is loaded!"
+    else
+    echo "$MODULE is not loaded!"
+    exit 1
+    fi
     if [ "$mode" -eq $DEBUG_MODE ]; then
         debug
     elif [ "$mode" -eq $TEST_MODE ]; then

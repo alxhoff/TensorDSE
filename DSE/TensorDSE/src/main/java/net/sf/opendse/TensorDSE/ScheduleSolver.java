@@ -517,11 +517,12 @@ public class ScheduleSolver {
         return -1.0;
     }
 
-    public ArrayList<ArrayList<ILPTask>> solveILPMappingAndSchedule() {
+    public Pair<Double, ArrayList<ArrayList<ILPTask>>> solveILPMappingAndSchedule() {
 
         // Sequential arrays of models and their tasks
         ArrayList<ArrayList<ILPTask>> models = new ArrayList<ArrayList<ILPTask>>();
         ArrayList<GRBVar> final_task_finish_times = new ArrayList<GRBVar>();
+        Double obj_val = -1.0;
 
         try {
 
@@ -789,8 +790,6 @@ public class ScheduleSolver {
 
             grb_model.setObjective(obj, GRB.MINIMIZE);
 
-            Double obj_val = -1.0;
-
             try {
                 grb_model.optimize();
                 obj_val = grb_model.get(GRB.DoubleAttr.ObjVal);
@@ -941,7 +940,7 @@ public class ScheduleSolver {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());
         }
 
-        return models;
+        return new Pair<Double, ArrayList<ArrayList<ILPTask>>>(obj_val, models);
     }
 
     public Application<Task, Dependency> getApplication() {
