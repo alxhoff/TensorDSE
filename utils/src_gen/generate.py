@@ -66,11 +66,11 @@ def CreateBuildInterpretersSection(mapping: dict):
     build_interpreters_section = ""
     for i, key in enumerate(mapping):
         section_to_add = ""
-        if "CPU" in key:
+        if "cpu" in key:
             section_to_add =  CreateBuildCpuInterpreter(i, key)
-        elif "GPU" in key:
+        elif "gpu" in key:
             section_to_add =  CreateBuildGpuInterpreter(i, key)
-        elif "TPU" in key:
+        elif "tpu" in key:
             section_to_add =  CreateBuildTpuInterpreter(i, key)
         build_interpreters_section = build_interpreters_section + section_to_add
     return build_interpreters_section

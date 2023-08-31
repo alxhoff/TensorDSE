@@ -39,7 +39,7 @@ def isGPUavailable() -> Tuple[bool, str]:
     return False, ""
 
 
-def TPUDeploy(m: Model, count: int, usbmon:int, timeout: int = 10) -> Model:
+def TPUDeploy(m: Model, count: int, usbmon:int, timeout: int = 10, core_index: int = 0) -> Model:
     from multiprocessing import Process, Queue
     from utils.log import Log
     from utils.usb import END_DEPLOYMENT
@@ -90,9 +90,6 @@ def TPUDeploy(m: Model, count: int, usbmon:int, timeout: int = 10) -> Model:
         )
         inference_times_vector = np.zeros(count).astype(np.uint32)
 
-        delegate_type  = m.delegate[:3]
-        delegate_index = m.delegate[-1]
-
         mean_inference_time = distributed_inference(
             m.model_path,
             input_data_vector,
@@ -100,9 +97,9 @@ def TPUDeploy(m: Model, count: int, usbmon:int, timeout: int = 10) -> Model:
             inference_times_vector,
             len(input_data_vector),
             len(output_data_vector),
-            "TPU",
+            "tpu",
             1,
-            delegate_index
+            core_index
         )
 
         results.append(mean_inference_time)
@@ -135,7 +132,7 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
     from utils.splitter.split import SUB_DIR, COMPILED_DIR
     from backend.distributed_inference import distributed_inference
 
-    if (platform == "desktop") and (hardware_target == "TPU"):
+    if (platform == "desktop") and (hardware_target == "tpu"):
         if usbmon == None:
             raise Exception("usbmon interface not provided to ProfileLayer for TPU device")
 
@@ -156,7 +153,7 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
                 },
             }
     else:
-        if hardware_target == "TPU":
+        if hardware_target == "tpu":
             if usbmon == None:
                 raise Exception("usbmon interface not provided to ProfileLayer for TPU device")
 
@@ -190,9 +187,6 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
         print(
             "[PROFILE LAYER] Profiling {} on {}".format(m.model_path, hardware_target)
         )
-
-        delegate_type  = m.delegate[:3]
-        delegate_index = m.delegate[-1]
 
         tries = 0
 
@@ -260,7 +254,7 @@ def ProfileModelLayers(
     else:
         log.info(f"[PROFILE MODEL LAYERS] CPU is available on this machine!")
         for layer in model_summary["models"][0]["layers"]:
-            m = ProfileLayer(Model(layer, "cpu", parent_model), count, "CPU", platform, usbmon=usbmon_bus)
+            m = ProfileLayer(Model(layer, "cpu", parent_model), count, "cpu", platform, usbmon=usbmon_bus)
             models["cpu"].append(m)
         # AnalyzeLayerResults(m, "cpu")
 
@@ -277,13 +271,13 @@ def ProfileModelLayers(
             )
             for layer in model_summary["models"][0]["layers"]:
                 m = ProfileLayer(
-                    Model(layer, "gpu", parent_model), count, "GPU", platform, usbmon=usbmon_bus
+                    Model(layer, "gpu", parent_model), count, "gpu", platform, usbmon=usbmon_bus
                 )
                 models["gpu"].append(m)
                 # AnalyzeLayerResults(m, "gpu")
     elif platform == "coral":
         for layer in model_summary["models"][0]["layers"]:
-            m = ProfileLayer(Model(layer, "gpu", parent_model), count, "GPU", platform, usbmon=usbmon_bus)
+            m = ProfileLayer(Model(layer, "gpu", parent_model), count, "gpu", platform, usbmon=usbmon_bus)
             models["gpu"].append(m)
             # AnalyzeLayerResults(m, "gpu")
 
@@ -301,13 +295,13 @@ def ProfileModelLayers(
                 log.info("usbmon module already present")
                 for layer in model_summary["models"][0]["layers"]:
                     m = ProfileLayer(
-                        Model(layer, "tpu", parent_model), count, "TPU", platform, usbmon=usbmon_bus
+                        Model(layer, "tpu", parent_model), count, "tpu", platform, usbmon=usbmon_bus
                     )
                     models["tpu"].append(m)
                     # AnalyzeLayerResults(m, "tpu")
     elif platform == "coral":
         for layer in model_summary["models"][0]["layers"]:
-            m = ProfileLayer(Model(layer, "tpu", parent_model), count, "TPU", platform, usbmon=usbmon_bus)
+            m = ProfileLayer(Model(layer, "tpu", parent_model), count, "tpu", platform, usbmon=usbmon_bus)
             models["tpu"].append(m)
             # AnalyzeLayerResults(m, "tpu")
 

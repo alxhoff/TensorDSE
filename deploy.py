@@ -27,22 +27,24 @@ def DeployLayer(m: Model):
     from utils.benchmark import GetArraySizeFromShape
     from backend.distributed_inference import distributed_inference
 
-    if m.delegate == "tpu":
+    delegate_type  = m.delegate[:3].lower()
+    delegate_index = int(m.delegate[-1])
+
+    if delegate_type == "tpu":
         m.model_path = os.path.join(
             COMPILED_DIR,
-            "submodel_{0}_{1}_{2}_edgetpu.tflite".format(
-                m.details["index"], m.details["type"], m.delegate
-            ),
+            "submodel_{0}_{1}_bm_edgetpu.tflite".format(
+                m.details["index"], m.details["type"]),
         )
     else:
         m.model_path = os.path.join(
             SUB_DIR,
             "tflite",
             "submodel_{0}_{1}_{2}".format(
-                m.details["index"], m.details["type"], m.delegate
+                m.details["index"], m.details["type"], delegate_type
             ),
             "submodel_{0}_{1}_{2}.tflite".format(
-                m.details["index"], m.details["type"], m.delegate
+                m.details["index"], m.details["type"], delegate_type
             ),
         )
 
@@ -50,9 +52,6 @@ def DeployLayer(m: Model):
     output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
 
     inference_times_vector = np.zeros(1).astype(np.uint32)
-
-    delegate_type  = m.delegate[:3]
-    delegate_index = m.delegate[-1]
 
     mean_inference_time = distributed_inference(
         m.model_path,
@@ -63,7 +62,7 @@ def DeployLayer(m: Model):
         len(output_data_vector),
         delegate_type,
         1,
-        int(delegate_index)
+        delegate_index
     )
 
     m.output_vector = output_data_vector
@@ -95,7 +94,7 @@ def DeployModel(model_path: str, model_summary_path: str, data_module : str = No
                     GetInputData(m)
                 else:
                     GetInputTestDataModule(m, dataset_module=data_module)
-            elif idx < len(model_summary["layers"]):
+            elif idx < len(model["layers"]):
                 m.input_vector = copy.deepcopy(models[len(models) - 1].output_vector)
 
             m = DeployLayer(m)

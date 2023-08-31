@@ -288,21 +288,21 @@ int distributed_inference_wrapper(std::string& tflite_model_path, int8_t* input_
                                                                  const unsigned int benchmarking_count,
                                                                  const unsigned int core_index) {
     int result = 0;
-    if (hardware_target.compare("CPU") == 0) {
+    if (hardware_target.compare("cpu") == 0) {
         result = distributed_inference_cpu(tflite_model_path, input_data, 
                                                               output_data,
                                                               inference_times,
                                                               input_data_size, 
                                                               output_data_size,
                                                               benchmarking_count);
-    } else if (hardware_target.compare("GPU") == 0) {
+    } else if (hardware_target.compare("gpu") == 0) {
         result = distributed_inference_gpu(tflite_model_path, input_data, 
                                                               output_data,
                                                               inference_times,
                                                               input_data_size, 
                                                               output_data_size,
                                                               benchmarking_count);
-    } else if (hardware_target.compare("TPU") == 0) {
+    } else if (hardware_target.compare("tpu") == 0) {
         result = distributed_inference_tpu(tflite_model_path, input_data, 
                                                               output_data,
                                                               inference_times,
