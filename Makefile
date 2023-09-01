@@ -94,7 +94,6 @@ forcebuild:
 .PHONY: run
 ifdef GA_CONFIG
 run:
-	sudo modprobe usbmon
 	git fetch https://git@github.com/alxhoff/TensorDSE.git
 	git reset --hard origin/master
 	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
