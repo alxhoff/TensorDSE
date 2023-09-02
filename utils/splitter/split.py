@@ -111,6 +111,10 @@ class Splitter:
                 elif layer[2] in ["cpu", "gpu", "tpu"]:
                     log.info(
                         "Model #{0}, layer #{1} mapped to {2}".format(i, j, layer[2])
+<<<<<<< HEAD
+=======
+                    )
+>>>>>>> master
 
     def CreateSubmodelLayerSequences(self) -> None:
         """From the mappings created by CreateLayerMatrix, sequential layers
@@ -234,19 +238,14 @@ class Splitter:
 
     def Run(self):
         log.info("[SPLIT] Started")
-        print("[SPLIT] Started")
         self.CreateLayerMatrix()
         log.info("[SPLIT] Created matrix")
-        print("[SPLIT] Finished analysis")
         self.CreateSubmodelLayerSequences()
         log.info("[SPLIT] Submodel layer sequences created")
-        print("[SPLIT] Submodel layer sequences created")
         self.ReadSourceModel()
         log.info("[SPLIT] Source model read")
-        print("[SPLIT] Source model read")
         self.CreateSubmodels()
         log.info("[SPLIT] Submodels created")
-        print("[SPLIT] Submodels created")
 
     def __del__(self):
         self.Clean(False)

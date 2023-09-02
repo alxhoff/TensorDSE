@@ -4,24 +4,40 @@ CWD := $(shell pwd)
 FOLDER := $(shell basename ${CWD})
 REPO := tensorflow/tensorflow
 
+ifndef MODEL
+override MODEL = "resources/models/example_models/MNIST_full_quanitization.tflite"
+$(info Using default MODEL: $(MODEL))
+endif
+ifndef DATASET
+override DATASET = "utils.datasets.MNIST"
+$(info Using default DATASET: $(DATASET))
+endif
+ifndef COUNT
+override COUNT = 2
+$(info Using default COUNT: $(COUNT))
+endif
 ifndef MODEL_SUMMARY
-override MODEL_SUMMARY = "../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization.json"
+override MODEL_SUMMARY = "../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary.json"
 $(info Using default MODEL_SUMMARY: $(MODEL_SUMMARY))
 endif
+ifndef MODEL_SUMMARY_W_MAPPINGS
+override MODEL_SUMMARY_W_MAPPINGS = "resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json"
+$(info Using default MODEL_SUMMARY_W_MAPPINGS: $(MODEL_SUMMARY_W_MAPPINGS))
+endif
 ifndef ARCHITECTURE_SUMMARY
-override ARCHITECTURE_SUMMARY = "../resources/architecture_summaries/example_output_architecture_summary.json"
+override ARCHITECTURE_SUMMARY = "../../resources/architecture_summaries/example_output_architecture_summary.json"
 $(info Using default ARCHITECTURE_SUMMARY: $(ARCHITECTURE_SUMMARY))
 endif
 ifndef PROFILING_COSTS
-override PROFILING_COSTS = "../resources/profiling_results/example_profiling_results.json"
+override PROFILING_COSTS = "../../resources/profiling_results/MNIST_full_quanitization.json"
 $(info Using default PROFILING_COSTS: $(PROFILING_COSTS))
 endif
 ifndef OUTPUT_FOLDER
-override OUTPUT_FOLDER = "src/main/resources/output"
+override OUTPUT_FOLDER = "../../resources/GA_results"
 $(info Using default OUTPUT_FOLDER: $(OUTPUT_FOLDER))
 endif
 ifndef ILP_MAPPING
-override ILP_MAPPING = true
+override ILP_MAPPING = false
 $(info Using default ILP_MAPPING: $(ILP_MAPPING))
 endif
 ifndef RUNS
@@ -76,8 +92,21 @@ forcebuild:
 	${MAKE} -C docker build;
 
 .PHONY: run
+ifdef GA_CONFIG
 run:
-	@${MAKE} -C docker run MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
+	git fetch https://git@github.com/alxhoff/TensorDSE.git
+	git reset --hard origin/master
+	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
+	$(info USBMON is $(USBMON))
+	@${MAKE} -C docker run GA_CONFIG=$(GA_CONFIG) USBMON=$(USBMON) DATASET=$(DATASET) COUNT=$(COUNT) MODEL_SUMMARY_W_MAPPINGS=$(MODEL_SUMMARY_W_MAPPINGS) MODEL=$(MODEL) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
+else
+run:
+	git fetch https://git@github.com/alxhoff/TensorDSE.git
+	git reset --hard origin/master
+	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
+	$(info USBMON is $(USBMON))
+	@${MAKE} -C docker run USBMON=$(USBMON) DATASET=$(DATASET) COUNT=$(COUNT) MODEL_SUMMARY_W_MAPPINGS=$(MODEL_SUMMARY_W_MAPPINGS) MODEL=$(MODEL) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
+endif
 
 .PHONY: info
 info:

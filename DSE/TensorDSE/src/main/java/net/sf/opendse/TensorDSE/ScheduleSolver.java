@@ -86,7 +86,8 @@ public class ScheduleSolver {
      */
     public Boolean addCommCosts(OperationCosts operation_costs) {
 
-        // Tasks that were routed over will have the resource in the verticies of the routing
+        // Tasks that were routed over will have the resource in the verticies of the
+        // routing
         // of the comm node that sits between the task and its predecessor
 
         for (Task task : this.application.getVertices()) {
@@ -137,7 +138,6 @@ public class ScheduleSolver {
         return target_resource;
     }
 
-
     /**
      * @param task
      * @return ArrayList<Resource>
@@ -147,78 +147,6 @@ public class ScheduleSolver {
 
         return target_resources;
     }
-
-
-    // /**
-    // * @param comm
-    // * @param target_resource
-    // * @return Pair<Double, Double>
-    // */
-    // private Pair<Double, Double> getRoutedCommunicationCost(Task comm, Resource target_resource)
-    // {
-
-    // Pair<Double, Double> comm_cost = new Pair<>(0.0, 0.0);
-
-    // if (comm != null) {
-
-    // Collection<Resource> routed_targets = this.routings.get(comm).getVertices();
-
-    // for (Resource res : routed_targets) {
-    // // Resource -> bus communication, ie. send comms
-    // if (res.getId().contains("cpu") || res.getId().contains("tpu")
-    // || res.getId().contains("gpu")) {
-    // if (this.routings.get(comm).getPredecessorCount(res) > 0) {
-    // Resource from =
-    // this.routings.get(comm).getPredecessors(res).iterator().next();
-    // // Because we are dealing with recv comms we need the prev op type for
-    // // getting comms costs
-    // Task prev_task = application.getPredecessors(comm).iterator().next();
-    // if (from.getId().contains("pci") || from.getId().contains("usb")) {
-    // Pair<Double, Double> comms =
-    // operation_costs.GetCommCost(res.getId().replaceAll("\\d", ""),
-    // prev_task.getAttribute("type"),
-    // prev_task.getAttribute("dtype"));
-    // // Value0 is send, 1 is recv
-    // comm_cost = comm_cost.setAt0(comms.getValue0() + comm_cost.getValue0());
-    // }
-    // }
-
-
-    // // Bus -> resource communication, ie. recv comms
-    // } else if (res.getId().contains("usb") || res.getId().equals("pci")) {
-    // if (this.routings.get(comm).getSuccessorCount(res) > 0) {
-    // Resource to = architecture.getSuccessors(res).iterator().next();
-    // Task next_task = application.getSuccessors(comm).iterator().next();
-    // if (to.getId().contains("cpu") || to.getId().contains("tpu")
-    // || to.getId().contains("gpu")) {
-    // Pair<Double, Double> comms =
-    // operation_costs.GetCommCost(to.getId().replaceAll("\\d", ""),
-    // next_task.getAttribute("type"),
-    // next_task.getAttribute("dtype"));
-    // // Value0 is send, 1 is recv
-    // comm_cost = comm_cost.setAt1(comms.getValue1() + comm_cost.getValue1());
-    // }
-    // }
-    // }
-    // }
-    // }
-
-    // return comm_cost;
-    // }
-
-
-    // /**
-    // * @param task
-    // * @param target_resource
-    // * @return Double
-    // */
-    // private Double getExecutionCost(Task task, Resource target_resource) {
-    // Double exec_cost = operation_costs.GetOpCost(target_resource.getId().replaceAll("\\d", ""),
-    // task.getAttribute("type"), task.getAttribute("dtype"));
-
-    // return exec_cost;
-    // }
-
 
     /**
      * @return Double
@@ -230,8 +158,7 @@ public class ScheduleSolver {
         ArrayList<GRBVar> final_task_finish_times = new ArrayList<GRBVar>();
 
         // Hashmap for quickly accessing all tasks mapped to the same resource
-        HashMap<Resource, ArrayList<ILPTask>> resource_mapped_tasks =
-                new HashMap<Resource, ArrayList<ILPTask>>();
+        HashMap<Resource, ArrayList<ILPTask>> resource_mapped_tasks = new HashMap<Resource, ArrayList<ILPTask>>();
 
         try {
 
@@ -253,8 +180,7 @@ public class ScheduleSolver {
                 models.add(model_tasks);
 
                 // Comm task coming after starting_task
-                Task following_comm =
-                        this.application.getSuccessors(starting_task).iterator().next();
+                Task following_comm = this.application.getSuccessors(starting_task).iterator().next();
 
                 Resource target_resource = getTargetResource(starting_task);
                 Pair<Double, Double> comm_costs = this.operation_costs.GetCommCost(
@@ -302,7 +228,8 @@ public class ScheduleSolver {
 
             ArrayList<ILPTask> all_tasks = new ArrayList<ILPTask>();
 
-            // Step through sequential model list and create scheduling and finish time dependencies
+            // Step through sequential model list and create scheduling and finish time
+            // dependencies
             for (ArrayList<ILPTask> model : models) {
 
                 ILPTask prev_task = null;
@@ -367,22 +294,19 @@ public class ScheduleSolver {
                     ilps.addDirectExecutionTimeConstraint(task.getTotal_execution_cost(), exec_time,
                             grb_model);
 
-
                     // 2.6 Same resource communication costs
                     // Benchmarked sending times
                     GRBVar task_benchmarked_sending_cost = grb_model.addVar(task.getSend_cost(),
                             task.getSend_cost(), 0.0, GRB.CONTINUOUS, "");
                     task.setBenchmarked_sending_cost(task_benchmarked_sending_cost);
-                    GRBVar same_resource_sending_cost =
-                            grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
+                    GRBVar same_resource_sending_cost = grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
                     task.setSame_resource_sending_cost(same_resource_sending_cost);
 
                     // Benchmarked receiving times
                     GRBVar task_benchmarked_receiving_cost = grb_model.addVar(task.getRecv_cost(),
                             task.getRecv_cost(), 0.0, GRB.CONTINUOUS, "");
                     task.setBenchmarked_receiving_cost(task_benchmarked_receiving_cost);
-                    GRBVar same_resource_receiving_cost =
-                            grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
+                    GRBVar same_resource_receiving_cost = grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
                     task.setSame_resource_receiving_cost(same_resource_receiving_cost);
 
                     // 2.6.1 Z helper variable
@@ -502,8 +426,7 @@ public class ScheduleSolver {
                     System.out.println();
                 }
 
-                HashMap<Resource, ArrayList<Pair<String, Double>>> per_resource_schedule =
-                        new HashMap<Resource, ArrayList<Pair<String, Double>>>();
+                HashMap<Resource, ArrayList<Pair<String, Double>>> per_resource_schedule = new HashMap<Resource, ArrayList<Pair<String, Double>>>();
 
                 for (int i = 0; i < all_tasks.size(); i++) {
                     ILPTask task = all_tasks.get(i);
@@ -579,7 +502,6 @@ public class ScheduleSolver {
                 System.out.println();
                 System.out.println();
 
-
                 for (GRBVar finish_time : final_task_finish_times)
                     System.out.println(
                             String.format("Finish time: %f", finish_time.get(GRB.DoubleAttr.X)));
@@ -621,13 +543,11 @@ public class ScheduleSolver {
                 models.add(model_tasks);
 
                 // Comm task coming after starting_task
-                Task following_comm =
-                        this.application.getSuccessors(starting_task).iterator().next();
+                Task following_comm = this.application.getSuccessors(starting_task).iterator().next();
 
                 // For all possible resources
                 ArrayList<Resource> possible_resources = getPossibleTargetResources(starting_task);
-                HashMap<Resource, Pair<Double, Double>> comm_costs =
-                        new HashMap<Resource, Pair<Double, Double>>();
+                HashMap<Resource, Pair<Double, Double>> comm_costs = new HashMap<Resource, Pair<Double, Double>>();
                 HashMap<Resource, Double> exec_costs = new HashMap<Resource, Double>();
                 for (Resource resource : possible_resources) {
                     comm_costs.put(resource,
@@ -683,7 +603,8 @@ public class ScheduleSolver {
             // For debug printing
             ArrayList<ILPTask> all_tasks = new ArrayList<ILPTask>();
 
-            // Step through sequential model list and create scheduling and finish time dependencies
+            // Step through sequential model list and create scheduling and finish time
+            // dependencies
             for (ArrayList<ILPTask> model : models) {
 
                 ILPTask prev_task = null;
@@ -710,6 +631,7 @@ public class ScheduleSolver {
                     // 4.1 Possible mapping variables (X)
                     // One for each resource the task can be mapped to
                     HashMap<Resource, GRBVar> task_x_vars = new HashMap<Resource, GRBVar>();
+
                     for (Resource resource : task.getTarget_resources()) {
                         GRBVar x = grb_model.addVar(0.0, 1.0, 0.0, GRB.CONTINUOUS, "");
                         task_x_vars.put(resource, x);
@@ -722,8 +644,7 @@ public class ScheduleSolver {
                             grb_model);
 
                     // 4.3 Resource mapped execution times
-                    HashMap<Resource, GRBVar> task_benchmark_exec_time =
-                            new HashMap<Resource, GRBVar>();
+                    HashMap<Resource, GRBVar> task_benchmark_exec_time = new HashMap<Resource, GRBVar>();
 
                     for (Map.Entry<Resource, Double> entry : task.getExecution_costs().entrySet())
                         task_benchmark_exec_time.put(entry.getKey(),
@@ -739,8 +660,7 @@ public class ScheduleSolver {
 
                     // 2.6 Same resource communication costs
                     // Benchmarked sending times
-                    HashMap<Resource, GRBVar> task_benchmarked_sending_times =
-                            new HashMap<Resource, GRBVar>();
+                    HashMap<Resource, GRBVar> task_benchmarked_sending_times = new HashMap<Resource, GRBVar>();
                     for (Resource resource : task.getTarget_resources()) {
                         GRBVar Cs = grb_model.addVar(task.getSend_costs().get(resource),
                                 task.getSend_costs().get(resource), 0.0, GRB.CONTINUOUS, "");
@@ -749,8 +669,7 @@ public class ScheduleSolver {
                     task.setBenchmark_sending_costs(task_benchmarked_sending_times);
 
                     // sending times
-                    HashMap<Resource, GRBVar> task_same_resource_sending_costs =
-                            new HashMap<Resource, GRBVar>();
+                    HashMap<Resource, GRBVar> task_same_resource_sending_costs = new HashMap<Resource, GRBVar>();
                     for (Resource resource : task.getTarget_resources()) {
                         GRBVar send = grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
                         task_same_resource_sending_costs.put(resource, send);
@@ -758,8 +677,7 @@ public class ScheduleSolver {
                     task.setSame_resource_sending_costs(task_same_resource_sending_costs);
 
                     // Benchmarked receiving times
-                    HashMap<Resource, GRBVar> task_benchmarked_receiving_costs =
-                            new HashMap<Resource, GRBVar>();
+                    HashMap<Resource, GRBVar> task_benchmarked_receiving_costs = new HashMap<Resource, GRBVar>();
                     for (Resource resource : task.getTarget_resources()) {
                         Double recv_time = task.getSend_costs().get(resource);
                         GRBVar Cs = grb_model.addVar(recv_time, recv_time, 0.0, GRB.CONTINUOUS, "");
@@ -768,8 +686,7 @@ public class ScheduleSolver {
                     task.setBenchmark_receiving_costs(task_benchmarked_receiving_costs);
 
                     // receiving times
-                    HashMap<Resource, GRBVar> task_same_resource_receiving_costs =
-                            new HashMap<Resource, GRBVar>();
+                    HashMap<Resource, GRBVar> task_same_resource_receiving_costs = new HashMap<Resource, GRBVar>();
                     for (Resource resource : task.getTarget_resources()) {
                         GRBVar recv = grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
                         task_same_resource_receiving_costs.put(resource, recv);
@@ -838,10 +755,10 @@ public class ScheduleSolver {
                             task.getTotal_sending_comm_cost(), task.getTotal_receiving_comm_cost(),
                             grb_model);
 
-                    if (task == model.get(model.size() - 1))
+                    if (task == model.get(model.size() - 1)) {
                         // Last task, so we can add its finish time to the list of final tasks
                         final_task_finish_times.add(task.getFinish_time());
-                    else
+                    } else
                         prev_task = task;
                 }
             }
@@ -851,8 +768,8 @@ public class ScheduleSolver {
                 for (int j = i + 1; j < all_tasks.size(); j++) {
                     GRBVar Y = grb_model.addVar(0.0, 1.0, 0.0, GRB.BINARY,
                             String.format("Y_%d_%d", i, j));
-                    ArrayList<Resource> resource_intersection =
-                            new ArrayList<Resource>(all_tasks.get(i).getTarget_resources());
+                    ArrayList<Resource> resource_intersection = new ArrayList<Resource>(
+                            all_tasks.get(i).getTarget_resources());
                     resource_intersection.retainAll(all_tasks.get(j).getTarget_resources());
                     for (Resource resource : resource_intersection) {
                         ilps.addResourceMappingAllPairConstraint(all_tasks.get(i).getStart_time(),
@@ -893,8 +810,7 @@ public class ScheduleSolver {
 
             if (this.verbose == true) {
 
-                HashMap<Resource, ArrayList<Triplet<String, Double, Double>>> per_resource_schedule =
-                        new HashMap<Resource, ArrayList<Triplet<String, Double, Double>>>();
+                HashMap<Resource, ArrayList<Triplet<String, Double, Double>>> per_resource_schedule = new HashMap<Resource, ArrayList<Triplet<String, Double, Double>>>();
 
                 for (int i = 0; i < all_tasks.size(); i++) {
                     ILPTask task = all_tasks.get(i);

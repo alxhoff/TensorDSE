@@ -32,15 +32,19 @@ import net.sf.opendse.model.Task;
 // import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
- * The {@code SpecificationDefinition} is the class defining the Specification that corresponds to
- * the graph of the deep learning model to which we want to optimize the performance.
+ * The {@code SpecificationDefinition} is the class defining the Specification
+ * that corresponds to
+ * the graph of the deep learning model to which we want to optimize the
+ * performance.
  *
  * @author Ines Ben Hmida
  * @author Alex Hoffman
  *
- * @param modelsummary user entry of the file path a csv file that summarized the graph of the
- *        considered deep learning model
- * @param costsfile A csv file that contains the costs deducted from running the benchmarks
+ * @param modelsummary user entry of the file path a csv file that summarized
+ *                     the graph of the
+ *                     considered deep learning model
+ * @param costsfile    A csv file that contains the costs deducted from running
+ *                     the benchmarks
  *
  */
 public class SpecificationDefinition {
@@ -48,8 +52,8 @@ public class SpecificationDefinition {
 	/**
 	 *
 	 */
-	public final List<String> supported_layers =
-			Arrays.asList("conv_2d", "max_pool_2d", "reshape", "fully_connected", "softmax");
+	public final List<String> supported_layers = Arrays.asList("conv_2d", "max_pool_2d", "reshape", "fully_connected",
+			"softmax");
 
 	/**
 	 *
@@ -62,11 +66,11 @@ public class SpecificationDefinition {
 	private OperationCosts operation_costs = null;
 
 	/**
-	 * Top level HashMap takes the model's index as the key, then the target layer's index is used
+	 * Top level HashMap takes the model's index as the key, then the target layer's
+	 * index is used
 	 * to access the layer's Task
 	 */
-	private HashMap<Integer, HashMap<Integer, Task>> application_graphs =
-			new HashMap<Integer, HashMap<Integer, Task>>();
+	private HashMap<Integer, HashMap<Integer, Task>> application_graphs = new HashMap<Integer, HashMap<Integer, Task>>();
 
 	/**
 	 *
@@ -101,8 +105,7 @@ public class SpecificationDefinition {
 		}
 
 		this.operation_costs = new OperationCosts(profiling_costs_file_path);
-		this.specification =
-				GetSpecificationFromTFLiteModel(model_summary_path, architecture_summary_path);
+		this.specification = GetSpecificationFromTFLiteModel(model_summary_path, architecture_summary_path);
 	}
 
 	public void WriteJSONModelsToFile(String filename) {
@@ -111,8 +114,11 @@ public class SpecificationDefinition {
 
 			Gson gson = new GsonBuilder().setPrettyPrinting().create();
 			try {
+				System.out.println(String.format("Storing mapping results: %s", filename));
 				FileWriter file = new FileWriter(filename);
-				gson.toJson(this.json_models, file);
+				ModelJSON model_json = new ModelJSON();
+				model_json.setModels(this.json_models);
+				gson.toJson(model_json, file);
 				file.close();
 			} catch (JsonIOException e) {
 				// TODO Auto-generated catch block
@@ -125,20 +131,24 @@ public class SpecificationDefinition {
 	}
 
 	/**
-	 * @brief Creates the OpenDSE specification which is the combination of the architecture and
-	 *        application graph with the set of possible mappings. The architecture and application
+	 * @brief Creates the OpenDSE specification which is the combination of the
+	 *        architecture and
+	 *        application graph with the set of possible mappings. The architecture
+	 *        and application
 	 *        graphs are generated from the provided
-	 * @param models_description_path Path to the JSON file containing a summary of the NN models
-	 *        from which the application graph is to be built
-	 * @param hardware_description_path Path to the JSON file containing the number of execution
-	 *        units on the target hardware platform
+	 * @param models_description_path   Path to the JSON file containing a summary
+	 *                                  of the NN models
+	 *                                  from which the application graph is to be
+	 *                                  built
+	 * @param hardware_description_path Path to the JSON file containing the number
+	 *                                  of execution
+	 *                                  units on the target hardware platform
 	 * @return Specification
 	 */
 	public Specification GetSpecificationFromTFLiteModel(String models_description_path,
 			String hardware_description_path) {
 
-		Architecture<Resource, Link> architecture =
-				GetArchitectureFromArchitectureSummary(hardware_description_path);
+		Architecture<Resource, Link> architecture = GetArchitectureFromArchitectureSummary(hardware_description_path);
 		Application<Task, Dependency> application = GetApplicationFromModelSummary();
 		Mappings<Task, Resource> mappings = CreateMappingOptions();
 
@@ -177,7 +187,6 @@ public class SpecificationDefinition {
 		return ret;
 	}
 
-
 	/**
 	 * @param model_summary_path
 	 * @return
@@ -215,12 +224,10 @@ public class SpecificationDefinition {
 				for (int i = 0; i < layers.size(); i++) {
 					// JSON parsed layer object
 					Layer sending_layer = layers.get(i);
-					Task sending_layer_task =
-							application_graphs.get(k).get(sending_layer.getIndex());
+					Task sending_layer_task = application_graphs.get(k).get(sending_layer.getIndex());
 
 					// Step through all output tensors
-					List<Integer> sending_layer_output_tensor_indices =
-							sending_layer.getOutputTensorArray();
+					List<Integer> sending_layer_output_tensor_indices = sending_layer.getOutputTensorArray();
 
 					// Task to create communication from, ie. sending layer
 					for (Integer sending_layer_output_tensor_index : sending_layer_output_tensor_indices) {
@@ -303,9 +310,9 @@ public class SpecificationDefinition {
 		architecture.addEdge(link_usb_pci, bus_usb, bus_pci);
 
 		// Create CPU Cores
-		if (architecture_json.getCPU_cores() > 0) {
+		if (architecture_json.getCPU_count() > 0) {
 			List<Resource> cpu_cores = new ArrayList<Resource>();
-			for (int i = 0; i < architecture_json.getCPU_cores(); i++) {
+			for (int i = 0; i < architecture_json.getCPU_count(); i++) {
 				String r_id = String.format("cpu%d", i);
 				Resource core = new Resource(r_id);
 				architecture.addVertex(core);
@@ -369,9 +376,9 @@ public class SpecificationDefinition {
 		return architecture;
 	}
 
-
 	/**
-	 * @brief Creates a set of possible mappings, ie. all tasks can be mapped onto the CPU + GPU,
+	 * @brief Creates a set of possible mappings, ie. all tasks can be mapped onto
+	 *        the CPU + GPU,
 	 *        compatible tasks can be mapped to the TPU.
 	 * @return Mappings<Task, Resource>
 	 */
@@ -396,6 +403,7 @@ public class SpecificationDefinition {
 						mappings.add(m);
 					}
 				}
+				
 
 				if (resources.containsKey("gpu")) {
 					List<Resource> gpus = resources.get("gpu");
@@ -429,7 +437,6 @@ public class SpecificationDefinition {
 		return mappings;
 	}
 
-
 	/**
 	 * @return Specification
 	 */
@@ -437,51 +444,41 @@ public class SpecificationDefinition {
 		return (specification);
 	}
 
-
 	public void setSpecification(Specification specification) {
 		this.specification = specification;
 	}
-
 
 	public OperationCosts getOperation_costs() {
 		return operation_costs;
 	}
 
-
 	public void setOperation_costs(OperationCosts operation_costs) {
 		this.operation_costs = operation_costs;
 	}
-
 
 	public HashMap<Integer, HashMap<Integer, Task>> getApplication_graphs() {
 		return application_graphs;
 	}
 
-
 	public void setApplication_graphs(HashMap<Integer, HashMap<Integer, Task>> application_graphs) {
 		this.application_graphs = application_graphs;
 	}
-
 
 	public HashMap<String, List<Resource>> getResources() {
 		return resources;
 	}
 
-
 	public void setResources(HashMap<String, List<Resource>> resources) {
 		this.resources = resources;
 	}
-
 
 	public List<String> getSupported_layers() {
 		return supported_layers;
 	}
 
-
 	public ArrayList<Task> getStarting_tasks() {
 		return starting_tasks;
 	}
-
 
 	public void setStarting_tasks(ArrayList<Task> starting_tasks) {
 		this.starting_tasks = starting_tasks;

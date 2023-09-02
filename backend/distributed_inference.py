@@ -10,7 +10,8 @@ def distributed_inference(
     input_data_size:int,
     output_data_size:int,
     hardware_target:str,
-    benchmarking_count: int
+    benchmarking_count: int,
+    core_index: int
 ):
     try:
         from backend import cpp_interface
@@ -28,19 +29,18 @@ def distributed_inference(
     output_data_ptr = _ffi.cast("int8_t*", output_data.ctypes.data)
     inference_times_ptr = _ffi.cast("uint32_t*", inference_times.ctypes.data)
 
-    print("[DISTRIBUTED INFERENCE] Invoking")
-
     result = cpp_interface.lib.distributed_inference_interface(tflite_model_path_ptr, input_data_ptr,
                                                                                       output_data_ptr,
                                                                                       inference_times_ptr,
                                                                                       input_data_size,
                                                                                       output_data_size,
                                                                                       hardware_target_ptr,
-                                                                                      benchmarking_count)
-
-    print("[DISTRIBUTED INFERENCE] Result:{}".format(result))
+                                                                                      benchmarking_count,
+                                                                                      core_index)
 
     if result == -1:
         raise Exception("C++ distributed inference failed")
+
+    result /= 1000000000.0
 
     return result

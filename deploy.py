@@ -1,6 +1,8 @@
 import copy
 import numpy as np
 from utils.model import Model
+import argparse
+import random
 
 
 def GetInputData(m: Model):
@@ -12,17 +14,28 @@ def GetInputData(m: Model):
     )
 
 
+def GetInputTestDataModule(m: Model, dataset_module: str):
+    module = __import__(dataset_module)
+    for comp in dataset_module.split(".")[1:]:
+        module = getattr(module, comp)
+    dataset = module.GetData()["test_data"]
+    input_shape = module.GetInputShape()
+    m.input_vector = random.choice(dataset)
+
+
 def DeployLayer(m: Model):
     from utils.splitter.split import SUB_DIR, COMPILED_DIR
     from utils.benchmark import GetArraySizeFromShape
     from backend.distributed_inference import distributed_inference
 
-    if m.delegate == "tpu":
+    delegate_type  = m.delegate[:3].lower()
+    delegate_index = int(m.delegate[-1])
+
+    if delegate_type == "tpu":
         m.model_path = os.path.join(
             COMPILED_DIR,
             "submodel_{0}_{1}_bm_edgetpu.tflite".format(
-                m.details["index"], m.details["type"]
-            ),
+                m.details["index"], m.details["type"]),
         )
     else:
         m.model_path = os.path.join(
@@ -48,8 +61,9 @@ def DeployLayer(m: Model):
         inference_times_vector,
         len(m.input_vector),
         len(output_data_vector),
-        m.delegate,
+        delegate_type,
         1,
+        delegate_index
     )
 
     m.output_vector = output_data_vector
@@ -58,7 +72,11 @@ def DeployLayer(m: Model):
     return m
 
 
+<<<<<<< HEAD
 def DeployModel(model_path: str, model_summary_path: str) -> None:
+=======
+def DeployModel(model_path: str, model_summary_path: str, data_module : str = None) -> None:
+>>>>>>> master
     from utils.splitter.utils import ReadJSON
     from utils.splitter.logger import log
 
@@ -77,23 +95,83 @@ def DeployModel(model_path: str, model_summary_path: str) -> None:
             m = Model(layer, layer["mapping"].upper(), model_name)
 
             if idx == 0:
+<<<<<<< HEAD
                 GetInputData(m)
+=======
+                if data_module == None:
+                    GetInputData(m)
+                else:
+                    GetInputTestDataModule(m, dataset_module=data_module)
+>>>>>>> master
             elif idx < len(model["layers"]):
                 m.input_vector = copy.deepcopy(models[len(models) - 1].output_vector)
 
             m = DeployLayer(m)
             models.append(m)
+<<<<<<< HEAD
+=======
+
+parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+parser.add_argument(
+    "-m",
+    "--model",
+    default="resources/models/example_models/MNIST_full_quanitization.tflite",
+    help="File path to the SOURCE .tflite file.",
+)
+
+parser.add_argument(
+    "-s",
+    "--summary",
+    default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json",
+    help="File that contains a model summary with mapping annotations"
+)
+
+parser.add_argument(
+    "-d",
+    "--dataset",
+    default="utils.datasets.MNIST",
+    help="Dataset import module to be used for providing input data"
+)
+
+parser.add_argument(
+    "-o",
+    "--summaryoutputdir",
+    default="resources/model_summaries/example_summaries/MNIST",
+    help="Directory where model summary should be saved",
+)
+
+parser.add_argument(
+    "-n",
+    "--summaryoutputname",
+    default="MNIST_full_quanitization_summary_with_mappings",
+    help="Name that the model summary should have",
+)
+>>>>>>> master
 
 
 if __name__ == "__main__":
     import os
     from profiler import GetArgs
 
-    args = GetArgs()
+    args = parser.parse_args()
 
+<<<<<<< HEAD
     DeployModel(
         args.model,
         os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
     )
+=======
+    if args.summary:
+        DeployModel(args.model, args.summary, args.dataset)
+    else:
+        DeployModel(
+            args.model,
+            os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
+            args.dataset
+        )
+>>>>>>> master
 
     print("Model Deployed")

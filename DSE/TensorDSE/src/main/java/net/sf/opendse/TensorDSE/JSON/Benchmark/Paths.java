@@ -3,6 +3,7 @@ package net.sf.opendse.TensorDSE.JSON.Benchmark;
 
 public class Paths {
     String cpu;
+    String gpu;
     String tpu;
 
     public String getQuantized() {

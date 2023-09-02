@@ -58,38 +58,81 @@ build:
 	@echo $$GUROBI_ACCESSID
 	@echo $$GUROBI_SECRET
 	@echo $$GUROBI_LICENCEID
-	docker build -t ${REPO}:${TAG} --build-arg WLSACCESSID=$$GUROBI_ACCESSID --build-arg WLSSECRET=$$GUROBI_SECRET --build-arg LICENSEID=$$GUROBI_LICENCEID .
+	docker build -t ${REPO}:${TAG} --build-arg WLSACCESSID=$$GUROBI_ACCESSID \
+		--build-arg WLSSECRET=$$GUROBI_SECRET --build-arg LICENSEID=$$GUROBI_LICENCEID .
 
+ifdef GA_CONFIG
 run: $(if $(call exist-docker-image),,build)
 	@if [ -n "$(call is-docker-running)" ]; then \
 		docker stop ${NAME}; \
 		docker rm ${NAME}; \
 	fi; \
-	# docker rm $(docker ps -aq --filter name=${NAME}); \
-	docker run --name ${NAME} \
-			   --privileged \
-			   --net host \
-			   --cap-add SYS_ADMIN \
-			   -v /dev/usbmon4:/dev/usbmon4 \
-			   -v /dev/bus/usb:/dev/bus/usb \
-			   -v "${VOLUME}":/home/tensorDSE \
-			   --detach-keys="ctrl-@" \
-			   --env MODE=${MODE} \
-			   -it ${REPO}:${TAG} \
-			   --gpus 'all,capabilities=utility,compute' \
-			   --MODEL_SUMMARY=$$MODEL_SUMMARY \
-			   --ARCHITECTURE_SUMMARY=$$ARCHITECTURE_SUMMARY \
-			   --PROFILING_COSTS=$$PROFILING_COSTS \
-			   --OUTPUT_FOLDER=$$OUTPUT_FOLDER \
-			   --ILP_MAPPING=$$ILP_MAPPING \
-			   --RUNS=$$RUNS \
-			   --CROSSOVER=$$CROSSOVER \
-			   --POPULATION_SIZE=$$POPULATION_SIZE \
-			   --PARENTS_PER_GENERATION=$$PARENTS_PER_GENERATION \
-			   --OFFSPRING_PER_GENERATION=$$OFFSPRING_PER_GENERATION \
-			   --GENERATIONS=$$GENERATIONS \
-			   --VERBOSE=$$VERBOSE \
-			   ; \
+			docker run --name ${NAME} \
+					--privileged \
+					--net host \
+					--cap-add SYS_ADMIN \
+					-v /dev/usbmon$$USBMON:/dev/usbmon$$USBMON \
+					-v /dev/bus/usb:/dev/bus/usb \
+					-v "${VOLUME}":/home/tensorDSE \
+					--detach-keys="ctrl-@" \
+					--env MODE=${MODE} \
+					-it ${REPO}:${TAG} \
+					--gpus 'all,capabilities=utility,compute' \
+					--USBMON=$$USBMON \
+					--DATASET=$$DATASET \
+					--COUNT=$$COUNT \
+					--MODEL=$$MODEL \
+					--MODEL_SUMMARY=$$MODEL_SUMMARY \
+					--MODEL_SUMMARY_W_MAPPINGS=$$MODEL_SUMMARY_W_MAPPINGS \
+					--ARCHITECTURE_SUMMARY=$$ARCHITECTURE_SUMMARY \
+					--PROFILING_COSTS=$$PROFILING_COSTS \
+					--OUTPUT_FOLDER=$$OUTPUT_FOLDER \
+					--ILP_MAPPING=$$ILP_MAPPING \
+					--GA_CONFIG=$$GA_CONFIG \
+					--RUNS=$$RUNS \
+					--CROSSOVER=$$CROSSOVER \
+					--POPULATION_SIZE=$$POPULATION_SIZE \
+					--PARENTS_PER_GENERATION=$$PARENTS_PER_GENERATION \
+					--OFFSPRING_PER_GENERATION=$$OFFSPRING_PER_GENERATION \
+					--GENERATIONS=$$GENERATIONS \
+					--VERBOSE=$$VERBOSE \
+					;
+else
+run: $(if $(call exist-docker-image),,build)
+	@if [ -n "$(call is-docker-running)" ]; then \
+		docker stop ${NAME}; \
+		docker rm ${NAME}; \
+	fi; \
+			docker run --name ${NAME} \
+					--privileged \
+					--net host \
+					--cap-add SYS_ADMIN \
+					-v /dev/usbmon$$USBMON:/dev/usbmon$$USBMON \
+					-v /dev/bus/usb:/dev/bus/usb \
+					-v "${VOLUME}":/home/tensorDSE \
+					--detach-keys="ctrl-@" \
+					--env MODE=${MODE} \
+					-it ${REPO}:${TAG} \
+					--gpus 'all,capabilities=utility,compute' \
+					--USBMON=$$USBMON \
+					--DATASET=$$DATASET \
+					--COUNT=$$COUNT \
+					--MODEL=$$MODEL \
+					--MODEL_SUMMARY=$$MODEL_SUMMARY \
+					--MODEL_SUMMARY_W_MAPPINGS=$$MODEL_SUMMARY_W_MAPPINGS \
+					--ARCHITECTURE_SUMMARY=$$ARCHITECTURE_SUMMARY \
+					--PROFILING_COSTS=$$PROFILING_COSTS \
+					--OUTPUT_FOLDER=$$OUTPUT_FOLDER \
+					--ILP_MAPPING=$$ILP_MAPPING \
+					--RUNS=$$RUNS \
+					--CROSSOVER=$$CROSSOVER \
+					--POPULATION_SIZE=$$POPULATION_SIZE \
+					--PARENTS_PER_GENERATION=$$PARENTS_PER_GENERATION \
+					--OFFSPRING_PER_GENERATION=$$OFFSPRING_PER_GENERATION \
+					--GENERATIONS=$$GENERATIONS \
+					--VERBOSE=$$VERBOSE \
+					;
+endif
 
 debug:
 	$(MAKE) -f ${FILE} run MODE=${DEBUG_MODE}

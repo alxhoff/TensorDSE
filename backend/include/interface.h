@@ -13,7 +13,8 @@ extern "C" {
                                                                           const unsigned int input_data_size,
                                                                           const unsigned int output_data_size,
                                                                           char* hardware_target_ptr,
-                                                                          const unsigned int benchmarking_count) {
+                                                                          const unsigned int benchmarking_count,
+                                                                          const unsigned int core_index) {
     std::string tflite_model_path(tflite_model_path_ptr);
     std::string hardware_target(hardware_target_ptr);
     int result = 0;
@@ -23,7 +24,8 @@ extern "C" {
                                                               input_data_size,
                                                               output_data_size,
                                                               hardware_target,
-                                                              benchmarking_count);
+                                                              benchmarking_count,
+                                                              core_index);
     return result;
   }
 }

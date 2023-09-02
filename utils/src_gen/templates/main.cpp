@@ -281,7 +281,7 @@ int main(int argc, char* argv[]) {
   // Find TPU device.
   std::cout << "######################### Check Edge TPU USB Accelerator #########################" << "\n";
   std::cout << "\n" << std::endl;
-  std::cout << "Detecting Edge TPUs Devices ..." << "\n";
+  std::cout << " Detecting Edge TPUs Devices ..." << "\n";
   size_t num_devices;
   std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)> devices(
       edgetpu_list_devices(&num_devices), &edgetpu_free_devices);

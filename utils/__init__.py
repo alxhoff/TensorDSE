@@ -14,21 +14,6 @@ def run(command:str) -> str:
     output = p.stdout.decode()
     return output
 
-def device_count(device:str) -> str:
-    if device == "cpu":
-        out = run("lscpu").split("\n")
-        return out[4].split(" ")[-1]
-
-    if device == "gpu":
-        # TODO
-        return "1"
-
-    if device == "tpu":
-        # TODO
-        return "1"
-
-    return "-1"
-
 def extend_directory(src_dir, dst_dir):
     """Extends directory by creating or appending the 'dst_dir'
        upon the 'src_dir'.

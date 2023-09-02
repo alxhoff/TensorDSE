@@ -63,7 +63,7 @@ def show_stream(packets:List[UsbPacket], identification:str) -> None:
     print(tabulate(table, headers=hdr))
     return
 
-def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
+def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log, usbmon: int) -> None:
     """
     """
     import pyshark
@@ -78,7 +78,7 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
 
     packets = []
     context = StreamContext()
-    capture = pyshark.LiveCapture(interface='usbmon2', display_filter=get_filter(addr))
+    capture = pyshark.LiveCapture(interface='usbmon{}'.format(usbmon), display_filter=get_filter(addr))
     signalsQ.put(START_DEPLOYMENT)
 
     max_timer = Timer(MAX_TIME_CAPTURE, start_now=True)

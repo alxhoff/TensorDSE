@@ -2,7 +2,7 @@ import sys
 import os
 sys.path[0]="/home/tensorDSE" # need to overwrite working directory, so imports can work
 
-def debug_stream(model_path, timeout):
+def debug_stream(model_path, timeout, usbmon):
     from multiprocessing import Process,Queue
     from utils.log import Log
     from usb import START_DEPLOYMENT, END_DEPLOYMENT, SUCCESSFULL_DEPLOYMENT
@@ -34,7 +34,7 @@ def debug_stream(model_path, timeout):
     signalsQ = Queue()
     dataQ = Queue()
 
-    p = Process(target=capture_stream, args=(signalsQ, dataQ, timeout, Log(f"results/DEBUG_USB.log")))
+    p = Process(target=capture_stream, args=(signalsQ, dataQ, timeout, Log(f"results/DEBUG_USB.log", usbmon)))
     p.start()
 
     sig = signalsQ.get()
