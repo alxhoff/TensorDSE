@@ -1,3 +1,4 @@
+
 from multiprocessing import Queue
 
 from utils.log import Log
@@ -56,13 +57,15 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log) -> None:
         return
 
     context = StreamContext()
-    capture = pyshark.LiveCapture(interface='usbmon0', display_filter=get_filter(addr))
+    #interface = "usbmon{}".format(detect())
+    capture = pyshark.LiveCapture(interface="usbmon0", display_filter=get_filter(addr))
     signalsQ.put(START_DEPLOYMENT)
 
     l.info("- Packet Capture is started -")
     for i, raw_packet in enumerate(capture.sniff_continuously()):
         l.info("   - Frame Nr. {} -   ".format(i))
         p = UsbPacket(raw_packet, id, addr)
+        #print("Packet {0} Transfer Type: {1}".format(i, p.transfer_type))
         context.set_phase(p)
         l.info("   - Current Communication phase is: {} -   ".format(context.current_phase))
 
