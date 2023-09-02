@@ -266,7 +266,8 @@ int distributed_inference_tpu(std::string& tflite_model_path,
     std::vector<int8_t> final_data
         = GetTensorData(*interpreter->output_tensor(0));
 
-    edgetpu_free_delegate(delegate);
+    std::vector<int8_t> final_data
+        = GetTensorData(*interpreter->output_tensor(0));
 
     std::copy(final_data.begin(), final_data.end(), output_data);
     std::copy(inference_times_vec.begin(), inference_times_vec.end(),
