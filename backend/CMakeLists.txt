@@ -32,10 +32,8 @@ set(TFL_GPU_LIB_PATH /usr/lib/libtensorflowlite_gpu_delegate.so)
 
 #Docker
 #LIB PATH for x86 (Desktop)
-#set(LIB_PATH /usr/lib/x86_64-linux-gnu)
-#LIB PATH for RPi
-set(LIB_PATH /usr/lib/arm-linux-gnueabihf)
-#LIB PATH for aarch64 (Dev Board)
+set(LIB_PATH /usr/lib/x86_64-linux-gnu)
+#LIB PATH for aarch64 (Dev Board and Raspberry Pi)
 # set(LIB_PATH /usr/lib/aarch64-linux-gnu)
 
 set(EGL_LIBRARY_PATH ${LIB_PATH}/libEGL.so)
