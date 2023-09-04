@@ -159,7 +159,7 @@ def StandardDeploy(m: Model, count: int, hardware_target: str) -> Model:
     return m
 
 
-def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str) -> Model:
+def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbmon: int=None) -> Model:
     import os
     from utils.splitter.split import SUB_DIR, COMPILED_DIR
 
@@ -182,8 +182,11 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str) -> M
 
     if ((platform == "desktop") or (platform == "rpi")):
         if os.path.isfile(m.model_path):
-            if (hardware_target == "TPU"):
-                m = TPUDeploy(m=m, count=count)
+            if (hardware_target == "tpu"):
+                if usbmon == None:
+                    raise Exception("usbmon interface not provided to ProfileLayer for TPU device")
+                else:
+                    m = TPUDeploy(m=m, count=count, usbmon=usbmon)
             else:
                 m = StandardDeploy(m=m, count=count, hardware_target=hardware_target)
 

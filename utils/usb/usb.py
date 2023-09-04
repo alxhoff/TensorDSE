@@ -43,6 +43,44 @@ def peek_queue(q:Queue):
     except queue.Empty:
         return False
 
+def capture_packets(signalsQ:Queue, dataQ:Queue, l:Log, usbmon:int) -> None:
+    import pyshark
+
+    id, addr = get_tpu_ids()
+    if (not id) or (not addr):
+        signalsQ.put(END_DEPLOYMENT)
+        return
+    
+    context = StreamContext()
+    capture = pyshark.LiveCapture(interface='usbmon{}'.format(usbmon), display_filter=get_filter(addr))
+
+
+    packet_list = []
+    for raw_packet in capture.sniff_continuously():
+        packet_list.append(UsbPacket(raw_packet, id, addr))
+        if signalsQ.empty() is False:
+            break
+    
+    for packet in packet_list:
+        print(packet.transfer_type)
+        context.set_phase(packet)
+        l.info("   - Current Communication phase is: {} -   ".format(context.current_phase))
+
+        if (context.is_inference_ended()):
+            break
+        else:
+            if context.stream_valid(p):
+                if context.contains_host_data(p):
+                    l.info("        - Host is communicating Data to Edge TPU -        ")
+                    context.timestamp_host_data(p)
+
+                if context.contains_tpu_data(p):
+                    l.info("        - Edge TPU is communicating Data to Host -        ")
+                    context.timestamp_tpu_data(p)
+    dataQ.put(context.conclude())
+    l.info("- Packet Capture is complete -")
+
+
 def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log, usbmon:int) -> None:
     """
     """
@@ -68,7 +106,6 @@ def capture_stream(signalsQ:Queue, dataQ:Queue, timeout:int, l:Log, usbmon:int) 
 
         if (context.is_inference_ended()):
             break
-
         else:
             if context.stream_valid(p):
                 if context.contains_host_data(p):
