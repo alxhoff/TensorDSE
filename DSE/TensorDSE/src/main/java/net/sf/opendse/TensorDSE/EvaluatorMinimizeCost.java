@@ -23,6 +23,8 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	private Boolean verbose;
 	private Boolean visualise;
 
+	private Integer evaluation_count = 0;
+
 	public EvaluatorMinimizeCost(String objectives, SpecificationDefinition SpecificationDefinition,
 			Boolean verbose, Boolean visualise) {
 		super();
@@ -67,6 +69,10 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		 * csvOutput.flush(); csvOutput.close(); } catch (IOException e) { // TODO Auto-generated
 		 * catch block e.printStackTrace(); }
 		 */
+
+		System.out.println(String.format("Evaluation #: %d", evaluation_count));
+		evaluation_count += 1;
+
 		return null;
 	}
 

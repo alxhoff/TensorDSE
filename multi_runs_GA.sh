@@ -1,7 +1,12 @@
 #!/bin/bash
 
-for COUNT in 1 2 3
+GENERATIONS=50
+BENCHMARK_TEST_COUNT=20
+
+for COUNT in 5
 do
-    echo make run COUNT=20 MODEL_SUMMARY="../../resources/model_summaries/example_summaries/MNIST/MNIST_multi_$COUNT.json" OUTPUT_NAME="results_$COUNT.csv" POPULATION_SIZE=50 GENERATIONS=25
-    make run COUNT=20 MODEL_SUMMARY="../../resources/model_summaries/example_summaries/MNIST/MNIST_multi_$COUNT.json" OUTPUT_NAME="results_$COUNT.csv" POPULATION_SIZE=50 GENERATIONS=25
+    POPULATION=$(( COUNT * 40 ))
+    MODEL_SUMMARY="../../resources/model_summaries/example_summaries/MNIST/MNIST_multi_$COUNT.json"
+    echo make run COUNT=$BENCHMARK_TEST_COUNT MODEL_SUMMARY=$MODEL_SUMMARY OUTPUT_NAME="results_$COUNT.csv" POPULATION_SIZE=$POPULATION GENERATIONS=$GENERATIONS
+    make run COUNT=$BENCHMARK_TEST_COUNT MODEL_SUMMARY=$MODEL_SUMMARY OUTPUT_NAME="results_$COUNT.csv" POPULATION_SIZE=$POPULATION GENERATIONS=$GENERATIONS
 done

@@ -164,10 +164,9 @@ public class ScheduleSolver {
 
             ILPFormuation ilps = new ILPFormuation();
             GRBEnv grb_env = new GRBEnv(true);
-            grb_env.set(GRB.IntParam.OutputFlag, 0);
-            grb_env.set(GRB.IntParam.LogToConsole, 0);
+            grb_env.set(GRB.IntParam.OutputFlag, 1);
+            grb_env.set(GRB.IntParam.LogToConsole, 1);
             grb_env.set(GRB.IntParam.TuneOutput, 0);
-            grb_env.set(GRB.IntParam.CSIdleTimeout, 10);
             grb_env.start();
             GRBModel grb_model = new GRBModel(grb_env);
 
@@ -528,10 +527,9 @@ public class ScheduleSolver {
 
             ILPFormuation ilps = new ILPFormuation();
             GRBEnv grb_env = new GRBEnv(true);
-            grb_env.set(GRB.IntParam.OutputFlag, 0);
-            grb_env.set(GRB.IntParam.LogToConsole, 0);
+            grb_env.set(GRB.IntParam.OutputFlag, 1);
+            grb_env.set(GRB.IntParam.LogToConsole, 1);
             grb_env.set(GRB.IntParam.TuneOutput, 0);
-            grb_env.set(GRB.IntParam.CSIdleTimeout, 10);
             grb_env.start();
             GRBModel grb_model = new GRBModel(grb_env);
 
