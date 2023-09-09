@@ -166,9 +166,15 @@ class Splitter:
                     sequence_index, model_index
                     )
                 )
+
+        if len(layer_sequence) > 1:
+            ops_range = '-'.join(map(str, [layer_sequence[0][0], layer_sequence[-1][0]]))
+        else:
+            ops_range = layer_sequence[0][1]
+
         submodel = Submodel(
                 self.source_model.json,
-                layer_sequence[0][1],
+                f"ops{ops_range}",
                 layer_sequence[0][2],
                 sequence_index,
                 )
@@ -199,7 +205,7 @@ class Splitter:
         self.submodel_list.append(submodel)
         log.info("OK\n")
 
-    def CreateSubmodels(self, sequences=False):
+    def CreateSubmodels(self, sequences):
         """Create the individual submodels for either sequences of sequential
         layers that are executed on the same hardware unit or for individual layers
 
@@ -213,10 +219,11 @@ class Splitter:
         # into single inference sessions
         if sequences:
             for i, model in enumerate(self.model_layer_sequences):
-                for j, sequence in enumerate(model):
-                    self.CompileAndSaveSubmodel(
-                            layer_sequence=sequence, model_index=i, sequence_index=j
-                            )
+                with multiprocessing.Pool() as pool:
+                    items = [(sequence, i, j) for j, sequence in enumerate(model)]
+                    pool.starmap(self.CompileAndSaveSubmodel, items)
+
+
         # Else each individual layer will be run in its own inference session
         # which gives clearer overhead vs. execution time numbers
     else:
@@ -227,13 +234,15 @@ class Splitter:
                     # for j, layer in enumerate(model):
                     # self.CompileAndSaveSubmodel(layer_sequence=[layer], model_index=i, sequence_index=j)
 
-    def CompileForEdgeTPU(self):
+    def CompileForEdgeTPU(self, bm=True):
         for submodel in self.submodel_list:
-            submodel_path = submodel.paths["tflite"]
-            if not (submodel_path.endswith("_edgetpu.tflite")):
+            if bm:
                 submodel.Compile()
+            else:
+                if ("tpu" in submodel.name):
+                    submodel.Compile()
 
-    def Run(self):
+    def Run(self, sequences=False):
         log.info("[SPLIT] Started")
         self.CreateLayerMatrix()
         log.info("[SPLIT] Created matrix")
@@ -241,7 +250,7 @@ class Splitter:
         log.info("[SPLIT] Submodel layer sequences created")
         self.ReadSourceModel()
         log.info("[SPLIT] Source model read")
-        self.CreateSubmodels()
+        self.CreateSubmodels(sequences=sequences)
         log.info("[SPLIT] Submodels created")
 
     def __del__(self):
