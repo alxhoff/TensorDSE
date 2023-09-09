@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 import argparse
@@ -39,6 +38,7 @@ def ProfileModel(
         platform: str,
         usbmon: int,
         ) -> None:
+
     from utils.benchmark import ProfileModelLayers
     from utils.analysis import AnalyzeModelResults
 
@@ -109,7 +109,7 @@ def ProfileModel(
             model_summary=model_summary_json,
             count=count,
             platform=platform,
-            usbmon_bus=args.usbmon
+            usbmon_bus=usbmon
             )
 
     log.info("Models deployed")
@@ -120,6 +120,8 @@ def ProfileModel(
 
     log.info("Analyzed and merged results")
 
+    log.info("Final Clean up")
+    splitter.Clean(True)
 
 def GetArgs() -> argparse.Namespace:
     """Argument parser, returns the Namespace containing all of the arguments.
