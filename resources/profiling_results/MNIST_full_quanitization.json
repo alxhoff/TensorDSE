@@ -1,0 +1,513 @@
+{
+    "models": [
+        {
+            "name": "MNIST_full_quanitization",
+            "runs": 3,
+            "layers": [
+                {
+                    "name": "conv_2d",
+                    "path": {
+                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_0_conv_2d_bm/submodel_0_conv_2d_bm.tflite",
+                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_0_conv_2d_bm/submodel_0_conv_2d_bm.tflite",
+                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_0_conv_2d_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "28",
+                                    "28",
+                                    "1"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.24642066666666665,
+                            "median": 0.036077,
+                            "standard_deviation": 0.36534136945647605,
+                            "avg_absolute_deviation": 114.1298574343963,
+                            "distribution": "dweibull",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "28",
+                                    "28",
+                                    "1"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.04021466666666667,
+                            "median": 0.036187,
+                            "standard_deviation": 0.008184032400554958,
+                            "avg_absolute_deviation": 15.611772377131619,
+                            "distribution": "erlang",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "28",
+                                    "28",
+                                    "1"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.6703006666666667,
+                            "median": 0.670845,
+                            "standard_deviation": 0.023954138981256118,
+                            "avg_absolute_deviation": 2.409035016790147,
+                            "distribution": "chi",
+                            "usb": {
+                                "send": {
+                                    "mean": 7.466666666659331e-05,
+                                    "median": 8.900000000000574e-05,
+                                    "standard_deviation": 3.4789845261616554e-05,
+                                    "avg_absolute_deviation": 35.41666666662949
+                                },
+                                "recv": {
+                                    "mean": 0.00035600000000002296,
+                                    "median": 0.00035199999999990794,
+                                    "standard_deviation": 1.248999599694262e-05,
+                                    "avg_absolute_deviation": 2.6217228464755866
+                                },
+                                "communication": {
+                                    "mean": 0.0004306666666666163,
+                                    "median": 0.0004349999999999632,
+                                    "standard_deviation": 2.3797758997872655e-05,
+                                    "avg_absolute_deviation": 3.973168214614322
+                                },
+                                "inference": {
+                                    "mean": 2.4333333333329914e-05,
+                                    "median": 7.000000000090267e-06,
+                                    "standard_deviation": 3.444318994098033e-05,
+                                    "avg_absolute_deviation": 108.6757990857413
+                                },
+                                "total": {
+                                    "mean": 0.00045499999999994617,
+                                    "median": 0.00045399999999995444,
+                                    "standard_deviation": 1.3527749258357055e-05,
+                                    "avg_absolute_deviation": 2.051282051265366
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "fully_connected",
+                    "path": {
+                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_4_fully_connected_bm/submodel_4_fully_connected_bm.tflite",
+                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_4_fully_connected_bm/submodel_4_fully_connected_bm.tflite",
+                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_4_fully_connected_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "128"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.008285333333333334,
+                            "median": 0.005039,
+                            "standard_deviation": 0.005796881949232132,
+                            "avg_absolute_deviation": 53.8515180774595,
+                            "distribution": "erlang",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "128"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.008775999999999999,
+                            "median": 0.005119,
+                            "standard_deviation": 0.006508083204753916,
+                            "avg_absolute_deviation": 57.07991491947736,
+                            "distribution": "chi",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "128"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.25108966666666666,
+                            "median": 0.24226,
+                            "standard_deviation": 0.024097904812106257,
+                            "avg_absolute_deviation": 7.239733304658319,
+                            "distribution": "erlang",
+                            "usb": {
+                                "send": {
+                                    "mean": 8.200000000006351e-05,
+                                    "median": 8.000000000008001e-05,
+                                    "standard_deviation": 6.244997998346866e-06,
+                                    "avg_absolute_deviation": 5.691056910517739
+                                },
+                                "recv": {
+                                    "mean": 6.999999999971844e-05,
+                                    "median": 6.799999999973494e-05,
+                                    "standard_deviation": 3.4641016151091695e-06,
+                                    "avg_absolute_deviation": 3.809523809507699
+                                },
+                                "communication": {
+                                    "mean": 0.00015199999999978195,
+                                    "median": 0.0001509999999997902,
+                                    "standard_deviation": 4.582575694918025e-06,
+                                    "avg_absolute_deviation": 2.192982456125403
+                                },
+                                "inference": {
+                                    "mean": 1.1333333333437187e-05,
+                                    "median": 1.100000000020529e-05,
+                                    "standard_deviation": 4.509249752780214e-06,
+                                    "avg_absolute_deviation": 27.45098039138854
+                                },
+                                "total": {
+                                    "mean": 0.00016333333333321912,
+                                    "median": 0.00016399999999983095,
+                                    "standard_deviation": 4.041451884214671e-06,
+                                    "avg_absolute_deviation": 1.7687074829395608
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "max_pool_2d",
+                    "path": {
+                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_1_max_pool_2d_bm/submodel_1_max_pool_2d_bm.tflite",
+                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_1_max_pool_2d_bm/submodel_1_max_pool_2d_bm.tflite",
+                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_1_max_pool_2d_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "26",
+                                    "26",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.056659,
+                            "median": 0.056245,
+                            "standard_deviation": 0.0017990875465079517,
+                            "avg_absolute_deviation": 2.317960665266477,
+                            "distribution": "betaprime",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "26",
+                                    "26",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.05595066666666667,
+                            "median": 0.055533,
+                            "standard_deviation": 0.0011356435767146912,
+                            "avg_absolute_deviation": 1.53150791570352,
+                            "distribution": "erlang",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "26",
+                                    "26",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.5078493333333334,
+                            "median": 0.497163,
+                            "standard_deviation": 0.03933471012138431,
+                            "avg_absolute_deviation": 5.720025449367749,
+                            "distribution": "betaprime",
+                            "usb": {
+                                "send": {
+                                    "mean": 5.2333333333394925e-05,
+                                    "median": 4.900000000018778e-05,
+                                    "standard_deviation": 6.6583281183873964e-06,
+                                    "avg_absolute_deviation": 9.766454352286672
+                                },
+                                "recv": {
+                                    "mean": 4.399999999993298e-05,
+                                    "median": 4.399999999993298e-05,
+                                    "standard_deviation": 2.9999999999752447e-06,
+                                    "avg_absolute_deviation": 4.5454545454239605
+                                },
+                                "communication": {
+                                    "mean": 9.63333333333279e-05,
+                                    "median": 9.600000000009601e-05,
+                                    "standard_deviation": 4.509249752780214e-06,
+                                    "avg_absolute_deviation": 3.2295271048990144
+                                },
+                                "inference": {
+                                    "mean": 0.00013933333333326914,
+                                    "median": 0.00014300000000000423,
+                                    "standard_deviation": 1.0969655114537111e-05,
+                                    "avg_absolute_deviation": 5.901116427409851
+                                },
+                                "total": {
+                                    "mean": 0.00023566666666659705,
+                                    "median": 0.00023499999999998522,
+                                    "standard_deviation": 1.3012814197112207e-05,
+                                    "avg_absolute_deviation": 3.771805751945846
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "reshape",
+                    "path": {
+                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_2_reshape_bm/submodel_2_reshape_bm.tflite",
+                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_2_reshape_bm/submodel_2_reshape_bm.tflite",
+                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_2_reshape_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "13",
+                                    "13",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.000488,
+                            "median": 0.000181,
+                            "standard_deviation": 0.0005404229824868664,
+                            "avg_absolute_deviation": 85.24590163934425,
+                            "distribution": "exponweib",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "13",
+                                    "13",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00039066666666666666,
+                            "median": 0.00019,
+                            "standard_deviation": 0.0003641432868162385,
+                            "avg_absolute_deviation": 71.7292377701934,
+                            "distribution": "chi",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "13",
+                                    "13",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.29178133333333334,
+                            "median": 0.300137,
+                            "standard_deviation": 0.01797169508792461,
+                            "avg_absolute_deviation": 4.713194660232625,
+                            "distribution": "exponpow",
+                            "usb": {
+                                "send": {
+                                    "mean": 1.866666666661132e-05,
+                                    "median": 1.7999999999851468e-05,
+                                    "standard_deviation": 2.081665999757104e-06,
+                                    "avg_absolute_deviation": 8.333333334522857
+                                },
+                                "recv": {
+                                    "mean": 7.133333333323814e-05,
+                                    "median": 7.199999999984996e-05,
+                                    "standard_deviation": 2.0816659995082146e-06,
+                                    "avg_absolute_deviation": 2.1806853582864805
+                                },
+                                "communication": {
+                                    "mean": 8.999999999984946e-05,
+                                    "median": 9.099999999984121e-05,
+                                    "standard_deviation": 3.6055512757216295e-06,
+                                    "avg_absolute_deviation": 2.962962963162771
+                                },
+                                "inference": {
+                                    "mean": 7.466666666674134e-05,
+                                    "median": 7.400000000012952e-05,
+                                    "standard_deviation": 1.154700538284258e-06,
+                                    "avg_absolute_deviation": 1.1904761903770613
+                                },
+                                "total": {
+                                    "mean": 0.0001646666666665908,
+                                    "median": 0.00016499999999997073,
+                                    "standard_deviation": 4.50924975301001e-06,
+                                    "avg_absolute_deviation": 1.8893387315291599
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "softmax",
+                    "path": {
+                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_5_softmax_bm/submodel_5_softmax_bm.tflite",
+                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_5_softmax_bm/submodel_5_softmax_bm.tflite",
+                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_5_softmax_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "10"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0026383333333333332,
+                            "median": 0.00025,
+                            "standard_deviation": 0.004170535257414009,
+                            "avg_absolute_deviation": 121.68456517161508,
+                            "distribution": "dweibull",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "10"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.000755,
+                            "median": 0.000271,
+                            "standard_deviation": 0.0008644235073157139,
+                            "avg_absolute_deviation": 88.12362030905076,
+                            "distribution": "exponweib",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "10"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.2785803333333333,
+                            "median": 0.311077,
+                            "standard_deviation": 0.06275349336358362,
+                            "avg_absolute_deviation": 17.310945217078817,
+                            "distribution": "exponweib",
+                            "usb": {
+                                "send": {
+                                    "mean": 8.60000000000305e-05,
+                                    "median": 9.000000000014552e-05,
+                                    "standard_deviation": 7.81024967583273e-06,
+                                    "avg_absolute_deviation": 6.976744185986466
+                                },
+                                "recv": {
+                                    "mean": 8.16666666668316e-05,
+                                    "median": 0.00010399999999988196,
+                                    "standard_deviation": 4.130778780476485e-05,
+                                    "avg_absolute_deviation": 38.91156462565207
+                                },
+                                "communication": {
+                                    "mean": 0.0001676666666668621,
+                                    "median": 0.00019400000000002748,
+                                    "standard_deviation": 4.9115510109483625e-05,
+                                    "avg_absolute_deviation": 22.531477799753368
+                                },
+                                "inference": {
+                                    "mean": 8.333333333165882e-06,
+                                    "median": 4.999999999810711e-06,
+                                    "standard_deviation": 7.57187779428575e-06,
+                                    "avg_absolute_deviation": 69.33333333375967
+                                },
+                                "total": {
+                                    "mean": 0.000176000000000028,
+                                    "median": 0.0001989999999998382,
+                                    "standard_deviation": 4.158124577250034e-05,
+                                    "avg_absolute_deviation": 18.1818181817774
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
