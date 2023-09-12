@@ -58,14 +58,18 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict, hardware_summary:Dic
                 "input"                     : {
                         "shape"   : delegate.input_shape,
                         "type"    : delegate.input_datatype
-                    },
-                "mean"                      : a.mean,
-                "median"                    : a.median,
-                "standard_deviation"        : a.std_deviation,
-                "avg_absolute_deviation"    : a.avg_absolute_deviation,
-                "distribution"              : a.distribution_name,
-                "usb"                       : process_streams(delegate.timers, delegate.results)         
-            }
+                        },
+                    "mean"                      : a.mean,
+                    "median"                    : a.median,
+                    "standard_deviation"        : a.std_deviation,
+                    "avg_absolute_deviation"    : a.avg_absolute_deviation,
+                    "distribution"              : a.distribution_name,
+                    "usb"                       : process_streams(delegate.timers, delegate.results),
+                    "mean_computation"          : 0
+                    }
+
+            if (delegate == "tpu"):
+                delegate_dict["mean"] = delegate_dict["mean"] - (delegate_dict["usb"]["communication"]["mean"])
 
             layer_dict["delegates"].append(delegate_dict)
             layer_dict["path"][delegate_name] = delegate.model_path
