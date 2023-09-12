@@ -76,7 +76,7 @@ def ProfileModel(
             sys.exit(-1)
     else:
         log.error("The provided Hardware Summary is empty!")
-            sys.exit(-1)
+        sys.exit(-1)
 
     if model_summary_path is not None:
         model_summary_json = ReadJSON(model_summary_path)
@@ -217,13 +217,13 @@ if __name__ == "__main__":
         sys.exit('Count was not greater than 2')
 
     ProfileModel(
-            args.model,
-            args.count,
-            args.hardwaresummary,
-            os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
-            args.platform,
-            args.usbmon,
-            )
+        args.model,
+        args.count,
+        args.hardwaresummary,
+        os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
+        args.platform,
+        args.usbmon,
+    )
 
     log.info("[PROFILER] Model {} profiled".format(args.model))
     print("[PROFILER] Finished")

@@ -64,7 +64,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict, hardware_summary:Dic
                     "standard_deviation"        : a.std_deviation,
                     "avg_absolute_deviation"    : a.avg_absolute_deviation,
                     "distribution"              : a.distribution_name,
-                    "usb"                       : process_streams(delegate.timers, delegate.results)
+                    "usb"                       : process_streams(delegate.timers, delegate.results),
                     "mean_computation"          : 0
                     }
 
@@ -88,7 +88,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict, hardware_summary:Dic
     ExportResults(results_path, data)
 
 def MergeResults(parent_model:str, layers:dict, clean:bool=True):
-    from main import RESULTS_FOLDER
+    from .analysis import RESULTS_FOLDER
     from ..splitter.logger import log
     from utils import load_json
     import os
@@ -103,21 +103,21 @@ def MergeResults(parent_model:str, layers:dict, clean:bool=True):
             name = f"{l.model_name}_{l.index}"
             if (os.path.isfile(file) and name in names):
                 j = load_json(file)
-                    for k,v in enumerate(d):
-                        delegates = [i["device"] for i in v["delegates"]]
-                        if (v["name"] == name):
-                            d[k]["path"][device] = j["path"][device]
-                            if device in delegates:
-                                for x,dele in enumerate(d[k]["delegates"]):
-                                    if dele["device"] == device:
-                                        d[k]["delegates"][x] = j["delegates"][0]
-                                        break
-                            else:
-                                d[k]["delegates"].append(j["delegates"][0])
-                            print(f"Merging {name} run on {device} onto the results from {parent_model}!")
+                for k,v in enumerate(d):
+                    delegates = [i["device"] for i in v["delegates"]]
+                    if (v["name"] == name):
+                        d[k]["path"][device] = j["path"][device]
+                        if device in delegates:
+                            for x,dele in enumerate(d[k]["delegates"]):
+                                if dele["device"] == device:
+                                    d[k]["delegates"][x] = j["delegates"][0]
+                                    break
+                        else:
+                            d[k]["delegates"].append(j["delegates"][0])
+                        print(f"Merging {name} run on {device} onto the results from {parent_model}!")
 
-                    if clean:
-                        os.system(f"rm -f {file}")
+                if clean:
+                    os.system(f"rm -f {file}")
 
 
     data["models"][0]["layers"] = d

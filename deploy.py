@@ -47,7 +47,7 @@ def SplitForDeployment(model_path: str, model_summary: dict):
     return splitter.model_layer_sequences
 
 
-def DeployLayer(m: Model):
+def DeployLayer(m: Model, platform: str):
     from utils.splitter.split import SUB_DIR, COMPILED_DIR
     from utils.benchmark import GetArraySizeFromShape
     from backend.distributed_inference import distributed_inference
@@ -84,6 +84,7 @@ def DeployLayer(m: Model):
             len(m.input_vector),
             len(output_data_vector),
             delegate_type,
+            platform,
             1,
             delegate_index
             )
@@ -123,7 +124,7 @@ def AnalyzeDeploymentResults(models: list) -> None:
         json.dump(result, json_file, indent=4)
 
 
-def DeployModel(model_path: str, model_summary_path: str, hw_summary_path: str, data_module : str = None) -> None:
+def DeployModel(model_path: str, model_summary_path: str, hw_summary_path: str, platform: str, data_module : str = None) -> None:
     from utils.splitter.utils import ReadJSON
     from utils.splitter.logger import log
 
@@ -158,7 +159,7 @@ def DeployModel(model_path: str, model_summary_path: str, hw_summary_path: str, 
             elif j < len(model_sequences):
                 m.input_vector = copy.deepcopy(models[len(models) - 1].output_vector)
 
-            m = DeployLayer(m)
+            m = DeployLayer(m, platform)
             models.append(m)
     AnalyzeDeploymentResults(models=models)
 
@@ -209,6 +210,12 @@ parser.add_argument(
         default="resources/architecture_summaries/example_output_architecture_summary.json",
         help="Hardware summary file to tell benchmarking which devices to benchmark, by default all devices will be benchmarked",
         )
+parser.add_argument(
+            "-p",
+            "--platform",
+            default="desktop",
+            help="Platform supporting the profiling/deployment process",
+            )
 
 if __name__ == "__main__":
     import os
@@ -217,12 +224,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.summary:
-        DeployModel(args.model, args.summary, args.hardwaresummary, args.dataset)
+        DeployModel(args.model, args.summary, args.hardwaresummary, args.platform, args.dataset)
     else:
         DeployModel(
                 args.model,
                 os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
                 args.hardwaresummary,
+                args.platform,
                 args.dataset
                 )
 

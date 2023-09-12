@@ -46,7 +46,6 @@ class Model:
             "float16"   :  np.float16,
             "float32"   :  np.float32,
             "float64"   :  np.float64,
-            "float128"  :  np.float128
         }
 
         t = types.get(datatype, ValueError("Input datatype is unknown!"))
