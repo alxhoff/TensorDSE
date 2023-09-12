@@ -97,6 +97,8 @@ done
 DEBUG_MODE=1
 TEST_MODE=2
 SHELL_MODE=3
+DSE_ONLY_MODE=4
+NO_DEPLOY_MODE=5
 
 mode="$MODE"
 
@@ -137,16 +139,35 @@ run_full_flow() {
     fi
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
     popd
-    # python3 deploy.py -m $MODEL -s $MODEL_SUMMARY_W_MAPPINGS -d $DATASET
+    python3 deploy.py -m $MODEL -s $MODEL_SUMMARY_W_MAPPINGS -d $DATASET
+}
+
+run_no_deploy() {
+    git fetch origin
+    git reset --hard origin/master
+    python3 profiler.py -u $USBMON -m $MODEL -c $COUNT
+    cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
+    pushd DSE/TensorDSE
+    if [ -z ${GA_CONFIG+x} ];
+    then
+      echo gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+      gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    else
+      echo gradle6 run --args="--model $MODEL --config $GA_CONFIG --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+      gradle6 run --args="--model $MODEL --config $GA_CONFIG --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    fi
+    cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
+    popd
 }
 
 run_just_dse() {
     git fetch origin
     git reset --hard origin/master
     pushd DSE/TensorDSE
-    gradle6 run --debug --args="--model $MODEL --config $GA_CONFIG --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
-    popd
+    echo gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"    popd
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
+    popd
 }
 
 main() {
@@ -164,7 +185,14 @@ main() {
         test
     elif [ "$mode" -eq $SHELL_MODE ]; then
         bash
+    elif [ "$mode" -eq $DSE_ONLY_MODE ]; then
+        echo "RUNNING JUST DSE"
+        run_just_dse
+    elif [ "$mode" -eq $NO_DEPLOY_MODE ]; then
+        echo "RUNNING NO DEPLOY"
+        run_no_deploy
     else
+        echo "RUNNING FULL FLOW"
         run_full_flow
     fi
 }
