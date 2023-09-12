@@ -94,7 +94,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict, hardware_summary:Dic
     ExportResults(results_path, data)
 
 def MergeResults(parent_model:str, layers:dict, clean:bool=True):
-    from main import RESULTS_FOLDER
+    from .analysis import RESULTS_FOLDER
     from ..splitter.logger import log
     from utils import load_json
     import os

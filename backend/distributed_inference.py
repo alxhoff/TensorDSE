@@ -10,6 +10,7 @@ def distributed_inference(
     input_data_size:int,
     output_data_size:int,
     hardware_target:str,
+    platform: str,
     benchmarking_count: int,
     core_index: int
 ):
@@ -24,6 +25,7 @@ def distributed_inference(
 
     tflite_model_path_ptr = _ffi.new("char[]", tflite_model_path.encode("utf-8"))
     hardware_target_ptr = _ffi.new("char[]", hardware_target.encode("utf-8"))
+    platform_ptr = _ffi.new("char[]", platform.encode("utf-8"))
 
     input_data_ptr = _ffi.cast("int8_t*", input_data.ctypes.data)
     output_data_ptr = _ffi.cast("int8_t*", output_data.ctypes.data)
@@ -35,6 +37,7 @@ def distributed_inference(
                                                                                       input_data_size,
                                                                                       output_data_size,
                                                                                       hardware_target_ptr,
+                                                                                      platform_ptr,
                                                                                       benchmarking_count,
                                                                                       core_index)
 

@@ -10,6 +10,7 @@ int distributed_inference_wrapper(std::string& tflite_model_path, int8_t* input_
                                                                  const unsigned int input_data_size,
                                                                  const unsigned int output_data_size,
                                                                  std::string& hardware_target,
+                                                                 std::string& platform,
                                                                  const unsigned int benchmarking_count,
                                                                  const unsigned int core_index);
 

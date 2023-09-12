@@ -27,10 +27,10 @@ class Splitter:
         log.info("Initializing Source Model ...")
         self.source_model = Model(self.source_model_path, self.schema_path)
         log.info(
-                "Source Model saved under: {}".format(
-                    os.path.join(MODELS_DIR, "source", "tflite")
-                    )
-                )
+            "Source Model saved under: {}".format(
+                os.path.join(MODELS_DIR, "source", "tflite")
+            )
+        )
         self.summary = model_summary
         self.submodel_list = multiprocessing.Manager().list()
 
@@ -40,9 +40,9 @@ class Splitter:
         if not os.path.exists(self.schema_path):
             log.info("    File schema.fbs was not found, downloading...")
             urllib.request.urlretrieve(
-                    "https://github.com/tensorflow/tensorflow/raw/master/tensorflow/lite/schema/schema.fbs",
-                    "schema.fbs",
-                    )
+                "https://github.com/tensorflow/tensorflow/raw/master/tensorflow/lite/schema/schema.fbs",
+                "schema.fbs",
+            )
             log.info("    Downloaded schema.fbs")
         else:
             log.info("    File schema.fbs found.")
@@ -62,8 +62,8 @@ class Splitter:
                     os.mkdir(ext_dir)
 
         model_filename = source_model_path.split("/")[
-                len(source_model_path.split("/")) - 1
-                ]
+            len(source_model_path.split("/")) - 1
+        ]
         self.source_model_path = os.path.join(SOURCE_DIR, "tflite", model_filename)
         CopyFile(os.path.join(WORK_DIR, source_model_path), self.source_model_path)
 
@@ -110,8 +110,8 @@ class Splitter:
                     log.info("Benchmarking Model #{0}, Layer #{1}".format(i, j))
                 elif layer[2] in ["cpu", "gpu", "tpu"]:
                     log.info(
-                            "Model #{0}, layer #{1} mapped to {2}".format(i, j, layer[2])
-                            )
+                        "Model #{0}, layer #{1} mapped to {2}".format(i, j, layer[2])
+                    )
 
     def CreateSubmodelLayerSequences(self) -> None:
         """From the mappings created by CreateLayerMatrix, sequential layers
@@ -131,9 +131,9 @@ class Splitter:
 
             for layer in model:
                 if (
-                        prev_layers_hardware is not None
-                        and prev_layers_hardware != layer[2]
-                        ):
+                    prev_layers_hardware is not None
+                    and prev_layers_hardware != layer[2]
+                ):
                     layer_seuqences.append(current_sequence)
                     current_sequence = []
 
@@ -148,8 +148,8 @@ class Splitter:
         log.info("OK\n")
 
     def CompileAndSaveSubmodel(
-            self, layer_sequence, model_index, sequence_index
-            ) -> None:
+        self, layer_sequence, model_index, sequence_index
+    ) -> None:
         """Compiles a submodel from a sequence of layers
 
         Args:
@@ -162,45 +162,46 @@ class Splitter:
         """
 
         log.info(
-                "Initializing shell model for layer {} from model {} ...".format(
-                    sequence_index, model_index
-                    )
-                )
-
-        if len(layer_sequence) > 1:
+            "Initializing shell model for layer {} from model {} ...".format(
+                sequence_index, model_index
+            )
+        )
+        
+        if len(layer_sequence) > 2:
             ops_range = '-'.join(map(str, [layer_sequence[0][0], layer_sequence[-1][0]]))
+            ops_name = f"ops{ops_range}"
         else:
-            ops_range = layer_sequence[0][1]
+            ops_name = layer_sequence[0][1]
 
         submodel = Submodel(
-                self.source_model.json,
-                f"ops{ops_range}",
-                layer_sequence[0][2],
-                sequence_index,
-                )
+            self.source_model.json,
+            ops_name,
+            layer_sequence[0][2],
+            sequence_index,
+        )
         log.info("OK")
         log.info(
-                "Adding Operations of Index ("
-                + ", ".join(str(op[0]) for op in layer_sequence)
-                + ") to Shell Model ..."
-                )
+            "Adding Operations of Index ("
+            + ", ".join(str(op[0]) for op in layer_sequence)
+            + ") to Shell Model ..."
+        )
         submodel.AddOps(layer_sequence)
         log.info("OK")
         log.info(
-                "Saving Model {} | Submodel {} | Operations: {} | Target HW: {} ...".format(
-                    model_index,
-                    sequence_index,
-                    ", ".join([str(layer[1]) for layer in layer_sequence]),
-                    layer_sequence[0][2],
-                    )
-                )
+            "Saving Model {} | Submodel {} | Operations: {} | Target HW: {} ...".format(
+                model_index,
+                sequence_index,
+                ", ".join([str(layer[1]) for layer in layer_sequence]),
+                layer_sequence[0][2],
+            )
+        )
         submodel.Save()
         log.info("OK")
         log.info(
-                "Converting Submodel {0} from JSON to TFLite ...".format(
-                    str(sequence_index)
-                    )
-                )
+            "Converting Submodel {0} from JSON to TFLite ...".format(
+                str(sequence_index)
+            )
+        )
         submodel.Convert("json", "tflite")
         self.submodel_list.append(submodel)
         log.info("OK\n")
@@ -226,10 +227,10 @@ class Splitter:
 
         # Else each individual layer will be run in its own inference session
         # which gives clearer overhead vs. execution time numbers
-    else:
-        for i, model in enumerate(self.models):
-            with multiprocessing.Pool() as pool:
-                items = [([layer], i, j) for j, layer in enumerate(model)]
+        else:
+            for i, model in enumerate(self.models):
+                with multiprocessing.Pool() as pool:
+                    items = [([layer], i, j) for j, layer in enumerate(model)]
                     pool.starmap(self.CompileAndSaveSubmodel, items)
                     # for j, layer in enumerate(model):
                     # self.CompileAndSaveSubmodel(layer_sequence=[layer], model_index=i, sequence_index=j)
