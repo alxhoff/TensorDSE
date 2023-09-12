@@ -204,7 +204,7 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
                 print(e)
             tries += 1
 
-        m.results = inference_times_vector.tolist()
+        m.results = [t/1000000000.0 for t in inference_times_vector.tolist()]
 
     return m
 
