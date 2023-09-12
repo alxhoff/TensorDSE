@@ -69,8 +69,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict, hardware_summary:Dic
                     }
 
             if (delegate == "tpu"):
-                delegate_dict["mean_computation"] = delegate_dict["mean"] -
-                (delegate_dict["usb"]["total"]["mean"] * 10**9)
+                delegate_dict["mean"] = delegate_dict["mean"] - (delegate_dict["usb"]["communication"]["mean"])
 
             layer_dict["delegates"].append(delegate_dict)
             layer_dict["path"][delegate_name] = delegate.model_path
