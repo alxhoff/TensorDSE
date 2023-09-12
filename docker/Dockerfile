@@ -16,8 +16,9 @@ RUN set -ex
 # Base System
 RUN apt-get update \
     && apt-get install -y \
-    sudo build-essential locales wget curl gnupg curl zip unzip tar openjdk-11-jdk \
+    sudo build-essential locales wget curl gnupg curl zip unzip tar openjdk-11-jdk kmod \
     python3 python3-pip git vim usbutils udev lshw software-properties-common && \
+
     apt-get clean && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen && update-locale
