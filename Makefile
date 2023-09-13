@@ -4,6 +4,14 @@ CWD := $(shell pwd)
 FOLDER := $(shell basename ${CWD})
 REPO := tensorflow/tensorflow
 
+ifndef BRANCH
+override BRANCH = "master"
+$(info Running branch $(BRANCH))
+endif
+ifndef USBMON
+$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
+$(info Finding USBMON as $(USBMON))
+endif
 ifndef MODEL
 override MODEL = "resources/models/example_models/MNIST_full_quanitization.tflite"
 $(info Using default MODEL: $(MODEL))
@@ -88,23 +96,23 @@ shell:
 .PHONY: dse
 dse:
 	git fetch https://git@github.com/alxhoff/TensorDSE.git
-	git reset --hard origin/master
-	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
+	git reset --hard origin/$(BRANCH)
 	$(info USBMON is $(USBMON))
 	${MAKE} -C docker dse USBMON=$(USBMON) DATASET=$(DATASET) COUNT=$(COUNT) MODEL_SUMMARY_W_MAPPINGS=$(MODEL_SUMMARY_W_MAPPINGS) MODEL=$(MODEL) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) OUTPUT_NAME=$(OUTPUT_NAME) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
 
 .PHONY: nodeploy
 nodeploy: 
 	git fetch https://git@github.com/alxhoff/TensorDSE.git
-	git reset --hard origin/master
-	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
+	git reset --hard origin/$(BRANCH)
 	$(info USBMON is $(USBMON))
 	${MAKE} -C docker nodeploy USBMON=$(USBMON) DATASET=$(DATASET) COUNT=$(COUNT) MODEL_SUMMARY_W_MAPPINGS=$(MODEL_SUMMARY_W_MAPPINGS) MODEL=$(MODEL) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) OUTPUT_NAME=$(OUTPUT_NAME) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
 
 .PHONY: build
 build:
+	git fetch https://git@github.com/alxhoff/TensorDSE.git
+	git reset --hard origin/$(BRANCH)
 	@if ! [ $(shell docker image ls | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ') ]; then\
-		${MAKE} -C docker build;\
+		${MAKE} -C docker build BRANCH=$(BRANCH);\
 	fi
 
 .PHONY: forcebuild
@@ -115,15 +123,13 @@ forcebuild:
 ifdef GA_CONFIG
 run:
 	git fetch https://git@github.com/alxhoff/TensorDSE.git
-	git reset --hard origin/master
-	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
+	git reset --hard origin/$(BRANCH)
 	$(info USBMON is $(USBMON))
 	@${MAKE} -C docker run GA_CONFIG=$(GA_CONFIG) USBMON=$(USBMON) DATASET=$(DATASET) COUNT=$(COUNT) MODEL_SUMMARY_W_MAPPINGS=$(MODEL_SUMMARY_W_MAPPINGS) MODEL=$(MODEL) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) OUTPUT_NAME=$(OUTPUT_NAME) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
 else
 run:
 	git fetch https://git@github.com/alxhoff/TensorDSE.git
-	git reset --hard origin/master
-	@$(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
+	git reset --hard origin/$(BRANCH)
 	$(info USBMON is $(USBMON))
 	@${MAKE} -C docker run USBMON=$(USBMON) DATASET=$(DATASET) COUNT=$(COUNT) MODEL_SUMMARY_W_MAPPINGS=$(MODEL_SUMMARY_W_MAPPINGS) MODEL=$(MODEL) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) OUTPUT_NAME=$(OUTPUT_NAME) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE)
 endif

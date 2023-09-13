@@ -8,6 +8,7 @@ LABEL Maintainer="Alex Hoffman"
 ARG WLSACCESSID
 ARG WLSSECRET
 ARG LICENSEID
+ARG BRANCH
 
 SHELL ["/bin/bash", "-l", "-c"] 
 
@@ -74,7 +75,7 @@ RUN chmod +x /home/install_flatbuffers.sh && /home/install_flatbuffers.sh
 
 # Sources
 COPY scripts/pull_sources.sh /home/pull_sources.sh
-RUN chmod +x /home/pull_sources.sh && /home/pull_sources.sh
+RUN chmod +x /home/pull_sources.sh && /home/pull_sources.sh --BRANCH=$BRANCH
 
 # TF Deps
 COPY scripts/download_tf_deps.sh /home/download_tf_deps.sh

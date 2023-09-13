@@ -63,7 +63,7 @@ build:
 	@echo $$GUROBI_SECRET
 	@echo $$GUROBI_LICENCEID
 	docker build -t ${REPO}:${TAG} --build-arg WLSACCESSID=$$GUROBI_ACCESSID \
-		--build-arg WLSSECRET=$$GUROBI_SECRET --build-arg LICENSEID=$$GUROBI_LICENCEID .
+		--build-arg WLSSECRET=$$GUROBI_SECRET --build-arg LICENSEID=$$GUROBI_LICENCEID --build-arg BRANCH=$$BRANCH .
 
 ifdef GA_CONFIG
 run: $(if $(call exist-docker-image),,build)
