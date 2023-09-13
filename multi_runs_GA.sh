@@ -4,7 +4,7 @@ GENERATIONS=50
 POPULATION=200
 BENCHMARK_TEST_COUNT=20
 
-for COUNT in 4 5
+for COUNT in 5
 do
     # POPULATION=$(( COUNT * 40 ))
     MODEL_SUMMARY="../../resources/model_summaries/example_summaries/MNIST/MNIST_multi_$COUNT.json"
