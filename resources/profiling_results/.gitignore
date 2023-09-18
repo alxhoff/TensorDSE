@@ -1,0 +1,2 @@
+*.json
+!MNIST_full_quanitization.json

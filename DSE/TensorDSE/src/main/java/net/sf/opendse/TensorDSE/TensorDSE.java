@@ -73,7 +73,7 @@ public class TensorDSE {
 		parser.addArgument("-g", "--generations").setDefault(25).type(int.class)
 				.help("Number of generations in the EA");
 
-		parser.addArgument("-v", "--verbose").setDefault(true).type(Boolean.class)
+		parser.addArgument("-v", "--verbose").setDefault(false).type(Boolean.class)
 				.help("Enables verbose output messages");
 		parser.addArgument("-u", "--visualise").setDefault(false).type(Boolean.class)
 				.help("If set, OpenDSE will visualise all specificatons");
@@ -83,7 +83,7 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary").setDefault(
-				"../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary.json")
+				"../../resources/model_summaries/example_summaries/MNIST/MNIST_multi_2.json")
 				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary").setDefault(
 				"../../resources/architecture_summaries/example_output_architecture_summary.json")
@@ -101,7 +101,7 @@ public class TensorDSE {
 		// ILP
 		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(true)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
-		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(100.0).help(
+		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(0.01).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
 		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
 				.help("Run Demo instead of solving input specification");
@@ -136,8 +136,7 @@ public class TensorDSE {
 	}
 
 	/**
-	 * @brief The specification module binds an evaluator to the problem's
-	 *        specification
+	 * @brief The specification module binds an evaluator to the problem's specification
 	 * @param specification_definition
 	 * @return Module
 	 */
@@ -148,15 +147,16 @@ public class TensorDSE {
 
 			@Override
 			protected void config() {
-				SpecificationWrapperInstance specification_wrapper = new SpecificationWrapperInstance(
-						specification_definition.getSpecification());
+				SpecificationWrapperInstance specification_wrapper =
+						new SpecificationWrapperInstance(
+								specification_definition.getSpecification());
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
 
 				EvaluatorMinimizeCost evaluator = new EvaluatorMinimizeCost("cost_of_mapping",
 						specification_definition, verbose, visualise);
 
-				Multibinder<ImplementationEvaluator> multibinder = Multibinder.newSetBinder(binder(),
-						ImplementationEvaluator.class);
+				Multibinder<ImplementationEvaluator> multibinder =
+						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
 				multibinder.addBinding().toInstance(evaluator);
 
 			}
@@ -309,15 +309,16 @@ public class TensorDSE {
 		// Specification contains, architecture and application graph as well as a
 		// generated
 		// set of possible mappings
-		SpecificationDefinition specification_definition = new SpecificationDefinition(models_description_file_path,
-				profiling_costs_file_path,
-				hardware_description_file_path);
+		SpecificationDefinition specification_definition =
+				new SpecificationDefinition(models_description_file_path, profiling_costs_file_path,
+						hardware_description_file_path);
 
 		String time_string = new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
 
 		if (args_namespace.getBoolean("ilpmapping") == true) {
 			try {
-				csv_writer.append(String.join(",", "Test", "Time", "Objective", "Exec Time", "Application"));
+				csv_writer.append(
+						String.join(",", "Test", "Time", "Objective", "Exec Time", "Application"));
 				csv_writer.write("\n");
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -334,7 +335,7 @@ public class TensorDSE {
 				if (args_namespace.getBoolean("demo") == true) {
 					// Run an ILP demo
 					ILPFormuation ilp_formulation = new ILPFormuation();
-					ilp_formulation.gurobiDSEExampleSixTask();
+					ilp_formulation.gurobiILPExampleSixTask();
 				} else {
 					// Solver contains the application, architecture, and possible mapping
 					// graphs as well as the list of starting tasks and the operation costs
@@ -342,7 +343,8 @@ public class TensorDSE {
 							args_namespace.getDouble("deactivationnumber"),
 							args_namespace.getBoolean("verbose"));
 					long startILP = System.currentTimeMillis();
-					Pair<Double, ArrayList<ArrayList<ILPTask>>> ret = schedule_solver.solveILPMappingAndSchedule();
+					Pair<Double, ArrayList<ArrayList<ILPTask>>> ret =
+							schedule_solver.solveILPMappingAndSchedule();
 					// Incremental average for all tests
 					obj_val = obj_val + ((ret.getValue0() - obj_val) / (test_runs + 1));
 					ArrayList<ArrayList<ILPTask>> models = ret.getValue1();
@@ -352,7 +354,8 @@ public class TensorDSE {
 					// Populate model summary with mapping information
 					for (ArrayList<ILPTask> model : models) {
 						for (ILPTask task : model) {
-							Pattern pat = Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
+							Pattern pat =
+									Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
 							Matcher mat = pat.matcher(task.getID());
 							if (mat.matches()) {
 								String layer_index = mat.group(2);
@@ -361,8 +364,7 @@ public class TensorDSE {
 								specification_definition.json_models
 										.get(Integer.parseInt(model_index)).getLayers()
 										.get(Integer.parseInt(layer_index))
-										.setMapping(task.getTarget_resource_string());
-								;
+										.setMapping(task.getTarget_resource_string());;
 							}
 						}
 					}
@@ -370,8 +372,7 @@ public class TensorDSE {
 
 				try {
 					csv_writer.append(String.join(",", Integer.toString(i + 1), time_string,
-							Double.toString(obj_val),
-							Double.toString(exec_time),
+							Double.toString(obj_val), Double.toString(exec_time),
 							models_description_file_path));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
@@ -493,8 +494,9 @@ public class TensorDSE {
 
 						for (Individual individual : archive) {
 
-							Specification implementation = ((ImplementationWrapper) individual.getPhenotype())
-									.getImplementation();
+							Specification implementation =
+									((ImplementationWrapper) individual.getPhenotype())
+											.getImplementation();
 
 							if (args_namespace.getBoolean("visualise"))
 								SpecificationViewer.view(implementation);
@@ -513,8 +515,7 @@ public class TensorDSE {
 									specification_definition.json_models
 											.get(Integer.parseInt(model_index)).getLayers()
 											.get(Integer.parseInt(layer_index))
-											.setMapping(mapped_device);
-									;
+											.setMapping(mapped_device);;
 								}
 							}
 
@@ -538,8 +539,7 @@ public class TensorDSE {
 									Integer.toString(ea_module.getOffspringsPerGeneration()),
 									Double.toString(ea_module.getCrossoverRate()),
 									Double.toString(objective_values[i]),
-									Double.toString(exec_time),
-									models_description_file_path));
+									Double.toString(exec_time), models_description_file_path));
 							csv_writer.append("\n");
 							csv_writer.flush();
 
