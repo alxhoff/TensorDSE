@@ -60,7 +60,7 @@ class UsbPacket:
 
     def find_transfer_type(self, packet):
         """Finds the urb transfer type of the overloaded packet."""
-        transfer_type = packet.usb.transfer_type
+        transfer_type = "0x{}".format(packet.usb.transfer_type[-2:])
         transfer_dict = {
             ""    :   None,
             "0x01":   "INTERRUPT",

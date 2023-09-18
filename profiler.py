@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 import argparse
@@ -25,20 +24,21 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
     from os import system
 
     command = "python3 resources/model_summaries/CreateModelSummary.py --model {} --outputdir {} --outputname {}".format(
-        model, output_dir, output_name
-    )
+            model, output_dir, output_name
+            )
 
     system(command)
 
 
 def ProfileModel(
-    model_path: str,
-    count: int,
-    hardware_summary_path: str,
-    model_summary_path: str,
-    platform: str,
-    usbmon: int,
-) -> None:
+        model_path: str,
+        count: int,
+        hardware_summary_path: str,
+        model_summary_path: str,
+        platform: str,
+        usbmon: int,
+        ) -> None:
+
     from utils.benchmark import ProfileModelLayers
     from utils.analysis import AnalyzeModelResults
 
@@ -53,13 +53,13 @@ def ProfileModel(
 
     hardware_to_benchmark = ["cpu", "gpu", "tpu"]
 
-    hardware_summary_json = None 
+    hardware_summary_json = None
 
     if hardware_summary_path is not None:
         hardware_summary_json = ReadJSON(hardware_summary_path)
 
         if hardware_summary_json is not None:
-            
+
             req_hardware = []
             if int(hardware_summary_json["CPU_count"]) > 0:
                 req_hardware.append("cpu")
@@ -75,8 +75,8 @@ def ProfileModel(
             log.error("Could not read provided hardware summary")
             sys.exit(-1)
     else:
-            log.error("The provided Hardware Summary is empty!")
-            sys.exit(-1)
+        log.error("The provided Hardware Summary is empty!")
+        sys.exit(-1)
 
     if model_summary_path is not None:
         model_summary_json = ReadJSON(model_summary_path)
@@ -104,13 +104,13 @@ def ProfileModel(
     # Deploy the generated models/layers onto the target test hardware using docker
 
     results_dict = ProfileModelLayers(
-        parent_model=model_name,
-        hardware_list=hardware_to_benchmark,
-        model_summary=model_summary_json,
-        count=count,
-        platform=platform,
-        usbmon_bus=args.usbmon
-    )
+            parent_model=model_name,
+            hardware_list=hardware_to_benchmark,
+            model_summary=model_summary_json,
+            count=count,
+            platform=platform,
+            usbmon_bus=usbmon
+            )
 
     log.info("Models deployed")
 
@@ -120,6 +120,8 @@ def ProfileModel(
 
     log.info("Analyzed and merged results")
 
+    log.info("Final Clean up")
+    splitter.Clean(True)
 
 def GetArgs() -> argparse.Namespace:
     """Argument parser, returns the Namespace containing all of the arguments.
@@ -128,59 +130,59 @@ def GetArgs() -> argparse.Namespace:
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            )
 
     parser.add_argument(
-        "-m",
-        "--model",
-        default="resources/models/example_models/MNIST_full_quanitization.tflite",
-        help="File path to the SOURCE .tflite file.",
-    )
+            "-m",
+            "--model",
+            default="resources/models/example_models/MNIST_full_quanitization.tflite",
+            help="File path to the SOURCE .tflite file.",
+            )
 
     parser.add_argument(
-        "-c",
-        "--count",
-        type=int,
-        default=2,
-        help="Number of times to measure inference.",
-    )
+            "-c",
+            "--count",
+            type=int,
+            default=2,
+            help="Number of times to measure inference.",
+            )
 
     parser.add_argument(
-        "-hs",
-        "--hardwaresummary",
-        type=str,
-        default="resources/architecture_summaries/example_output_architecture_summary.json",
-        help="Hardware summary file to tell benchmarking which devices to benchmark, by default all devices will be benchmarked",
-    )
+            "-hs",
+            "--hardwaresummary",
+            type=str,
+            default="resources/architecture_summaries/example_output_architecture_summary.json",
+            help="Hardware summary file to tell benchmarking which devices to benchmark, by default all devices will be benchmarked",
+            )
 
     parser.add_argument(
-        "-o",
-        "--summaryoutputdir",
-        default="resources/model_summaries/example_summaries/MNIST",
-        help="Directory where model summary should be saved",
-    )
+            "-o",
+            "--summaryoutputdir",
+            default="resources/model_summaries/example_summaries/MNIST",
+            help="Directory where model summary should be saved",
+            )
 
     parser.add_argument(
-        "-n",
-        "--summaryoutputname",
-        default="MNIST_full_quanitization_summary",
-        help="Name that the model summary should have",
-    )
+            "-n",
+            "--summaryoutputname",
+            default="MNIST_full_quanitization_summary",
+            help="Name that the model summary should have",
+            )
 
     parser.add_argument(
-        "-p",
-        "--platform",
-        default="desktop",
-        help="Platform supporting the profiling/deployment process",
-    )
+            "-p",
+            "--platform",
+            default="desktop",
+            help="Platform supporting the profiling/deployment process",
+            )
 
     parser.add_argument(
-        "-u",
-        "--usbmon",
-        default="usbmon0",
-        help="USB bus on which TPU is attached and thus which usbmon interface should be used for packet sniffing"
-    )
+            "-u",
+            "--usbmon",
+            default="usbmon0",
+            help="USB bus on which TPU is attached and thus which usbmon interface should be used for packet sniffing"
+            )
 
     args = parser.parse_args()
 
