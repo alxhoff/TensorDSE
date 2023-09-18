@@ -2,14 +2,14 @@
     "models": [
         {
             "name": "MNIST_full_quanitization",
-            "runs": 3,
+            "runs": 20,
             "layers": [
                 {
                     "name": "conv_2d",
                     "path": {
-                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_0_conv_2d_bm/submodel_0_conv_2d_bm.tflite",
-                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_0_conv_2d_bm/submodel_0_conv_2d_bm.tflite",
-                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_0_conv_2d_bm_edgetpu.tflite"
+                        "cpu": "/home/sources/TensorDSE/utils/splitter/models/sub/tflite/submodel_0_conv_2d_bm/submodel_0_conv_2d_bm.tflite",
+                        "gpu": "/home/sources/TensorDSE/utils/splitter/models/sub/tflite/submodel_0_conv_2d_bm/submodel_0_conv_2d_bm.tflite",
+                        "tpu": "/home/sources/TensorDSE/utils/splitter/models/sub/compiled/submodel_0_conv_2d_bm_edgetpu.tflite"
                     },
                     "delegates": [
                         {
@@ -23,11 +23,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.24642066666666665,
-                            "median": 0.036077,
-                            "standard_deviation": 0.36534136945647605,
-                            "avg_absolute_deviation": 114.1298574343963,
-                            "distribution": "dweibull",
+                            "mean": 3.892125e-05,
+                            "median": 2.877e-05,
+                            "standard_deviation": 8.76451570403726e-07,
+                            "avg_absolute_deviation": 1.2761377879586822,
+                            "distribution": "dgamma",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -45,11 +45,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.04021466666666667,
-                            "median": 0.036187,
-                            "standard_deviation": 0.008184032400554958,
-                            "avg_absolute_deviation": 15.611772377131619,
-                            "distribution": "erlang",
+                            "mean": 2.929745e-05,
+                            "median": 2.925e-05,
+                            "standard_deviation": 1.3125257481183696e-06,
+                            "avg_absolute_deviation": 2.6983577068994067,
+                            "distribution": "exponpow",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -67,41 +67,41 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.6703006666666667,
-                            "median": 0.670845,
-                            "standard_deviation": 0.023954138981256118,
-                            "avg_absolute_deviation": 2.409035016790147,
-                            "distribution": "chi",
+                            "mean": 0.0005196803,
+                            "median": 0.00050968,
+                            "standard_deviation": 3.949847243428669e-05,
+                            "avg_absolute_deviation": 4.1056299421009435,
+                            "distribution": "dweibull",
                             "usb": {
                                 "send": {
-                                    "mean": 7.466666666659331e-05,
-                                    "median": 8.900000000000574e-05,
-                                    "standard_deviation": 3.4789845261616554e-05,
-                                    "avg_absolute_deviation": 35.41666666662949
+                                    "mean": 7.009999999998406e-05,
+                                    "median": 6.799999999995698e-05,
+                                    "standard_deviation": 5.580982746838916e-06,
+                                    "avg_absolute_deviation": 6.47646219679276
                                 },
                                 "recv": {
-                                    "mean": 0.00035600000000002296,
-                                    "median": 0.00035199999999990794,
-                                    "standard_deviation": 1.248999599694262e-05,
-                                    "avg_absolute_deviation": 2.6217228464755866
+                                    "mean": 0.002914799999999995,
+                                    "median": 0.002835000000000143,
+                                    "standard_deviation": 0.00014763133314546608,
+                                    "avg_absolute_deviation": 4.0050775353362855
                                 },
                                 "communication": {
-                                    "mean": 0.0004306666666666163,
-                                    "median": 0.0004349999999999632,
-                                    "standard_deviation": 2.3797758997872655e-05,
-                                    "avg_absolute_deviation": 3.973168214614322
+                                    "mean": 0.002984899999999979,
+                                    "median": 0.002909999999999746,
+                                    "standard_deviation": 0.00014575390217762136,
+                                    "avg_absolute_deviation": 3.8550705216255934
                                 },
                                 "inference": {
-                                    "mean": 2.4333333333329914e-05,
-                                    "median": 7.000000000090267e-06,
-                                    "standard_deviation": 3.444318994098033e-05,
-                                    "avg_absolute_deviation": 108.6757990857413
+                                    "mean": 2.20000000000109e-05,
+                                    "median": 2.3999999999801958e-05,
+                                    "standard_deviation": 4.952405051014933e-06,
+                                    "avg_absolute_deviation": 19.09090909070173
                                 },
                                 "total": {
-                                    "mean": 0.00045499999999994617,
-                                    "median": 0.00045399999999995444,
-                                    "standard_deviation": 1.3527749258357055e-05,
-                                    "avg_absolute_deviation": 2.051282051265366
+                                    "mean": 0.0030068999999999903,
+                                    "median": 0.0029280000000000417,
+                                    "standard_deviation": 0.000147600420766772,
+                                    "avg_absolute_deviation": 3.8867271941202057
                                 }
                             }
                         }
@@ -110,9 +110,9 @@
                 {
                     "name": "fully_connected",
                     "path": {
-                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_4_fully_connected_bm/submodel_4_fully_connected_bm.tflite",
-                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_4_fully_connected_bm/submodel_4_fully_connected_bm.tflite",
-                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_4_fully_connected_bm_edgetpu.tflite"
+                        "cpu": "/home/sources/TensorDSE/utils/splitter/models/sub/tflite/submodel_4_fully_connected_bm/submodel_4_fully_connected_bm.tflite",
+                        "gpu": "/home/sources/TensorDSE/utils/splitter/models/sub/tflite/submodel_4_fully_connected_bm/submodel_4_fully_connected_bm.tflite",
+                        "tpu": "/home/sources/TensorDSE/utils/splitter/models/sub/compiled/submodel_4_fully_connected_bm_edgetpu.tflite"
                     },
                     "delegates": [
                         {
@@ -124,11 +124,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.008285333333333334,
-                            "median": 0.005039,
-                            "standard_deviation": 0.005796881949232132,
-                            "avg_absolute_deviation": 53.8515180774595,
-                            "distribution": "erlang",
+                            "mean": 4.5652e-06,
+                            "median": 4.3635e-06,
+                            "standard_deviation": 8.286418564831187e-07,
+                            "avg_absolute_deviation": 7.871725225619906,
+                            "distribution": "dgamma",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -144,11 +144,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.008775999999999999,
-                            "median": 0.005119,
-                            "standard_deviation": 0.006508083204753916,
-                            "avg_absolute_deviation": 57.07991491947736,
-                            "distribution": "chi",
+                            "mean": 4.59915e-06,
+                            "median": 4.408e-06,
+                            "standard_deviation": 7.916261926865282e-07,
+                            "avg_absolute_deviation": 7.383320831023123,
+                            "distribution": "cauchy",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -164,41 +164,41 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.25108966666666666,
-                            "median": 0.24226,
-                            "standard_deviation": 0.024097904812106257,
-                            "avg_absolute_deviation": 7.239733304658319,
-                            "distribution": "erlang",
+                            "mean": 0.00019874085,
+                            "median": 0.00019591649999999998,
+                            "standard_deviation": 1.247374728347922e-05,
+                            "avg_absolute_deviation": 4.797974346995094,
+                            "distribution": "exponweib",
                             "usb": {
                                 "send": {
-                                    "mean": 8.200000000006351e-05,
-                                    "median": 8.000000000008001e-05,
-                                    "standard_deviation": 6.244997998346866e-06,
-                                    "avg_absolute_deviation": 5.691056910517739
+                                    "mean": 6.829999999999892e-05,
+                                    "median": 6.850000000002687e-05,
+                                    "standard_deviation": 3.5850567051872974e-06,
+                                    "avg_absolute_deviation": 3.8067349927563705
                                 },
                                 "recv": {
-                                    "mean": 6.999999999971844e-05,
-                                    "median": 6.799999999973494e-05,
-                                    "standard_deviation": 3.4641016151091695e-06,
-                                    "avg_absolute_deviation": 3.809523809507699
+                                    "mean": 0.003328900000000057,
+                                    "median": 0.003330500000000125,
+                                    "standard_deviation": 0.00015616115158110274,
+                                    "avg_absolute_deviation": 3.980293790739679
                                 },
                                 "communication": {
-                                    "mean": 0.00015199999999978195,
-                                    "median": 0.0001509999999997902,
-                                    "standard_deviation": 4.582575694918025e-06,
-                                    "avg_absolute_deviation": 2.192982456125403
+                                    "mean": 0.003397200000000056,
+                                    "median": 0.0033974999999999422,
+                                    "standard_deviation": 0.00015770879226564144,
+                                    "avg_absolute_deviation": 3.9326504179912334
                                 },
                                 "inference": {
-                                    "mean": 1.1333333333437187e-05,
-                                    "median": 1.100000000020529e-05,
-                                    "standard_deviation": 4.509249752780214e-06,
-                                    "avg_absolute_deviation": 27.45098039138854
+                                    "mean": 2.4849999999965178e-05,
+                                    "median": 2.450000000009389e-05,
+                                    "standard_deviation": 3.19991776208316e-06,
+                                    "avg_absolute_deviation": 9.85915492953971
                                 },
                                 "total": {
-                                    "mean": 0.00016333333333321912,
-                                    "median": 0.00016399999999983095,
-                                    "standard_deviation": 4.041451884214671e-06,
-                                    "avg_absolute_deviation": 1.7687074829395608
+                                    "mean": 0.003422050000000021,
+                                    "median": 0.003422500000000106,
+                                    "standard_deviation": 0.00015679536613720217,
+                                    "avg_absolute_deviation": 3.882175888721192
                                 }
                             }
                         }
@@ -207,9 +207,9 @@
                 {
                     "name": "max_pool_2d",
                     "path": {
-                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_1_max_pool_2d_bm/submodel_1_max_pool_2d_bm.tflite",
-                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_1_max_pool_2d_bm/submodel_1_max_pool_2d_bm.tflite",
-                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_1_max_pool_2d_bm_edgetpu.tflite"
+                        "cpu": "/home/sources/TensorDSE/utils/splitter/models/sub/tflite/submodel_1_max_pool_2d_bm/submodel_1_max_pool_2d_bm.tflite",
+                        "gpu": "/home/sources/TensorDSE/utils/splitter/models/sub/tflite/submodel_1_max_pool_2d_bm/submodel_1_max_pool_2d_bm.tflite",
+                        "tpu": "/home/sources/TensorDSE/utils/splitter/models/sub/compiled/submodel_1_max_pool_2d_bm_edgetpu.tflite"
                     },
                     "delegates": [
                         {
@@ -223,11 +223,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.056659,
-                            "median": 0.056245,
-                            "standard_deviation": 0.0017990875465079517,
-                            "avg_absolute_deviation": 2.317960665266477,
-                            "distribution": "betaprime",
+                            "mean": 4.830125e-05,
+                            "median": 4.8241e-05,
+                            "standard_deviation": 5.48042245298279e-07,
+                            "avg_absolute_deviation": 0.8521518594239285,
+                            "distribution": "chi2",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -245,11 +245,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.05595066666666667,
-                            "median": 0.055533,
-                            "standard_deviation": 0.0011356435767146912,
-                            "avg_absolute_deviation": 1.53150791570352,
-                            "distribution": "erlang",
+                            "mean": 4.80459e-05,
+                            "median": 4.8066e-05,
+                            "standard_deviation": 5.018084033614917e-07,
+                            "avg_absolute_deviation": 0.8175515496639644,
+                            "distribution": "arcsine",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -267,41 +267,41 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.5078493333333334,
-                            "median": 0.497163,
-                            "standard_deviation": 0.03933471012138431,
-                            "avg_absolute_deviation": 5.720025449367749,
-                            "distribution": "betaprime",
+                            "mean": 0.00033647365,
+                            "median": 0.000334569,
+                            "standard_deviation": 1.4338397467070162e-05,
+                            "avg_absolute_deviation": 3.347645499134925,
+                            "distribution": "f",
                             "usb": {
                                 "send": {
-                                    "mean": 5.2333333333394925e-05,
-                                    "median": 4.900000000018778e-05,
-                                    "standard_deviation": 6.6583281183873964e-06,
-                                    "avg_absolute_deviation": 9.766454352286672
+                                    "mean": 2.2699999999975517e-05,
+                                    "median": 2.199999999996649e-05,
+                                    "standard_deviation": 2.4730122267216386e-06,
+                                    "avg_absolute_deviation": 8.237885462306862
                                 },
                                 "recv": {
-                                    "mean": 4.399999999993298e-05,
-                                    "median": 4.399999999993298e-05,
-                                    "standard_deviation": 2.9999999999752447e-06,
-                                    "avg_absolute_deviation": 4.5454545454239605
+                                    "mean": 0.002987300000000026,
+                                    "median": 0.002998500000000126,
+                                    "standard_deviation": 0.0001120512570679749,
+                                    "avg_absolute_deviation": 1.6232049007465141
                                 },
                                 "communication": {
-                                    "mean": 9.63333333333279e-05,
-                                    "median": 9.600000000009601e-05,
-                                    "standard_deviation": 4.509249752780214e-06,
-                                    "avg_absolute_deviation": 3.2295271048990144
+                                    "mean": 0.0030100000000000014,
+                                    "median": 0.0030215000000002323,
+                                    "standard_deviation": 0.00011097320681840467,
+                                    "avg_absolute_deviation": 1.6046511627889677
                                 },
                                 "inference": {
-                                    "mean": 0.00013933333333326914,
-                                    "median": 0.00014300000000000423,
-                                    "standard_deviation": 1.0969655114537111e-05,
-                                    "avg_absolute_deviation": 5.901116427409851
+                                    "mean": 0.0001291000000000153,
+                                    "median": 0.000124000000000013,
+                                    "standard_deviation": 1.4810735793230866e-05,
+                                    "avg_absolute_deviation": 7.319907048789707
                                 },
                                 "total": {
-                                    "mean": 0.00023566666666659705,
-                                    "median": 0.00023499999999998522,
-                                    "standard_deviation": 1.3012814197112207e-05,
-                                    "avg_absolute_deviation": 3.771805751945846
+                                    "mean": 0.003139100000000017,
+                                    "median": 0.0031494999999999163,
+                                    "standard_deviation": 0.00011080418954642899,
+                                    "avg_absolute_deviation": 1.4351247172753527
                                 }
                             }
                         }
@@ -310,9 +310,9 @@
                 {
                     "name": "reshape",
                     "path": {
-                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_2_reshape_bm/submodel_2_reshape_bm.tflite",
-                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_2_reshape_bm/submodel_2_reshape_bm.tflite",
-                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_2_reshape_bm_edgetpu.tflite"
+                        "cpu": "/home/sources/TensorDSE/utils/splitter/models/sub/tflite/submodel_2_reshape_bm/submodel_2_reshape_bm.tflite",
+                        "gpu": "/home/sources/TensorDSE/utils/splitter/models/sub/tflite/submodel_2_reshape_bm/submodel_2_reshape_bm.tflite",
+                        "tpu": "/home/sources/TensorDSE/utils/splitter/models/sub/compiled/submodel_2_reshape_bm_edgetpu.tflite"
                     },
                     "delegates": [
                         {
@@ -326,11 +326,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.000488,
-                            "median": 0.000181,
-                            "standard_deviation": 0.0005404229824868664,
-                            "avg_absolute_deviation": 85.24590163934425,
-                            "distribution": "exponweib",
+                            "mean": 1.2165e-07,
+                            "median": 1.005e-07,
+                            "standard_deviation": 6.413331099317553e-08,
+                            "avg_absolute_deviation": 22.827784628031246,
+                            "distribution": "beta",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -348,11 +348,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.00039066666666666666,
-                            "median": 0.00019,
-                            "standard_deviation": 0.0003641432868162385,
-                            "avg_absolute_deviation": 71.7292377701934,
-                            "distribution": "chi",
+                            "mean": 1.203e-07,
+                            "median": 1.1e-07,
+                            "standard_deviation": 6.173125114900112e-08,
+                            "avg_absolute_deviation": 21.729010806317547,
+                            "distribution": "beta",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -370,41 +370,41 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.29178133333333334,
-                            "median": 0.300137,
-                            "standard_deviation": 0.01797169508792461,
-                            "avg_absolute_deviation": 4.713194660232625,
-                            "distribution": "exponpow",
+                            "mean": 0.0002654189,
+                            "median": 0.0002586505,
+                            "standard_deviation": 3.693529139611315e-05,
+                            "avg_absolute_deviation": 6.799455502226856,
+                            "distribution": "dgamma",
                             "usb": {
                                 "send": {
-                                    "mean": 1.866666666661132e-05,
-                                    "median": 1.7999999999851468e-05,
-                                    "standard_deviation": 2.081665999757104e-06,
-                                    "avg_absolute_deviation": 8.333333334522857
+                                    "mean": 1.9100000000027427e-05,
+                                    "median": 1.8500000000143402e-05,
+                                    "standard_deviation": 2.6337885460544984e-06,
+                                    "avg_absolute_deviation": 10.628272251302812
                                 },
                                 "recv": {
-                                    "mean": 7.133333333323814e-05,
-                                    "median": 7.199999999984996e-05,
-                                    "standard_deviation": 2.0816659995082146e-06,
-                                    "avg_absolute_deviation": 2.1806853582864805
+                                    "mean": 0.002998700000000021,
+                                    "median": 0.0029974999999999863,
+                                    "standard_deviation": 7.019521651078463e-06,
+                                    "avg_absolute_deviation": 0.17574282188916943
                                 },
                                 "communication": {
-                                    "mean": 8.999999999984946e-05,
-                                    "median": 9.099999999984121e-05,
-                                    "standard_deviation": 3.6055512757216295e-06,
-                                    "avg_absolute_deviation": 2.962962963162771
+                                    "mean": 0.0030178000000000483,
+                                    "median": 0.00301499999999999,
+                                    "standard_deviation": 9.03560209741158e-06,
+                                    "avg_absolute_deviation": 0.22466697594286916
                                 },
                                 "inference": {
-                                    "mean": 7.466666666674134e-05,
+                                    "mean": 7.334999999999425e-05,
                                     "median": 7.400000000012952e-05,
-                                    "standard_deviation": 1.154700538284258e-06,
-                                    "avg_absolute_deviation": 1.1904761903770613
+                                    "standard_deviation": 1.725200217274507e-06,
+                                    "avg_absolute_deviation": 1.8336741650554933
                                 },
                                 "total": {
-                                    "mean": 0.0001646666666665908,
-                                    "median": 0.00016499999999997073,
-                                    "standard_deviation": 4.50924975301001e-06,
-                                    "avg_absolute_deviation": 1.8893387315291599
+                                    "mean": 0.0030911500000000425,
+                                    "median": 0.0030885000000000495,
+                                    "standard_deviation": 7.988643254735165e-06,
+                                    "avg_absolute_deviation": 0.19620529576189924
                                 }
                             }
                         }
@@ -413,9 +413,9 @@
                 {
                     "name": "softmax",
                     "path": {
-                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_5_softmax_bm/submodel_5_softmax_bm.tflite",
-                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_5_softmax_bm/submodel_5_softmax_bm.tflite",
-                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_5_softmax_bm_edgetpu.tflite"
+                        "cpu": "/home/sources/TensorDSE/utils/splitter/models/sub/tflite/submodel_5_softmax_bm/submodel_5_softmax_bm.tflite",
+                        "gpu": "/home/sources/TensorDSE/utils/splitter/models/sub/tflite/submodel_5_softmax_bm/submodel_5_softmax_bm.tflite",
+                        "tpu": "/home/sources/TensorDSE/utils/splitter/models/sub/compiled/submodel_5_softmax_bm_edgetpu.tflite"
                     },
                     "delegates": [
                         {
@@ -427,10 +427,10 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.0026383333333333332,
-                            "median": 0.00025,
-                            "standard_deviation": 0.004170535257414009,
-                            "avg_absolute_deviation": 121.68456517161508,
+                            "mean": 1.648e-07,
+                            "median": 1.4050000000000002e-07,
+                            "standard_deviation": 1.114604484960803e-07,
+                            "avg_absolute_deviation": 29.211165048543684,
                             "distribution": "dweibull",
                             "usb": {
                                 "communication": {
@@ -447,11 +447,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.000755,
-                            "median": 0.000271,
-                            "standard_deviation": 0.0008644235073157139,
-                            "avg_absolute_deviation": 88.12362030905076,
-                            "distribution": "exponweib",
+                            "mean": 1.5624999999999999e-07,
+                            "median": 1.31e-07,
+                            "standard_deviation": 9.399433073609448e-08,
+                            "avg_absolute_deviation": 26.383999999999997,
+                            "distribution": "dgamma",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -467,41 +467,41 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.2785803333333333,
-                            "median": 0.311077,
-                            "standard_deviation": 0.06275349336358362,
-                            "avg_absolute_deviation": 17.310945217078817,
-                            "distribution": "exponweib",
+                            "mean": 0.00023517875,
+                            "median": 0.000228062,
+                            "standard_deviation": 1.9363126761627166e-05,
+                            "avg_absolute_deviation": 5.900926422986769,
+                            "distribution": "beta",
                             "usb": {
                                 "send": {
-                                    "mean": 8.60000000000305e-05,
-                                    "median": 9.000000000014552e-05,
-                                    "standard_deviation": 7.81024967583273e-06,
-                                    "avg_absolute_deviation": 6.976744185986466
+                                    "mean": 7.119999999998239e-05,
+                                    "median": 7.00000000000145e-05,
+                                    "standard_deviation": 3.994733374915778e-06,
+                                    "avg_absolute_deviation": 4.578651685420022
                                 },
                                 "recv": {
-                                    "mean": 8.16666666668316e-05,
-                                    "median": 0.00010399999999988196,
-                                    "standard_deviation": 4.130778780476485e-05,
-                                    "avg_absolute_deviation": 38.91156462565207
+                                    "mean": 0.003361000000000014,
+                                    "median": 0.0033615000000000173,
+                                    "standard_deviation": 0.00017603229368795453,
+                                    "avg_absolute_deviation": 4.439155013387678
                                 },
                                 "communication": {
-                                    "mean": 0.0001676666666668621,
-                                    "median": 0.00019400000000002748,
-                                    "standard_deviation": 4.9115510109483625e-05,
-                                    "avg_absolute_deviation": 22.531477799753368
+                                    "mean": 0.0034321999999999964,
+                                    "median": 0.003429999999999822,
+                                    "standard_deviation": 0.0001762562727513271,
+                                    "avg_absolute_deviation": 4.364547520538823
                                 },
                                 "inference": {
-                                    "mean": 8.333333333165882e-06,
-                                    "median": 4.999999999810711e-06,
-                                    "standard_deviation": 7.57187779428575e-06,
-                                    "avg_absolute_deviation": 69.33333333375967
+                                    "mean": 2.1599999999977194e-05,
+                                    "median": 2.250000000003638e-05,
+                                    "standard_deviation": 3.2509108035662673e-06,
+                                    "avg_absolute_deviation": 11.944444444522968
                                 },
                                 "total": {
-                                    "mean": 0.000176000000000028,
-                                    "median": 0.0001989999999998382,
-                                    "standard_deviation": 4.158124577250034e-05,
-                                    "avg_absolute_deviation": 18.1818181817774
+                                    "mean": 0.0034537999999999735,
+                                    "median": 0.0034529999999999283,
+                                    "standard_deviation": 0.00017609255939321839,
+                                    "avg_absolute_deviation": 4.325670276214626
                                 }
                             }
                         }
