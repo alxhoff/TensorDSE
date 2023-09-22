@@ -4,6 +4,7 @@ import java.util.List;
 
 public class Model {
     String name;
+    Double deadline;
     Integer starting_tensor;
     Integer finishing_tensor;
     List<Layer> layers;
@@ -56,5 +57,13 @@ public class Model {
         }
 
         return null;
+    }
+
+    public Double getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(Double deadline) {
+        this.deadline = deadline;
     }
 }
