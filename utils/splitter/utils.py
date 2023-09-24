@@ -19,7 +19,7 @@ def ReadCSV(csv_file_path: str):
         return data
 
 def ReadJSON(file_path: str):
-    from .logger import log
+    from ..logging.logger import log
     # List of encodings to try
     encodings_to_try = ['utf-8', 'utf-16', 'latin-1', 'iso-8859-1', 'cp1252']
 

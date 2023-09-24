@@ -4,7 +4,7 @@ sys.path[0]="/home/tensorDSE" # need to overwrite working directory, so imports 
 
 def debug_stream(model_path, timeout, usbmon):
     from multiprocessing import Process,Queue
-    from utils.log import Log
+    from utils.logging.log import Log
     from usb import START_DEPLOYMENT, END_DEPLOYMENT, SUCCESSFULL_DEPLOYMENT
     from usb.debug import capture_stream
     from deploy import MakeInterpreter

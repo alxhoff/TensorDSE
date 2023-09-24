@@ -1,7 +1,7 @@
 import os
 import json
 from .utils import RunTerminalCommand, ReadJSON, CopyFile, MoveFile
-from .logger import log
+from ..logging.logger import log
 
 WORK_DIR      = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR    = os.path.join(WORK_DIR, "models")

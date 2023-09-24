@@ -10,7 +10,7 @@ def ExportResults(file:str, data:Dict) -> None:
 
 def AnalyzeModelResults(parent_model:str, models_dict:Dict, hardware_summary:Dict):
 
-    from utils.splitter.logger import log
+    from utils.logging.logger import log
     from utils.usb.process import process_streams
     from utils.analysis.analysis import Analyzer
     import os
@@ -95,7 +95,7 @@ def AnalyzeModelResults(parent_model:str, models_dict:Dict, hardware_summary:Dic
 
 def MergeResults(parent_model:str, layers:dict, clean:bool=True):
     from .analysis import RESULTS_FOLDER
-    from ..splitter.logger import log
+    from ..logging.logger import log
     from utils import load_json
     import os
 

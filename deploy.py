@@ -5,7 +5,7 @@ import argparse
 import random
 import numpy as np
 
-from utils.splitter.logger import log
+from utils.logging.logger import log
 from utils.model import Model
 
 def GetInputData(m: Model):
@@ -76,18 +76,21 @@ def DeployLayer(m: Model, platform: str):
 
     inference_times_vector = np.zeros(1).astype(np.uint32)
 
-    mean_inference_time = distributed_inference(
-            m.model_path,
-            m.input_vector,
-            output_data_vector,
-            inference_times_vector,
-            len(m.input_vector),
-            len(output_data_vector),
-            delegate_type,
-            platform,
-            1,
-            delegate_index
-            )
+    try:
+        mean_inference_time = distributed_inference(
+                m.model_path,
+                m.input_vector,
+                output_data_vector,
+                inference_times_vector,
+                len(m.input_vector),
+                len(output_data_vector),
+                delegate_type,
+                platform,
+                1,
+                delegate_index
+                )
+    except Exception as e:
+        log.error(f"Failed to run distributed inference. Possible Error {e}")
 
     m.output_vector = output_data_vector
     m.results = inference_times_vector.tolist()
@@ -126,14 +129,13 @@ def AnalyzeDeploymentResults(models: list) -> None:
 
 def DeployModel(model_path: str, model_summary_path: str, hw_summary_path: str, platform: str, data_module : str = None) -> None:
     from utils.splitter.utils import ReadJSON
-    from utils.splitter.logger import log
+    from utils.logging.logger import log
 
     model_name = (model_path.split("/")[-1]).split(".tflite")[0]
 
     if model_summary_path is not None:
         try:
             model_summary = ReadJSON(model_summary_path)
-            hardware_summary = ReadJSON(hw_summary_path)
         except Exception as e:
             log.error(f"Exception occured while trying to read Model and HW Summary!")
 
@@ -148,7 +150,13 @@ def DeployModel(model_path: str, model_summary_path: str, hw_summary_path: str, 
                 layers.append(model_summary["models"][0]["layers"][op[0]])
 
             m = Model(layers, layers[0]["mapping"], model_name)
-            m.model_name = "submodel_{0}_ops{1}-{2}_{3}".format(j, sequence[0][0], sequence[-1][0], m.delegate)
+
+            if len(sequence) == 1:
+                ops_range = sequence[0][0]
+            else:
+                ops_range = '-'.join(map(str, [sequence[0][0], sequence[-1][0]]))
+
+            m.model_name = "submodel_{0}_{1}_{2}".format(j, f"ops{ops_range}", m.delegate)
 
             if j == 0:
                 data_module = None
@@ -164,74 +172,67 @@ def DeployModel(model_path: str, model_summary_path: str, hw_summary_path: str, 
     AnalyzeDeploymentResults(models=models)
 
 
-parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-        )
+def getArgs():
+    parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            )
 
-parser.add_argument(
-        "-m",
-        "--model",
-        default="resources/models/example_models/MNIST_full_quanitization.tflite",
-        help="File path to the SOURCE .tflite file.",
-        )
+    parser.add_argument(
+            "-m",
+            "--model",
+            default="resources/models/example_models/MNIST_full_quanitization.tflite",
+            help="File path to the SOURCE .tflite file.",
+            )
 
-parser.add_argument(
-        "-s",
-        "--summary",
-        default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json",
-        help="File that contains a model summary with mapping annotations"
-        )
+    parser.add_argument(
+            "-s",
+            "--summary",
+            default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json",
+            help="File that contains a model summary with mapping annotations"
+            )
 
-parser.add_argument(
-        "-d",
-        "--dataset",
-        default="utils.datasets.MNIST",
-        help="Dataset import module to be used for providing input data"
-        )
+    parser.add_argument(
+            "-d",
+            "--dataset",
+            default="utils.datasets.MNIST",
+            help="Dataset import module to be used for providing input data"
+            )
 
-parser.add_argument(
-        "-o",
-        "--summaryoutputdir",
-        default="resources/model_summaries/example_summaries/MNIST",
-        help="Directory where model summary should be saved",
-        )
+    parser.add_argument(
+            "-o",
+            "--summaryoutputdir",
+            default="resources/model_summaries/example_summaries/MNIST",
+            help="Directory where model summary should be saved",
+            )
 
-parser.add_argument(
-        "-n",
-        "--summaryoutputname",
-        default="MNIST_full_quanitization_summary_with_mappings",
-        help="Name that the model summary should have",
-        )
+    parser.add_argument(
+            "-n",
+            "--summaryoutputname",
+            default="MNIST_full_quanitization_summary_with_mappings",
+            help="Name that the model summary should have",
+            )
 
-parser.add_argument(
-        "-hs",
-        "--hardwaresummary",
-        type=str,
-        default="resources/architecture_summaries/example_output_architecture_summary.json",
-        help="Hardware summary file to tell benchmarking which devices to benchmark, by default all devices will be benchmarked",
-        )
-parser.add_argument(
+    parser.add_argument(
             "-p",
             "--platform",
             default="desktop",
             help="Platform supporting the profiling/deployment process",
             )
+    
+    return parser.parse_args()
+
 
 if __name__ == "__main__":
     import os
-    from profiler import GetArgs
 
-    args = parser.parse_args()
+    args = getArgs()
 
     if args.summary:
-        DeployModel(args.model, args.summary, args.hardwaresummary, args.platform, args.dataset)
+        DeployModel(args.model, args.summary, args.platform, args.dataset)
     else:
         DeployModel(
                 args.model,
                 os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
-                args.hardwaresummary,
                 args.platform,
                 args.dataset
                 )
-
-    print("Model Deployed")

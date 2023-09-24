@@ -1,10 +1,11 @@
 import os
 import urllib
+import argparse
 import multiprocessing
 
 from .model import Model, Submodel
 from .utils import CopyFile, RunTerminalCommand
-from .logger import log
+from ..logging.logger import log
 
 
 MODEL_LAB_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,6 +35,7 @@ class Splitter:
         self.summary = model_summary
         self.submodel_list = multiprocessing.Manager().list()
 
+
     def CheckSchema(self):
         log.info("Checking schema ...")
         self.schema_path = os.path.join(RESOURCES_DIR, "schema", "schema.fbs")
@@ -46,6 +48,7 @@ class Splitter:
             log.info("    Downloaded schema.fbs")
         else:
             log.info("    File schema.fbs found.")
+
 
     def InitializeEnv(self, source_model_path):
         self.CheckSchema()
@@ -75,6 +78,7 @@ class Splitter:
         # CopyFile(model_summary_path, MAPPING_DIR)
         # log.info("Mapping saved under: {}".format(os.path.join(MAPPING_DIR)))
 
+
     def Clean(self, all: bool):
         log.info("Cleaning Directory ...\n")
         dirs_to_clean = []
@@ -86,6 +90,7 @@ class Splitter:
         for directory in dirs_to_clean:
             if os.path.isdir(directory):
                 RunTerminalCommand("rm", "-rf", directory)
+
 
     def CreateLayerMatrix(self) -> None:
         """Parses the parsed JSON model summary containing the mappings to create
@@ -112,6 +117,7 @@ class Splitter:
                     log.info(
                         "Model #{0}, layer #{1} mapped to {2}".format(i, j, layer[2])
                     )
+
 
     def CreateSubmodelLayerSequences(self) -> None:
         """From the mappings created by CreateLayerMatrix, sequential layers
@@ -142,10 +148,12 @@ class Splitter:
 
             layer_seuqences.append(current_sequence)
 
+
     def ReadSourceModel(self):
         log.info("Converting Source Model from TFLite to JSON ...")
         self.source_model.Convert("tflite", "json")
         log.info("OK\n")
+
 
     def CompileAndSaveSubmodel(
         self, layer_sequence, model_index, sequence_index
@@ -167,11 +175,12 @@ class Splitter:
             )
         )
         
-        if len(layer_sequence) > 2:
-            ops_range = '-'.join(map(str, [layer_sequence[0][0], layer_sequence[-1][0]]))
-            ops_name = f"ops{ops_range}"
+        if len(layer_sequence) == 1:
+            ops_range = layer_sequence[0][0]
         else:
-            ops_name = layer_sequence[0][1]
+            ops_range = '-'.join(map(str, [layer_sequence[0][0], layer_sequence[-1][0]]))
+    
+        ops_name = f"ops{ops_range}"
 
         submodel = Submodel(
             self.source_model.json,
@@ -206,6 +215,7 @@ class Splitter:
         self.submodel_list.append(submodel)
         log.info("OK\n")
 
+
     def CreateSubmodels(self, sequences):
         """Create the individual submodels for either sequences of sequential
         layers that are executed on the same hardware unit or for individual layers
@@ -235,6 +245,7 @@ class Splitter:
                     # for j, layer in enumerate(model):
                     # self.CompileAndSaveSubmodel(layer_sequence=[layer], model_index=i, sequence_index=j)
 
+
     def CompileForEdgeTPU(self, bm=True):
         for submodel in self.submodel_list:
             if bm:
@@ -242,6 +253,7 @@ class Splitter:
             else:
                 if ("tpu" in submodel.name):
                     submodel.Compile()
+
 
     def Run(self, sequences=False):
         log.info("[SPLIT] Started")
@@ -254,5 +266,37 @@ class Splitter:
         self.CreateSubmodels(sequences=sequences)
         log.info("[SPLIT] Submodels created")
 
+
     def __del__(self):
         self.Clean(False)
+
+
+def getArgs():
+    parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            )
+    
+    parser.add_argument(
+            "-m",
+            "--model",
+            default="resources/models/example_models/MNIST_full_quanitization.tflite",
+            help="File path to the SOURCE .tflite file.",
+            )
+    
+    parser.add_argument(
+            "-s",
+            "--summary",
+            default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json",
+            help="File that contains a model summary with mapping annotations"
+            )
+    
+    parser.add_argument(
+                "-p",
+                "--platform",
+                default="desktop",
+                help="Platform supporting the profiling/deployment process",
+            )
+
+if __name__ == "__main__":
+    import os
+    

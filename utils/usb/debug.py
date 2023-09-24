@@ -1,7 +1,7 @@
 from multiprocessing import Queue
 from typing import List, Tuple
 
-from utils.log import Log
+from utils.logging.log import Log
 
 from utils.usb.usb import get_tpu_ids, get_filter, MAX_TIME_CAPTURE
 from utils.usb.usb import START_DEPLOYMENT, END_DEPLOYMENT

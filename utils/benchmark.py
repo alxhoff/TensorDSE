@@ -1,5 +1,6 @@
+import sys
+
 import utils
-import argparse
 
 from typing import Dict, Tuple
 
@@ -130,7 +131,7 @@ def isGPUavailable() -> Tuple[bool, str]:
 
 def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10, core_index: int = 0) -> Model:
     from multiprocessing import Process, Queue
-    from utils.log import Log
+    from utils.logging.log import Log
     from utils.usb import END_DEPLOYMENT
     from utils.usb.usb import capture_stream
     import sys
@@ -147,7 +148,7 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
     input_size = GetArraySizeFromShape(m.input_shape)
     output_size = GetArraySizeFromShape(m.output_shape)
 
-    time.sleep(DEPLOY_WAIT_TIME)
+    #time.sleep(DEPLOY_WAIT_TIME)
 
     for i in range(count):
         signalsQ = Queue()
@@ -259,18 +260,17 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
     if (hardware_target == "tpu"):
         m.model_path = os.path.join(
                 COMPILED_DIR,
-                "submodel_{0}_{1}_bm_edgetpu.tflite".format(
-                    m.details["index"], m.details["type"]
+                "submodel_{0}_ops{1}_bm_edgetpu.tflite".format(
+                    m.index,
+                    m.index
                     ),
                 )
     else:
         m.model_path = os.path.join(
                 SUB_DIR,
                 "tflite",
-                "submodel_{0}_{1}_bm".format(m.details["index"], m.details["type"]),
-                "submodel_{0}_{1}_bm.tflite".format(
-                    m.details["index"], m.details["type"]
-                    ),
+                "submodel_{0}_ops{1}_bm".format(m.index, m.index),
+                "submodel_{0}_ops{1}_bm.tflite".format(m.index, m.index),
                 )
 
     if ((platform == "desktop") or (platform == "rpi")):
@@ -322,7 +322,7 @@ def ProfileModelLayers(
 
     from .usb import init_usbmon
     # from .analysis import AnalyzeLayerResults
-    from utils.splitter.logger import log
+    from utils.logging.logger import log
 
     models = {}
     models["cpu"] = []
@@ -378,8 +378,9 @@ def ProfileModelLayers(
             log.info("No TPUs in hardware summary, skipping benchmarking")
         else:
             log.info(f"[PROFILE MODEL LAYERS] TPU is available on this machine!")
-            if init_usbmon(usb_bus=usbmon_bus) and (not (platform == "coral")):
+            if init_usbmon(usb_bus=usbmon_bus):
                 log.info("Needed to introduce usbmon module")
+                sys.exit(1)
             else:
                 log.info("usbmon module already present")
                 for layer in model_summary["models"][0]["layers"]:
