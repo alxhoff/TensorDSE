@@ -1,6 +1,6 @@
 from multiprocessing import Queue, Event
 
-from utils.log import Log
+from utils.logging.log import Log
 
 from utils.usb.stream import StreamContext
 from utils.usb.packet import UsbPacket

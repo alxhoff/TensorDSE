@@ -1,15 +1,12 @@
 import os
 import sys
 import argparse
-from utils.splitter.logger import log
+from utils.logging.logger import log
 
 MODELS_FOLDER = "resources/models/source/"
 LAYERS_FOLDER = "resources/models/layers/"
 COMPILED_MODELS_FOLDER = "resources/models/compiled/"
 RESULTS_FOLDER = "resources/profiling_results/"
-
-# custom logger to separate TF logs and Ours
-# log = Log(os.path.join(RESULTS_FOLDER, "JOURNAL.log"))
 
 
 def DisableTFlogging() -> None:
@@ -123,6 +120,7 @@ def ProfileModel(
     log.info("Final Clean up")
     splitter.Clean(True)
 
+
 def GetArgs() -> argparse.Namespace:
     """Argument parser, returns the Namespace containing all of the arguments.
     :raises: None
@@ -144,7 +142,7 @@ def GetArgs() -> argparse.Namespace:
             "-c",
             "--count",
             type=int,
-            default=2,
+            default=3,
             help="Number of times to measure inference.",
             )
 
@@ -180,7 +178,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
             "-u",
             "--usbmon",
-            default="usbmon0",
+            default="0",
             help="USB bus on which TPU is attached and thus which usbmon interface should be used for packet sniffing"
             )
 
