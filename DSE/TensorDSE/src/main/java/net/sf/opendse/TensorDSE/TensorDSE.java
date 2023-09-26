@@ -17,6 +17,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
+import org.apache.xpath.operations.Bool;
 import org.javatuples.Pair;
 import org.opt4j.core.Individual;
 import org.opt4j.core.optimizer.Archive;
@@ -73,7 +74,7 @@ public class TensorDSE {
 		parser.addArgument("-g", "--generations").setDefault(25).type(int.class)
 				.help("Number of generations in the EA");
 
-		parser.addArgument("-v", "--verbose").setDefault(false).type(Boolean.class)
+		parser.addArgument("-v", "--verbose").setDefault(true).type(Boolean.class)
 				.help("Enables verbose output messages");
 		parser.addArgument("-u", "--visualise").setDefault(false).type(Boolean.class)
 				.help("If set, OpenDSE will visualise all specificatons");
@@ -105,6 +106,14 @@ public class TensorDSE {
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
 		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
 				.help("Run Demo instead of solving input specification");
+		parser.addArgument("-j", "--objective").type(String.class).setDefault("deadline_misses")
+				.help("Specifies which object should be optimized for, must be one of the following:\n'average_finish_time', 'max_finish_time', 'deadline_misses', 'slack_time'");
+
+		// RT
+		parser.addArgument("-b", "--realtime").type(Boolean.class).setDefault(true)
+				.help("Enables real-time constraints, ie. task deadline constraints are added to schedule ILP");
+		parser.addArgument("-z", "--hardrealtime").type(Boolean.class).setDefault(false)
+				.help("Enables hard real time, by default soft real time constraints are used");
 
 		Namespace ns = null;
 
@@ -136,7 +145,8 @@ public class TensorDSE {
 	}
 
 	/**
-	 * @brief The specification module binds an evaluator to the problem's specification
+	 * @brief The specification module binds an evaluator to the problem's
+	 *        specification
 	 * @param specification_definition
 	 * @return Module
 	 */
@@ -147,16 +157,15 @@ public class TensorDSE {
 
 			@Override
 			protected void config() {
-				SpecificationWrapperInstance specification_wrapper =
-						new SpecificationWrapperInstance(
-								specification_definition.getSpecification());
+				SpecificationWrapperInstance specification_wrapper = new SpecificationWrapperInstance(
+						specification_definition.getSpecification());
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
 
 				EvaluatorMinimizeCost evaluator = new EvaluatorMinimizeCost("cost_of_mapping",
 						specification_definition, verbose, visualise);
 
-				Multibinder<ImplementationEvaluator> multibinder =
-						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
+				Multibinder<ImplementationEvaluator> multibinder = Multibinder.newSetBinder(binder(),
+						ImplementationEvaluator.class);
 				multibinder.addBinding().toInstance(evaluator);
 
 			}
@@ -281,8 +290,9 @@ public class TensorDSE {
 
 	/**
 	 * @param args
+	 * @throws Exception
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 
 		Namespace args_namespace = GetArgNamespace(args);
 
@@ -309,9 +319,9 @@ public class TensorDSE {
 		// Specification contains, architecture and application graph as well as a
 		// generated
 		// set of possible mappings
-		SpecificationDefinition specification_definition =
-				new SpecificationDefinition(models_description_file_path, profiling_costs_file_path,
-						hardware_description_file_path);
+		SpecificationDefinition specification_definition = new SpecificationDefinition(models_description_file_path,
+				profiling_costs_file_path,
+				hardware_description_file_path);
 
 		String time_string = new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
 
@@ -341,10 +351,12 @@ public class TensorDSE {
 					// graphs as well as the list of starting tasks and the operation costs
 					ScheduleSolver schedule_solver = new ScheduleSolver(specification_definition,
 							args_namespace.getDouble("deactivationnumber"),
+							specification_definition.getJson_models().get(0).getDeadline(),
 							args_namespace.getBoolean("verbose"));
 					long startILP = System.currentTimeMillis();
-					Pair<Double, ArrayList<ArrayList<ILPTask>>> ret =
-							schedule_solver.solveILPMappingAndSchedule();
+					Pair<Double, ArrayList<ArrayList<ILPTask>>> ret = schedule_solver.solveILPMappingAndSchedule(
+							args_namespace.getBoolean("realtime"),
+							args_namespace.getBoolean("hardrealtime"), args_namespace.getString("objective"));
 					// Incremental average for all tests
 					obj_val = obj_val + ((ret.getValue0() - obj_val) / (test_runs + 1));
 					ArrayList<ArrayList<ILPTask>> models = ret.getValue1();
@@ -354,8 +366,7 @@ public class TensorDSE {
 					// Populate model summary with mapping information
 					for (ArrayList<ILPTask> model : models) {
 						for (ILPTask task : model) {
-							Pattern pat =
-									Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
+							Pattern pat = Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
 							Matcher mat = pat.matcher(task.getID());
 							if (mat.matches()) {
 								String layer_index = mat.group(2);
@@ -364,7 +375,8 @@ public class TensorDSE {
 								specification_definition.json_models
 										.get(Integer.parseInt(model_index)).getLayers()
 										.get(Integer.parseInt(layer_index))
-										.setMapping(task.getTarget_resource_string());;
+										.setMapping(task.getTarget_resource_string());
+								;
 							}
 						}
 					}
@@ -494,9 +506,8 @@ public class TensorDSE {
 
 						for (Individual individual : archive) {
 
-							Specification implementation =
-									((ImplementationWrapper) individual.getPhenotype())
-											.getImplementation();
+							Specification implementation = ((ImplementationWrapper) individual.getPhenotype())
+									.getImplementation();
 
 							if (args_namespace.getBoolean("visualise"))
 								SpecificationViewer.view(implementation);
@@ -515,7 +526,8 @@ public class TensorDSE {
 									specification_definition.json_models
 											.get(Integer.parseInt(model_index)).getLayers()
 											.get(Integer.parseInt(layer_index))
-											.setMapping(mapped_device);;
+											.setMapping(mapped_device);
+									;
 								}
 							}
 

@@ -30,13 +30,14 @@ public class ScheduleSolver {
     private Routings<Task, Resource, Link> routings;
     private Double K;
     private Boolean verbose;
+    private Double deadline;
 
     private List<Task> starting_tasks;
     private OperationCosts operation_costs;
 
     public List<Model> json_models = null;
 
-    public ScheduleSolver(SpecificationDefinition specification_definition, Double K,
+    public ScheduleSolver(SpecificationDefinition specification_definition, Double K, Double deadline,
             Boolean verbose) {
 
         this.application = specification_definition.getSpecification().getApplication();
@@ -45,24 +46,21 @@ public class ScheduleSolver {
         this.starting_tasks = specification_definition.getStarting_tasks();
         this.operation_costs = specification_definition.getOperation_costs();
         this.K = K;
+        this.deadline = deadline;
         this.verbose = verbose;
         this.json_models = specification_definition.getJson_models();
 
         addCommCosts(operation_costs);
     }
 
+    public ScheduleSolver(SpecificationDefinition specification_definition, Double K,
+            Boolean verbose) {
+        this(specification_definition, K, 0.0, verbose);
+    }
+
     public ScheduleSolver(SpecificationDefinition specification_definition, Boolean verbose) {
 
-        this.application = specification_definition.getSpecification().getApplication();
-        this.mapping = specification_definition.getSpecification().getMappings();
-        this.routings = specification_definition.getSpecification().getRoutings();
-        this.starting_tasks = specification_definition.getStarting_tasks();
-        this.operation_costs = specification_definition.getOperation_costs();
-        this.K = 100.0;
-        this.verbose = verbose;
-        this.json_models = specification_definition.getJson_models();
-
-        addCommCosts(operation_costs);
+        this(specification_definition, 0.01, 0.0, verbose);
     }
 
     public ScheduleSolver(Specification specification, List<Task> starting_tasks,
@@ -158,8 +156,7 @@ public class ScheduleSolver {
         ArrayList<GRBVar> final_task_finish_times = new ArrayList<GRBVar>();
 
         // Hashmap for quickly accessing all tasks mapped to the same resource
-        HashMap<Resource, ArrayList<ILPTask>> resource_mapped_tasks =
-                new HashMap<Resource, ArrayList<ILPTask>>();
+        HashMap<Resource, ArrayList<ILPTask>> resource_mapped_tasks = new HashMap<Resource, ArrayList<ILPTask>>();
 
         try {
 
@@ -182,8 +179,7 @@ public class ScheduleSolver {
                 models.add(model_tasks);
 
                 // Comm task coming after starting_task
-                Task following_comm =
-                        this.application.getSuccessors(starting_task).iterator().next();
+                Task following_comm = this.application.getSuccessors(starting_task).iterator().next();
 
                 Resource target_resource = getTargetResource(starting_task);
                 Pair<Double, Double> comm_costs = this.operation_costs.GetCommCost(
@@ -304,16 +300,14 @@ public class ScheduleSolver {
                     GRBVar task_benchmarked_sending_cost = grb_model.addVar(task.getSend_cost(),
                             task.getSend_cost(), 0.0, GRB.CONTINUOUS, "");
                     task.setBenchmarked_sending_cost(task_benchmarked_sending_cost);
-                    GRBVar same_resource_sending_cost =
-                            grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
+                    GRBVar same_resource_sending_cost = grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
                     task.setSame_resource_sending_cost(same_resource_sending_cost);
 
                     // Benchmarked receiving times
                     GRBVar task_benchmarked_receiving_cost = grb_model.addVar(task.getRecv_cost(),
                             task.getRecv_cost(), 0.0, GRB.CONTINUOUS, "");
                     task.setBenchmarked_receiving_cost(task_benchmarked_receiving_cost);
-                    GRBVar same_resource_receiving_cost =
-                            grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
+                    GRBVar same_resource_receiving_cost = grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
                     task.setSame_resource_receiving_cost(same_resource_receiving_cost);
 
                     // 2.6.1 Z helper variable
@@ -435,8 +429,7 @@ public class ScheduleSolver {
                     System.out.println();
                 }
 
-                HashMap<Resource, ArrayList<Pair<String, Double>>> per_resource_schedule =
-                        new HashMap<Resource, ArrayList<Pair<String, Double>>>();
+                HashMap<Resource, ArrayList<Pair<String, Double>>> per_resource_schedule = new HashMap<Resource, ArrayList<Pair<String, Double>>>();
 
                 for (int i = 0; i < all_tasks.size(); i++) {
                     ILPTask task = all_tasks.get(i);
@@ -527,11 +520,17 @@ public class ScheduleSolver {
         return -1.0;
     }
 
-    public Pair<Double, ArrayList<ArrayList<ILPTask>>> solveILPMappingAndSchedule() {
+    public Pair<Double, ArrayList<ArrayList<ILPTask>>> solveILPMappingAndSchedule(Boolean real_time,
+            Boolean hard_real_time, String objective) throws Exception {
 
         // Sequential arrays of models and their tasks
         ArrayList<ArrayList<ILPTask>> models = new ArrayList<ArrayList<ILPTask>>();
         ArrayList<GRBVar> final_task_finish_times = new ArrayList<GRBVar>();
+
+        // For soft real-time constraints if used
+        ArrayList<GRBVar> m_vars = new ArrayList<GRBVar>();
+        ArrayList<GRBVar> n_vars = new ArrayList<GRBVar>();
+
         Double obj_val = -1.0;
 
         try {
@@ -555,14 +554,12 @@ public class ScheduleSolver {
                 models.add(model_tasks);
 
                 // Comm task coming after starting_task
-                Task following_comm =
-                        this.application.getSuccessors(starting_task).iterator().next();
+                Task following_comm = this.application.getSuccessors(starting_task).iterator().next();
 
                 // For all possible resources
                 ArrayList<Resource> possible_resources = getPossibleTargetResources(starting_task);
 
-                HashMap<Resource, Pair<Double, Double>> comm_costs =
-                        new HashMap<Resource, Pair<Double, Double>>();
+                HashMap<Resource, Pair<Double, Double>> comm_costs = new HashMap<Resource, Pair<Double, Double>>();
                 HashMap<Resource, Double> exec_costs = new HashMap<Resource, Double>();
                 for (Resource resource : possible_resources) {
                     comm_costs.put(resource,
@@ -636,8 +633,6 @@ public class ScheduleSolver {
 
                     all_tasks.add(task);
 
-                    System.out.println("-----------");
-
                     // All done during ILPTask init
                     // 2.1 Start time
                     // 2.2 Total execution time
@@ -701,8 +696,7 @@ public class ScheduleSolver {
                     grb_model.update();
 
                     // 4.3 Resource mapped execution times
-                    HashMap<Resource, GRBVar> task_benchmark_exec_time =
-                            new HashMap<Resource, GRBVar>();
+                    HashMap<Resource, GRBVar> task_benchmark_exec_time = new HashMap<Resource, GRBVar>();
 
                     for (Map.Entry<Resource, Double> entry : task.getExecution_costs().entrySet())
                         task_benchmark_exec_time.put(entry.getKey(),
@@ -720,8 +714,7 @@ public class ScheduleSolver {
 
                     // 2.6 Same resource communication costs
                     // Benchmarked sending times
-                    HashMap<Resource, GRBVar> task_benchmarked_sending_times =
-                            new HashMap<Resource, GRBVar>();
+                    HashMap<Resource, GRBVar> task_benchmarked_sending_times = new HashMap<Resource, GRBVar>();
 
                     for (Resource resource : task.getTarget_resources()) {
                         GRBVar Cs = grb_model.addVar(task.getSend_costs().get(resource),
@@ -733,8 +726,7 @@ public class ScheduleSolver {
                     grb_model.update();
 
                     // sending times
-                    HashMap<Resource, GRBVar> task_same_resource_sending_costs =
-                            new HashMap<Resource, GRBVar>();
+                    HashMap<Resource, GRBVar> task_same_resource_sending_costs = new HashMap<Resource, GRBVar>();
 
                     for (Resource resource : task.getTarget_resources()) {
                         GRBVar send = grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
@@ -745,8 +737,7 @@ public class ScheduleSolver {
                     grb_model.update();
 
                     // Benchmarked receiving times
-                    HashMap<Resource, GRBVar> task_benchmarked_receiving_costs =
-                            new HashMap<Resource, GRBVar>();
+                    HashMap<Resource, GRBVar> task_benchmarked_receiving_costs = new HashMap<Resource, GRBVar>();
 
                     for (Resource resource : task.getTarget_resources()) {
                         Double recv_time = task.getSend_costs().get(resource);
@@ -758,8 +749,7 @@ public class ScheduleSolver {
                     grb_model.update();
 
                     // receiving times
-                    HashMap<Resource, GRBVar> task_same_resource_receiving_costs =
-                            new HashMap<Resource, GRBVar>();
+                    HashMap<Resource, GRBVar> task_same_resource_receiving_costs = new HashMap<Resource, GRBVar>();
 
                     for (Resource resource : task.getTarget_resources()) {
                         GRBVar recv = grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, "");
@@ -858,6 +848,39 @@ public class ScheduleSolver {
                     if (task == model.get(model.size() - 1)) {
                         // Last task, so we can add its finish time to the list of final tasks
                         final_task_finish_times.add(task.getFinish_time());
+
+                        // Real time
+                        // Our examples only look at model deadlines so setting constraints for last
+                        // tasks for now
+                        if (real_time)
+                            if (!hard_real_time) {
+                                // deadline misses
+                                if (objective.equals("deadline_misses")) {
+                                    if (verbose)
+                                        System.out
+                                                .println(String.format("Deadline misses constraint: %s", task.getID()));
+                                    n_vars.add(ilps.addTaskSoftDeadlineConstraint(task.getFinish_time(),
+                                            this.getDeadline(),
+                                            this.getK(),
+                                            String.format("n_%s", task.getID()), grb_model,
+                                            String.format("Deadline misses constraint: %s", task.getID())));
+                                }
+                                // slack time
+                                else if (objective.equals("slack_time")) {
+                                    if (verbose)
+                                        System.out.println(String.format("Slack constraint: %s",
+                                                task.getID()));
+                                    m_vars.add(ilps.addSlackTimeConstraint(task.getFinish_time(), this.getDeadline(),
+                                            String.format("m_%s", task.getID()), grb_model,
+                                            String.format("Slack constraint: %s",
+                                                    task.getID())));
+                                }
+                            } else {
+                                // task deadlines
+                                ilps.addTaskHardDeadlineConstraint(task.getStart_time(), task.getFinish_time(),
+                                        this.getDeadline(),
+                                        grb_model, String.format("%s deadline: %f", task.getID(), this.getDeadline()));
+                            }
                     } else
                         prev_task = task;
                 }
@@ -870,8 +893,8 @@ public class ScheduleSolver {
                 for (int j = i + 1; j < all_tasks.size(); j++) {
 
                     // Shared target resources
-                    ArrayList<Resource> resource_intersection =
-                            new ArrayList<Resource>(all_tasks.get(i).getTarget_resources());
+                    ArrayList<Resource> resource_intersection = new ArrayList<Resource>(
+                            all_tasks.get(i).getTarget_resources());
                     resource_intersection.retainAll(all_tasks.get(j).getTarget_resources());
 
                     String y_label = String.format("Y_%d_%d", i, j);
@@ -882,8 +905,7 @@ public class ScheduleSolver {
                     grb_model.update(); // So we can directly pull VarNames
 
                     for (Resource resource : resource_intersection) {
-                        String constraint_name =
-                                String.format("Pair constraint: %d-%d-%s", i, j, resource.getId());
+                        String constraint_name = String.format("Pair constraint: %d-%d-%s", i, j, resource.getId());
                         GRBVar i_start_time = all_tasks.get(i).getStart_time();
                         GRBVar i_finish_time = all_tasks.get(i).getFinish_time();
                         GRBVar j_start_time = all_tasks.get(j).getStart_time();
@@ -920,12 +942,27 @@ public class ScheduleSolver {
             }
 
             // Set objective
-            GRBLinExpr obj = new GRBLinExpr();
-            double[] coeffs = new double[final_task_finish_times.size()];
-            Arrays.fill(coeffs, 1.0 / final_task_finish_times.size());
-            obj.addTerms(coeffs, final_task_finish_times.toArray(new GRBVar[0]));
+            if (objective.equals("average_finish_time"))
+                ilps.addObjectiveMinAverageVarArray(final_task_finish_times, grb_model);
+            else if (objective.equals("max_finish_time"))
+                ilps.addObjectiveMinMaxValue(final_task_finish_times, grb_model, String.format("Max_finish"),
+                        String.format("Obj_max"));
+            else if (objective.equals("deadline_misses")) {
 
-            grb_model.setObjective(obj, GRB.MINIMIZE);
+                if (!real_time)
+                    throw new Exception("Cannot use real-time objective without real-time constraints enabled");
+                else if (hard_real_time)
+                    throw new Exception("Cannot use soft real-time objective with hard real-time constraints");
+                ilps.addObjectiveMinVarArray(n_vars, grb_model);
+
+            } else if (objective.equals("slack_time")) {
+
+                if (!real_time)
+                    throw new Exception("Cannot use real-time objective without real-time constraints enabled");
+                else if (hard_real_time)
+                    throw new Exception("Cannot use soft real-time objective with hard real-time constraints");
+                ilps.addObjectiveMinVarArray(m_vars, grb_model);
+            }
 
             try {
                 grb_model.optimize();
@@ -946,16 +983,21 @@ public class ScheduleSolver {
 
             if (this.verbose == true) {
 
-                HashMap<Resource, ArrayList<Triplet<String, Double, Double>>> per_resource_schedule =
-                        new HashMap<Resource, ArrayList<Triplet<String, Double, Double>>>();
+                HashMap<Resource, ArrayList<Triplet<String, Double, Double>>> per_resource_schedule = new HashMap<Resource, ArrayList<Triplet<String, Double, Double>>>();
 
                 for (int i = 0; i < all_tasks.size(); i++) {
                     ILPTask task = all_tasks.get(i);
-                    System.out.println(String.format("Task %d:%s, start: %f, finish: %f, exec: %f",
-                            i + 1, task.getID(), task.getD_start_time(), task.getD_finish_time(),
+                    System.out.println(String.format("Task %d:%s, %s: %f, %s: %f, %s: %f",
+                            i + 1, task.getID(), task.getStart_time().get(GRB.StringAttr.VarName),
+                            task.getD_start_time(),
+                            task.getFinish_time().get(GRB.StringAttr.VarName), task.getD_finish_time(),
+                            task.getTotal_execution_cost().get(GRB.StringAttr.VarName),
                             task.getD_total_execution_cost()));
-                    System.out.println(String.format("Comm: %f, send: %f, recv: %f",
-                            task.getD_total_comm_cost(), task.getD_total_sending_comm_cost(),
+                    System.out.println(String.format("%s: %f, %s: %f, %s: %f",
+                            task.getTotal_comm_cost().get(GRB.StringAttr.VarName), task.getD_total_comm_cost(),
+                            task.getTotal_sending_comm_cost().get(GRB.StringAttr.VarName),
+                            task.getD_total_sending_comm_cost(),
+                            task.getTotal_receiving_comm_cost().get(GRB.StringAttr.VarName),
                             task.getD_total_receiving_comm_cost()));
                     for (Map.Entry<Resource, GRBVar> entry : task.getX_vars().entrySet()) {
                         Double test = entry.getValue().get(GRB.DoubleAttr.X);
@@ -1088,31 +1130,46 @@ public class ScheduleSolver {
                             String.format("Finish time: %f", finish_time.get(GRB.DoubleAttr.X)));
 
                 System.out.println();
+
+                if (real_time)
+                    if (!hard_real_time) {
+                        // deadline misses
+                        if (objective.equals("deadline_misses")) {
+                            System.out.println("N variables");
+                            for (GRBVar var : n_vars)
+                                System.out.println(String.format("%f", var.get(GRB.DoubleAttr.X)));
+                        }
+                        // slack time
+                        else if (objective.equals("slack_time"))
+                            System.out.println("M variables");
+                        for (GRBVar var : m_vars)
+                            System.out.println(String.format("%f", var.get(GRB.DoubleAttr.X)));
+                    }
+
+                System.out.println("Linear constraints");
+
+                GRBConstr[] constraints = grb_model.getConstrs();
+
+                for (GRBConstr constr : constraints)
+                    System.out
+                            .println(String.format("%s: %f: %f", constr.get(GRB.StringAttr.ConstrName),
+                                    constr.get(GRB.DoubleAttr.RHS), constr.get(GRB.DoubleAttr.Slack)));
+
+                System.out.println("General constraints");
+
+                GRBGenConstr[] g_constraints = grb_model.getGenConstrs();
+
+                for (GRBGenConstr constr : g_constraints)
+                    System.out.println(String.format("%s", constr.get(GRB.StringAttr.GenConstrName)));
+
+                System.out.println("Quadratic constraints");
+
+                GRBQConstr[] q_constraints = grb_model.getQConstrs();
+
+                for (GRBQConstr constr : q_constraints)
+                    System.out.println(String.format("%s: %f: %f", constr.get(GRB.StringAttr.QCName),
+                            constr.get(GRB.DoubleAttr.QCRHS), constr.get(GRB.DoubleAttr.QCSlack)));
             }
-
-            System.out.println("Linear constraints");
-
-            GRBConstr[] constraints = grb_model.getConstrs();
-
-            for (GRBConstr constr : constraints)
-                System.out
-                        .println(String.format("%s: %f: %f", constr.get(GRB.StringAttr.ConstrName),
-                                constr.get(GRB.DoubleAttr.RHS), constr.get(GRB.DoubleAttr.Slack)));
-
-            System.out.println("General constraints");
-
-            GRBGenConstr[] g_constraints = grb_model.getGenConstrs();
-
-            for (GRBGenConstr constr : g_constraints)
-                System.out.println(String.format("%s", constr.get(GRB.StringAttr.GenConstrName)));
-
-            System.out.println("Quadratic constraints");
-
-            GRBQConstr[] q_constraints = grb_model.getQConstrs();
-
-            for (GRBQConstr constr : q_constraints)
-                System.out.println(String.format("%s: %f: %f", constr.get(GRB.StringAttr.QCName),
-                        constr.get(GRB.DoubleAttr.QCRHS), constr.get(GRB.DoubleAttr.QCSlack)));
 
         } catch (GRBException e) {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());
@@ -1175,6 +1232,22 @@ public class ScheduleSolver {
 
     public void setOperation_costs(OperationCosts operation_costs) {
         this.operation_costs = operation_costs;
+    }
+
+    public Double getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(Double deadline) {
+        this.deadline = deadline;
+    }
+
+    public List<Model> getJson_models() {
+        return json_models;
+    }
+
+    public void setJson_models(List<Model> json_models) {
+        this.json_models = json_models;
     }
 
 }
