@@ -36,7 +36,7 @@ std::string extract_filename(const std::string& path) {
 
 void redirect_output_to_file(const std::string& path) {
     //std::string filename = extract_filename(path) + ".log";
-    std::string filename = "cpp_backend.log"
+    std::string filename = "cpp_backend.log";
     std::string logDirectory = "resources/logs/";
     std::string filepath = logDirectory + filename;
 
@@ -57,35 +57,35 @@ int distributed_inference_cpu(std::string& tflite_model_path, int8_t* input_data
                                                               const unsigned int benchmarking_count) {
 
     // Load the model
-    std::cout << "Loading TFLite Model from: " << tflite_model_path << std::endl;
+    std::cout << "  [1]  Loading TFLite Model from: " << tflite_model_path << std::endl;
     std::unique_ptr<tflite::FlatBufferModel> model;
     model = LoadModelFile(tflite_model_path);
     if (model == nullptr) {
-        std::cerr << "Failed to load model from " << tflite_model_path 
+        std::cerr << "  [1]  Failed to load model from " << tflite_model_path 
                   << std::endl;
         return -1;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << "  [1]  Done" << std::endl;
 
     // Create interpreter Object
-    std::cout << "Creating Interpreter Object" << std::endl;
+    std::cout << "  [2]  Creating Interpreter Object" << std::endl;
     tflite::ops::builtin::BuiltinOpResolver resolver;
     tflite::InterpreterBuilder builder(*model, resolver);
     std::unique_ptr<tflite::Interpreter> interpreter;
     builder(&interpreter);
-    std::cout << "Done" << std::endl;
+    std::cout << "  [2]  Done" << std::endl;
 
 
     // Allocate tensors
-    std::cout << "Allocating Tensors" << std::endl;
+    std::cout << "  [3]  Allocating Tensors" << std::endl;
     if (interpreter->AllocateTensors() != kTfLiteOk) {
-        std::cerr << "Failed to allocate tensors." << std::endl;
+        std::cerr << "  [3]  Failed to allocate tensors." << std::endl;
         return 1;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << "  [3]  Done" << std::endl;
 
     // Invoke
-    std::cout << "Invoking Interpreter" << std::endl;
+    std::cout << "  [4]  Invoking Interpreter" << std::endl;
     std::vector<uint32_t> inference_times_vec(benchmarking_count, 0);
 
     for (int i = 0; i < benchmarking_count; i++) {
@@ -104,7 +104,7 @@ int distributed_inference_cpu(std::string& tflite_model_path, int8_t* input_data
 
         auto inference_start = std::chrono::high_resolution_clock::now();
         if (interpreter->Invoke() != kTfLiteOk) {
-            std::cerr << "Cannot invoke interpreter" << std::endl;
+            std::cerr << "  [4]  Cannot invoke interpreter" << std::endl;
             return 1;
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
@@ -125,8 +125,8 @@ int distributed_inference_cpu(std::string& tflite_model_path, int8_t* input_data
 
     int mean = calculateMean(inference_times_vec);
 
-    std::cout << "CPU Interpreter successfully invoked!" << std::endl;
-    std::cout << "Done" << std::endl;
+    std::cout << "  [4]  Interpreter successfully invoked!" << std::endl;
+    std::cout << "  [4]  Done" << std::endl;
 
     return mean;
 }
@@ -141,7 +141,7 @@ int distributed_inference_gpu(std::string& tflite_model_path, int8_t* input_data
 
 
     // Load the model
-    std::cout << "Loading TFLite Model from: " << tflite_model_path << std::endl;
+    std::cout << "  [1]  Loading TFLite Model from: " << tflite_model_path << std::endl;
     std::unique_ptr<tflite::FlatBufferModel> model;
     model = LoadModelFile(tflite_model_path);
     if (model == nullptr) {
@@ -149,35 +149,35 @@ int distributed_inference_gpu(std::string& tflite_model_path, int8_t* input_data
         << std::endl;
         return -1;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << "  [1]  Done" << std::endl;
 
     // Create interpreter Object
-    std::cout << "Creating Interpreter Object" << std::endl;
+    std::cout << "  [2]  Creating Interpreter Object" << std::endl;
     tflite::ops::builtin::BuiltinOpResolver resolver;
     tflite::InterpreterBuilder builder(*model, resolver);
     std::unique_ptr<tflite::Interpreter> interpreter;
     builder(&interpreter);
-    std::cout << "Done" << std::endl;
+    std::cout << "  [2]  Done" << std::endl;
 
     // Allocate tensors
-    std::cout << "Allocating Tensors" << std::endl;
+    std::cout << "  [3]  Allocating Tensors" << std::endl;
     if (interpreter->AllocateTensors() != kTfLiteOk) {
-        std::cerr << "Failed to allocate tensors." << std::endl;
+        std::cerr << "  [3]  Failed to allocate tensors." << std::endl;
         return 1;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << "  [3]  Done" << std::endl;
 
     // Create GPU Delegate
-    std::cout << "Creating GPU Delegate" << std::endl;
+    std::cout << "  [4]  Creating GPU Delegate" << std::endl;
     const TfLiteGpuDelegateOptionsV2 options 
         = TfLiteGpuDelegateOptionsV2Default();
     auto* delegate = TfLiteGpuDelegateV2Create(&options);
     builder.AddDelegate(delegate);
-    std::cout << "Done" << std::endl;
+    std::cout << "  [4]  Done" << std::endl;
 
 
     // Invoke
-    std::cout << "Invoking Interpreter" << std::endl;
+    std::cout << "  [5]  Invoking Interpreter" << std::endl;
     std::vector<uint32_t> inference_times_vec(benchmarking_count, 0);
 
     for (int i = 0; i < benchmarking_count; i++) {
@@ -196,7 +196,7 @@ int distributed_inference_gpu(std::string& tflite_model_path, int8_t* input_data
 
         auto inference_start = std::chrono::high_resolution_clock::now();
         if (interpreter->Invoke() != kTfLiteOk) {
-            std::cerr << "Cannot invoke interpreter" << std::endl;
+            std::cerr << "  [5]  Cannot invoke interpreter" << std::endl;
             return 1;
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
@@ -216,8 +216,8 @@ int distributed_inference_gpu(std::string& tflite_model_path, int8_t* input_data
 
     int mean = calculateMean(inference_times_vec);
 
-    std::cout << "GPU Interpreter successfully invoked!" << std::endl;
-    std::cout << "Done" << std::endl;
+    std::cout << "  [5]  Interpreter successfully invoked!" << std::endl;
+    std::cout << "  [5]  Done" << std::endl;
 
     return mean;
 }
@@ -232,23 +232,23 @@ int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_
                                                               const unsigned int core_index) {
 
     // Find TPU device.
-    std::cout << " Detecting Edge TPUs Devices ..." << std::endl;
+    std::cout << "  [1]  Detecting Edge TPUs Devices ..." << std::endl;
     size_t num_devices;
     std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)> devices(
         edgetpu_list_devices(&num_devices), &edgetpu_free_devices);
     if (num_devices == 0) {
-        std::cerr << "No connected USB Accelerator is found!" << std::endl;
+        std::cerr << "  [1]  No connected USB Accelerator is found!" << std::endl;
         return -1;
     }
     const auto& device = devices.get()[core_index];
     const auto& available_tpus 
         = edgetpu::EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
-    std::cout << "Number of available Edge TPU USB Accelerators: " 
+    std::cout << "  [1]  Number of available Edge TPU USB Accelerators: " 
               << available_tpus.size() 
               << std::endl; // hopefully we'll see 1 here
 
     // Load the model
-    std::cout << "Loading TFLite Model from: " << tflite_model_path << std::endl;
+    std::cout << "  [2]  Loading TFLite Model from: " << tflite_model_path << std::endl;
     std::unique_ptr<tflite::FlatBufferModel> model;
     model = LoadModelFile(tflite_model_path);
     if (model == nullptr) {
@@ -256,35 +256,35 @@ int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_
         << std::endl;
         return -1;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << "  [2]  Done" << std::endl;
     
     // Create interpreter.
-    std::cout << "Creating Interpreter Object" << std::endl;
+    std::cout << "  [3]  Creating Interpreter Object" << std::endl;
     tflite::ops::builtin::BuiltinOpResolver resolver;
     std::unique_ptr<tflite::Interpreter> interpreter;
     if (tflite::InterpreterBuilder(*model, resolver)(&interpreter) 
         != kTfLiteOk) {
-        std::cerr << "Cannot create interpreter" << std::endl;
+        std::cerr << "  [3]  Cannot create interpreter" << std::endl;
         return -1;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << "  [3]  Done" << std::endl;
 
-    std::cout << "Creating Edge TPU delegate" << std::endl;
+    std::cout << "  [4]  Creating Edge TPU delegate" << std::endl;
     auto* delegate 
         = edgetpu_create_delegate(device.type, device.path, nullptr, 0);
     interpreter->ModifyGraphWithDelegate(delegate);
-    std::cout << "Done" << std::endl;
+    std::cout << "  [4]  Done" << std::endl;
 
     // Allocate tensors 
-    std::cout << "Allocating Tensors" << std::endl;
+    std::cout << "  [5]  Allocating Tensors" << std::endl;
     if (interpreter->AllocateTensors() != kTfLiteOk) {
-        std::cerr << "Failed to allocate tensors." << std::endl;
+        std::cerr << "  [5]  Failed to allocate tensors." << std::endl;
         return -1;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << "  [5]  Done" << std::endl;
 
     // Invoke
-    std::cout << "Invoking Interpreter" << std::endl;
+    std::cout << "  [6]  Invoking Interpreter" << std::endl;
     std::vector<uint32_t> inference_times_vec(benchmarking_count, 0);
     for (int i = 0; i < benchmarking_count; i++) {
         std::vector<int8_t> randomVector 
@@ -302,7 +302,7 @@ int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_
 
         auto inference_start = std::chrono::high_resolution_clock::now();
         if (interpreter->Invoke() != kTfLiteOk) {
-            std::cerr << "Cannot invoke interpreter" << std::endl;
+            std::cerr << "  [6]  Cannot invoke interpreter" << std::endl;
             return 1;
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
@@ -322,7 +322,7 @@ int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_
 
     int mean = calculateMean(inference_times_vec);
 
-    std::cout << "Edge TPU Interpreter successfully invoked!" << std::endl;
+    std::cout << "  [6]  Interpreter successfully invoked!" << std::endl;
 
     return mean;
 
@@ -338,7 +338,7 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
                                                               const unsigned int core_index) {
 
     // Find TPU device.
-    std::cout << " Detecting Edge TPUs Devices ..." << std::endl;
+    std::cout << "  [1]  Detecting Edge TPUs Devices ..." << std::endl;
     size_t num_devices;
     std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)> devices(
         edgetpu_list_devices(&num_devices), &edgetpu_free_devices);
@@ -349,22 +349,22 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
     const auto& device = devices.get()[core_index];
     const auto& available_tpus 
         = edgetpu::EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
-    std::cout << "Number of available Edge TPU USB Accelerators: " 
+    std::cout << "  [1]  Number of available Edge TPU USB Accelerators: " 
               << available_tpus.size() 
               << std::endl; // hopefully we'll see 1 here
 
     // Load the model
-    std::cout << "Loading TFLite Model from: " << tflite_model_path << std::endl;
+    std::cout << "  [2]  Loading TFLite Model from: " << tflite_model_path << std::endl;
     std::unique_ptr<tflite::FlatBufferModel> model;
     model = LoadModelFile(tflite_model_path);
     if (model == nullptr) {
-        std::cerr << "Failed to load model from " << tflite_model_path 
+        std::cerr << "  [2]  Failed to load model from " << tflite_model_path 
         << std::endl;
         return -1;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << "  [2]  Done" << std::endl;
 
-    std::cout << "Creating Interpreter Object and Edge TPU Context" << std::endl;
+    std::cout << "  [3]  Creating Interpreter Object and Edge TPU Context" << std::endl;
     const std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(available_tpus[0].type, available_tpus[0].path);
     tflite::ops::builtin::BuiltinOpResolver resolver;
     resolver.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
@@ -373,18 +373,18 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
     builder(&interpreter);
     interpreter->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context.get());
     interpreter->SetNumThreads(1);
-    std::cout << "Done" << std::endl;
+    std::cout << "  [3]  Done" << std::endl;
 
     // Allocate tensors 
-    std::cout << "Allocating Tensors" << std::endl;
+    std::cout << "  [4]  Allocating Tensors" << std::endl;
     if (interpreter->AllocateTensors() != kTfLiteOk) {
-        std::cerr << "Failed to allocate tensors." << std::endl;
+        std::cerr << "  [4]  Failed to allocate tensors." << std::endl;
         return -1;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << "  [4]  Done" << std::endl;
 
     // Invoke
-    std::cout << "Invoking Interpreter" << std::endl;
+    std::cout << "  [5]  Invoking Interpreter" << std::endl;
     std::vector<uint32_t> inference_times_vec(benchmarking_count, 0);
     for (int i = 0; i < benchmarking_count; i++) {
         std::vector<int8_t> randomVector 
@@ -402,7 +402,7 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
 
         auto inference_start = std::chrono::high_resolution_clock::now();
         if (interpreter->Invoke() != kTfLiteOk) {
-            std::cerr << "Cannot invoke interpreter" << std::endl;
+            std::cerr << "  [5]  Cannot invoke interpreter" << std::endl;
             return 1;
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
@@ -422,7 +422,7 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
 
     int mean = calculateMean(inference_times_vec);
 
-    std::cout << "Edge TPU Interpreter successfully invoked!" << std::endl;
+    std::cout << "  [5]  Interpreter successfully invoked!" << std::endl;
 
     return mean;
 }
@@ -438,8 +438,15 @@ int distributed_inference_wrapper(std::string& tflite_model_path, int8_t* input_
                                                                   const unsigned int benchmarking_count,
                                                                   const unsigned int core_index
                                                                   ) {
+                                                                    
+    std::cout << "TFLite Model: " << tflite_model_path << std::endl;
+    std::cout << "HW Target: " << hardware_target << std::endl;
+    std::cout << "Execution Count: " << benchmarking_count << std::endl;
+    std::cout << "Platform: " << platform << std::endl;
+   
     int result = 0;
     redirect_output_to_file(tflite_model_path);
+
     if (hardware_target.compare("cpu") == 0) {
         result = distributed_inference_cpu(tflite_model_path, input_data,
                                                               output_data,

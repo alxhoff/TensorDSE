@@ -136,6 +136,7 @@ def DeployModel(model_path: str, model_summary_path: str, hw_summary_path: str, 
     if model_summary_path is not None:
         try:
             model_summary = ReadJSON(model_summary_path)
+            hardware_summary = ReadJSON(hw_summary_path)
         except Exception as e:
             log.error(f"Exception occured while trying to read Model and HW Summary!")
 
@@ -220,7 +221,6 @@ def getArgs():
             )
     
     return parser.parse_args()
-
 
 if __name__ == "__main__":
     import os

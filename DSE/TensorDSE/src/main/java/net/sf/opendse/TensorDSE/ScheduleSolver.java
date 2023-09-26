@@ -1249,5 +1249,4 @@ public class ScheduleSolver {
     public void setJson_models(List<Model> json_models) {
         this.json_models = json_models;
     }
-
 }
