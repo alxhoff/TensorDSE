@@ -2,10 +2,10 @@
     "models": [
         {
             "name": "MNIST_full_quanitization",
-            "runs": 20,
+            "runs": 3,
             "layers": [
                 {
-                    "name": "conv_2d",
+                    "name": "conv_2d_0_28_28_1",
                     "path": {
                         "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_0_ops0_bm/submodel_0_ops0_bm.tflite",
                         "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_0_ops0_bm/submodel_0_ops0_bm.tflite",
@@ -23,10 +23,10 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.00014781400000000002,
-                            "median": 4.335e-05,
-                            "standard_deviation": 0.0001820483286273181,
-                            "avg_absolute_deviation": 94.8083402113467,
+                            "mean": 0.00013923133333333334,
+                            "median": 3.6698e-05,
+                            "standard_deviation": 0.00017899165875071758,
+                            "avg_absolute_deviation": 98.9622387042508,
                             "distribution": "dweibull",
                             "usb": {
                                 "communication": {
@@ -46,11 +46,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 6.0245000000000003e-05,
-                            "median": 5.1445e-05,
-                            "standard_deviation": 1.697046166136915e-05,
-                            "avg_absolute_deviation": 21.648269565939085,
-                            "distribution": "erlang",
+                            "mean": 4.0257666666666666e-05,
+                            "median": 3.5495e-05,
+                            "standard_deviation": 8.810134524133742e-06,
+                            "avg_absolute_deviation": 16.835440592406137,
+                            "distribution": "exponweib",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -69,41 +69,41 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.0005529456666666666,
-                            "median": 0.00053913,
-                            "standard_deviation": 6.267218972026856e-05,
-                            "avg_absolute_deviation": 8.250037023931025,
-                            "distribution": "dgamma",
+                            "mean": 0.0006321456666666666,
+                            "median": 0.000603399,
+                            "standard_deviation": 7.65550087801793e-05,
+                            "avg_absolute_deviation": 9.150563222857738,
+                            "distribution": "chi",
                             "usb": {
                                 "send": {
-                                    "mean": 7.633333333334491e-05,
-                                    "median": 7.599999999996498e-05,
-                                    "standard_deviation": 2.5166114783341923e-06,
-                                    "avg_absolute_deviation": 2.328966521043593
+                                    "mean": 7.700000000010476e-05,
+                                    "median": 8.000000000008001e-05,
+                                    "standard_deviation": 9.848857802000407e-06,
+                                    "avg_absolute_deviation": 9.523809523974307
                                 },
                                 "recv": {
-                                    "mean": 0.0003189999999999582,
-                                    "median": 0.00032599999999982643,
-                                    "standard_deviation": 4.590206967013028e-05,
-                                    "avg_absolute_deviation": 10.240334378259595
+                                    "mean": 0.0003106666666666443,
+                                    "median": 0.0003260000000000485,
+                                    "standard_deviation": 2.7428695436278316e-05,
+                                    "avg_absolute_deviation": 6.795422031486778
                                 },
                                 "communication": {
-                                    "mean": 0.0003953333333333031,
-                                    "median": 0.00040499999999976666,
-                                    "standard_deviation": 4.724757489359299e-05,
-                                    "avg_absolute_deviation": 8.656548622796805
+                                    "mean": 0.00038766666666674904,
+                                    "median": 0.00039199999999994795,
+                                    "standard_deviation": 2.1825062046372592e-05,
+                                    "avg_absolute_deviation": 4.069934078502326
                                 },
                                 "inference": {
-                                    "mean": 1.5666666666636075e-05,
-                                    "median": 1.4999999999876223e-05,
-                                    "standard_deviation": 3.055050463294835e-06,
-                                    "avg_absolute_deviation": 14.184397163241188
+                                    "mean": 1.7666666666619573e-05,
+                                    "median": 1.3000000000040757e-05,
+                                    "standard_deviation": 9.865765724736139e-06,
+                                    "avg_absolute_deviation": 42.76729559799018
                                 },
                                 "total": {
-                                    "mean": 0.0004109999999999392,
-                                    "median": 0.0004179999999998074,
-                                    "standard_deviation": 4.887739763939241e-05,
-                                    "avg_absolute_deviation": 8.434712084338795
+                                    "mean": 0.00040533333333336863,
+                                    "median": 0.00042000000000008697,
+                                    "standard_deviation": 2.6274195198602212e-05,
+                                    "avg_absolute_deviation": 4.989035087722332
                                 }
                             },
                             "mean_computation": 0
@@ -111,7 +111,107 @@
                     ]
                 },
                 {
-                    "name": "fully_connected",
+                    "name": "fully_connected_3_5408",
+                    "path": {
+                        "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_3_ops3_bm/submodel_3_ops3_bm.tflite",
+                        "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_3_ops3_bm/submodel_3_ops3_bm.tflite",
+                        "tpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/compiled/submodel_3_ops3_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "5408"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0020131863333333333,
+                            "median": 0.00185539,
+                            "standard_deviation": 0.0006322447586262249,
+                            "avg_absolute_deviation": 23.054586159905604,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "5408"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0015128086666666666,
+                            "median": 0.00150451,
+                            "standard_deviation": 4.214923398275867e-05,
+                            "avg_absolute_deviation": 2.013091469744505,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "5408"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0019832876666666666,
+                            "median": 0.001967609,
+                            "standard_deviation": 6.317540694236445e-05,
+                            "avg_absolute_deviation": 2.337476790081837,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "send": {
+                                    "mean": 0.00022766666666658905,
+                                    "median": 0.0002329999999999277,
+                                    "standard_deviation": 1.8583146486427492e-05,
+                                    "avg_absolute_deviation": 6.051732552488986
+                                },
+                                "recv": {
+                                    "mean": 6.299999999999824e-05,
+                                    "median": 6.20000000000065e-05,
+                                    "standard_deviation": 4.582575694918025e-06,
+                                    "avg_absolute_deviation": 5.291005290961777
+                                },
+                                "communication": {
+                                    "mean": 0.0002906666666665873,
+                                    "median": 0.0003009999999998847,
+                                    "standard_deviation": 1.877054430046212e-05,
+                                    "avg_absolute_deviation": 4.969418960261582
+                                },
+                                "inference": {
+                                    "mean": 0.0015923333333334178,
+                                    "median": 0.0015930000000001776,
+                                    "standard_deviation": 1.601041327804934e-05,
+                                    "avg_absolute_deviation": 0.6838322517644991
+                                },
+                                "total": {
+                                    "mean": 0.0018830000000000051,
+                                    "median": 0.0018940000000000623,
+                                    "standard_deviation": 3.386738844386393e-05,
+                                    "avg_absolute_deviation": 1.3453708621041027
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "fully_connected_4_128",
                     "path": {
                         "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_4_ops4_bm/submodel_4_ops4_bm.tflite",
                         "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_4_ops4_bm/submodel_4_ops4_bm.tflite",
@@ -127,11 +227,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 1.2910333333333334e-05,
-                            "median": 7.354e-06,
-                            "standard_deviation": 1.0602352867799362e-05,
-                            "avg_absolute_deviation": 63.13116969180588,
-                            "distribution": "beta",
+                            "mean": 9.681333333333333e-06,
+                            "median": 5.28e-06,
+                            "standard_deviation": 8.008286354354052e-06,
+                            "avg_absolute_deviation": 63.65284855162282,
+                            "distribution": "erlang",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -148,11 +248,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 1.604e-05,
-                            "median": 9.267e-06,
-                            "standard_deviation": 1.3611206889912443e-05,
-                            "avg_absolute_deviation": 65.12468827930175,
-                            "distribution": "chi",
+                            "mean": 8.035e-06,
+                            "median": 5.39e-06,
+                            "standard_deviation": 5.057033814401482e-06,
+                            "avg_absolute_deviation": 48.3800041485169,
+                            "distribution": "erlang",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -169,41 +269,41 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.0003088293333333333,
-                            "median": 0.000283155,
-                            "standard_deviation": 0.00012272448609113558,
-                            "avg_absolute_deviation": 28.825125995515684,
-                            "distribution": "fatiguelife",
+                            "mean": 0.000282183,
+                            "median": 0.000305837,
+                            "standard_deviation": 4.92412740594717e-05,
+                            "avg_absolute_deviation": 13.373118390075478,
+                            "distribution": "beta",
                             "usb": {
                                 "send": {
-                                    "mean": 6.76666666667991e-05,
-                                    "median": 7.2000000000072e-05,
-                                    "standard_deviation": 2.5774664562858453e-05,
-                                    "avg_absolute_deviation": 27.257799671411732
+                                    "mean": 8.933333333338567e-05,
+                                    "median": 9.100000000006325e-05,
+                                    "standard_deviation": 7.637626158309769e-06,
+                                    "avg_absolute_deviation": 6.218905472673915
                                 },
                                 "recv": {
-                                    "mean": 8.83333333333199e-05,
-                                    "median": 7.400000000012952e-05,
-                                    "standard_deviation": 6.274020507863204e-05,
-                                    "avg_absolute_deviation": 51.82389937089149
+                                    "mean": 7.033333333332041e-05,
+                                    "median": 7.00000000000145e-05,
+                                    "standard_deviation": 2.9501412395582714e-05,
+                                    "avg_absolute_deviation": 28.12006319116022
                                 },
                                 "communication": {
-                                    "mean": 0.00015600000000011902,
-                                    "median": 0.00016500000000019277,
-                                    "standard_deviation": 4.616275555026769e-05,
-                                    "avg_absolute_deviation": 21.367521367486898
+                                    "mean": 0.00015966666666670606,
+                                    "median": 0.0001660000000001105,
+                                    "standard_deviation": 3.493326972010131e-05,
+                                    "avg_absolute_deviation": 15.727209464192612
                                 },
                                 "inference": {
-                                    "mean": 2.4333333333255897e-05,
-                                    "median": 1.6999999999933735e-05,
-                                    "standard_deviation": 2.6764404221604658e-05,
-                                    "avg_absolute_deviation": 81.27853881325207
+                                    "mean": 4.999999999884726e-06,
+                                    "median": 2.9999999999752447e-06,
+                                    "standard_deviation": 4.358898943513195e-06,
+                                    "avg_absolute_deviation": 66.66666666765353
                                 },
                                 "total": {
-                                    "mean": 0.0001803333333333749,
-                                    "median": 0.00016700000000002824,
-                                    "standard_deviation": 6.503332479066085e-05,
-                                    "avg_absolute_deviation": 26.124460874902045
+                                    "mean": 0.0001646666666665908,
+                                    "median": 0.00016799999999994597,
+                                    "standard_deviation": 3.1134118477010514e-05,
+                                    "avg_absolute_deviation": 13.22537112016474
                                 }
                             },
                             "mean_computation": 0
@@ -211,7 +311,7 @@
                     ]
                 },
                 {
-                    "name": "max_pool_2d",
+                    "name": "max_pool_2d_1_26_26_32",
                     "path": {
                         "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_1_ops1_bm/submodel_1_ops1_bm.tflite",
                         "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_1_ops1_bm/submodel_1_ops1_bm.tflite",
@@ -229,11 +329,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 7.3453e-05,
-                            "median": 7.2735e-05,
-                            "standard_deviation": 4.0302564434536885e-06,
-                            "avg_absolute_deviation": 3.9399343798074935,
-                            "distribution": "exponpow",
+                            "mean": 7.768366666666666e-05,
+                            "median": 7.6441e-05,
+                            "standard_deviation": 2.4347528279752187e-06,
+                            "avg_absolute_deviation": 2.407484484798033,
+                            "distribution": "erlang",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -252,11 +352,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 7.305233333333334e-05,
-                            "median": 7.2455e-05,
-                            "standard_deviation": 5.7991190135513985e-06,
-                            "avg_absolute_deviation": 5.543666564761036,
-                            "distribution": "erlang",
+                            "mean": 5.7593333333333336e-05,
+                            "median": 5.6835e-05,
+                            "standard_deviation": 1.8024051523820434e-06,
+                            "avg_absolute_deviation": 2.3818343172435106,
+                            "distribution": "exponpow",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -275,41 +375,41 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.0003940043333333333,
-                            "median": 0.000428816,
-                            "standard_deviation": 7.335498690841224e-05,
-                            "avg_absolute_deviation": 14.260305653716724,
-                            "distribution": "dweibull",
+                            "mean": 0.00048050433333333335,
+                            "median": 0.000469671,
+                            "standard_deviation": 2.0657396964122417e-05,
+                            "avg_absolute_deviation": 3.304953429718177,
+                            "distribution": "dgamma",
                             "usb": {
                                 "send": {
-                                    "mean": 3.40000000000155e-05,
-                                    "median": 2.999999999997449e-05,
-                                    "standard_deviation": 7.810249675903804e-06,
-                                    "avg_absolute_deviation": 17.647058823520872
+                                    "mean": 4.600000000013852e-05,
+                                    "median": 4.6999999999908226e-05,
+                                    "standard_deviation": 1.7320508073622886e-06,
+                                    "avg_absolute_deviation": 2.8985507242832322
                                 },
                                 "recv": {
-                                    "mean": 3.966666666658606e-05,
-                                    "median": 3.8999999999900226e-05,
-                                    "standard_deviation": 4.041451884333711e-06,
-                                    "avg_absolute_deviation": 7.282913165303737
+                                    "mean": 4.9000000000039755e-05,
+                                    "median": 4.600000000021254e-05,
+                                    "standard_deviation": 7.937253933086313e-06,
+                                    "avg_absolute_deviation": 12.244897958971999
                                 },
                                 "communication": {
-                                    "mean": 7.366666666660156e-05,
-                                    "median": 6.799999999995698e-05,
-                                    "standard_deviation": 1.159022576715646e-05,
-                                    "avg_absolute_deviation": 12.066365007564208
+                                    "mean": 9.500000000017828e-05,
+                                    "median": 9.000000000058961e-05,
+                                    "standard_deviation": 8.660254037516529e-06,
+                                    "avg_absolute_deviation": 7.017543859370286
                                 },
                                 "inference": {
-                                    "mean": 0.0001383333333333514,
-                                    "median": 0.00014099999999994672,
-                                    "standard_deviation": 6.429100507260235e-06,
-                                    "avg_absolute_deviation": 3.5341365461432246
+                                    "mean": 0.00013833333333320338,
+                                    "median": 0.00013999999999980695,
+                                    "standard_deviation": 5.686240703162739e-06,
+                                    "avg_absolute_deviation": 3.0522088353784937
                                 },
                                 "total": {
-                                    "mean": 0.00021199999999995298,
-                                    "median": 0.0002089999999999037,
-                                    "standard_deviation": 5.196152422791952e-06,
-                                    "avg_absolute_deviation": 1.8867924528615891
+                                    "mean": 0.00023333333333338166,
+                                    "median": 0.00022999999999995246,
+                                    "standard_deviation": 1.3316656236691421e-05,
+                                    "avg_absolute_deviation": 4.190476190405501
                                 }
                             },
                             "mean_computation": 0
@@ -317,7 +417,7 @@
                     ]
                 },
                 {
-                    "name": "reshape",
+                    "name": "reshape_2_13_13_32",
                     "path": {
                         "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_2_ops2_bm/submodel_2_ops2_bm.tflite",
                         "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_2_ops2_bm/submodel_2_ops2_bm.tflite",
@@ -335,10 +435,10 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 1.0016666666666667e-06,
-                            "median": 2.6e-07,
-                            "standard_deviation": 1.3097993485008814e-06,
-                            "avg_absolute_deviation": 100.65446478092068,
+                            "mean": 1.0183333333333335e-06,
+                            "median": 4.71e-07,
+                            "standard_deviation": 1.0545351266474404e-06,
+                            "avg_absolute_deviation": 79.58537915984724,
                             "distribution": "erlang",
                             "usb": {
                                 "communication": {
@@ -358,11 +458,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 5.606666666666667e-07,
-                            "median": 2.2e-07,
-                            "standard_deviation": 5.900519751117975e-07,
-                            "avg_absolute_deviation": 81.01466508125247,
-                            "distribution": "exponpow",
+                            "mean": 3.74e-07,
+                            "median": 1.8e-07,
+                            "standard_deviation": 3.5260034032882045e-07,
+                            "avg_absolute_deviation": 72.54901960784315,
+                            "distribution": "chi",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -381,41 +481,41 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.000331575,
-                            "median": 0.000327037,
-                            "standard_deviation": 3.793909998932497e-05,
-                            "avg_absolute_deviation": 8.043228027846887,
-                            "distribution": "fatiguelife",
+                            "mean": 0.0003846633333333333,
+                            "median": 0.00038809,
+                            "standard_deviation": 1.1587447274241776e-05,
+                            "avg_absolute_deviation": 2.2382054148360626,
+                            "distribution": "dgamma",
                             "usb": {
                                 "send": {
-                                    "mean": 2.533333333332166e-05,
-                                    "median": 2.700000000022129e-05,
-                                    "standard_deviation": 7.637626158455132e-06,
-                                    "avg_absolute_deviation": 21.929824562141608
+                                    "mean": 3.400000000016353e-05,
+                                    "median": 3.1000000000336314e-05,
+                                    "standard_deviation": 6.082762530126347e-06,
+                                    "avg_absolute_deviation": 13.725490195608902
                                 },
                                 "recv": {
-                                    "mean": 7.266666666660981e-05,
-                                    "median": 7.199999999984996e-05,
-                                    "standard_deviation": 2.0816659993304368e-06,
-                                    "avg_absolute_deviation": 2.14067278276809
+                                    "mean": 7.066666666677435e-05,
+                                    "median": 6.800000000017903e-05,
+                                    "standard_deviation": 5.50757054728993e-06,
+                                    "avg_absolute_deviation": 5.974842767283741
                                 },
                                 "communication": {
-                                    "mean": 9.799999999993148e-05,
-                                    "median": 9.900000000007125e-05,
-                                    "standard_deviation": 9.539392014176088e-06,
-                                    "avg_absolute_deviation": 6.802721088484696
+                                    "mean": 0.00010466666666693787,
+                                    "median": 0.0001070000000003013,
+                                    "standard_deviation": 4.932882862090488e-06,
+                                    "avg_absolute_deviation": 3.609341825737486
                                 },
                                 "inference": {
-                                    "mean": 7.066666666670034e-05,
-                                    "median": 7.00000000000145e-05,
-                                    "standard_deviation": 8.020806276909085e-06,
-                                    "avg_absolute_deviation": 7.861635220033894
+                                    "mean": 6.666666666658531e-05,
+                                    "median": 6.69999999998172e-05,
+                                    "standard_deviation": 5.507570547162262e-06,
+                                    "avg_absolute_deviation": 5.6666666665034615
                                 },
                                 "total": {
-                                    "mean": 0.0001686666666666318,
-                                    "median": 0.00016900000000008575,
-                                    "standard_deviation": 1.527525231768553e-06,
-                                    "avg_absolute_deviation": 0.6587615283897091
+                                    "mean": 0.00017133333333352319,
+                                    "median": 0.0001710000000003653,
+                                    "standard_deviation": 2.516611478422424e-06,
+                                    "avg_absolute_deviation": 1.037613488946445
                                 }
                             },
                             "mean_computation": 0
@@ -423,7 +523,7 @@
                     ]
                 },
                 {
-                    "name": "softmax",
+                    "name": "softmax_5_10",
                     "path": {
                         "cpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_5_ops5_bm/submodel_5_ops5_bm.tflite",
                         "gpu": "/home/starkaf/Documents/uni/master/fp/TensorDSE/utils/splitter/models/sub/tflite/submodel_5_ops5_bm/submodel_5_ops5_bm.tflite",
@@ -439,11 +539,11 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 1.2123333333333334e-06,
-                            "median": 4.11e-07,
-                            "standard_deviation": 1.3879500471318604e-06,
-                            "avg_absolute_deviation": 88.13124369901935,
-                            "distribution": "exponweib",
+                            "mean": 8.753333333333334e-07,
+                            "median": 2.71e-07,
+                            "standard_deviation": 1.0554081359044631e-06,
+                            "avg_absolute_deviation": 92.81543538969282,
+                            "distribution": "dweibull",
                             "usb": {
                                 "communication": {
                                     "mean": 0.0
@@ -460,10 +560,10 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 1.5896666666666666e-06,
-                            "median": 4.91e-07,
-                            "standard_deviation": 1.946408316189934e-06,
-                            "avg_absolute_deviation": 94.24757111903264,
+                            "mean": 8.383333333333333e-07,
+                            "median": 2.41e-07,
+                            "standard_deviation": 1.0441524473626123e-06,
+                            "avg_absolute_deviation": 95.8780649436713,
                             "distribution": "exponweib",
                             "usb": {
                                 "communication": {
@@ -481,41 +581,41 @@
                                 ],
                                 "type": "int8"
                             },
-                            "mean": 0.0003349646666666667,
-                            "median": 0.000344038,
-                            "standard_deviation": 5.398888246049675e-05,
-                            "avg_absolute_deviation": 11.53368746687047,
-                            "distribution": "dgamma",
+                            "mean": 0.0002743523333333333,
+                            "median": 0.00027464,
+                            "standard_deviation": 2.2001910470078123e-05,
+                            "avg_absolute_deviation": 5.38099629389783,
+                            "distribution": "chi",
                             "usb": {
                                 "send": {
-                                    "mean": 7.033333333332041e-05,
-                                    "median": 8.399999999997299e-05,
-                                    "standard_deviation": 3.085989846600757e-05,
-                                    "avg_absolute_deviation": 33.49131121641673
+                                    "mean": 8.099999999999774e-05,
+                                    "median": 7.999999999985796e-05,
+                                    "standard_deviation": 3.6055512755368772e-06,
+                                    "avg_absolute_deviation": 3.2921810700536085
                                 },
                                 "recv": {
-                                    "mean": 8.199999999998948e-05,
-                                    "median": 7.399999999990747e-05,
-                                    "standard_deviation": 1.7435595774205603e-05,
-                                    "avg_absolute_deviation": 16.26016260167445
+                                    "mean": 7.700000000010476e-05,
+                                    "median": 7.00000000000145e-05,
+                                    "standard_deviation": 1.3000000000083457e-05,
+                                    "avg_absolute_deviation": 12.987012987080398
                                 },
                                 "communication": {
-                                    "mean": 0.0001523333333333099,
-                                    "median": 0.00015399999999998748,
-                                    "standard_deviation": 4.252450274063358e-05,
-                                    "avg_absolute_deviation": 18.964259664508464
+                                    "mean": 0.0001580000000001025,
+                                    "median": 0.00015500000000012726,
+                                    "standard_deviation": 1.2767145334770819e-05,
+                                    "avg_absolute_deviation": 5.907172995759244
                                 },
                                 "inference": {
-                                    "mean": 2.500000000001575e-05,
-                                    "median": 1.0000000000065512e-05,
-                                    "standard_deviation": 2.9512709126764702e-05,
-                                    "avg_absolute_deviation": 90.66666666665088
+                                    "mean": 9.999999999991497e-06,
+                                    "median": 1.0999999999983245e-05,
+                                    "standard_deviation": 3.605551275506085e-06,
+                                    "avg_absolute_deviation": 26.66666666696273
                                 },
                                 "total": {
-                                    "mean": 0.00017733333333332565,
-                                    "median": 0.00016799999999994597,
-                                    "standard_deviation": 1.973153144924721e-05,
-                                    "avg_absolute_deviation": 8.521303258140343
+                                    "mean": 0.000168000000000094,
+                                    "median": 0.00016800000000016801,
+                                    "standard_deviation": 1.4999999999987246e-05,
+                                    "avg_absolute_deviation": 5.952380952387248
                                 }
                             },
                             "mean_computation": 0

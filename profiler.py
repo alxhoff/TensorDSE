@@ -142,7 +142,7 @@ def GetArgs() -> argparse.Namespace:
             "-c",
             "--count",
             type=int,
-            default=3,
+            default=2,
             help="Number of times to measure inference.",
             )
 

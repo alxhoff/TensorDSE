@@ -215,7 +215,6 @@ class Splitter:
         self.submodel_list.append(submodel)
         log.info("OK\n")
 
-
     def CreateSubmodels(self, sequences):
         """Create the individual submodels for either sequences of sequential
         layers that are executed on the same hardware unit or for individual layers

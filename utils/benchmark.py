@@ -292,8 +292,9 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
                         },
                     }
     else:
-        m = StandardDeploy(m=m, count=count, hardware_target=hardware_target)
-        
+
+        m = StandardDeploy(m=m, count=count, hardware_target=hardware_target, platform=platform)
+
     return m
 
 
@@ -338,7 +339,10 @@ def ProfileModelLayers(
     else:
         log.info(f"[PROFILE MODEL LAYERS] CPU is available on this machine!")
         for layer in model_summary["models"][0]["layers"]:
-            m = ProfileLayer(Model(layer, "cpu", parent_model), count, "cpu", platform, usbmon=usbmon_bus)
+            m = ProfileLayer(
+                    Model(layer, "cpu", parent_model), count, "cpu", platform, usbmon=usbmon_bus
+                    )
+            m.model_name = "{0}_{1}_{2}".format(m.model_name, m.index, "_".join(m.input_shape))
             models["cpu"].append(m)
         # AnalyzeLayerResults(m, "cpu")
     print("[PROFILE MODEL LAYERS] CPUs profiled")
@@ -358,6 +362,7 @@ def ProfileModelLayers(
                 m = ProfileLayer(
                         Model(layer, "gpu", parent_model), count, "gpu", platform, usbmon=usbmon_bus
                         )
+                m.model_name = "{0}_{1}_{2}".format(m.model_name, m.index, "_".join(m.input_shape))
                 models["gpu"].append(m)
                 # AnalyzeLayerResults(m, "gpu")
 
@@ -366,6 +371,7 @@ def ProfileModelLayers(
             m = ProfileLayer(
                     Model(layer, "gpu", parent_model), count, "gpu", platform, usbmon=usbmon_bus
                     )
+            m.model_name = "{0}_{1}_{2}".format(m.model_name, m.index, "_".join(m.input_shape))
             models["gpu"].append(m)
             # AnalyzeLayerResults(m, "gpu")
     print("[PROFILE MODEL LAYERS] GPUs profiled")
@@ -387,11 +393,13 @@ def ProfileModelLayers(
                     m = ProfileLayer(
                         Model(layer, "tpu", parent_model), count, "tpu", platform, usbmon=usbmon_bus
                     )
+                    m.model_name = "{0}_{1}_{2}".format(m.model_name, m.index, "_".join(m.input_shape))
                     models["tpu"].append(m)
                     # AnalyzeLayerResults(m, "tpu")
     elif platform == "coral":
         for layer in model_summary["models"][0]["layers"]:
             m = ProfileLayer(Model(layer, "tpu", parent_model), count, "tpu", platform, usbmon=usbmon_bus)
+            m.model_name = "{0}_{1}_{2}".format(m.model_name, m.index, "_".join(m.input_shape))
             models["tpu"].append(m)
             # AnalyzeLayerResults(m, "tpu")
     print("[PROFILE MODEL LAYERS] TPUs profiled")
