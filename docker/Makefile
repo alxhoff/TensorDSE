@@ -14,7 +14,8 @@ DEBUG_MODE 			:= 1
 TEST_MODE 			:= 2
 SHELL_MODE 			:= 3
 DSE_ONLY_MODE		:= 4
-NO_DEPLOY_MODE		:= 5 
+NO_DEPLOY_MODE		:= 5
+PROFILE				:= 6
 
 exist-docker-image = $(shell docker image ls | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ')
 is-docker-running = $(shell docker ps -a | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ')
@@ -25,6 +26,7 @@ filter-docker = $(shell docker images --filter=reference="*${REGEX}*" -q)
 		run \
 		debug \
 		dse \
+		profile \
 		nodeploy \
 		test \
 		shell \
@@ -139,6 +141,9 @@ run: $(if $(call exist-docker-image),,build)
 					--VERBOSE=$$VERBOSE \
 					;
 endif
+
+profile:
+	$(MAKE) -f ${FILE} run MODE=${PROFILE}
 
 dse: 
 	$(MAKE) -f ${FILE} run MODE=${DSE_ONLY_MODE}
