@@ -1,6 +1,8 @@
 # Installer
 # FROM ubuntu:20.04
-FROM tensorflow/tensorflow:latest-gpu
+# FROM tensorflow/tensorflow:latest-gpu
+# FROM tensorflow/tensorflow:2.14.0rc1-gpu
+FROM tensorflow/tensorflow:2.13.0-gpu
 LABEL Author="Daniel Duclos-Cavalcanti & Alex Hoffman"
 LABEL Email="daniel.duclos-cavalcanti@gmail.com & alxhoff@gmail.com"
 LABEL Maintainer="Alex Hoffman"
@@ -15,33 +17,44 @@ SHELL ["/bin/bash", "-l", "-c"]
 RUN set -ex
 
 # Base System
-RUN apt-get update \
-    && apt-get install -y \
-    sudo build-essential locales wget curl gnupg curl zip unzip tar openjdk-11-jdk kmod \
-    python3 python3-pip git vim usbutils udev lshw software-properties-common && \
+RUN add-apt-repository -y ppa:deadsnakes/ppa
+RUN apt-get update && \ 
+    apt-get remove -y python3.8 python3-apt && \
+    apt autoremove -y && \
+    apt autoclean -y && \
+    apt-get install -y python3.10  && \
+    apt-get install -y python3-apt python3-dev wget && \
+    ln -sf /usr/bin/python3.10 /usr/bin/python3 && \
+    ln -sf /usr/bin/python3.10 /usr/bin/python && \
+    wget https://bootstrap.pypa.io/get-pip.py && \
+    python3.10 get-pip.py && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.10 2 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 2
 
+RUN apt-get install -y \
+    sudo build-essential locales curl gnupg curl zip unzip tar openjdk-11-jdk kmod \
+    git vim usbutils udev lshw software-properties-common apt-utils && \
     apt-get clean && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen && update-locale
 
+# Wireshark/Tshark
+RUN add-apt-repository -y ppa:wireshark-dev/stable && \
+apt-get update && \
+echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debconf-set-selections && \
+apt-get -y install tshark
+
 # Python Libraries
-RUN pip3 install --upgrade pip && \
-pip3 install silabs-mltk[full] --upgrade && \
-apt-get install -y python3-pandas python3-ipdb python3-tabulate python3-matplotlib \
-    python3-numpy python3-scipy && \
-pip3 install pyshark metrics pycoral argparse
+RUN python -m pip install pyshark metrics pycoral argparse pandas scipy numpy matplotlib tabulate ipdb
+RUN python -m pip install silabs-mltk[full] --upgrade
 
 # CoralDev APT Paackages
 RUN echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" \
     | tee /etc/apt/sources.list.d/coral-edgetpu.list && \
-curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
     | apt-key add - && \
 apt-get update && \
 apt-get install -y libedgetpu1-std edgetpu-compiler
-
-# Wireshark/Tshark
-RUN add-apt-repository -y ppa:wireshark-dev/stable && \
-apt-get install -y tshark
 
 # TensorRT
 RUN apt-get install -y tensorrt && \
