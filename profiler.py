@@ -93,6 +93,7 @@ def ProfileModel(
     except Exception as e:
         splitter.Clean(True)
         log.error("Failed to run splitter! {}".format(str(e)))
+        raise(e)
 
     log.info("[PROFILE MODEL] Splitter created")
 
@@ -122,6 +123,10 @@ def ProfileModel(
 
     log.info("Final Clean up")
     splitter.Clean(True)
+
+def list_of_strings(arg):
+    return arg.split(',')
+
 
 def GetArgs() -> argparse.Namespace:
     """Argument parser, returns the Namespace containing all of the arguments.
@@ -189,29 +194,26 @@ def GetArgs() -> argparse.Namespace:
 
     return args
 
-
 if __name__ == "__main__":
     """Entry point to execute this script.
 
     Flags
     ---------
-    -m or --model
-        Target input tflite model to be processed and splitted.
+    -m or --models
+        Target input tflite models to be processed and splitted. Should be a comma seperated list.
 
     -c or --count
         Used in the tflite deployment that may occur directly after conversion.
         With count it is set the number of deployments done.
     """
 
+    import sys
+    print (sys.version)
+
     args = GetArgs()
     DisableTFlogging()
 
     log.info("[PROFILER] Starting")
-
-    SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
-
-    log.info("[PROFILER] Model {} summarized".format(args.model))
-    print("[PROFILER] Model summarized")
 
     if args.count < 2:
         print("Count MUST be greater than 2")
@@ -235,7 +237,6 @@ if __name__ == "__main__":
             args.usbmon,
         )
 
-        log.info("[PROFILER] Model {} profiled".format(args.model))
+        log.info("[PROFILER] Model {} profiled".format(model))
 
-    log.info("[PROFILER] Model {} profiled".format(args.model))
     print("[PROFILER] Finished")
