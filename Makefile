@@ -93,6 +93,10 @@ clean:
 shell:
 	${MAKE} -C docker shell
 
+.PHONY: profile
+profile:
+	${MAKE} -C docker profile  USBMON=$(USBMON) MODEL=$(MODEL) COUNT=$(COUNT)
+
 .PHONY: dse
 dse:
 	git fetch https://git@github.com/alxhoff/TensorDSE.git
