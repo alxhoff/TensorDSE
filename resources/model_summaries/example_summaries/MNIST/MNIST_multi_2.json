@@ -2,7 +2,6 @@
   "models": [
     {
       "name": "MNIST_full_quanitization_summary",
-      "deadline": 0.0,
       "starting_tensor": "0",
       "finishing_tensor": "13",
       "layers": [
@@ -215,7 +214,6 @@
     },
     {
       "name": "MNIST_full_quanitization_summary",
-      "deadline": 0.0,
       "starting_tensor": "0",
       "finishing_tensor": "13",
       "layers": [

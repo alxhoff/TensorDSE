@@ -135,8 +135,9 @@ def GetArgs() -> argparse.Namespace:
 
     parser.add_argument(
             "-m",
-            "--model",
-            default="resources/models/example_models/MNIST_full_quanitization.tflite",
+            "--models",
+            default="resources/models/example_models/MNIST_full_quanitization.tflite,resources/models/example_models/MNIST_extended_full_quanitization.tflite",
+            type=list_of_strings,
             help="File path to the SOURCE .tflite file.",
             )
 
@@ -180,7 +181,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
             "-u",
             "--usbmon",
-            default="usbmon0",
+            default="0",
             help="USB bus on which TPU is attached and thus which usbmon interface should be used for packet sniffing"
             )
 
@@ -216,14 +217,25 @@ if __name__ == "__main__":
         print("Count MUST be greater than 2")
         sys.exit('Count was not greater than 2')
 
-    ProfileModel(
-        args.model,
-        args.count,
-        args.hardwaresummary,
-        os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
-        args.platform,
-        args.usbmon,
-    )
+    for model in args.models:
+
+        model_name = os.path.splitext(model)[0].split("/")[-1]
+
+        SummarizeModel(model, args.summaryoutputdir, model_name)
+
+        log.info("[PROFILER] Model {} summarized".format(model))
+        print("[PROFILER] Model summarized")
+
+        ProfileModel(
+            model,
+            args.count,
+            args.hardwaresummary,
+            os.path.join(args.summaryoutputdir, "{}.json".format(model_name)),
+            args.platform,
+            args.usbmon,
+        )
+
+        log.info("[PROFILER] Model {} profiled".format(args.model))
 
     log.info("[PROFILER] Model {} profiled".format(args.model))
     print("[PROFILER] Finished")
