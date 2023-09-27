@@ -5,6 +5,8 @@ source /root/.bashrc
 ## Exec shell
 set +xe
 
+BRANCH=master
+
 for i in "$@"; do
     case $i in
     -f=* | --GA_CONFIG=*)
@@ -81,6 +83,10 @@ for i in "$@"; do
         ;;
     -v=* | --VERBOSE=*)
         VERBOSE="${i#*=}"
+        shift # past argument=value
+        ;;
+    -h=* | --BRANCH=*)
+        BRANCH="${i#*=}"
         shift # past argument=value
         ;;
     --default)
@@ -172,7 +178,8 @@ run_just_dse() {
 
 main() {
     MODULE="usbmon"
-
+    git fetch https://git@github.com/alxhoff/TensorDSE.git
+	git reset --hard origin/$BRANCH
     if lsmod | grep -wq "$MODULE"; then
     echo "$MODULE is loaded!"
     else
