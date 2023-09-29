@@ -23,17 +23,21 @@ class Model:
         self.schema = schema_path
 
     def Convert(self, source_ext: str, target_ext: str):
-        if ([source_ext, target_ext] == ["json", "tflite"]):
-            RunTerminalCommand("flatc", "-b", self.schema, self.paths["json"])
-            tmp_filename = self.paths["json"].split("/")[-1].split(".")[0] + ".tflite"
-            self.paths["tflite"] = self.paths["json"].replace(source_ext, target_ext)
-            MoveFile(tmp_filename, self.paths["tflite"])
-        elif ([source_ext, target_ext] == ["tflite", "json"]):
-            RunTerminalCommand("flatc", "-t", "--strict-json", "--defaults-json", self.schema, "--", self.paths["tflite"])
-            tmp_filename = self.paths["tflite"].split("/")[-1].split(".")[0] + ".json"
-            self.paths["json"] = self.paths["tflite"].replace(source_ext, target_ext)
-            MoveFile(tmp_filename, self.paths["json"])
-            self.json = ReadJSON(self.paths["json"])
+        try:
+            if ([source_ext, target_ext] == ["json", "tflite"]):
+                RunTerminalCommand("flatc", "-b", self.schema, self.paths["json"])
+                tmp_filename = self.paths["json"].split("/")[-1].split(".")[0] + ".tflite"
+                self.paths["tflite"] = self.paths["json"].replace(source_ext, target_ext)
+                MoveFile(tmp_filename, self.paths["tflite"])
+            elif ([source_ext, target_ext] == ["tflite", "json"]):
+                RunTerminalCommand("flatc", "-t", "--strict-json", "--defaults-json", self.schema, "--", self.paths["tflite"])
+                tmp_filename = self.paths["tflite"].split("/")[-1].split(".")[0] + ".json"
+                self.paths["json"] = self.paths["tflite"].replace(source_ext, target_ext)
+                MoveFile(tmp_filename, self.paths["json"])
+                self.json = ReadJSON(self.paths["json"])
+        except Exception as e:
+            import sys
+            sys.exit("Couldn't convert using 'flatc': {}".format(e))
 
     def Compile(self):
         if not os.path.exists(COMPILED_DIR):

@@ -90,6 +90,7 @@ def ProfileModel(
     except Exception as e:
         splitter.Clean(True)
         log.error("Failed to run splitter! {}".format(str(e)))
+        raise(e)
 
     log.info("[PROFILE MODEL] Splitter created")
 
@@ -120,6 +121,8 @@ def ProfileModel(
     log.info("Final Clean up")
     splitter.Clean(True)
 
+def list_of_strings(arg):
+    return arg.split(',')
 
 def GetArgs() -> argparse.Namespace:
     """Argument parser, returns the Namespace containing all of the arguments.
@@ -133,8 +136,9 @@ def GetArgs() -> argparse.Namespace:
 
     parser.add_argument(
             "-m",
-            "--model",
-            default="resources/models/example_models/MNIST_full_quanitization.tflite",
+            "--models",
+            default="resources/models/example_models/MNIST_full_quanitization.tflite,resources/models/example_models/MNIST_extended_full_quanitization.tflite",
+            type=list_of_strings,
             help="File path to the SOURCE .tflite file.",
             )
 
@@ -186,42 +190,49 @@ def GetArgs() -> argparse.Namespace:
 
     return args
 
-
 if __name__ == "__main__":
     """Entry point to execute this script.
 
     Flags
     ---------
-    -m or --model
-        Target input tflite model to be processed and splitted.
+    -m or --models
+        Target input tflite models to be processed and splitted. Should be a comma seperated list.
 
     -c or --count
         Used in the tflite deployment that may occur directly after conversion.
         With count it is set the number of deployments done.
     """
 
+    import sys
+    print (sys.version)
+
     args = GetArgs()
     DisableTFlogging()
 
     log.info("[PROFILER] Starting")
 
-    SummarizeModel(args.model, args.summaryoutputdir, args.summaryoutputname)
-
-    log.info("[PROFILER] Model {} summarized".format(args.model))
-    print("[PROFILER] Model summarized")
-
     if args.count < 2:
         print("Count MUST be greater than 2")
         sys.exit('Count was not greater than 2')
 
-    ProfileModel(
-        args.model,
-        args.count,
-        args.hardwaresummary,
-        os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
-        args.platform,
-        args.usbmon,
-    )
+    for model in args.models:
 
-    log.info("[PROFILER] Model {} profiled".format(args.model))
+        model_name = os.path.splitext(model)[0].split("/")[-1]
+
+        SummarizeModel(model, args.summaryoutputdir, model_name)
+
+        log.info("[PROFILER] Model {} summarized".format(model))
+        print("[PROFILER] Model summarized")
+
+        ProfileModel(
+            model,
+            args.count,
+            args.hardwaresummary,
+            os.path.join(args.summaryoutputdir, "{}.json".format(model_name)),
+            args.platform,
+            args.usbmon,
+        )
+
+        log.info("[PROFILER] Model {} profiled".format(model))
+
     print("[PROFILER] Finished")

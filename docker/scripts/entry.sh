@@ -5,6 +5,8 @@ source /root/.bashrc
 ## Exec shell
 set +xe
 
+BRANCH=master
+
 for i in "$@"; do
     case $i in
     -f=* | --GA_CONFIG=*)
@@ -83,6 +85,10 @@ for i in "$@"; do
         VERBOSE="${i#*=}"
         shift # past argument=value
         ;;
+    -h=* | --BRANCH=*)
+        BRANCH="${i#*=}"
+        shift # past argument=value
+        ;;
     --default)
         DEFAULT=YES
         shift # past argument with no value
@@ -99,6 +105,7 @@ TEST_MODE=2
 SHELL_MODE=3
 DSE_ONLY_MODE=4
 NO_DEPLOY_MODE=5
+PROFILE=6
 
 mode="$MODE"
 
@@ -156,6 +163,11 @@ run_no_deploy() {
     popd
 }
 
+run_profile_only() {
+    python3 profiler.py -u $USBMON -m $MODEL -c $COUNT
+    cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
+}
+
 run_just_dse() {
     pushd DSE/TensorDSE
     echo gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
@@ -166,7 +178,8 @@ run_just_dse() {
 
 main() {
     MODULE="usbmon"
-
+    git fetch https://git@github.com/alxhoff/TensorDSE.git
+	git reset --hard origin/$BRANCH
     if lsmod | grep -wq "$MODULE"; then
     echo "$MODULE is loaded!"
     else
@@ -185,6 +198,9 @@ main() {
     elif [ "$mode" -eq $NO_DEPLOY_MODE ]; then
         echo "RUNNING NO DEPLOY"
         run_no_deploy
+    elif [ "$mode" -eq $PROFILE ]; then
+        echo "RUNNING PROFILE ONLY"
+        run_profile_only
     else
         echo "RUNNING FULL FLOW"
         run_full_flow
