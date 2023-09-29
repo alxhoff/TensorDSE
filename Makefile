@@ -95,6 +95,8 @@ shell:
 
 .PHONY: profile
 profile:
+	git fetch https://git@github.com/alxhoff/TensorDSE.git
+	git reset --hard origin/$(BRANCH)
 	${MAKE} -C docker profile  USBMON=$(USBMON) MODEL=$(MODEL) COUNT=$(COUNT)
 
 .PHONY: dse
