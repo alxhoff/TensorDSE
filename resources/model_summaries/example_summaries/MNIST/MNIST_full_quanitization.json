@@ -1,7 +1,7 @@
 {
     "models": [
         {
-            "name": "MNIST_full_quanitization_summary",
+            "name": "MNIST_full_quanitization",
             "starting_tensor": "0",
             "finishing_tensor": "13",
             "layers": [
