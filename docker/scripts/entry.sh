@@ -177,9 +177,9 @@ run_just_dse() {
 }
 
 main() {
-    MODULE="usbmon"
-    git fetch https://git@github.com/alxhoff/TensorDSE.git
+    git fetch origin
 	git reset --hard origin/$BRANCH
+    MODULE="usbmon"
     if lsmod | grep -wq "$MODULE"; then
     echo "$MODULE is loaded!"
     else

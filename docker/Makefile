@@ -103,6 +103,7 @@ run: $(if $(call exist-docker-image),,build)
 					--OFFSPRING_PER_GENERATION=$$OFFSPRING_PER_GENERATION \
 					--GENERATIONS=$$GENERATIONS \
 					--VERBOSE=$$VERBOSE \
+					--BRANCH=$$BRANCH \
 					;
 else
 run: $(if $(call exist-docker-image),,build)
@@ -139,6 +140,7 @@ run: $(if $(call exist-docker-image),,build)
 					--OFFSPRING_PER_GENERATION=$$OFFSPRING_PER_GENERATION \
 					--GENERATIONS=$$GENERATIONS \
 					--VERBOSE=$$VERBOSE \
+					--BRANCH=$$BRANCH \
 					;
 endif
 
