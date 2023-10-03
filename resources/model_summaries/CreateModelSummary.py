@@ -1,6 +1,7 @@
 #!/bin/python
 import sys
 import argparse
+from ...utils.logging.logger import log
 
 parser = argparse.ArgumentParser(description="Pass in the model file to be summarized")
 parser.add_argument(
@@ -13,7 +14,7 @@ parser.add_argument(
 parser.add_argument(
     "--outputdir",
     type=str,
-    default="example_summaries",
+    default="resources/model_summaries/example_summaries/MNIST",
     help="Output directory for JSON file, defults to modelsummaries folder in java resources",
 )
 parser.add_argument(
@@ -30,14 +31,14 @@ args = parser.parse_args()
 def main() -> int:
     from summarize import SummarizeGraph
 
-    print(
+    log.info(
         "Converting {} into {}/{}.json...".format(args.model, args.outputdir, args.outputname),
         end="",
     )
 
     SummarizeGraph(args.model, args.outputdir, args.outputname)
 
-    print("Graph summarized")
+    log.info("Graph summarized")
 
     return 0
 

@@ -4,7 +4,7 @@ import argparse
 import multiprocessing
 
 from .model import Model, Submodel
-from .utils import CopyFile, RunTerminalCommand
+from .utils import CopyFile, RunTerminalCommand, ReadJSON
 from ..logging.logger import log
 
 
@@ -99,24 +99,13 @@ class Splitter:
         the device name of where the layer should be mapped (eg. "cpu1").
         """
 
-        log.info("Analysing Mapping ...")
-
         self.models = []
 
-        for i, model in enumerate(self.summary["models"]):
+        for model in self.summary["models"]:
             layers = []
             for j, layer in enumerate(model["layers"]):
                 layers.append((j, layer["type"], layer["mapping"]))
             self.models.append(layers)
-
-        for i, model in enumerate(self.models):
-            for j, layer in enumerate(model):
-                if layer[2] == "":
-                    log.info("Benchmarking Model #{0}, Layer #{1}".format(i, j))
-                elif layer[2] in ["cpu", "gpu", "tpu"]:
-                    log.info(
-                        "Model #{0}, layer #{1} mapped to {2}".format(i, j, layer[2])
-                    )
 
 
     def CreateSubmodelLayerSequences(self) -> None:
@@ -150,9 +139,7 @@ class Splitter:
 
 
     def ReadSourceModel(self):
-        log.info("Converting Source Model from TFLite to JSON ...")
         self.source_model.Convert("tflite", "json")
-        log.info("OK\n")
 
 
     def CompileAndSaveSubmodel(
@@ -215,6 +202,7 @@ class Splitter:
         self.submodel_list.append(submodel)
         log.info("OK\n")
 
+
     def CreateSubmodels(self, sequences):
         """Create the individual submodels for either sequences of sequential
         layers that are executed on the same hardware unit or for individual layers
@@ -241,8 +229,6 @@ class Splitter:
                 with multiprocessing.Pool() as pool:
                     items = [([layer], i, j) for j, layer in enumerate(model)]
                     pool.starmap(self.CompileAndSaveSubmodel, items)
-                    # for j, layer in enumerate(model):
-                    # self.CompileAndSaveSubmodel(layer_sequence=[layer], model_index=i, sequence_index=j)
 
 
     def CompileForEdgeTPU(self, bm=True):
@@ -270,7 +256,7 @@ class Splitter:
         self.Clean(False)
 
 
-def getArgs():
+def GetArgs():
     parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
             )
@@ -285,7 +271,7 @@ def getArgs():
     parser.add_argument(
             "-s",
             "--summary",
-            default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json",
+            default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary.json",
             help="File that contains a model summary with mapping annotations"
             )
     
@@ -297,5 +283,18 @@ def getArgs():
             )
 
 if __name__ == "__main__":
-    import os
-    
+    args = GetArgs()
+
+        # Create single operation models/layers from the operations in the provided model
+    splitter = Splitter(args.model, ReadJSON(args.summary))
+    try:
+        log.info("Running Model Splitter ...")
+        splitter.Run()
+        log.info("Splitting Process Complete!\n")
+        splitter.CompileForEdgeTPU()
+        log.info("[PROFILE MODEL] Models successfully compiled!")
+    except Exception as e:
+        splitter.Clean(True)
+        log.error("Failed to run splitter! {}".format(str(e)))
+        raise(e)
+        

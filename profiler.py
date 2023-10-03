@@ -82,23 +82,23 @@ def ProfileModel(
             sys.exit(-1)
 
     # Create single operation models/layers from the operations in the provided model
-    splitter = Splitter(model_path, model_summary_json)
-    try:
-        log.info("Running Model Splitter ...")
-        splitter.Run()
-        log.info("Splitting Process Complete!\n")
-    except Exception as e:
-        splitter.Clean(True)
-        log.error("Failed to run splitter! {}".format(str(e)))
-        raise(e)
+    if (platform == "desktop"):
+        splitter = Splitter(model_path, model_summary_json)
+        try:
+            log.info("Running Model Splitter ...")
+            splitter.Run()
+            log.info("Splitting Process Complete!\n")
+        except Exception as e:
+            splitter.Clean(True)
+            log.error("Failed to run splitter! {}".format(str(e)))
+            raise(e)
 
-    log.info("[PROFILE MODEL] Splitter created")
-
-    if "tpu" in hardware_to_benchmark:
-        # Compiles created models/layers into Coral models for execution
-        splitter.CompileForEdgeTPU()
-        log.info("[PROFILE MODEL] Models successfully compiled!")
-
+        if "tpu" in hardware_to_benchmark:
+            # Compiles created models/layers into Coral models for execution
+            splitter.CompileForEdgeTPU()
+            log.info("[PROFILE MODEL] Models successfully compiled!")
+    
+    
     # Deploy the generated models/layers onto the target test hardware using docker
 
     results_dict = ProfileModelLayers(
@@ -110,10 +110,10 @@ def ProfileModel(
             usbmon_bus=usbmon
             )
 
-    log.info("Models deployed")
+    log.info("Models profiled!")
 
     # Process results
-    print("[PROFILE MODEL] Analyzing model: {}".format(model_name))
+    log.info("[PROFILE MODEL] Analyzing profiling results for: {}".format(model_name))
     AnalyzeModelResults(model_name, results_dict, hardware_summary_json)
 
     log.info("Analyzed and merged results")
@@ -121,8 +121,10 @@ def ProfileModel(
     log.info("Final Clean up")
     splitter.Clean(True)
 
+
 def list_of_strings(arg):
     return arg.split(',')
+
 
 def GetArgs() -> argparse.Namespace:
     """Argument parser, returns the Namespace containing all of the arguments.
@@ -190,6 +192,7 @@ def GetArgs() -> argparse.Namespace:
 
     return args
 
+
 if __name__ == "__main__":
     """Entry point to execute this script.
 
@@ -219,10 +222,10 @@ if __name__ == "__main__":
 
         model_name = os.path.splitext(model)[0].split("/")[-1]
 
-        SummarizeModel(model, args.summaryoutputdir, model_name)
+        if (args.platform == "desktop"):
+            SummarizeModel(model, args.summaryoutputdir, model_name)
 
         log.info("[PROFILER] Model {} summarized".format(model))
-        print("[PROFILER] Model summarized")
 
         ProfileModel(
             model,
@@ -235,4 +238,4 @@ if __name__ == "__main__":
 
         log.info("[PROFILER] Model {} profiled".format(model))
 
-    print("[PROFILER] Finished")
+    log.info("[PROFILER] Finished")

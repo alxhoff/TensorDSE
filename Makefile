@@ -16,6 +16,10 @@ ifndef MODEL
 override MODEL = "resources/models/example_models/MNIST_full_quanitization.tflite"
 $(info Using default MODEL: $(MODEL))
 endif
+ifndef MODEL_NAME
+override MODEL_NAME = $(notdir $(basename $(MODEL)))
+$(info Using default MODEL_NAME: $(MODEL_NAME))
+endif
 ifndef DATASET
 override DATASET = "utils.datasets.MNIST"
 $(info Using default DATASET: $(DATASET))
@@ -35,6 +39,10 @@ endif
 ifndef ARCHITECTURE_SUMMARY
 override ARCHITECTURE_SUMMARY = "../../resources/architecture_summaries/example_output_architecture_summary.json"
 $(info Using default ARCHITECTURE_SUMMARY: $(ARCHITECTURE_SUMMARY))
+endif
+ifndef PLATFORM
+override PLATFORM = "DESKTOP"
+$(info Using default PLATFORM: $(PLATFORM))
 endif
 ifndef PROFILING_COSTS
 override PROFILING_COSTS = "../../resources/profiling_results"
@@ -147,6 +155,41 @@ endif
 .PHONY: info
 info:
 	${MAKE} -C docker info
+
+.PHONY: profile
+ifeq ($(PLATFORM),DESKTOP)
+profile:
+	git fetch https://git@github.com/alxhoff/TensorDSE.git
+	git reset --hard origin/$(BRANCH)
+	$(info USBMON is $(USBMON))
+	${MAKE} -C docker profile  USBMON=$(USBMON) MODEL=$(MODEL) COUNT=$(COUNT)
+else ifeq ($(PLATFORM),CORAL)
+profile:
+	@echo "Profiling for Coral Dev Board"
+	python3 resources/model_summaries/CreateModelSummary.py --model $(MODEL) --outputname $(MODEL_NAME)
+	cd resources/model_summaries && mdt push $(MODEL_SUMMARY) /media/afUSB/TensorDSE/resources/model_summaries/example_summaries/MNIST/
+	cd ../../utils/splitter && python3 split.py -m $(MODEL) -s $(MODEL_SUMMARY) -p $(PLATFORM)
+	mdt push ../../utils/splitter/models /media/afUSB/TensorDSE/utils/splitter/
+	mdt exec 'cd /media/afUSB/TensorDSE && git fetch && git pull && python3 profiler.py -m $(MODEL) -s $(MODEL_SUMMARY) -p $(PLATFORM)'
+	mdt pull /media/afUSB/TensorDSE/resources/profiling_results/$(PROFILING_COSTS) $(PROFILING_COSTS)
+	@echo "Profiling for Coral Dev Board successfully completed"
+	
+else ifeq ($(PLATFORM),RPI)
+profile:
+	@echo "Profiling for Raspberry Pi"
+	python3 resources/model_summaries/CreateModelSummary.py --model $(MODEL) --outputname $(MODEL_NAME)
+	cd resources/model_summaries && scp $(MODEL_SUMMARY) starkaf@tensordse.local:/home/starkaf/TensorDSE/resources/model_summaries/example_summaries/MNIST/
+	cd ../../utils/splitter && python3 split.py -m $(MODEL) -s $(MODEL_SUMMARY) -p $(PLATFORM)
+	scp -r ../../utils/splitter/models starkaf@tensordse.local:/home/starkaf/TensorDSE/utils/splitter/
+	ssh starkaf@tensordse.local "cd /home/starkaf/TensorDSE && git fetch && git pull && sudo python3 profiler.py -m $(MODEL) -s $(MODEL_SUMMARY) -p $(PLATFORM)"
+	scp starkaf@tensordse.local:/home/starkaf/TensorDSE/resources/profiling_results/$(PROFILING_COSTS) $(PROFILING_COSTS)
+	@echo "Profiling for Raspberry Pi successfully completed"
+
+else
+profile:
+	@echo "Unknown PLATFORM"
+	# Handle the case where PLATFORM is neither DESKTOP nor MOBILE
+endif
 
 .PHONY: stop
 stop:
