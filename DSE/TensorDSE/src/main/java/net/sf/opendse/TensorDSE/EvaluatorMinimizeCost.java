@@ -17,17 +17,22 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 
 	protected final Map<String, Objective> map = new HashMap<String, Objective>();
 	protected int priority;
-	private OperationCosts operation_costs = null;
+	private HashMap<String, OperationCosts> operation_costs = null;
+	SpecificationDefinition specification_definition = null;
 	private List<Task> starting_tasks;
+	private Double K;
 	Mappings<Task, Resource> possible_mappings;
 	private Boolean verbose;
 	private Boolean visualise;
 
 	private Integer evaluation_count = 0;
 
-	public EvaluatorMinimizeCost(String objectives, SpecificationDefinition SpecificationDefinition,
+	public EvaluatorMinimizeCost(String objectives, SpecificationDefinition SpecificationDefinition, Double K,
 			Boolean verbose, Boolean visualise) {
 		super();
+
+		this.specification_definition = SpecificationDefinition;
+		this.K = K;
 		this.operation_costs = SpecificationDefinition.getOperation_costs();
 		this.starting_tasks = SpecificationDefinition.getStarting_tasks();
 		this.possible_mappings = SpecificationDefinition.getSpecification().getMappings();
@@ -41,7 +46,8 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	}
 
 	/**
-	 * @brief Evaluates a solution's specification and sets the cost to the objective
+	 * @brief Evaluates a solution's specification and sets the cost to the
+	 *        objective
 	 * @param solution_specification
 	 * @param objectives
 	 * @return Specification
@@ -49,33 +55,21 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	@Override
 	public Specification evaluate(Specification solution_specification, Objectives objectives) {
 
-		// Pieces that comprise the solution's specification
-		// Mappings<Task, Resource> mappings = solution_specification.getMappings();
-		// Routings<Task, Resource, Link> routings = solution_specification.getRoutings();
-
 		// Specification for viewing and debugging
 		if (this.visualise == true && this.verbose == true)
 			SpecificationViewer.view(solution_specification);
 
-		ScheduleSolver schedule_solver = new ScheduleSolver(solution_specification,
-				this.starting_tasks, this.operation_costs, this.verbose);
+		ScheduleSolver schedule_solver = new ScheduleSolver(this.specification_definition, this.K, this.verbose);
 
 		double cost_of_mapping = schedule_solver.solveGASchedule(getPossible_mappings());
 
 		objectives.add(map.get("cost_of_mapping"), cost_of_mapping);
-		/*
-		 * try { FileWriter csvOutput = new FileWriter("src/main/resources/perspec_100.csv", true);
-		 * csvOutput.append(Double.toString(cost_of_mapping)); csvOutput.append("\n");
-		 * csvOutput.flush(); csvOutput.close(); } catch (IOException e) { // TODO Auto-generated
-		 * catch block e.printStackTrace(); }
-		 */
 
 		System.out.println(String.format("Evaluation #: %d", evaluation_count));
 		evaluation_count += 1;
 
 		return null;
 	}
-
 
 	/**
 	 * @return int
@@ -86,14 +80,16 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	}
 
 	/**
-	 * This {@code MappingCost} calculates the mapping cost for the considered mapping
+	 * This {@code MappingCost} calculates the mapping cost for the considered
+	 * mapping
 	 * 
 	 * @param mapping Mapping<Task, Resource>
 	 * @return a double with the cost of mapping.
 	 */
 	// private double MappingCost(Mapping<Task, Resource> mapping) {
 	// Double cost = 0.0;
-	// String layer = mapping.getSource().getAttribute("type").toString().toLowerCase();
+	// String layer =
+	// mapping.getSource().getAttribute("type").toString().toLowerCase();
 	// String target_device = mapping.getTarget().getId();
 	// String data_type = mapping.getSource().getAttribute("dtype");
 
@@ -105,7 +101,8 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 
 	// // Execution cost
 	// if (operation_costs.GetOpTypeTable(target_device).containsKey(layer)) {
-	// if (operation_costs.GetOpDataTypeTable(target_device, layer).containsKey(data_type)) {
+	// if (operation_costs.GetOpDataTypeTable(target_device,
+	// layer).containsKey(data_type)) {
 	// cost = operation_costs.GetOpCost(target_device, layer, data_type);
 	// } else {
 	// cost = 0.0;
@@ -129,11 +126,11 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		this.priority = priority;
 	}
 
-	public OperationCosts getOperation_costs() {
+	public HashMap<String, OperationCosts> getOperation_costs() {
 		return operation_costs;
 	}
 
-	public void setOperation_costs(OperationCosts operation_costs) {
+	public void setOperation_costs(HashMap<String, OperationCosts> operation_costs) {
 		this.operation_costs = operation_costs;
 	}
 
@@ -167,5 +164,29 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 
 	public void setVisualise(Boolean visualise) {
 		this.visualise = visualise;
+	}
+
+	public SpecificationDefinition getSpecification_definition() {
+		return specification_definition;
+	}
+
+	public void setSpecification_definition(SpecificationDefinition specification_definition) {
+		this.specification_definition = specification_definition;
+	}
+
+	public Double getK() {
+		return K;
+	}
+
+	public void setK(Double k) {
+		K = k;
+	}
+
+	public Integer getEvaluation_count() {
+		return evaluation_count;
+	}
+
+	public void setEvaluation_count(Integer evaluation_count) {
+		this.evaluation_count = evaluation_count;
 	}
 }

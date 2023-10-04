@@ -11,12 +11,18 @@ import net.sf.opendse.TensorDSE.JSON.Benchmark.Device;
 import net.sf.opendse.TensorDSE.JSON.Benchmark.Layer;
 import java.io.*;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
- * The {@code OpCosts} is a class that would be later used when defining the specification for
- * initializing the cost of mapping. It allows updating the costs in case of further benchmarks.
+ * The {@code OpCosts} is a class that would be later used when defining the
+ * specification for
+ * initializing the cost of mapping. It allows updating the costs in case of
+ * further benchmarks.
  *
- * @param costfilepath The path to the csv file that is a summary of cosr results obtained from
- *        benchmarks and tests
+ * @param costfilepath The path to the csv file that is a summary of cosr
+ *                     results obtained from
+ *                     benchmarks and tests
  *
  *
  * @author Ines Ben Hmida
@@ -32,7 +38,7 @@ public class OperationCosts {
 
     public Hashtable<String, Hashtable<String, Hashtable<String, Double>>> operation_costs;
     public Hashtable<String, Hashtable<String, Hashtable<String, Pair<Double, Double>>>> communication_costs;
-
+    public String model_name = null;
 
     /**
      * @return Hashtable<String, Hashtable<String, Hashtable<String, Double>>>
@@ -41,14 +47,13 @@ public class OperationCosts {
         return new Hashtable<String, Hashtable<String, Hashtable<String, Double>>>();
     }
 
-
     /**
-     * @return Hashtable<String, Hashtable<String, Hashtable<String, Pair<Double, Double>>>>
+     * @return Hashtable<String, Hashtable<String, Hashtable<String, Pair<Double,
+     *         Double>>>>
      */
     public Hashtable<String, Hashtable<String, Hashtable<String, Pair<Double, Double>>>> CreateEmptyCommDeviceTypeTable() {
         return new Hashtable<String, Hashtable<String, Hashtable<String, Pair<Double, Double>>>>();
     }
-
 
     /**
      * @return Hashtable<String, Hashtable<String, Double>>
@@ -57,14 +62,12 @@ public class OperationCosts {
         return new Hashtable<String, Hashtable<String, Double>>();
     }
 
-
     /**
      * @return Hashtable<String, Hashtable<String, Pair<Double, Double>>>
      */
     public Hashtable<String, Hashtable<String, Pair<Double, Double>>> CreateEmptyCommOpTypeTable() {
         return new Hashtable<String, Hashtable<String, Pair<Double, Double>>>();
     }
-
 
     /**
      * @return Hashtable<String, Double>
@@ -73,14 +76,12 @@ public class OperationCosts {
         return new Hashtable<String, Double>();
     }
 
-
     /**
      * @return Hashtable<String, Pair<Double, Double>>
      */
     public Hashtable<String, Pair<Double, Double>> CreateEmptyCommDataTypeTable() {
         return new Hashtable<String, Pair<Double, Double>>();
     }
-
 
     /**
      * @param device_type
@@ -93,10 +94,8 @@ public class OperationCosts {
             this.operation_costs.put(device_type, new_op_map);
         }
 
-
         return (Hashtable<String, Hashtable<String, Double>>) this.operation_costs.get(device_type);
     }
-
 
     /**
      * @param device_type
@@ -106,15 +105,13 @@ public class OperationCosts {
             String device_type) {
 
         if (!this.communication_costs.containsKey(device_type)) {
-            Hashtable<String, Hashtable<String, Pair<Double, Double>>> new_op_map =
-                    this.CreateEmptyCommOpTypeTable();
+            Hashtable<String, Hashtable<String, Pair<Double, Double>>> new_op_map = this.CreateEmptyCommOpTypeTable();
             this.communication_costs.put(device_type, new_op_map);
         }
 
         return (Hashtable<String, Hashtable<String, Pair<Double, Double>>>) this.communication_costs
                 .get(device_type);
     }
-
 
     /**
      * @param device_type
@@ -123,8 +120,7 @@ public class OperationCosts {
      */
     public Hashtable<String, Double> GetOpDataTypeTable(String device_type, String operation_type) {
 
-        Hashtable<String, Hashtable<String, Double>> op_type_table =
-                this.GetOpTypeTable(device_type);
+        Hashtable<String, Hashtable<String, Double>> op_type_table = this.GetOpTypeTable(device_type);
 
         if (!op_type_table.containsKey(operation_type)) {
             Hashtable<String, Double> new_type_map = this.CreateEmptyDataTypeTable();
@@ -134,7 +130,6 @@ public class OperationCosts {
         return (Hashtable<String, Double>) op_type_table.get(operation_type);
     }
 
-
     /**
      * @param device_type
      * @param operation_type
@@ -143,18 +138,15 @@ public class OperationCosts {
     public Hashtable<String, Pair<Double, Double>> GetCommDataTypeTable(String device_type,
             String operation_type) {
 
-        Hashtable<String, Hashtable<String, Pair<Double, Double>>> comm_type_table =
-                this.GetCommTypeTable(device_type);
+        Hashtable<String, Hashtable<String, Pair<Double, Double>>> comm_type_table = this.GetCommTypeTable(device_type);
 
         if (!comm_type_table.containsKey(operation_type)) {
-            Hashtable<String, Pair<Double, Double>> new_type_map =
-                    this.CreateEmptyCommDataTypeTable();
+            Hashtable<String, Pair<Double, Double>> new_type_map = this.CreateEmptyCommDataTypeTable();
             comm_type_table.put(operation_type, new_type_map);
         }
 
         return (Hashtable<String, Pair<Double, Double>>) comm_type_table.get(operation_type);
     }
-
 
     /**
      * @param device_type
@@ -164,8 +156,7 @@ public class OperationCosts {
      */
     public Double GetOpCost(String device_type, String operation_type, String data_type) {
 
-        Hashtable<String, Double> data_type_table =
-                this.GetOpDataTypeTable(device_type, operation_type);
+        Hashtable<String, Double> data_type_table = this.GetOpDataTypeTable(device_type, operation_type);
 
         if (!data_type_table.containsKey(data_type)) {
             data_type_table.put(data_type, 10000.0);
@@ -173,7 +164,6 @@ public class OperationCosts {
 
         return (Double) data_type_table.get(data_type);
     }
-
 
     /**
      * @param device_type
@@ -184,8 +174,8 @@ public class OperationCosts {
     public Pair<Double, Double> GetCommCost(String device_type, String operation_type,
             String data_type) {
 
-        Hashtable<String, Pair<Double, Double>> data_type_table =
-                this.GetCommDataTypeTable(device_type, operation_type);
+        Hashtable<String, Pair<Double, Double>> data_type_table = this.GetCommDataTypeTable(device_type,
+                operation_type);
 
         if (!data_type_table.containsKey(data_type)) {
             data_type_table.put(data_type, new Pair<>(10000.0, 10000.0));
@@ -193,7 +183,6 @@ public class OperationCosts {
 
         return (Pair<Double, Double>) data_type_table.get(data_type);
     }
-
 
     /**
      * @param json_file_path
@@ -216,21 +205,48 @@ public class OperationCosts {
         return model;
     }
 
-    public OperationCosts(String profiling_costs_file_path) {
+    public static String removeMatchingGroups(String input) {
+        Pattern pattern = Pattern.compile("(?:\\d+_)+\\d+");
+        Matcher matcher = pattern.matcher(input);
+
+        // Replace matching groups with an empty string
+        String output = matcher.replaceAll("");
+
+        if (output.endsWith("_")) {
+            output = output.substring(0, output.length() - 1);
+        }
+
+        return output;
+    }
+
+    public OperationCosts(String profiling_costs_directory_path, String model_name) throws Exception {
 
         this.communication_costs = this.CreateEmptyCommDeviceTypeTable();
         this.operation_costs = this.CreateEmptyDeviceTypeTable();
+        this.model_name = model_name;
 
         try {
 
-            BenchmarkJSON benchmark = GetProfilingResultsFromJSON(profiling_costs_file_path);
+            BenchmarkJSON benchmark = GetProfilingResultsFromJSON(
+                    String.format("%s/%s.json", profiling_costs_directory_path, model_name));
 
             for (Model model : benchmark.getModels()) {
 
                 for (Layer layer : model.getLayers()) {
 
-                    String operation_type = layer.getName().toLowerCase();
+                    // Pattern pattern = Pattern.compile("([a-zA-Z]+_\\d+[a-zA-Z]+)");
 
+                    // Matcher matcher = pattern.matcher();
+
+                    String operation_type = removeMatchingGroups(layer.getName().toLowerCase());
+                    // while (matcher.find()) {
+                    //     operation_type = matcher.group(1);
+                    
+                    if (operation_type == null){
+                        throw new Exception(
+                                String.format("Couldnt extract layer name from %s", layer.getName().toLowerCase()));
+                    }
+                    
                     for (Device deligate : layer.getDelegates()) {
 
                         String device_type = deligate.getDevice().toLowerCase();
@@ -257,8 +273,7 @@ public class OperationCosts {
                         this.GetOpDataTypeTable(device_type, operation_type).put(data_type,
                                 mean_exec_cost);
 
-                        Pair<Double, Double> comm_costs =
-                                new Pair<Double, Double>(comm_send_cost, comm_recv_cost);
+                        Pair<Double, Double> comm_costs = new Pair<Double, Double>(comm_send_cost, comm_recv_cost);
                         this.GetCommDataTypeTable(device_type, operation_type).put(data_type,
                                 comm_costs);
                     }
@@ -270,7 +285,6 @@ public class OperationCosts {
             e.printStackTrace();
         }
     }
-
 
     /**
      * @return Hashtable<String, Hashtable<String, Hashtable<String, Double>>>

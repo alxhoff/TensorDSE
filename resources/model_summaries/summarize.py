@@ -115,6 +115,7 @@ def SummarizeGraph(model: str, output_dir: str, output_name: str) -> None:
         "models": [
             {
                 "name": output_name,
+                "deadline": 0.0,
                 "starting_tensor": starting_tensor,
                 "finishing_tensor": finishing_tensor,
                 "layers": layers,

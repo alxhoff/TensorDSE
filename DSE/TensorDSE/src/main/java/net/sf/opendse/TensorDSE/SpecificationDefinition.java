@@ -63,7 +63,9 @@ public class SpecificationDefinition {
 	/**
 	 *
 	 */
-	private OperationCosts operation_costs = null;
+	private HashMap<String, OperationCosts> operation_costs = new HashMap<String, OperationCosts>();
+
+	private String profiling_costs_directory_path = null;
 
 	/**
 	 * Top level HashMap takes the model's index as the key, then the target layer's
@@ -86,10 +88,11 @@ public class SpecificationDefinition {
 
 	/**
 	 * @param model_summary_path
-	 * @param profiling_costs_file_path
+	 * @param profiling_costs_directory_path
+	 * @throws Exception
 	 */
-	public SpecificationDefinition(String model_summary_path, String profiling_costs_file_path,
-			String architecture_summary_path) {
+	public SpecificationDefinition(String model_summary_path, String profiling_costs_directory_path,
+			String architecture_summary_path) throws Exception {
 
 		Gson gson = new Gson();
 		ModelJSON model_json = null;
@@ -104,7 +107,11 @@ public class SpecificationDefinition {
 			e.printStackTrace();
 		}
 
-		this.operation_costs = new OperationCosts(profiling_costs_file_path);
+		for (Model model : this.json_models) {
+			this.operation_costs.put(model.getName(),
+					new OperationCosts(profiling_costs_directory_path, model.getName()));
+		}
+		this.profiling_costs_directory_path = profiling_costs_directory_path;
 		this.specification = GetSpecificationFromTFLiteModel(model_summary_path, architecture_summary_path);
 	}
 
@@ -386,6 +393,8 @@ public class SpecificationDefinition {
 
 		Mappings<Task, Resource> mappings = new Mappings<Task, Resource>();
 
+		Integer model_index = 0;
+
 		for (HashMap<Integer, Task> map : application_graphs.values()) {
 
 			for (Task task : map.values()) {
@@ -398,12 +407,12 @@ public class SpecificationDefinition {
 						Resource resource = cpus.get(i);
 						Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 								String.format("%s:%s", task_id, resource.getId()), task, resource);
-						m.setAttribute("cost", this.operation_costs.GetOpCost("cpu",
-								task.getAttribute("type"), task.getAttribute("dtype")));
+						m.setAttribute("cost",
+								this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost("cpu",
+										task.getAttribute("type"), task.getAttribute("dtype")));
 						mappings.add(m);
 					}
 				}
-				
 
 				if (resources.containsKey("gpu")) {
 					List<Resource> gpus = resources.get("gpu");
@@ -411,8 +420,9 @@ public class SpecificationDefinition {
 						Resource resource = gpus.get(i);
 						Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 								String.format("%s:%s", task_id, resource.getId()), task, resource);
-						m.setAttribute("cost", this.operation_costs.GetOpCost("gpu",
-								task.getAttribute("type"), task.getAttribute("dtype")));
+						m.setAttribute("cost",
+								this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost("gpu",
+										task.getAttribute("type"), task.getAttribute("dtype")));
 						mappings.add(m);
 					}
 				}
@@ -426,12 +436,16 @@ public class SpecificationDefinition {
 							Mapping<Task, Resource> m = new Mapping<Task, Resource>(
 									String.format("%s:%s", task_id, resource.getId()), task,
 									resource);
-							m.setAttribute("cost", this.operation_costs.GetOpCost("tpu",
-									task.getAttribute("type"), task.getAttribute("dtype")));
+							m.setAttribute("cost",
+									this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost(
+											"tpu",
+											task.getAttribute("type"), task.getAttribute("dtype")));
 							mappings.add(m);
 						}
 				}
 			}
+
+			model_index += 1;
 		}
 
 		return mappings;
@@ -448,11 +462,11 @@ public class SpecificationDefinition {
 		this.specification = specification;
 	}
 
-	public OperationCosts getOperation_costs() {
+	public HashMap<String, OperationCosts> getOperation_costs() {
 		return operation_costs;
 	}
 
-	public void setOperation_costs(OperationCosts operation_costs) {
+	public void setOperation_costs(HashMap<String, OperationCosts> operation_costs) {
 		this.operation_costs = operation_costs;
 	}
 

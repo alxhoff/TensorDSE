@@ -33,7 +33,7 @@ public class ScheduleSolver {
     private Double deadline;
 
     private List<Task> starting_tasks;
-    private OperationCosts operation_costs;
+    private HashMap<String, OperationCosts> operation_costs;
 
     public List<Model> json_models = null;
 
@@ -50,7 +50,7 @@ public class ScheduleSolver {
         this.verbose = verbose;
         this.json_models = specification_definition.getJson_models();
 
-        addCommCosts(operation_costs);
+        // addCommCosts(this.operation_costs);
     }
 
     public ScheduleSolver(SpecificationDefinition specification_definition, Double K,
@@ -63,66 +63,53 @@ public class ScheduleSolver {
         this(specification_definition, 0.01, 0.0, verbose);
     }
 
-    public ScheduleSolver(Specification specification, List<Task> starting_tasks,
-            OperationCosts operation_costs, Boolean verbose) {
+    // /**
+    // * @param operation_costs
+    // * @return Boolean
+    // */
+    // public Boolean addCommCosts(HashMap<Integer, OperationCosts> operation_costs,
+    // List<Task> starting_tasks) {
 
-        this.application = specification.getApplication();
-        this.mapping = specification.getMappings();
-        this.routings = specification.getRoutings();
-        this.starting_tasks = starting_tasks;
-        this.operation_costs = operation_costs;
-        this.K = 100.0;
-        this.verbose = verbose;
-        this.json_models = null;
+    // // Tasks that were routed over will have the resource in the verticies of the
+    // // routing
+    // // of the comm node that sits between the task and its predecessor
 
-        addCommCosts(operation_costs);
-    }
+    // for (Task task : this.application.getVertices()) {
 
-    /**
-     * @param operation_costs
-     * @return Boolean
-     */
-    public Boolean addCommCosts(OperationCosts operation_costs) {
+    // // Only interested in non-communication tasks
+    // if (task.getId().contains("comm"))
+    // continue;
 
-        // Tasks that were routed over will have the resource in the verticies of the
-        // routing
-        // of the comm node that sits between the task and its predecessor
+    // Collection<Task> predecessors = this.application.getPredecessors(task);
 
-        for (Task task : this.application.getVertices()) {
+    // if (predecessors.size() > 0) {
 
-            // Only interested in non-communication tasks
-            if (task.getId().contains("comm"))
-                continue;
+    // // Comm task coming before current task
+    // Task predecessor_comm = predecessors.iterator().next();
 
-            Collection<Task> predecessors = this.application.getPredecessors(task);
+    // // Resources used in communication
+    // Collection<Resource> comm_resources =
+    // routings.get(predecessor_comm).getVertices();
 
-            if (predecessors.size() > 0) {
+    // Boolean bus = false;
 
-                // Comm task coming before current task
-                Task predecessor_comm = predecessors.iterator().next();
+    // for (Resource resource : comm_resources) {
+    // if (resource.getId().contains("usb") || resource.getId().contains("pci")) {
+    // bus = true;
+    // break;
+    // }
+    // }
 
-                // Resources used in communication
-                Collection<Resource> comm_resources = routings.get(predecessor_comm).getVertices();
+    // if (bus == true) {
+    // Pair<Double, Double> comm_cost = operation_costs.GetCommCost("tpu",
+    // task.getAttribute("type"), task.getAttribute("dtype"));
+    // task.setAttribute("comm_cost", comm_cost);
+    // }
+    // }
+    // }
 
-                Boolean bus = false;
-
-                for (Resource resource : comm_resources) {
-                    if (resource.getId().contains("usb") || resource.getId().contains("pci")) {
-                        bus = true;
-                        break;
-                    }
-                }
-
-                if (bus == true) {
-                    Pair<Double, Double> comm_cost = operation_costs.GetCommCost("tpu",
-                            task.getAttribute("type"), task.getAttribute("dtype"));
-                    task.setAttribute("comm_cost", comm_cost);
-                }
-            }
-        }
-
-        return true;
-    }
+    // return true;
+    // }
 
     /**
      * @param task
@@ -169,6 +156,7 @@ public class ScheduleSolver {
             GRBModel grb_model = new GRBModel(grb_env);
 
             Integer task_index = 0;
+            Integer model_index = 0;
 
             // Process each branch of the application graph
             for (Task starting_task : this.starting_tasks) {
@@ -182,10 +170,11 @@ public class ScheduleSolver {
                 Task following_comm = this.application.getSuccessors(starting_task).iterator().next();
 
                 Resource target_resource = getTargetResource(starting_task);
-                Pair<Double, Double> comm_costs = this.operation_costs.GetCommCost(
-                        target_resource.getId().replaceAll("\\d", ""),
-                        starting_task.getAttribute("type"), starting_task.getAttribute("dtype"));
-                Double exec_costs = this.operation_costs.GetOpCost(
+                Pair<Double, Double> comm_costs = this.operation_costs.get(this.json_models.get(model_index).getName())
+                        .GetCommCost(
+                                target_resource.getId().replaceAll("\\d", ""),
+                                starting_task.getAttribute("type"), starting_task.getAttribute("dtype"));
+                Double exec_costs = this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost(
                         target_resource.getId().replaceAll("\\d", ""),
                         starting_task.getAttribute("type"), starting_task.getAttribute("dtype"));
 
@@ -211,10 +200,10 @@ public class ScheduleSolver {
 
                     // For all possible resources
                     target_resource = getTargetResource(task);
-                    comm_costs = this.operation_costs.GetCommCost(
+                    comm_costs = this.operation_costs.get(this.json_models.get(model_index).getName()).GetCommCost(
                             target_resource.getId().replaceAll("\\d", ""),
                             task.getAttribute("type"), task.getAttribute("dtype"));
-                    exec_costs = this.operation_costs.GetOpCost(
+                    exec_costs = this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost(
                             target_resource.getId().replaceAll("\\d", ""),
                             task.getAttribute("type"), task.getAttribute("dtype"));
 
@@ -225,6 +214,8 @@ public class ScheduleSolver {
                     count = this.application.getSuccessorCount(task);
                     task_index += 1;
                 }
+
+                model_index += 1;
             }
 
             ArrayList<ILPTask> all_tasks = new ArrayList<ILPTask>();
@@ -279,9 +270,11 @@ public class ScheduleSolver {
                         GRBVar x = null;
 
                         if (resource.getId() == task.getTarget_resource().getId())
-                            x = grb_model.addVar(1.0, 1.0, 0.0, GRB.BINARY, "");
+                            x = grb_model.addVar(1.0, 1.0, 0.0, GRB.BINARY,
+                                    String.format("X_%s_%s", task.getID(), resource.getId()));
                         else
-                            x = grb_model.addVar(0.0, 0.0, 0.0, GRB.BINARY, "");
+                            x = grb_model.addVar(0.0, 0.0, 0.0, GRB.BINARY,
+                                    String.format("X_%s_%s", task.getID(), resource.getId()));
                         task_x_vars.put(resource, x);
                     }
                     task.setX_vars(task_x_vars);
@@ -487,7 +480,8 @@ public class ScheduleSolver {
                 for (ILPTask task : all_tasks) {
                     System.out.print(String.format("Task: %s - ", task.getID()));
                     for (GRBVar x : task.getX_vars().values().toArray(new GRBVar[0]))
-                        System.out.print(String.format("%f, ", x.get(GRB.DoubleAttr.X)));
+                        System.out.print(
+                                String.format("%s:%f, ", x.get(GRB.StringAttr.VarName), x.get(GRB.DoubleAttr.X)));
                     System.out.println();
                 }
 
@@ -544,6 +538,7 @@ public class ScheduleSolver {
             GRBModel grb_model = new GRBModel(grb_env);
 
             Integer task_index = 0;
+            Integer model_index = 0;
 
             // Process each branch of the application graph
             for (Task starting_task : this.starting_tasks) {
@@ -563,11 +558,13 @@ public class ScheduleSolver {
                 HashMap<Resource, Double> exec_costs = new HashMap<Resource, Double>();
                 for (Resource resource : possible_resources) {
                     comm_costs.put(resource,
-                            this.operation_costs.GetCommCost(resource.getId().replaceAll("\\d", ""),
+                            this.operation_costs.get(this.json_models.get(model_index).getName()).GetCommCost(
+                                    resource.getId().replaceAll("\\d", ""),
                                     starting_task.getAttribute("type"),
                                     starting_task.getAttribute("dtype")));
                     exec_costs.put(resource,
-                            this.operation_costs.GetOpCost(resource.getId().replaceAll("\\d", ""),
+                            this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost(
+                                    resource.getId().replaceAll("\\d", ""),
                                     starting_task.getAttribute("type"),
                                     starting_task.getAttribute("dtype")));
                 }
@@ -599,11 +596,11 @@ public class ScheduleSolver {
                     exec_costs = new HashMap<Resource, Double>();
                     for (Resource resource : possible_resources) {
                         comm_costs.put(resource,
-                                this.operation_costs.GetCommCost(
+                                this.operation_costs.get(this.json_models.get(model_index).getName()).GetCommCost(
                                         resource.getId().replaceAll("\\d", ""),
                                         task.getAttribute("type"), task.getAttribute("dtype")));
                         exec_costs.put(resource,
-                                this.operation_costs.GetOpCost(
+                                this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost(
                                         resource.getId().replaceAll("\\d", ""),
                                         task.getAttribute("type"), task.getAttribute("dtype")));
                     }
@@ -616,6 +613,8 @@ public class ScheduleSolver {
 
                     count = this.application.getSuccessorCount(task);
                 }
+
+                model_index += 1;
             }
 
             grb_model.update();
@@ -1226,11 +1225,11 @@ public class ScheduleSolver {
         this.starting_tasks = starting_tasks;
     }
 
-    public OperationCosts getOperation_costs() {
+    public HashMap<String, OperationCosts> getOperation_costs() {
         return operation_costs;
     }
 
-    public void setOperation_costs(OperationCosts operation_costs) {
+    public void setOperation_costs(HashMap<String, OperationCosts> operation_costs) {
         this.operation_costs = operation_costs;
     }
 

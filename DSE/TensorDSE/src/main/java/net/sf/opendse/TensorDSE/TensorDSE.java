@@ -65,7 +65,7 @@ public class TensorDSE {
 				.help("Location of config file to be used for running multiple tests");
 		parser.addArgument("-c", "--crossover").setDefault(0.9).type(Double.class)
 				.help("Cross over rate of the EA");
-		parser.addArgument("-s", "--populationsize").setDefault(100).type(int.class)
+		parser.addArgument("-s", "--populationsize").setDefault(200).type(int.class)
 				.help("Pupulation size for the EA");
 		parser.addArgument("-p", "--parentspergeneration").setDefault(50).type(int.class)
 				.help("Perfecntage of parents per generation in the EA");
@@ -90,7 +90,7 @@ public class TensorDSE {
 				"../../resources/architecture_summaries/example_output_architecture_summary.json")
 				.type(String.class).help("Location of architecture summary JSON");
 		parser.addArgument("-d", "--profilingcosts")
-				.setDefault("../../resources/profiling_results/MNIST_full_quanitization.json")
+				.setDefault("../../resources/profiling_results")
 				.type(String.class).help("Directory containing cost files");
 
 		// Output Files
@@ -106,7 +106,7 @@ public class TensorDSE {
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
 		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
 				.help("Run Demo instead of solving input specification");
-		parser.addArgument("-j", "--objective").type(String.class).setDefault("deadline_misses")
+		parser.addArgument("-j", "--objective").type(String.class).setDefault("average_finish_time")
 				.help("Specifies which object should be optimized for, must be one of the following:\n'average_finish_time', 'max_finish_time', 'deadline_misses', 'slack_time'");
 
 		// RT
@@ -150,7 +150,7 @@ public class TensorDSE {
 	 * @param specification_definition
 	 * @return Module
 	 */
-	private static Module GetSpecificationModule(SpecificationDefinition specification_definition,
+	private static Module GetSpecificationModule(SpecificationDefinition specification_definition, Double K,
 			Boolean verbose, Boolean visualise) {
 
 		Module specification_module = new Opt4JModule() {
@@ -162,7 +162,7 @@ public class TensorDSE {
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
 
 				EvaluatorMinimizeCost evaluator = new EvaluatorMinimizeCost("cost_of_mapping",
-						specification_definition, verbose, visualise);
+						specification_definition, K, verbose, visualise);
 
 				Multibinder<ImplementationEvaluator> multibinder = Multibinder.newSetBinder(binder(),
 						ImplementationEvaluator.class);
@@ -200,20 +200,6 @@ public class TensorDSE {
 		}
 		System.out.printf("Architecture Summary: %s\n", architecture_summary_loc);
 		return architecture_summary_loc;
-	}
-
-	/**
-	 * @param args_namespace
-	 * @return String
-	 */
-	private static String GetProfilingCostsFilePath(Namespace args_namespace) {
-		String cost_file = args_namespace.getString("profilingcosts");
-		if (cost_file == null) {
-			System.out.println("You need to provide the cost files directory");
-			System.exit(0);
-		}
-		System.out.printf("Profiling costs: %s\n", cost_file);
-		return cost_file;
 	}
 
 	/**
@@ -304,14 +290,14 @@ public class TensorDSE {
 		FileWriter csv_writer = GetResultsWriter(results_file);
 
 		String models_description_file_path = GetModelSummaryFilePath(args_namespace);
-		String profiling_costs_file_path = GetProfilingCostsFilePath(args_namespace);
+		String profiling_costs_directory_path = args_namespace.getString("profilingcosts");
+		;
 		String hardware_description_file_path = GetArchitectureSummaryFilePath(args_namespace);
 
 		System.out.println("Working Directory: " + System.getProperty("user.dir"));
 		System.out.printf("Runs: %d\n", test_runs);
 
 		String config_file = args_namespace.getString("config");
-		System.out.println(String.format("CONFIG FILE: %s", config_file));
 
 		System.out.println(String.format("Binary loc: %s",
 				TensorDSE.class.getProtectionDomain().getCodeSource().getLocation().getPath()));
@@ -320,7 +306,7 @@ public class TensorDSE {
 		// generated
 		// set of possible mappings
 		SpecificationDefinition specification_definition = new SpecificationDefinition(models_description_file_path,
-				profiling_costs_file_path,
+				profiling_costs_directory_path,
 				hardware_description_file_path);
 
 		String time_string = new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
@@ -343,25 +329,31 @@ public class TensorDSE {
 
 				// Solve for mappings and schedule using only ILP
 				if (args_namespace.getBoolean("demo") == true) {
+
 					// Run an ILP demo
 					ILPFormuation ilp_formulation = new ILPFormuation();
 					ilp_formulation.gurobiILPExampleSixTask();
+
 				} else {
+
 					// Solver contains the application, architecture, and possible mapping
 					// graphs as well as the list of starting tasks and the operation costs
 					ScheduleSolver schedule_solver = new ScheduleSolver(specification_definition,
 							args_namespace.getDouble("deactivationnumber"),
 							specification_definition.getJson_models().get(0).getDeadline(),
 							args_namespace.getBoolean("verbose"));
+
 					long startILP = System.currentTimeMillis();
 					Pair<Double, ArrayList<ArrayList<ILPTask>>> ret = schedule_solver.solveILPMappingAndSchedule(
 							args_namespace.getBoolean("realtime"),
 							args_namespace.getBoolean("hardrealtime"), args_namespace.getString("objective"));
-					// Incremental average for all tests
-					obj_val = obj_val + ((ret.getValue0() - obj_val) / (test_runs + 1));
-					ArrayList<ArrayList<ILPTask>> models = ret.getValue1();
 					exec_time = System.currentTimeMillis() - startILP;
 					System.out.println(String.format("ILP Exec time: %dms", exec_time));
+
+					// Incremental average for all tests
+					obj_val = obj_val + ((ret.getValue0() - obj_val) / (test_runs + 1));
+
+					ArrayList<ArrayList<ILPTask>> models = ret.getValue1();
 
 					// Populate model summary with mapping information
 					for (ArrayList<ILPTask> model : models) {
@@ -484,7 +476,7 @@ public class TensorDSE {
 							parents_per_generation.get(c), offsprings_per_generation.get(c));
 
 					// Bind the evaluator to the specification
-					Module specification_module = GetSpecificationModule(specification_definition,
+					Module specification_module = GetSpecificationModule(specification_definition, 0.0,
 							args_namespace.getBoolean("verbose"),
 							args_namespace.getBoolean("visualise"));
 

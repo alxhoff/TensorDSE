@@ -1,5 +1,6 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
     "java.import.gradle.wrapper.enabled": true,
-    "java.import.gradle.version": "6.9.2"
+    "java.import.gradle.version": "6.9.2",
+    "java.debug.settings.onBuildFailureProceed": true
 }

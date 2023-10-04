@@ -25,11 +25,11 @@ override COUNT = 2
 $(info Using default COUNT: $(COUNT))
 endif
 ifndef MODEL_SUMMARY
-override MODEL_SUMMARY = "../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary.json"
+override MODEL_SUMMARY = "../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization.json"
 $(info Using default MODEL_SUMMARY: $(MODEL_SUMMARY))
 endif
 ifndef MODEL_SUMMARY_W_MAPPINGS
-override MODEL_SUMMARY_W_MAPPINGS = "resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json"
+override MODEL_SUMMARY_W_MAPPINGS = "resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_w_mappings.json"
 $(info Using default MODEL_SUMMARY_W_MAPPINGS: $(MODEL_SUMMARY_W_MAPPINGS))
 endif
 ifndef ARCHITECTURE_SUMMARY

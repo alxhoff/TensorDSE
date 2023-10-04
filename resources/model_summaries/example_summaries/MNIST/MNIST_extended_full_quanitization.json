@@ -2,6 +2,7 @@
     "models": [
         {
             "name": "MNIST_extended_full_quanitization",
+            "deadline": 0.0,
             "starting_tensor": "0",
             "finishing_tensor": "20",
             "layers": [
