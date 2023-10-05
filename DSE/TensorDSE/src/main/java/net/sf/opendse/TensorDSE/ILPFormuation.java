@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.xpath.operations.Bool;
 import org.javatuples.Pair;
 import gurobi.*;
 import net.sf.opendse.model.Resource;
@@ -45,6 +44,16 @@ public class ILPFormuation {
         obj.addTerms(coeffs, var_array.toArray(new GRBVar[0]));
 
         model.setObjective(obj, GRB.MINIMIZE);
+    }
+
+    public void addObjectiveMaxVarArray(ArrayList<GRBVar> var_array, GRBModel model) throws GRBException {
+
+        GRBLinExpr obj = new GRBLinExpr();
+        double[] coeffs = new double[var_array.size()];
+        Arrays.fill(coeffs, 1.0);
+        obj.addTerms(coeffs, var_array.toArray(new GRBVar[0]));
+
+        model.setObjective(obj, GRB.MAXIMIZE);
     }
 
     public GRBVar addObjectiveMinMaxValue(ArrayList<GRBVar> var_array, GRBModel model, String var_name,
@@ -615,7 +624,7 @@ public class ILPFormuation {
         HashMap<Resource, Double> send_costs = new HashMap<Resource, Double>();
 
         if (verbose)
-            System.out.print(String.format("With send costs: "));
+            System.out.print("With send costs: ");
 
         for (Map.Entry<Resource, Pair<Double, Double>> entry : comm_costs.entrySet()) {
             Resource resource = entry.getKey();
@@ -630,7 +639,7 @@ public class ILPFormuation {
         HashMap<Resource, Double> recv_costs = new HashMap<Resource, Double>();
 
         if (verbose)
-            System.out.print(String.format("\nWith recv costs: "));
+            System.out.print("\nWith recv costs: ");
 
         for (Map.Entry<Resource, Pair<Double, Double>> entry : comm_costs.entrySet()) {
             Resource resource = entry.getKey();
@@ -645,7 +654,7 @@ public class ILPFormuation {
         ret.setExecution_costs(exec_costs);
 
         if (verbose) {
-            System.out.print(String.format("\nWith exec costs: "));
+            System.out.print("\nWith exec costs: ");
             for (Map.Entry<Resource, Double> entry : exec_costs.entrySet())
                 System.out.print(String.format("%s:%f", entry.getKey().getId(), entry.getValue()));
         }

@@ -100,13 +100,13 @@ public class TensorDSE {
 				.type(String.class);
 
 		// ILP
-		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(true)
+		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
 		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(0.01).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
 		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
 				.help("Run Demo instead of solving input specification");
-		parser.addArgument("-j", "--objective").type(String.class).setDefault("average_finish_time")
+		parser.addArgument("-j", "--objective").type(String.class).setDefault(Constants.average_finish_time)
 				.help("Specifies which object should be optimized for, must be one of the following:\n'average_finish_time', 'max_finish_time', 'deadline_misses', 'slack_time'");
 
 		// RT
@@ -145,13 +145,13 @@ public class TensorDSE {
 	}
 
 	/**
-	 * @brief The specification module binds an evaluator to the problem's
-	 *        specification
+	 * @brief The specification module binds an evaluator to the
+	 *        problem'sspecification
 	 * @param specification_definition
 	 * @return Module
 	 */
 	private static Module GetSpecificationModule(SpecificationDefinition specification_definition, Double K,
-			Boolean verbose, Boolean visualise) {
+			Boolean real_time, Boolean hard_real_time, String objective, Boolean verbose, Boolean visualise) {
 
 		Module specification_module = new Opt4JModule() {
 
@@ -162,12 +162,11 @@ public class TensorDSE {
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
 
 				EvaluatorMinimizeCost evaluator = new EvaluatorMinimizeCost("cost_of_mapping",
-						specification_definition, K, verbose, visualise);
+						specification_definition, K, real_time, hard_real_time, objective, verbose, visualise);
 
 				Multibinder<ImplementationEvaluator> multibinder = Multibinder.newSetBinder(binder(),
 						ImplementationEvaluator.class);
 				multibinder.addBinding().toInstance(evaluator);
-
 			}
 		};
 
@@ -339,6 +338,7 @@ public class TensorDSE {
 					// Solver contains the application, architecture, and possible mapping
 					// graphs as well as the list of starting tasks and the operation costs
 					ScheduleSolver schedule_solver = new ScheduleSolver(specification_definition,
+							null,
 							args_namespace.getDouble("deactivationnumber"),
 							specification_definition.getJson_models().get(0).getDeadline(),
 							args_namespace.getBoolean("verbose"));
@@ -477,7 +477,8 @@ public class TensorDSE {
 
 					// Bind the evaluator to the specification
 					Module specification_module = GetSpecificationModule(specification_definition, 0.0,
-							args_namespace.getBoolean("verbose"),
+							args_namespace.getBoolean("realtime"), args_namespace.getBoolean("hardrealtime"),
+							args_namespace.getString("objective"), args_namespace.getBoolean("verbose"),
 							args_namespace.getBoolean("visualise"));
 
 					OptimizationModule optimization_module = new OptimizationModule();
@@ -550,7 +551,7 @@ public class TensorDSE {
 							if (args_namespace.getBoolean("verbose"))
 								for (Mapping<Task, Resource> m : implementation.getMappings()) {
 									System.out.println(m.getSource().getId() + " type "
-											+ m.getSource().getAttribute("type") + " HW "
+											+ m.getSource().getAttribute(Constants.type) + " HW "
 											+ m.getTarget().getId());
 								}
 						}

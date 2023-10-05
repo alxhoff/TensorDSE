@@ -24,11 +24,14 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	Mappings<Task, Resource> possible_mappings;
 	private Boolean verbose;
 	private Boolean visualise;
+	private Boolean real_time;
+	private Boolean hard_real_time;
+	private String objective;
 
 	private Integer evaluation_count = 0;
 
 	public EvaluatorMinimizeCost(String objectives, SpecificationDefinition SpecificationDefinition, Double K,
-			Boolean verbose, Boolean visualise) {
+			Boolean real_time, Boolean hard_real_time, String objective, Boolean verbose, Boolean visualise) {
 		super();
 
 		this.specification_definition = SpecificationDefinition;
@@ -38,6 +41,9 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		this.possible_mappings = SpecificationDefinition.getSpecification().getMappings();
 		this.verbose = verbose;
 		this.visualise = visualise;
+		this.real_time = real_time;
+		this.hard_real_time = hard_real_time;
+		this.objective = objective;
 
 		for (String s : objectives.split(",")) {
 			Objective obj = new Objective(s, Objective.Sign.MIN);
@@ -59,9 +65,17 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 		if (this.visualise == true && this.verbose == true)
 			SpecificationViewer.view(solution_specification);
 
-		ScheduleSolver schedule_solver = new ScheduleSolver(this.specification_definition, this.K, this.verbose);
+		ScheduleSolver schedule_solver = new ScheduleSolver(this.specification_definition,
+				solution_specification.getMappings(), this.K, this.verbose);
 
-		double cost_of_mapping = schedule_solver.solveGASchedule(getPossible_mappings());
+		Double cost_of_mapping = 0.0;
+		try {
+			cost_of_mapping = schedule_solver.solveGASchedule(getPossible_mappings(), this.real_time,
+					this.hard_real_time, this.objective);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		objectives.add(map.get("cost_of_mapping"), cost_of_mapping);
 
@@ -78,45 +92,6 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 	public int getPriority() {
 		return priority;
 	}
-
-	/**
-	 * This {@code MappingCost} calculates the mapping cost for the considered
-	 * mapping
-	 * 
-	 * @param mapping Mapping<Task, Resource>
-	 * @return a double with the cost of mapping.
-	 */
-	// private double MappingCost(Mapping<Task, Resource> mapping) {
-	// Double cost = 0.0;
-	// String layer =
-	// mapping.getSource().getAttribute("type").toString().toLowerCase();
-	// String target_device = mapping.getTarget().getId();
-	// String data_type = mapping.getSource().getAttribute("dtype");
-
-	// // Extract target device
-	// Pattern p = Pattern.compile("([a-z]+)\\d+");
-	// Matcher m = p.matcher(target_device);
-	// if (m.find())
-	// target_device = m.group(1);
-
-	// // Execution cost
-	// if (operation_costs.GetOpTypeTable(target_device).containsKey(layer)) {
-	// if (operation_costs.GetOpDataTypeTable(target_device,
-	// layer).containsKey(data_type)) {
-	// cost = operation_costs.GetOpCost(target_device, layer, data_type);
-	// } else {
-	// cost = 0.0;
-	// }
-	// }
-
-	// // Communication cost
-	// Pair<Double, Double> comm_cost =
-	// operation_costs.GetCommCost(target_device, layer, data_type);
-
-	// cost += comm_cost.getValue0() + comm_cost.getValue1();
-
-	// return cost;
-	// }
 
 	public Map<String, Objective> getMap() {
 		return map;
@@ -188,5 +163,21 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 
 	public void setEvaluation_count(Integer evaluation_count) {
 		this.evaluation_count = evaluation_count;
+	}
+
+	public Boolean getReal_time() {
+		return real_time;
+	}
+
+	public void setReal_time(Boolean real_time) {
+		this.real_time = real_time;
+	}
+
+	public Boolean getHard_real_time() {
+		return hard_real_time;
+	}
+
+	public void setHard_real_time(Boolean hard_real_time) {
+		this.hard_real_time = hard_real_time;
 	}
 }

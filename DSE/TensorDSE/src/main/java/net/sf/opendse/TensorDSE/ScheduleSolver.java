@@ -1,13 +1,13 @@
 package net.sf.opendse.TensorDSE;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import net.sf.opendse.TensorDSE.JSON.Model.Model;
@@ -18,7 +18,6 @@ import net.sf.opendse.model.Mapping;
 import net.sf.opendse.model.Mappings;
 import net.sf.opendse.model.Resource;
 import net.sf.opendse.model.Routings;
-import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
 
 import gurobi.*;
@@ -26,22 +25,21 @@ import gurobi.*;
 public class ScheduleSolver {
 
     private Application<Task, Dependency> application;
-    private Mappings<Task, Resource> mapping;
+    private Mappings<Task, Resource> possible_mappings;
+    private Mappings<Task, Resource> mappings;
     private Routings<Task, Resource, Link> routings;
     private Double K;
     private Boolean verbose;
     private Double deadline;
-
     private List<Task> starting_tasks;
     private HashMap<String, OperationCosts> operation_costs;
-
     public List<Model> json_models = null;
 
-    public ScheduleSolver(SpecificationDefinition specification_definition, Double K, Double deadline,
-            Boolean verbose) {
+    public ScheduleSolver(SpecificationDefinition specification_definition, Mappings<Task, Resource> mappings,
+            Double K, Double deadline, Boolean verbose) {
 
         this.application = specification_definition.getSpecification().getApplication();
-        this.mapping = specification_definition.getSpecification().getMappings();
+        this.possible_mappings = specification_definition.getSpecification().getMappings();
         this.routings = specification_definition.getSpecification().getRoutings();
         this.starting_tasks = specification_definition.getStarting_tasks();
         this.operation_costs = specification_definition.getOperation_costs();
@@ -49,67 +47,18 @@ public class ScheduleSolver {
         this.deadline = deadline;
         this.verbose = verbose;
         this.json_models = specification_definition.getJson_models();
-
-        // addCommCosts(this.operation_costs);
+        this.mappings = mappings;
     }
 
-    public ScheduleSolver(SpecificationDefinition specification_definition, Double K,
+    public ScheduleSolver(SpecificationDefinition specification_definition, Mappings<Task, Resource> mappings, Double K,
             Boolean verbose) {
-        this(specification_definition, K, 0.0, verbose);
+        this(specification_definition, mappings, K, 0.0, verbose);
     }
 
     public ScheduleSolver(SpecificationDefinition specification_definition, Boolean verbose) {
 
-        this(specification_definition, 0.01, 0.0, verbose);
+        this(specification_definition, null, 0.01, 0.0, verbose);
     }
-
-    // /**
-    // * @param operation_costs
-    // * @return Boolean
-    // */
-    // public Boolean addCommCosts(HashMap<Integer, OperationCosts> operation_costs,
-    // List<Task> starting_tasks) {
-
-    // // Tasks that were routed over will have the resource in the verticies of the
-    // // routing
-    // // of the comm node that sits between the task and its predecessor
-
-    // for (Task task : this.application.getVertices()) {
-
-    // // Only interested in non-communication tasks
-    // if (task.getId().contains("comm"))
-    // continue;
-
-    // Collection<Task> predecessors = this.application.getPredecessors(task);
-
-    // if (predecessors.size() > 0) {
-
-    // // Comm task coming before current task
-    // Task predecessor_comm = predecessors.iterator().next();
-
-    // // Resources used in communication
-    // Collection<Resource> comm_resources =
-    // routings.get(predecessor_comm).getVertices();
-
-    // Boolean bus = false;
-
-    // for (Resource resource : comm_resources) {
-    // if (resource.getId().contains("usb") || resource.getId().contains("pci")) {
-    // bus = true;
-    // break;
-    // }
-    // }
-
-    // if (bus == true) {
-    // Pair<Double, Double> comm_cost = operation_costs.GetCommCost("tpu",
-    // task.getAttribute("type"), task.getAttribute("dtype"));
-    // task.setAttribute("comm_cost", comm_cost);
-    // }
-    // }
-    // }
-
-    // return true;
-    // }
 
     /**
      * @param task
@@ -117,10 +66,7 @@ public class ScheduleSolver {
      */
     private Resource getTargetResource(Task task) {
 
-        Resource target_resource = new ArrayList<Resource>(mapping.getTargets(task))
-                .get(mapping.getTargets(task).size() - 1);
-
-        return target_resource;
+        return this.mappings.get(task).stream().findFirst().orElse(null).getTarget();
     }
 
     /**
@@ -128,15 +74,17 @@ public class ScheduleSolver {
      * @return ArrayList<Resource>
      */
     private ArrayList<Resource> getPossibleTargetResources(Task task) {
-        ArrayList<Resource> target_resources = new ArrayList<Resource>(mapping.getTargets(task));
+        ArrayList<Resource> target_resources = new ArrayList<Resource>(possible_mappings.getTargets(task));
 
         return target_resources;
     }
 
     /**
      * @return Double
+     * @throws Exception
      */
-    public Double solveGASchedule(Mappings<Task, Resource> possible_mappings) {
+    public Double solveGASchedule(Mappings<Task, Resource> possible_mappings, Boolean real_time, Boolean hard_real_time,
+            String objective) throws Exception {
 
         // Sequential arrays of models and their tasks
         ArrayList<ArrayList<ILPTask>> models = new ArrayList<ArrayList<ILPTask>>();
@@ -144,6 +92,12 @@ public class ScheduleSolver {
 
         // Hashmap for quickly accessing all tasks mapped to the same resource
         HashMap<Resource, ArrayList<ILPTask>> resource_mapped_tasks = new HashMap<Resource, ArrayList<ILPTask>>();
+
+        // For soft real-time constraints if used
+        ArrayList<GRBVar> m_vars = new ArrayList<GRBVar>();
+        ArrayList<GRBVar> n_vars = new ArrayList<GRBVar>();
+
+        Double obj_val = -1.0;
 
         try {
 
@@ -173,10 +127,11 @@ public class ScheduleSolver {
                 Pair<Double, Double> comm_costs = this.operation_costs.get(this.json_models.get(model_index).getName())
                         .GetCommCost(
                                 target_resource.getId().replaceAll("\\d", ""),
-                                starting_task.getAttribute("type"), starting_task.getAttribute("dtype"));
+                                starting_task.getAttribute(Constants.type),
+                                starting_task.getAttribute(Constants.dtype));
                 Double exec_costs = this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost(
                         target_resource.getId().replaceAll("\\d", ""),
-                        starting_task.getAttribute("type"), starting_task.getAttribute("dtype"));
+                        starting_task.getAttribute(Constants.type), starting_task.getAttribute(Constants.dtype));
 
                 ILPTask ilp_task = ilps.initILPTask(starting_task, target_resource, comm_costs,
                         exec_costs, grb_model, task_index);
@@ -202,10 +157,10 @@ public class ScheduleSolver {
                     target_resource = getTargetResource(task);
                     comm_costs = this.operation_costs.get(this.json_models.get(model_index).getName()).GetCommCost(
                             target_resource.getId().replaceAll("\\d", ""),
-                            task.getAttribute("type"), task.getAttribute("dtype"));
+                            task.getAttribute(Constants.type), task.getAttribute(Constants.dtype));
                     exec_costs = this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost(
                             target_resource.getId().replaceAll("\\d", ""),
-                            task.getAttribute("type"), task.getAttribute("dtype"));
+                            task.getAttribute(Constants.type), task.getAttribute(Constants.dtype));
 
                     ilp_task = ilps.initILPTask(task, target_resource, comm_costs, exec_costs,
                             grb_model, task_index);
@@ -232,8 +187,8 @@ public class ScheduleSolver {
 
                     // Get possible resource targets for task
                     ArrayList<Resource> target_resources = new ArrayList<Resource>();
-                    for (Mapping<Task, Resource> mapping : possible_mappings.get(task.getTask()))
-                        target_resources.add(mapping.getTarget());
+                    for (Mapping<Task, Resource> m : possible_mappings.get(task.getTask()))
+                        target_resources.add(m.getTarget());
                     task.setTarget_resources(target_resources);
 
                     // All done during ILPTask init
@@ -268,13 +223,12 @@ public class ScheduleSolver {
                     for (Resource resource : task.getTarget_resources()) {
 
                         GRBVar x = null;
+                        String x_name = String.format("X_%s_%s", task.getID(), resource.getId());
 
-                        if (resource.getId() == task.getTarget_resource().getId())
-                            x = grb_model.addVar(1.0, 1.0, 0.0, GRB.BINARY,
-                                    String.format("X_%s_%s", task.getID(), resource.getId()));
+                        if (resource.getId().equals(task.getTarget_resource().getId()))
+                            x = grb_model.addVar(1.0, 1.0, 0.0, GRB.BINARY, x_name);
                         else
-                            x = grb_model.addVar(0.0, 0.0, 0.0, GRB.BINARY,
-                                    String.format("X_%s_%s", task.getID(), resource.getId()));
+                            x = grb_model.addVar(0.0, 0.0, 0.0, GRB.BINARY, x_name);
                         task_x_vars.put(resource, x);
                     }
                     task.setX_vars(task_x_vars);
@@ -362,10 +316,43 @@ public class ScheduleSolver {
                             task.getSame_resource_sending_cost(),
                             task.getSame_resource_receiving_cost(), grb_model);
 
-                    if (task == model.get(model.size() - 1))
+                    if (task == model.get(model.size() - 1)) {
                         // Last task, so we can add its finish time to the list of final tasks
                         final_task_finish_times.add(task.getFinish_time());
-                    else
+
+                        // Real time
+                        // Our examples only look at model deadlines so setting constraints for last
+                        // tasks for now
+                        if (real_time)
+                            if (!hard_real_time) {
+                                // deadline misses
+                                if (objective.equals(Constants.deadline_misses)) {
+                                    if (verbose)
+                                        System.out
+                                                .println(String.format("Deadline misses constraint: %s", task.getID()));
+                                    n_vars.add(ilps.addTaskSoftDeadlineConstraint(task.getFinish_time(),
+                                            this.getDeadline(),
+                                            this.getK(),
+                                            String.format("n_%s", task.getID()), grb_model,
+                                            String.format("Deadline misses constraint: %s", task.getID())));
+                                }
+                                // slack time
+                                else if (objective.equals(Constants.slack_time)) {
+                                    if (verbose)
+                                        System.out.println(String.format("Slack constraint: %s",
+                                                task.getID()));
+                                    m_vars.add(ilps.addSlackTimeConstraint(task.getFinish_time(), this.getDeadline(),
+                                            String.format("m_%s", task.getID()), grb_model,
+                                            String.format("Slack constraint: %s",
+                                                    task.getID())));
+                                }
+                            } else {
+                                // task deadlines
+                                ilps.addTaskHardDeadlineConstraint(task.getStart_time(), task.getFinish_time(),
+                                        this.getDeadline(),
+                                        grb_model, String.format("%s deadline: %f", task.getID(), this.getDeadline()));
+                            }
+                    } else
                         prev_task = task;
                 }
             }
@@ -385,14 +372,27 @@ public class ScheduleSolver {
             }
 
             // Set objective
-            GRBLinExpr obj = new GRBLinExpr();
-            double[] coeffs = new double[final_task_finish_times.size()];
-            Arrays.fill(coeffs, 1.0 / final_task_finish_times.size());
-            obj.addTerms(coeffs, final_task_finish_times.toArray(new GRBVar[0]));
+            if (objective.equals(Constants.average_finish_time))
+                ilps.addObjectiveMinAverageVarArray(final_task_finish_times, grb_model);
+            else if (objective.equals(Constants.max_finish_time))
+                ilps.addObjectiveMinMaxValue(final_task_finish_times, grb_model, "Max_finish",
+                        "Obj_max");
+            else if (objective.equals(Constants.deadline_misses)) {
 
-            grb_model.setObjective(obj, GRB.MINIMIZE);
+                if (!real_time)
+                    throw new Exception("Cannot use real-time objective without real-time constraints enabled");
+                else if (hard_real_time)
+                    throw new Exception("Cannot use soft real-time objective with hard real-time constraints");
+                ilps.addObjectiveMinVarArray(n_vars, grb_model);
 
-            Double obj_val = -1.0;
+            } else if (objective.equals(Constants.slack_time)) {
+
+                if (!real_time)
+                    throw new Exception("Cannot use real-time objective without real-time constraints enabled");
+                else if (hard_real_time)
+                    throw new Exception("Cannot use soft real-time objective with hard real-time constraints");
+                ilps.addObjectiveMaxVarArray(m_vars, grb_model);
+            }
 
             try {
                 grb_model.optimize();
@@ -502,6 +502,16 @@ public class ScheduleSolver {
                 for (GRBVar finish_time : final_task_finish_times)
                     System.out.println(
                             String.format("Finish time: %f", finish_time.get(GRB.DoubleAttr.X)));
+
+                System.out.println("X vars");
+                for (ILPTask task : all_tasks) {
+                    System.out.print(String.format("Task: %s - ", task.getID()));
+                    for (GRBVar x : task.getX_vars().values().toArray(new GRBVar[0]))
+                        System.out.print(String.format("%s:%f, ", x.get(GRB.StringAttr.VarName),
+                                x.get(GRB.DoubleAttr.X)));
+                    System.out.println();
+                }
+                System.out.println();
             }
 
             return obj_val;
@@ -560,13 +570,13 @@ public class ScheduleSolver {
                     comm_costs.put(resource,
                             this.operation_costs.get(this.json_models.get(model_index).getName()).GetCommCost(
                                     resource.getId().replaceAll("\\d", ""),
-                                    starting_task.getAttribute("type"),
-                                    starting_task.getAttribute("dtype")));
+                                    starting_task.getAttribute(Constants.type),
+                                    starting_task.getAttribute(Constants.dtype)));
                     exec_costs.put(resource,
                             this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost(
                                     resource.getId().replaceAll("\\d", ""),
-                                    starting_task.getAttribute("type"),
-                                    starting_task.getAttribute("dtype")));
+                                    starting_task.getAttribute(Constants.type),
+                                    starting_task.getAttribute(Constants.dtype)));
                 }
 
                 ILPTask ilp_task = ilps.initILPTask(starting_task, possible_resources, comm_costs,
@@ -598,11 +608,11 @@ public class ScheduleSolver {
                         comm_costs.put(resource,
                                 this.operation_costs.get(this.json_models.get(model_index).getName()).GetCommCost(
                                         resource.getId().replaceAll("\\d", ""),
-                                        task.getAttribute("type"), task.getAttribute("dtype")));
+                                        task.getAttribute(Constants.type), task.getAttribute(Constants.dtype)));
                         exec_costs.put(resource,
                                 this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost(
                                         resource.getId().replaceAll("\\d", ""),
-                                        task.getAttribute("type"), task.getAttribute("dtype")));
+                                        task.getAttribute(Constants.type), task.getAttribute(Constants.dtype)));
                     }
 
                     ilp_task = ilps.initILPTask(task, possible_resources, comm_costs, exec_costs,
@@ -854,7 +864,7 @@ public class ScheduleSolver {
                         if (real_time)
                             if (!hard_real_time) {
                                 // deadline misses
-                                if (objective.equals("deadline_misses")) {
+                                if (objective.equals(Constants.deadline_misses)) {
                                     if (verbose)
                                         System.out
                                                 .println(String.format("Deadline misses constraint: %s", task.getID()));
@@ -865,7 +875,7 @@ public class ScheduleSolver {
                                             String.format("Deadline misses constraint: %s", task.getID())));
                                 }
                                 // slack time
-                                else if (objective.equals("slack_time")) {
+                                else if (objective.equals(Constants.slack_time)) {
                                     if (verbose)
                                         System.out.println(String.format("Slack constraint: %s",
                                                 task.getID()));
@@ -941,12 +951,12 @@ public class ScheduleSolver {
             }
 
             // Set objective
-            if (objective.equals("average_finish_time"))
+            if (objective.equals(Constants.average_finish_time))
                 ilps.addObjectiveMinAverageVarArray(final_task_finish_times, grb_model);
-            else if (objective.equals("max_finish_time"))
+            else if (objective.equals(Constants.max_finish_time))
                 ilps.addObjectiveMinMaxValue(final_task_finish_times, grb_model, String.format("Max_finish"),
                         String.format("Obj_max"));
-            else if (objective.equals("deadline_misses")) {
+            else if (objective.equals(Constants.deadline_misses)) {
 
                 if (!real_time)
                     throw new Exception("Cannot use real-time objective without real-time constraints enabled");
@@ -954,13 +964,13 @@ public class ScheduleSolver {
                     throw new Exception("Cannot use soft real-time objective with hard real-time constraints");
                 ilps.addObjectiveMinVarArray(n_vars, grb_model);
 
-            } else if (objective.equals("slack_time")) {
+            } else if (objective.equals(Constants.slack_time)) {
 
                 if (!real_time)
                     throw new Exception("Cannot use real-time objective without real-time constraints enabled");
                 else if (hard_real_time)
                     throw new Exception("Cannot use soft real-time objective with hard real-time constraints");
-                ilps.addObjectiveMinVarArray(m_vars, grb_model);
+                ilps.addObjectiveMaxVarArray(m_vars, grb_model);
             }
 
             try {
@@ -1133,13 +1143,13 @@ public class ScheduleSolver {
                 if (real_time)
                     if (!hard_real_time) {
                         // deadline misses
-                        if (objective.equals("deadline_misses")) {
+                        if (objective.equals(Constants.deadline_misses)) {
                             System.out.println("N variables");
                             for (GRBVar var : n_vars)
                                 System.out.println(String.format("%f", var.get(GRB.DoubleAttr.X)));
                         }
                         // slack time
-                        else if (objective.equals("slack_time"))
+                        else if (objective.equals(Constants.slack_time))
                             System.out.println("M variables");
                         for (GRBVar var : m_vars)
                             System.out.println(String.format("%f", var.get(GRB.DoubleAttr.X)));
@@ -1185,12 +1195,12 @@ public class ScheduleSolver {
         this.application = application;
     }
 
-    public Mappings<Task, Resource> getMapping() {
-        return mapping;
+    public Mappings<Task, Resource> getPossible_mappings() {
+        return possible_mappings;
     }
 
-    public void setMapping(Mappings<Task, Resource> mapping) {
-        this.mapping = mapping;
+    public void setPossible_mappings(Mappings<Task, Resource> mapping) {
+        this.possible_mappings = mapping;
     }
 
     public Routings<Task, Resource, Link> getRoutings() {
@@ -1247,5 +1257,13 @@ public class ScheduleSolver {
 
     public void setJson_models(List<Model> json_models) {
         this.json_models = json_models;
+    }
+
+    public Mappings<Task, Resource> getMappings() {
+        return mappings;
+    }
+
+    public void setMappings(Mappings<Task, Resource> mappings) {
+        this.mappings = mappings;
     }
 }

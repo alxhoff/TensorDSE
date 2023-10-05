@@ -27,7 +27,7 @@ def debug_stream(model_path, timeout, usbmon):
     input_data = np.array(
             np.random.random_sample(
                 input_details[0]["shape"]),         # input shape
-                dtype=input_details[0]["dtype"])    # input dtype
+                dtype=input_details[0][Constants.dtype])    # input dtype
 
     interpreter.set_tensor(input_details[0]["index"], input_data)
 
