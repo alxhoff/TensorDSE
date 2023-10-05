@@ -37,7 +37,7 @@ override ARCHITECTURE_SUMMARY = "../../resources/architecture_summaries/example_
 $(info Using default ARCHITECTURE_SUMMARY: $(ARCHITECTURE_SUMMARY))
 endif
 ifndef PROFILING_COSTS
-override PROFILING_COSTS = "../../resources/profiling_results/MNIST_full_quanitization.json"
+override PROFILING_COSTS = "../../resources/profiling_results"
 $(info Using default PROFILING_COSTS: $(PROFILING_COSTS))
 endif
 ifndef OUTPUT_FOLDER

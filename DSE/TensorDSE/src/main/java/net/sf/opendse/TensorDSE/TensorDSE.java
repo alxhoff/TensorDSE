@@ -17,7 +17,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
-import org.apache.xpath.operations.Bool;
 import org.javatuples.Pair;
 import org.opt4j.core.Individual;
 import org.opt4j.core.optimizer.Archive;
@@ -65,16 +64,16 @@ public class TensorDSE {
 				.help("Location of config file to be used for running multiple tests");
 		parser.addArgument("-c", "--crossover").setDefault(0.9).type(Double.class)
 				.help("Cross over rate of the EA");
-		parser.addArgument("-s", "--populationsize").setDefault(200).type(int.class)
+		parser.addArgument("-s", "--populationsize").setDefault(100).type(int.class)
 				.help("Pupulation size for the EA");
 		parser.addArgument("-p", "--parentspergeneration").setDefault(50).type(int.class)
 				.help("Perfecntage of parents per generation in the EA");
 		parser.addArgument("-o", "--offspringspergeneration").setDefault(50).type(int.class)
 				.help("Perfecntage of offsprings per generation");
-		parser.addArgument("-g", "--generations").setDefault(25).type(int.class)
+		parser.addArgument("-g", "--generations").setDefault(20).type(int.class)
 				.help("Number of generations in the EA");
 
-		parser.addArgument("-v", "--verbose").setDefault(true).type(Boolean.class)
+		parser.addArgument("-v", "--verbose").setDefault(false).type(Boolean.class)
 				.help("Enables verbose output messages");
 		parser.addArgument("-u", "--visualise").setDefault(false).type(Boolean.class)
 				.help("If set, OpenDSE will visualise all specificatons");
@@ -84,14 +83,14 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary").setDefault(
-				"../../resources/model_summaries/example_summaries/MNIST/MNIST_multi_2.json")
+				"../../resources/model_summaries/example_summaries/MNIST/MNIST_multi_3.json")
 				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary").setDefault(
 				"../../resources/architecture_summaries/example_output_architecture_summary.json")
 				.type(String.class).help("Location of architecture summary JSON");
 		parser.addArgument("-d", "--profilingcosts")
-				.setDefault("../../resources/profiling_results")
-				.type(String.class).help("Directory containing cost files");
+				.setDefault("../../resources/profiling_results/rpi").type(String.class)
+				.help("Directory containing cost files");
 
 		// Output Files
 		parser.addArgument("-f", "--resultsfile").setDefault("results.csv").type(String.class)
@@ -102,16 +101,16 @@ public class TensorDSE {
 		// ILP
 		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
-		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(0.01).help(
+		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(1.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
 		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
 				.help("Run Demo instead of solving input specification");
-		parser.addArgument("-j", "--objective").type(String.class).setDefault(Constants.average_finish_time)
+		parser.addArgument("-j", "--objective").type(String.class).setDefault("slack_time")
 				.help("Specifies which object should be optimized for, must be one of the following:\n'average_finish_time', 'max_finish_time', 'deadline_misses', 'slack_time'");
 
 		// RT
-		parser.addArgument("-b", "--realtime").type(Boolean.class).setDefault(true)
-				.help("Enables real-time constraints, ie. task deadline constraints are added to schedule ILP");
+		parser.addArgument("-b", "--realtime").type(Boolean.class).setDefault(true).help(
+				"Enables real-time constraints, ie. task deadline constraints are added to schedule ILP");
 		parser.addArgument("-z", "--hardrealtime").type(Boolean.class).setDefault(false)
 				.help("Enables hard real time, by default soft real time constraints are used");
 
@@ -145,27 +144,29 @@ public class TensorDSE {
 	}
 
 	/**
-	 * @brief The specification module binds an evaluator to the
-	 *        problem'sspecification
+	 * @brief The specification module binds an evaluator to the problem'sspecification
 	 * @param specification_definition
 	 * @return Module
 	 */
-	private static Module GetSpecificationModule(SpecificationDefinition specification_definition, Double K,
-			Boolean real_time, Boolean hard_real_time, String objective, Boolean verbose, Boolean visualise) {
+	private static Module GetSpecificationModule(SpecificationDefinition specification_definition,
+			Double K, Boolean real_time, Boolean hard_real_time, String objective, Boolean verbose,
+			Boolean visualise) {
 
 		Module specification_module = new Opt4JModule() {
 
 			@Override
 			protected void config() {
-				SpecificationWrapperInstance specification_wrapper = new SpecificationWrapperInstance(
-						specification_definition.getSpecification());
+				SpecificationWrapperInstance specification_wrapper =
+						new SpecificationWrapperInstance(
+								specification_definition.getSpecification());
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
 
-				EvaluatorMinimizeCost evaluator = new EvaluatorMinimizeCost("cost_of_mapping",
-						specification_definition, K, real_time, hard_real_time, objective, verbose, visualise);
+				EvaluatorMinimizeCost evaluator =
+						new EvaluatorMinimizeCost("cost_of_mapping", specification_definition, K,
+								real_time, hard_real_time, objective, verbose, visualise);
 
-				Multibinder<ImplementationEvaluator> multibinder = Multibinder.newSetBinder(binder(),
-						ImplementationEvaluator.class);
+				Multibinder<ImplementationEvaluator> multibinder =
+						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
 				multibinder.addBinding().toInstance(evaluator);
 			}
 		};
@@ -289,8 +290,7 @@ public class TensorDSE {
 		FileWriter csv_writer = GetResultsWriter(results_file);
 
 		String models_description_file_path = GetModelSummaryFilePath(args_namespace);
-		String profiling_costs_directory_path = args_namespace.getString("profilingcosts");
-		;
+		String profiling_costs_directory_path = args_namespace.getString("profilingcosts");;
 		String hardware_description_file_path = GetArchitectureSummaryFilePath(args_namespace);
 
 		System.out.println("Working Directory: " + System.getProperty("user.dir"));
@@ -304,9 +304,9 @@ public class TensorDSE {
 		// Specification contains, architecture and application graph as well as a
 		// generated
 		// set of possible mappings
-		SpecificationDefinition specification_definition = new SpecificationDefinition(models_description_file_path,
-				profiling_costs_directory_path,
-				hardware_description_file_path);
+		SpecificationDefinition specification_definition =
+				new SpecificationDefinition(models_description_file_path,
+						profiling_costs_directory_path, hardware_description_file_path);
 
 		String time_string = new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
 
@@ -325,6 +325,7 @@ public class TensorDSE {
 			for (int i = 0; i < test_runs; i++) {
 				System.out.println(String.format("Run %d/%d\n", i + 1, test_runs));
 				long exec_time = 0;
+				ScheduleSolver schedule_solver = null;
 
 				// Solve for mappings and schedule using only ILP
 				if (args_namespace.getBoolean("demo") == true) {
@@ -337,28 +338,29 @@ public class TensorDSE {
 
 					// Solver contains the application, architecture, and possible mapping
 					// graphs as well as the list of starting tasks and the operation costs
-					ScheduleSolver schedule_solver = new ScheduleSolver(specification_definition,
-							null,
+					schedule_solver = new ScheduleSolver(specification_definition, null,
 							args_namespace.getDouble("deactivationnumber"),
-							specification_definition.getJson_models().get(0).getDeadline(),
+							specification_definition.getDeadlines(),
 							args_namespace.getBoolean("verbose"));
 
 					long startILP = System.currentTimeMillis();
-					Pair<Double, ArrayList<ArrayList<ILPTask>>> ret = schedule_solver.solveILPMappingAndSchedule(
-							args_namespace.getBoolean("realtime"),
-							args_namespace.getBoolean("hardrealtime"), args_namespace.getString("objective"));
+					Pair<Double, ArrayList<ArrayList<ILPTask>>> ret = schedule_solver
+							.solveILPMappingAndSchedule(args_namespace.getBoolean("realtime"),
+									args_namespace.getBoolean("hardrealtime"),
+									args_namespace.getString("objective"));
 					exec_time = System.currentTimeMillis() - startILP;
 					System.out.println(String.format("ILP Exec time: %dms", exec_time));
 
 					// Incremental average for all tests
-					obj_val = obj_val + ((ret.getValue0() - obj_val) / (test_runs + 1));
+					obj_val = obj_val + ((ret.getValue0() / 1000 - obj_val) / (test_runs));
 
 					ArrayList<ArrayList<ILPTask>> models = ret.getValue1();
 
 					// Populate model summary with mapping information
 					for (ArrayList<ILPTask> model : models) {
 						for (ILPTask task : model) {
-							Pattern pat = Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
+							Pattern pat =
+									Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
 							Matcher mat = pat.matcher(task.getID());
 							if (mat.matches()) {
 								String layer_index = mat.group(2);
@@ -367,8 +369,7 @@ public class TensorDSE {
 								specification_definition.json_models
 										.get(Integer.parseInt(model_index)).getLayers()
 										.get(Integer.parseInt(layer_index))
-										.setMapping(task.getTarget_resource_string());
-								;
+										.setMapping(task.getTarget_resource_string());;
 							}
 						}
 					}
@@ -378,6 +379,7 @@ public class TensorDSE {
 					csv_writer.append(String.join(",", Integer.toString(i + 1), time_string,
 							Double.toString(obj_val), Double.toString(exec_time),
 							models_description_file_path));
+					csv_writer.append(schedule_solver.schedule_result);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -476,9 +478,12 @@ public class TensorDSE {
 							parents_per_generation.get(c), offsprings_per_generation.get(c));
 
 					// Bind the evaluator to the specification
-					Module specification_module = GetSpecificationModule(specification_definition, 0.0,
-							args_namespace.getBoolean("realtime"), args_namespace.getBoolean("hardrealtime"),
-							args_namespace.getString("objective"), args_namespace.getBoolean("verbose"),
+					Module specification_module = GetSpecificationModule(specification_definition,
+							args_namespace.getDouble("deactivationnumber"),
+							args_namespace.getBoolean("realtime"),
+							args_namespace.getBoolean("hardrealtime"),
+							args_namespace.getString("objective"),
+							args_namespace.getBoolean("verbose"),
 							args_namespace.getBoolean("visualise"));
 
 					OptimizationModule optimization_module = new OptimizationModule();
@@ -494,19 +499,23 @@ public class TensorDSE {
 						long startDSE = System.currentTimeMillis();
 						opt4j_task.execute();
 						long exec_time = System.currentTimeMillis() - startDSE;
-						System.out.println(String.format("DSE Exec time: %dms", exec_time));
+						System.out.println(String.format("DSE Exec time (ms): %d", exec_time));
 						Archive archive = opt4j_task.getInstance(Archive.class);
+
+						String mapping_string = "";
 
 						for (Individual individual : archive) {
 
-							Specification implementation = ((ImplementationWrapper) individual.getPhenotype())
-									.getImplementation();
+							Specification implementation =
+									((ImplementationWrapper) individual.getPhenotype())
+											.getImplementation();
 
 							if (args_namespace.getBoolean("visualise"))
 								SpecificationViewer.view(implementation);
 
 							// Write solution to JSON
 							for (Mapping mapping : implementation.getMappings().getAll()) {
+								mapping_string += mapping.getId() + "\n";
 								Pattern pat = Pattern.compile(
 										"([a-z0-9_]+)-index([0-9]+)_model([0-9]+):([a-z0-9]+)");
 								Matcher mat = pat.matcher(mapping.getId());
@@ -519,8 +528,7 @@ public class TensorDSE {
 									specification_definition.json_models
 											.get(Integer.parseInt(model_index)).getLayers()
 											.get(Integer.parseInt(layer_index))
-											.setMapping(mapped_device);
-									;
+											.setMapping(mapped_device);;
 								}
 							}
 
@@ -530,7 +538,7 @@ public class TensorDSE {
 									output_directory + "/" + time_string + "_solution.xml");
 
 							objective_values[i] = individual.getObjectives().getValues().iterator()
-									.next().getDouble();
+									.next().getDouble() / 1000;
 							System.out.println(String.format("Objective: %f", objective_values[i]));
 							System.out.println();
 
@@ -546,12 +554,13 @@ public class TensorDSE {
 									Double.toString(objective_values[i]),
 									Double.toString(exec_time), models_description_file_path));
 							csv_writer.append("\n");
+							csv_writer.append(mapping_string);
 							csv_writer.flush();
 
 							if (args_namespace.getBoolean("verbose"))
 								for (Mapping<Task, Resource> m : implementation.getMappings()) {
 									System.out.println(m.getSource().getId() + " type "
-											+ m.getSource().getAttribute(Constants.type) + " HW "
+											+ m.getSource().getAttribute("type") + " HW "
 											+ m.getTarget().getId());
 								}
 						}

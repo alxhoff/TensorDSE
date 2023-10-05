@@ -182,9 +182,9 @@ public class SpecificationDefinition {
 		Task ret = new Task(String.format("%s-index%d_model%d", layer.getType(), layer.getIndex(),
 				model_index));
 		// TODO Input size?
-		ret.setAttribute(Constants.type, layer.getType());
+		ret.setAttribute("type", layer.getType());
 		// TODO 0 tensor for dtype?
-		ret.setAttribute(Constants.dtype, layer.getInputs().get(0).getType());
+		ret.setAttribute("dtype", layer.getInputs().get(0).getType());
 		ret.setAttribute("input_tensors", layer.getInputTensorString());
 		ret.setAttribute("output_tensors", layer.getOutputTensorString());
 		ret.setAttribute("cost", 0.0);
@@ -409,7 +409,7 @@ public class SpecificationDefinition {
 								String.format("%s:%s", task_id, resource.getId()), task, resource);
 						m.setAttribute("cost",
 								this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost("cpu",
-										task.getAttribute(Constants.type), task.getAttribute(Constants.dtype)));
+										task.getAttribute("type"), task.getAttribute("dtype")));
 						mappings.add(m);
 					}
 				}
@@ -422,7 +422,7 @@ public class SpecificationDefinition {
 								String.format("%s:%s", task_id, resource.getId()), task, resource);
 						m.setAttribute("cost",
 								this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost("gpu",
-										task.getAttribute(Constants.type), task.getAttribute(Constants.dtype)));
+										task.getAttribute("type"), task.getAttribute("dtype")));
 						mappings.add(m);
 					}
 				}
@@ -430,7 +430,7 @@ public class SpecificationDefinition {
 				// Compatible tasks can be mapped to TPU
 				if (resources.containsKey("tpu")) {
 					List<Resource> tpus = resources.get("tpu");
-					if (supported_layers.contains(task.getAttribute(Constants.type)))
+					if (supported_layers.contains(task.getAttribute("type")))
 						for (int i = 0; i < tpus.size(); i++) {
 							Resource resource = tpus.get(i);
 							Mapping<Task, Resource> m = new Mapping<Task, Resource>(
@@ -439,7 +439,7 @@ public class SpecificationDefinition {
 							m.setAttribute("cost",
 									this.operation_costs.get(this.json_models.get(model_index).getName()).GetOpCost(
 											"tpu",
-											task.getAttribute(Constants.type), task.getAttribute(Constants.dtype)));
+											task.getAttribute("type"), task.getAttribute("dtype")));
 							mappings.add(m);
 						}
 				}
@@ -505,5 +505,15 @@ public class SpecificationDefinition {
 	public void setJson_models(List<Model> json_models) {
 		this.json_models = json_models;
 	}
+
+	public List<Double> getDeadlines() {
+
+        List<Double> ret = new ArrayList<Double>();
+
+        for(Model m: this.json_models)
+            ret.add(m.getDeadline());
+
+        return ret;
+    }
 
 }

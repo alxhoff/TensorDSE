@@ -20,7 +20,7 @@ public class Device {
     }
 
     public Double getMean() {
-        return mean;
+        return mean * 1000;
     }
 
     public void setMean(Double mean) {
@@ -28,7 +28,7 @@ public class Device {
     }
 
     public Double getMedian() {
-        return median;
+        return median * 1000;
     }
 
     public void setMedian(Double median) {
@@ -83,4 +83,3 @@ public class Device {
         this.count = count;
     }
 }
-

@@ -46,6 +46,16 @@ public class ILPFormuation {
         model.setObjective(obj, GRB.MINIMIZE);
     }
 
+    public void addObjectiveMinNegativeVarArray(ArrayList<GRBVar> var_array, GRBModel model) throws GRBException {
+
+        GRBLinExpr obj = new GRBLinExpr();
+        double[] coeffs = new double[var_array.size()];
+        Arrays.fill(coeffs, -1.0);
+        obj.addTerms(coeffs, var_array.toArray(new GRBVar[0]));
+
+        model.setObjective(obj, GRB.MINIMIZE);
+    }
+
     public void addObjectiveMaxVarArray(ArrayList<GRBVar> var_array, GRBModel model) throws GRBException {
 
         GRBLinExpr obj = new GRBLinExpr();
@@ -61,8 +71,11 @@ public class ILPFormuation {
 
         GRBLinExpr obj = new GRBLinExpr();
         GRBVar max = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, var_name);
+        // model.addGenConstrMax(max, var_array.toArray(new GRBVar[0]), 0.0, constr_name);
         model.addGenConstrMax(max, var_array.toArray(new GRBVar[0]), 0.0, constr_name);
         obj.addTerm(1.0, max);
+
+        model.setObjective(obj, GRB.MINIMIZE);
 
         return max;
     }
@@ -243,7 +256,6 @@ public class ILPFormuation {
         try {
             model.addGenConstrAnd(result_var, input_vars, name);
         } catch (GRBException e) {
-            System.out.println("wait here");
             e.printStackTrace();
         }
     }
@@ -374,40 +386,6 @@ public class ILPFormuation {
         return m;
     }
 
-    // public GRBVar addTaskSoftDeadlineConstraint(GRBVar task_finish, Double
-    // deadline_period,
-    // String var_name, GRBModel grb_model) {
-    // return addTaskSoftDeadlineConstraint(task_finish, deadline_period, var_name,
-    // grb_model, "");
-    // }
-
-    // public GRBVar addTaskSoftDeadlineConstraint(GRBVar task_finish, Double
-    // deadline_period,
-    // String var_name, GRBModel grb_model, String constraint_name) {
-
-    // GRBVar n = null;
-    // try {
-    // n = grb_model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, var_name);
-    // } catch (GRBException e) {
-    // // TODO Auto-generated catch block
-    // e.printStackTrace();
-    // }
-
-    // GRBQuadExpr exp = new GRBQuadExpr();
-    // exp.addTerm(1.0, n, task_finish);
-    // exp.addTerm(deadline_period, n);
-    // exp.addConstant(deadline_period);
-
-    // try {
-    // grb_model.addQConstr(exp, GRB.GREATER_EQUAL, n, constraint_name);
-    // } catch (GRBException e) {
-    // // TODO Auto-generated catch block
-    // e.printStackTrace();
-    // }
-
-    // return n;
-    // }
-
     // D + K * n > t_f
     // D - K + n * K < t_f
     public GRBVar addTaskSoftDeadlineConstraint(GRBVar task_finish, Double deadline_period, Double K,
@@ -424,7 +402,7 @@ public class ILPFormuation {
 
         GRBLinExpr exp1 = new GRBLinExpr();
         exp1.addConstant(deadline_period);
-        exp1.addTerm(K, n);
+        exp1.addTerm(K * 1000, n);
 
         try {
             grb_model.addConstr(exp1, GRB.GREATER_EQUAL, task_finish, String.format("%s_1", constraint_name));
@@ -435,8 +413,8 @@ public class ILPFormuation {
 
         GRBLinExpr exp2 = new GRBLinExpr();
         exp2.addConstant(deadline_period);
-        exp2.addConstant(-1 * K);
-        exp2.addTerm(K, n);
+        exp2.addConstant(-1 * K * 1000);
+        exp2.addTerm(K * 1000, n);
 
         try {
             grb_model.addConstr(exp2, GRB.LESS_EQUAL, task_finish, String.format("%s_2", constraint_name));

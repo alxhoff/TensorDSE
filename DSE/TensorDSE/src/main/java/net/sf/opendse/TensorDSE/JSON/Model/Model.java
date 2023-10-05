@@ -60,7 +60,7 @@ public class Model {
     }
 
     public Double getDeadline() {
-        return deadline;
+        return deadline * 1000;
     }
 
     public void setDeadline(Double deadline) {
