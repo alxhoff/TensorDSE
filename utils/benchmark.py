@@ -140,7 +140,7 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
 
     from backend.distributed_inference import distributed_inference
 
-    DEPLOY_WAIT_TIME = 10
+    DEPLOY_WAIT_TIME = 3
 
     results = []
     timers = []
@@ -148,7 +148,7 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
     input_size = GetArraySizeFromShape(m.input_shape)
     output_size = GetArraySizeFromShape(m.output_shape)
 
-    #time.sleep(DEPLOY_WAIT_TIME)
+    time.sleep(DEPLOY_WAIT_TIME)
 
     for i in range(count):
         signalsQ = Queue()
@@ -181,6 +181,9 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
                 )
         inference_times_vector = np.zeros(count).astype(np.uint32)
 
+        if (platform == "rpi"):
+            platform = "rpi_test"
+
         mean_inference_time = distributed_inference(
                 m.model_path,
                 input_data_vector,
@@ -197,7 +200,7 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
         results.append(mean_inference_time)
 
         try:
-            data = dataQ.get()
+            data = dataQ.get(timeout=10)
         except Exception as e:
             data = None
 

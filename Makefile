@@ -13,7 +13,7 @@ $(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
 $(info Finding USBMON as $(USBMON))
 endif
 ifndef MODEL
-override MODEL = "resources/models/example_models/MNIST_full_quanitization.tflite"
+override MODEL =resources/models/example_models/MNIST_extended_full_quanitization.tflite
 $(info Using default MODEL: $(MODEL))
 endif
 ifndef MODEL_NAME
@@ -168,10 +168,10 @@ profile:
 	@echo "Profiling for Coral Dev Board"
 	python3 resources/model_summaries/CreateModelSummary.py --model $(MODEL) --outputname $(MODEL_NAME)
 	cd resources/model_summaries && mdt push $(MODEL_SUMMARY) /media/afUSB/TensorDSE/resources/model_summaries/example_summaries/MNIST/
-	cd ../../utils/splitter && python3 split.py -m $(MODEL) -s $(MODEL_SUMMARY) -p $(PLATFORM)
-	mdt push ../../utils/splitter/models /media/afUSB/TensorDSE/utils/splitter/
-	mdt exec 'cd /media/afUSB/TensorDSE && git fetch && git pull && python3 profiler.py -m $(MODEL) -s $(MODEL_SUMMARY) -p $(PLATFORM)'
-	mdt pull /media/afUSB/TensorDSE/resources/profiling_results/$(PROFILING_COSTS) $(PROFILING_COSTS)
+	python3 -m utils.splitter.split -m $(MODEL) -s utils/splitter/$(MODEL_SUMMARY)
+	mdt push utils/splitter/models /media/afUSB/TensorDSE/utils/splitter/
+	mdt exec 'cd /media/afUSB/TensorDSE && python3 profiler.py -m $(MODEL) -p coral -c $(COUNT)'
+	mdt pull /media/afUSB/TensorDSE/resources/profiling_results/$(PROFILING_COSTS) resources/profiling_results/
 	@echo "Profiling for Coral Dev Board successfully completed"
 	
 else ifeq ($(PLATFORM),RPI)
@@ -179,10 +179,11 @@ profile:
 	@echo "Profiling for Raspberry Pi"
 	python3 resources/model_summaries/CreateModelSummary.py --model $(MODEL) --outputname $(MODEL_NAME)
 	cd resources/model_summaries && scp $(MODEL_SUMMARY) starkaf@tensordse.local:/home/starkaf/TensorDSE/resources/model_summaries/example_summaries/MNIST/
-	cd ../../utils/splitter && python3 split.py -m $(MODEL) -s $(MODEL_SUMMARY) -p $(PLATFORM)
-	scp -r ../../utils/splitter/models starkaf@tensordse.local:/home/starkaf/TensorDSE/utils/splitter/
-	ssh starkaf@tensordse.local "cd /home/starkaf/TensorDSE && git fetch && git pull && sudo python3 profiler.py -m $(MODEL) -s $(MODEL_SUMMARY) -p $(PLATFORM)"
-	scp starkaf@tensordse.local:/home/starkaf/TensorDSE/resources/profiling_results/$(PROFILING_COSTS) $(PROFILING_COSTS)
+	python3 -m utils.splitter.split -m $(MODEL) -s utils/splitter/$(MODEL_SUMMARY)
+	scp -r utils/splitter/models starkaf@tensordse.local:/home/starkaf/TensorDSE/utils/splitter/
+	ssh starkaf@tensordse.local "sudo modprobe usbmon"
+	ssh starkaf@tensordse.local "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -m $(MODEL) -p rpi -c $(COUNT)"
+	scp starkaf@tensordse.local:/home/starkaf/TensorDSE/resources/profiling_results/$(PROFILING_COSTS) resources/profiling_results/
 	@echo "Profiling for Raspberry Pi successfully completed"
 
 else

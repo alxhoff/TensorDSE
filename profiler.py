@@ -82,6 +82,7 @@ def ProfileModel(
             sys.exit(-1)
 
     # Create single operation models/layers from the operations in the provided model
+    splitter = None
     if (platform == "desktop"):
         splitter = Splitter(model_path, model_summary_json)
         try:
@@ -119,7 +120,8 @@ def ProfileModel(
     log.info("Analyzed and merged results")
 
     log.info("Final Clean up")
-    splitter.Clean(True)
+    if (platform == "desktop"):
+        splitter.Clean(True)
 
 
 def list_of_strings(arg):
@@ -139,7 +141,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
             "-m",
             "--models",
-            default="resources/models/example_models/MNIST_full_quanitization.tflite,resources/models/example_models/MNIST_extended_full_quanitization.tflite",
+            default="resources/models/example_models/MNIST_extended_full_quanitization.tflite",
             type=list_of_strings,
             help="File path to the SOURCE .tflite file.",
             )

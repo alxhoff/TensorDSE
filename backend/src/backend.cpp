@@ -438,14 +438,14 @@ int distributed_inference_wrapper(std::string& tflite_model_path, int8_t* input_
                                                                   const unsigned int benchmarking_count,
                                                                   const unsigned int core_index
                                                                   ) {
-                                                                    
-    std::cout << "TFLite Model: " << tflite_model_path << std::endl;
-    std::cout << "HW Target: " << hardware_target << std::endl;
-    std::cout << "Execution Count: " << benchmarking_count << std::endl;
-    std::cout << "Platform: " << platform << std::endl;
    
     int result = 0;
     redirect_output_to_file(tflite_model_path);
+
+    std::cout << "TFLite Model Path: " << tflite_model_path << std::endl;
+    std::cout << "HW Target: " << hardware_target << std::endl;
+    std::cout << "Execution Count: " << benchmarking_count << std::endl;
+    std::cout << "Platform: " << platform << std::endl;
 
     if (hardware_target.compare("cpu") == 0) {
         result = distributed_inference_cpu(tflite_model_path, input_data,

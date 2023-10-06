@@ -1,7 +1,6 @@
 #!/bin/python
 import sys
 import argparse
-from ...utils.logging.logger import log
 
 parser = argparse.ArgumentParser(description="Pass in the model file to be summarized")
 parser.add_argument(
@@ -31,14 +30,14 @@ args = parser.parse_args()
 def main() -> int:
     from summarize import SummarizeGraph
 
-    log.info(
+    print(
         "Converting {} into {}/{}.json...".format(args.model, args.outputdir, args.outputname),
         end="",
     )
 
     SummarizeGraph(args.model, args.outputdir, args.outputname)
 
-    log.info("Graph summarized")
+    print("Graph summarized")
 
     return 0
 

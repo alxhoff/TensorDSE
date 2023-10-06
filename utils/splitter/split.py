@@ -100,7 +100,6 @@ class Splitter:
         """
 
         self.models = []
-
         for model in self.summary["models"]:
             layers = []
             for j, layer in enumerate(model["layers"]):
@@ -281,12 +280,17 @@ def GetArgs():
                 default="desktop",
                 help="Platform supporting the profiling/deployment process",
             )
+    
+    args = parser.parse_args()
+
+    return args
 
 if __name__ == "__main__":
     args = GetArgs()
 
-        # Create single operation models/layers from the operations in the provided model
+    # Create single operation models/layers from the operations in the provided model
     splitter = Splitter(args.model, ReadJSON(args.summary))
+
     try:
         log.info("Running Model Splitter ...")
         splitter.Run()
