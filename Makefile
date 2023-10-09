@@ -157,40 +157,13 @@ info:
 	${MAKE} -C docker info
 
 .PHONY: profile
-ifeq ($(PLATFORM),DESKTOP)
 profile:
+	@echo "Deployment for $(PLATFORM) Environment"
 	git fetch https://git@github.com/alxhoff/TensorDSE.git
 	git reset --hard origin/$(BRANCH)
 	$(info USBMON is $(USBMON))
-	${MAKE} -C docker profile  USBMON=$(USBMON) MODEL=$(MODEL) COUNT=$(COUNT)
-else ifeq ($(PLATFORM),CORAL)
-profile:
-	@echo "Profiling for Coral Dev Board"
-	python3 resources/model_summaries/CreateModelSummary.py --model $(MODEL) --outputname $(MODEL_NAME)
-	cd resources/model_summaries && mdt push $(MODEL_SUMMARY) /media/afUSB/TensorDSE/resources/model_summaries/example_summaries/MNIST/
-	python3 -m utils.splitter.split -m $(MODEL) -s utils/splitter/$(MODEL_SUMMARY)
-	mdt push utils/splitter/models /media/afUSB/TensorDSE/utils/splitter/
-	mdt exec 'cd /media/afUSB/TensorDSE && python3 profiler.py -m $(MODEL) -p coral -c $(COUNT)'
-	mdt pull /media/afUSB/TensorDSE/resources/profiling_results/$(PROFILING_COSTS) resources/profiling_results/
-	@echo "Profiling for Coral Dev Board successfully completed"
-	
-else ifeq ($(PLATFORM),RPI)
-profile:
-	@echo "Profiling for Raspberry Pi"
-	python3 resources/model_summaries/CreateModelSummary.py --model $(MODEL) --outputname $(MODEL_NAME)
-	cd resources/model_summaries && scp $(MODEL_SUMMARY) starkaf@tensordse.local:/home/starkaf/TensorDSE/resources/model_summaries/example_summaries/MNIST/
-	python3 -m utils.splitter.split -m $(MODEL) -s utils/splitter/$(MODEL_SUMMARY)
-	scp -r utils/splitter/models starkaf@tensordse.local:/home/starkaf/TensorDSE/utils/splitter/
-	ssh starkaf@tensordse.local "sudo modprobe usbmon"
-	ssh starkaf@tensordse.local "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -m $(MODEL) -p rpi -c $(COUNT)"
-	scp starkaf@tensordse.local:/home/starkaf/TensorDSE/resources/profiling_results/$(PROFILING_COSTS) resources/profiling_results/
-	@echo "Profiling for Raspberry Pi successfully completed"
-
-else
-profile:
-	@echo "Unknown PLATFORM"
-	# Handle the case where PLATFORM is neither DESKTOP nor MOBILE
-endif
+	${MAKE} -C docker profile  USBMON=$(USBMON) MODEL=$(MODEL) COUNT=$(COUNT) PLATFORM=$(PLATFORM)
+	@echo "Profiling for $(PLATFORM) environment successfully completed!"
 
 .PHONY: stop
 stop:
