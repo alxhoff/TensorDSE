@@ -84,6 +84,7 @@ run: $(if $(call exist-docker-image),,build)
 					--env MODE=${MODE} \
 					-it ${REPO}:${TAG} \
 					--gpus 'all,capabilities=utility,compute' \
+					--OBJECTIVE=$$OBJECTIVE \
 					--USBMON=$$USBMON \
 					--DATASET=$$DATASET \
 					--COUNT=$$COUNT \
@@ -122,6 +123,7 @@ run: $(if $(call exist-docker-image),,build)
 					--env MODE=${MODE} \
 					-it ${REPO}:${TAG} \
 					--gpus 'all,capabilities=utility,compute' \
+					--OBJECTIVE=$$OBJECTIVE \
 					--USBMON=$$USBMON \
 					--DATASET=$$DATASET \
 					--COUNT=$$COUNT \
