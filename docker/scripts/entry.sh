@@ -177,40 +177,43 @@ run_no_deploy() {
 run_profile_only() {
     if [ "$PLATFORM" == "DESKTOP" ]; then
         python3 profiler.py -u $USBMON -m $MODEL -c $COUNT
-        cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
         echo "Profiling for Desktop Environment successfully completed!"
 
     elif [ "$PLATFORM" == "CORAL" ]; then
         echo "Profiling for Coral Dev Board"
-        python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname $model_name
-        cd resources/model_summaries && mdt push $MODEL_SUMMARY /media/afUSB/TensorDSE/resources/model_summaries/example_summaries/MNIST/
-        python3 -m utils.splitter.split -m $MODEL -s utils/splitter/$MODEL_SUMMARY
+        python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname "$model_name"_summary --outputdir resources/model_summaries/example_summaries/MNIST
+        echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
+        source ~/.bash_profile
+        mdt push resources/model_summaries/example_summaries/MNIST/"$model_name"_summary.json /media/afUSB/TensorDSE/resources/model_summaries/example_summaries/MNIST/
+        export PYTHONPATH=$(pwd):$PYTHONPATH
+        python3 -m utils.splitter.split -m "$MODEL" -s resources/model_summaries/example_summaries/MNIST/"$model_name"_summary.json
         mdt push utils/splitter/models /media/afUSB/TensorDSE/utils/splitter/
-        mdt exec 'cd /media/afUSB/TensorDSE && python3 profiler.py -m $MODEL -p coral -c $COUNT'
-        mdt pull /media/afUSB/TensorDSE/resources/profiling_results/$PROFILING_COSTS resources/profiling_results/
+        mdt exec 'cd /media/afUSB/TensorDSE && python3 profiler.py -m '$MODEL' -p coral -c '$COUNT''
+        mdt pull /media/afUSB/TensorDSE/resources/profiling_results resources/
+        mdt pull /media/afUSB/TensorDSE/resources/logs resources/
         echo "Profiling for Coral Dev Board successfully completed!"
     
     elif [ "$PLATFORM" == "RPI" ]; then
         echo "Profiling for Raspberry Pi"
-        python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname ${MODEL_NAME}_summary
-        cd resources/model_summaries && scp $MODEL_SUMMARY starkaf@tensordse.local:/home/starkaf/TensorDSE/resources/model_summaries/example_summaries/MNIST/
-        python3 -m utils.splitter.split -m $MODEL -s utils/splitter/$MODEL_SUMMARY
-        scp -r utils/splitter/models starkaf@192.168.0.12:/home/starkaf/TensorDSE/utils/splitter/
-        ssh starkaf@192.168.0.12 "sudo modprobe usbmon"
-        ssh starkaf@192.168.0.12 "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -m $MODEL -p rpi -c $COUNT"
-        scp starkaf@192.168.0.12:/home/starkaf/TensorDSE/resources/profiling_results/$PROFILING_COSTS resources/profiling_results/
-        scp -r starkaf@192.168.0.12:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
+        python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname "$model_name"_summary --outputdir resources/model_summaries/example_summaries/MNIST
+        scp resources/model_summaries/example_summaries/MNIST/"$model_name"_summary.json starkaf@192.168.0.7:/home/starkaf/TensorDSE/resources/model_summaries/example_summaries/MNIST/
+        python3 -m utils.splitter.split -m "$MODEL" -s resources/model_summaries/example_summaries/MNIST/"$model_name"_summary.json
+        scp -r utils/splitter/models starkaf@192.168.0.7:/home/starkaf/TensorDSE/utils/splitter/
+        ssh starkaf@192.168.0.7 "sudo modprobe usbmon"
+        ssh starkaf@192.168.0.7 "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -m '$MODEL' -p rpi -c '$COUNT'"
+        scp -r starkaf@192.168.0.7:/home/starkaf/TensorDSE/resources/profiling_results resources/
+        scp -r starkaf@192.168.0.7:/home/starkaf/TensorDSE/resources/logs resources/
         echo "Profiling for Raspberry Pi successfully completed!"
 
     else
         echo "Cannot Profile. Unknown PLATFORM $PLATFORM"
     fi
+    cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
 }
 
 run_deploy_only() {
     if [ "$PLATFORM" -eq "DESKTOP" ]; then
         python3 deploy.py -m $MODEL -s $MODEL_SUMMARY_W_MAPPINGS
-        cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
         echo "Deployment for Desktop Environment successfully completed!"
 
     elif [ "$PLATFORM" -eq "CORAL" ]; then
@@ -220,7 +223,6 @@ run_deploy_only() {
         mdt exec "cd /media/afUSB/TensorDSE && python3 deploy.py -m '$MODEL' -p coral -s '$MODEL_SUMMARY_W_MAPPINGS'"
         mdt pull /media/afUSB/TensorDSE/resources/deployment_results/* resources/deployment_results/*
         mdt pull /media/afUSB/TensorDSE/resources/logs/* resources/logs/
-        cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
         echo "Deployment for Coral Dev Board successfully completed!"
     
     elif [ "$PLATFORM" -eq "RPI" ]; then
@@ -231,12 +233,12 @@ run_deploy_only() {
         ssh starkaf@192.168.0.12 "cd /home/starkaf/TensorDSE && sudo deploy.py -m '$MODEL' -p rpi -s '$MODEL_SUMMARY_W_MAPPINGS'"
         scp starkaf@192.168.0.12:/home/starkaf/TensorDSE/resources/deployment_results/* resources/deployment_results/
         scp -r starkaf@192.168.0.12:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
-        cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
         echo "Deployment for Raspberry Pi successfully completed!"
 
     else
         echo "Unknown PLATFORM"
     fi
+    cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
 }
 
 run_just_dse() {

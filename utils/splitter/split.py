@@ -5,7 +5,7 @@ import multiprocessing
 
 from .model import Model, Submodel
 from .utils import CopyFile, RunTerminalCommand, ReadJSON
-from ..logging.logger import log
+from utils.logging.logger import log
 
 
 MODEL_LAB_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -80,7 +80,6 @@ class Splitter:
 
 
     def Clean(self, all: bool):
-        log.info("Cleaning Directory ...\n")
         dirs_to_clean = []
         if all:
             dirs_to_clean.extend([MODELS_DIR, MAPPING_DIR])

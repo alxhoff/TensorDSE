@@ -159,8 +159,8 @@ info:
 .PHONY: profile
 profile:
 	@echo "Deployment for $(PLATFORM) Environment"
-	git fetch https://git@github.com/alxhoff/TensorDSE.git
-	git reset --hard origin/$(BRANCH)
+	#git fetch https://git@github.com/alxhoff/TensorDSE.git
+	#git reset --hard origin/$(BRANCH)
 	$(info USBMON is $(USBMON))
 	${MAKE} -C docker profile  USBMON=$(USBMON) MODEL=$(MODEL) COUNT=$(COUNT) PLATFORM=$(PLATFORM)
 	@echo "Profiling for $(PLATFORM) environment successfully completed!"
