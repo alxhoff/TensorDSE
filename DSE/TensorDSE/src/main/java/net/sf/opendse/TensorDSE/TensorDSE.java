@@ -18,6 +18,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 import org.javatuples.Pair;
+import org.javatuples.Triplet;
 import org.opt4j.core.Individual;
 import org.opt4j.core.optimizer.Archive;
 import org.opt4j.core.start.Opt4JModule;
@@ -95,11 +96,11 @@ public class TensorDSE {
 		// Output Files
 		parser.addArgument("-f", "--resultsfile").setDefault("results.csv").type(String.class)
 				.help("Results file name");
-		parser.addArgument("-t", "--outputfolder").setDefault("../../resources/GA_results")
+		parser.addArgument("-t", "--outputfolder").setDefault("../../resources/ILP_results")
 				.type(String.class);
 
 		// ILP
-		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
+		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(true)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
 		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(1.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
@@ -210,7 +211,7 @@ public class TensorDSE {
 		System.out.printf("Results File: %s\n", results_file);
 		FileWriter csvWriter = null;
 		try {
-			csvWriter = new FileWriter(results_file, true);
+			csvWriter = new FileWriter(results_file, false);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.out.println("Could not create results file");
@@ -344,7 +345,7 @@ public class TensorDSE {
 							args_namespace.getBoolean("verbose"));
 
 					long startILP = System.currentTimeMillis();
-					Pair<Double, ArrayList<ArrayList<ILPTask>>> ret = schedule_solver
+					Triplet<Double, ArrayList<ArrayList<ILPTask>>, ArrayList<Double>> ret = schedule_solver
 							.solveILPMappingAndSchedule(args_namespace.getBoolean("realtime"),
 									args_namespace.getBoolean("hardrealtime"),
 									args_namespace.getString("objective"));
@@ -379,6 +380,7 @@ public class TensorDSE {
 					csv_writer.append(String.join(",", Integer.toString(i + 1), time_string,
 							Double.toString(obj_val), Double.toString(exec_time),
 							models_description_file_path));
+					csv_writer.append("\n");
 					csv_writer.append(schedule_solver.schedule_result);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
