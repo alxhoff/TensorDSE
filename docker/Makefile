@@ -17,6 +17,7 @@ DSE_ONLY_MODE		:= 4
 NO_DEPLOY_MODE		:= 5
 PROFILE				:= 6
 DEPLOY				:= 7
+SETUP               := 8
 
 exist-docker-image = $(shell docker image ls | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ')
 is-docker-running = $(shell docker ps -a | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ')
@@ -170,6 +171,9 @@ test:
 
 shell:
 	$(MAKE) -f ${FILE} run MODE=${SHELL_MODE}
+
+setup:
+	$(MAKE) -f ${FILE} run MODE=${SETUP_MODE}
 
 capture:
 	ipdb3 scripts/capture.py

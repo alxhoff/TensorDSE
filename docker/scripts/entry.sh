@@ -115,6 +115,7 @@ DSE_ONLY_MODE=4
 NO_DEPLOY_MODE=5
 PROFILE_MODE=6
 DEPLOY_MODE=7
+SETUP_MODE=8
 
 mode="$MODE"
 model_with_extension=$(basename "$MODEL")
@@ -189,20 +190,23 @@ run_profile_only() {
         python3 -m utils.splitter.split -m "$MODEL" -s resources/model_summaries/example_summaries/MNIST/"$model_name"_summary.json
         mdt push utils/splitter/models /media/afUSB/TensorDSE/utils/splitter/
         mdt exec 'cd /media/afUSB/TensorDSE && python3 profiler.py -m '$MODEL' -p coral -c '$COUNT''
-        mdt pull /media/afUSB/TensorDSE/resources/profiling_results resources/
+        mdt pull /media/afUSB/TensorDSE/resources/profiling_results/*.json resources/coral/
         mdt pull /media/afUSB/TensorDSE/resources/logs resources/
         echo "Profiling for Coral Dev Board successfully completed!"
     
     elif [ "$PLATFORM" == "RPI" ]; then
         echo "Profiling for Raspberry Pi"
-        python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname "$model_name"_summary --outputdir resources/model_summaries/example_summaries/MNIST
-        scp resources/model_summaries/example_summaries/MNIST/"$model_name"_summary.json starkaf@192.168.0.7:/home/starkaf/TensorDSE/resources/model_summaries/example_summaries/MNIST/
-        python3 -m utils.splitter.split -m "$MODEL" -s resources/model_summaries/example_summaries/MNIST/"$model_name"_summary.json
-        scp -r utils/splitter/models starkaf@192.168.0.7:/home/starkaf/TensorDSE/utils/splitter/
-        ssh starkaf@192.168.0.7 "sudo modprobe usbmon"
-        ssh starkaf@192.168.0.7 "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -m '$MODEL' -p rpi -c '$COUNT'"
-        scp -r starkaf@192.168.0.7:/home/starkaf/TensorDSE/resources/profiling_results resources/
-        scp -r starkaf@192.168.0.7:/home/starkaf/TensorDSE/resources/logs resources/
+        python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname "$model_name" --outputdir resources/model_summaries/example_summaries/
+        echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
+        source ~/.bash_profile
+        scp resources/model_summaries/example_summaries/"$model_name".json starkaf@192.168.0.6:/home/starkaf/TensorDSE/resources/model_summaries/example_summaries/
+        export PYTHONPATH=$(pwd):$PYTHONPATH
+        python3 -m utils.splitter.split -m $MODEL -s resources/model_summaries/example_summaries/"$model_name".json
+        scp -r utils/splitter/models starkaf@192.168.0.6:/home/starkaf/TensorDSE/utils/splitter/
+        ssh starkaf@192.168.0.6 "sudo modprobe usbmon"
+        ssh starkaf@192.168.0.6 "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -m '$MODEL' -p rpi -c '$COUNT'"
+        scp -r starkaf@192.168.0.6:/home/starkaf/TensorDSE/resources/profiling_results resources/profiling_results/rpi/
+        scp -r starkaf@192.168.0.6:/home/starkaf/TensorDSE/resources/logs resources/
         echo "Profiling for Raspberry Pi successfully completed!"
 
     else
@@ -241,6 +245,25 @@ run_deploy_only() {
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
 }
 
+setup_board() {
+    if [ "$PLATFORM" -eq "CORAL" ]; then
+    echo "Setting Up Coral Dev Board"
+    mdt push docker/scripts/setup.sh /media/afUSB/
+    mdt exec "chmod +x /media/afUSB/setup.sh && ./media/afUSB/setup.sh"
+    echo "Setting Up Coral Dev Board successfully completed!"
+
+    elif [ "$PLATFORM" -eq "RPI" ]; then
+    echo "Setting Up Raspberry Pi"
+    scp docker/scripts/setup.sh starkaf@192.168.0.7:/home/starkaf/
+    ssh starkaf@192.168.0.7 "chmod +x /home/starkaf/setup.sh && ./home/starkaf/setup.sh"
+    echo "Setting Up Raspberry Pi successfully completed!"
+    
+    else
+        echo "Unknown PLATFORM"
+    fi
+
+}
+
 run_just_dse() {
     pushd DSE/TensorDSE
     echo gradle6 run --args="--objective $OBJECTIVE --model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
@@ -250,9 +273,9 @@ run_just_dse() {
 }
 
 main() {
+    #git fetch origin
+	#git reset --hard origin/$BRANCH
     MODULE="usbmon"
-    git fetch https://git@github.com/alxhoff/TensorDSE.git
-	git reset --hard origin/$BRANCH
     if lsmod | grep -wq "$MODULE"; then
     echo "$MODULE is loaded!"
     else
@@ -275,8 +298,11 @@ main() {
         echo "RUNNING PROFILE ONLY"
         run_profile_only
     elif [ "$mode" -eq $DEPLOY_MODE ]; then
-        echo "RUNNING NO DEPLOY"
+        echo "RUNNING DEPLOY ONLY"
         run_deploy_only
+    elif [ "$mode" -eq $SETUP_MODE ]; then
+        echo "SETTING UP BOARD"
+        setup_board
     else
         echo "RUNNING FULL FLOW"
         run_full_flow

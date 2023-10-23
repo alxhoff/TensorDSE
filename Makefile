@@ -13,7 +13,7 @@ $(eval USBMON=$(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
 $(info Finding USBMON as $(USBMON))
 endif
 ifndef MODEL
-override MODEL =resources/models/example_models/MNIST_extended_full_quanitization.tflite
+override MODEL =resources/models/example_models/kws_ref_model.tflite
 $(info Using default MODEL: $(MODEL))
 endif
 ifndef MODEL_NAME
@@ -25,15 +25,15 @@ override DATASET = "utils.datasets.MNIST"
 $(info Using default DATASET: $(DATASET))
 endif
 ifndef COUNT
-override COUNT = 2
+override COUNT = 20
 $(info Using default COUNT: $(COUNT))
 endif
 ifndef MODEL_SUMMARY
-override MODEL_SUMMARY = "../../resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization.json"
+override MODEL_SUMMARY =../../resources/model_summaries/example_summaries/kws_ref_model.json
 $(info Using default MODEL_SUMMARY: $(MODEL_SUMMARY))
 endif
 ifndef MODEL_SUMMARY_W_MAPPINGS
-override MODEL_SUMMARY_W_MAPPINGS = "resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_w_mappings.json"
+override MODEL_SUMMARY_W_MAPPINGS =resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json
 $(info Using default MODEL_SUMMARY_W_MAPPINGS: $(MODEL_SUMMARY_W_MAPPINGS))
 endif
 ifndef ARCHITECTURE_SUMMARY
@@ -45,7 +45,7 @@ override PLATFORM = "DESKTOP"
 $(info Using default PLATFORM: $(PLATFORM))
 endif
 ifndef PROFILING_COSTS
-override PROFILING_COSTS = "../../resources/profiling_results"
+override PROFILING_COSTS = "../../resources/profiling_results/rpi"
 $(info Using default PROFILING_COSTS: $(PROFILING_COSTS))
 endif
 ifndef OUTPUT_FOLDER
@@ -104,12 +104,6 @@ clean:
 shell:
 	${MAKE} -C docker shell
 
-.PHONY: profile
-profile:
-	git fetch https://git@github.com/alxhoff/TensorDSE.git
-	git reset --hard origin/$(BRANCH)
-	$(info USBMON is $(USBMON))
-	${MAKE} -C docker profile USBMON=$(USBMON) MODEL=$(MODEL) COUNT=$(COUNT)
 
 .PHONY: dse
 dse:
@@ -158,12 +152,27 @@ info:
 
 .PHONY: profile
 profile:
-	@echo "Deployment for $(PLATFORM) Environment"
+	@echo "Profiling for $(PLATFORM) Environment"
 	#git fetch https://git@github.com/alxhoff/TensorDSE.git
 	#git reset --hard origin/$(BRANCH)
 	$(info USBMON is $(USBMON))
 	${MAKE} -C docker profile  USBMON=$(USBMON) MODEL=$(MODEL) COUNT=$(COUNT) PLATFORM=$(PLATFORM)
 	@echo "Profiling for $(PLATFORM) environment successfully completed!"
+
+.PHONY: deploy
+deploy:
+	@echo "Deployment for $(PLATFORM) Environment"
+	git fetch https://git@github.com/alxhoff/TensorDSE.git
+	git reset --hard origin/$(BRANCH)
+	$(info USBMON is $(USBMON))
+	${MAKE} -C docker depoy  USBMON=$(USBMON) MODEL=$(MODEL) PLATFORM=$(PLATFORM) MODEL_SUMMARY_W_MAPPINGS=$(MODEL_SUMMARY_W_MAPPINGS)
+	@echo "Deployment for $(PLATFORM) environment successfully completed!"
+
+.PHONY: setup
+setup:
+	@echo "Setting Up $(PLATFORM) Environment"
+	${MAKE} -C docker setup PLATFORM=$(PLATFORM)
+
 
 .PHONY: stop
 stop:

@@ -148,7 +148,7 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
     input_size = GetArraySizeFromShape(m.input_shape)
     output_size = GetArraySizeFromShape(m.output_shape)
 
-    time.sleep(DEPLOY_WAIT_TIME)
+    #time.sleep(DEPLOY_WAIT_TIME)
 
     for i in range(count):
         signalsQ = Queue()
@@ -325,7 +325,7 @@ def ProfileModelLayers(
     """
 
     from .usb import init_usbmon
-    # from .analysis import AnalyzeLayerResults
+    #from .analysis import AnalyzeLayerResults
     from utils.logging.logger import log
 
     models = {}
@@ -348,7 +348,7 @@ def ProfileModelLayers(
             m.model_name = "{0}_{1}_{2}".format(m.model_name, m.index, "_".join(m.input_shape))
             models["cpu"].append(m)
         # AnalyzeLayerResults(m, "cpu")
-    print("[PROFILE MODEL LAYERS] CPUs profiled")
+    log.info("[PROFILE MODEL LAYERS] CPUs profiled")
 
     # regular quantized tflite files for gpu
     if (platform == "desktop"):
@@ -377,7 +377,7 @@ def ProfileModelLayers(
             m.model_name = "{0}_{1}_{2}".format(m.model_name, m.index, "_".join(m.input_shape))
             models["gpu"].append(m)
             # AnalyzeLayerResults(m, "gpu")
-    print("[PROFILE MODEL LAYERS] GPUs profiled")
+    log.info("[PROFILE MODEL LAYERS] GPUs profiled")
     
     # edge compiled quantized tflite files tpu
     if (platform == "desktop") or (platform == "rpi"):
@@ -405,6 +405,6 @@ def ProfileModelLayers(
             m.model_name = "{0}_{1}_{2}".format(m.model_name, m.index, "_".join(m.input_shape))
             models["tpu"].append(m)
             # AnalyzeLayerResults(m, "tpu")
-    print("[PROFILE MODEL LAYERS] TPUs profiled")
+    log.info("[PROFILE MODEL LAYERS] TPUs profiled")
 
     return models

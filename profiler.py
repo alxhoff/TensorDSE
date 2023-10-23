@@ -128,6 +128,9 @@ def list_of_strings(arg):
     return arg.split(',')
 
 
+def list_of_strings(arg):
+    return arg.split(',')
+
 def GetArgs() -> argparse.Namespace:
     """Argument parser, returns the Namespace containing all of the arguments.
     :raises: None
@@ -141,7 +144,7 @@ def GetArgs() -> argparse.Namespace:
     parser.add_argument(
             "-m",
             "--models",
-            default="resources/models/example_models/MNIST_extended_full_quanitization.tflite",
+            default="resources/models/example_models/MNIST_full_quanitization.tflite,resources/models/example_models/MNIST_extended_full_quanitization.tflite",
             type=list_of_strings,
             help="File path to the SOURCE .tflite file.",
             )
@@ -217,7 +220,7 @@ if __name__ == "__main__":
     log.info("[PROFILER] Starting")
 
     if args.count < 2:
-        print("Count MUST be greater than 2")
+        log.error("Benchmarking Count must be greater than 2")
         sys.exit('Count was not greater than 2')
 
     for model in args.models:
