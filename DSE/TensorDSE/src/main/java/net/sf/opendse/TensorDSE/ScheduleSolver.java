@@ -30,6 +30,7 @@ public class ScheduleSolver {
     private Routings<Task, Resource, Link> routings;
     private Double K;
     private Boolean verbose;
+    private Boolean extra_constraints;
     private List<Double> deadlines;
     private List<Task> starting_tasks;
     private HashMap<String, OperationCosts> operation_costs;
@@ -37,7 +38,8 @@ public class ScheduleSolver {
     public String schedule_result = "";
 
     public ScheduleSolver(SpecificationDefinition specification_definition,
-            Mappings<Task, Resource> mappings, Double K, List<Double> deadlines, Boolean verbose) {
+            Mappings<Task, Resource> mappings, Double K, List<Double> deadlines, Boolean verbose,
+            Boolean extra_constraints) {
 
         this.application = specification_definition.getSpecification().getApplication();
         this.possible_mappings = specification_definition.getSpecification().getMappings();
@@ -47,19 +49,22 @@ public class ScheduleSolver {
         this.K = K;
         this.deadlines = deadlines;
         this.verbose = verbose;
+        this.extra_constraints = extra_constraints;
         this.json_models = specification_definition.getJson_models();
         this.mappings = mappings;
     }
 
     public ScheduleSolver(SpecificationDefinition specification_definition,
-            Mappings<Task, Resource> mappings, Double K, Boolean verbose) {
+            Mappings<Task, Resource> mappings, Double K, Boolean verbose, Boolean extra_constraints) {
 
-        this(specification_definition, mappings, K, specification_definition.getDeadlines(), verbose);
+        this(specification_definition, mappings, K, specification_definition.getDeadlines(), verbose,
+                extra_constraints);
     }
 
-    public ScheduleSolver(SpecificationDefinition specification_definition, Double K, Boolean verbose) {
+    public ScheduleSolver(SpecificationDefinition specification_definition, Double K, Boolean verbose,
+            Boolean extra_constraints) {
 
-        this(specification_definition, null, K, specification_definition.getDeadlines(), verbose);
+        this(specification_definition, null, K, specification_definition.getDeadlines(), verbose, extra_constraints);
     }
 
     /**
@@ -328,8 +333,8 @@ public class ScheduleSolver {
                         // Real time
                         // Our examples only look at model deadlines so setting constraints for last
                         // tasks for now
-                        if (real_time)
-                            if (!hard_real_time) {
+                        if (real_time || this.extra_constraints)
+                            if (!hard_real_time || this.extra_constraints) {
                                 // deadline misses
                                 if (objective.equals("deadline_misses")) {
                                     if (verbose)
@@ -915,10 +920,10 @@ public class ScheduleSolver {
                         // Real time
                         // Our examples only look at model deadlines so setting constraints for last
                         // tasks for now
-                        if (real_time)
-                            if (!hard_real_time) {
+                        if (real_time || this.extra_constraints)
+                            if (!hard_real_time || this.extra_constraints) {
                                 // deadline misses
-                                if (objective.equals("deadline_misses")) {
+                                if (objective.equals("deadline_misses") || this.extra_constraints) {
                                     if (verbose)
                                         System.out.println(String.format(
                                                 "Deadline misses constraint: %s", task.getID()));
@@ -930,7 +935,7 @@ public class ScheduleSolver {
                                                     task.getID())));
                                 }
                                 // slack time
-                                else if (objective.equals("slack_time")) {
+                                if (objective.equals("slack_time") || this.extra_constraints) {
                                     if (verbose)
                                         System.out.println(String.format("Slack constraint: %s",
                                                 task.getID()));
@@ -1062,8 +1067,16 @@ public class ScheduleSolver {
                 ArrayList<ILPTask> model = models.get(j);
                 Double finish_time = final_task_finish_times.get(j).get(GRB.DoubleAttr.X);
                 this.schedule_result += "\n";
-                this.schedule_result += String.format("%f", finish_time);
-                for (ILPTask task : model) {
+                this.schedule_result += "Finish time\n";
+                this.schedule_result += String.format("%f\n", finish_time);
+                if (this.extra_constraints) {
+                    this.schedule_result += "Slack time\n";
+                    this.schedule_result += String.format("%f\n", m_vars.get(j).get(GRB.DoubleAttr.X));
+                    this.schedule_result += "Deadline misses\n";
+                    this.schedule_result += String.format("%f\n", n_vars.get(j).get(GRB.DoubleAttr.X));
+                }
+                for (int k = 0; k < model.size(); k++) {
+                    ILPTask task = model.get(k);
                     this.schedule_result += String.format("\n%s on %s: %f -> %f", task.getID(),
                             task.getTarget_resource_string(), task.getD_start_time(),
                             task.getD_finish_time());

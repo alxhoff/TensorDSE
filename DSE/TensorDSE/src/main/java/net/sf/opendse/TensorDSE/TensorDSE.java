@@ -106,10 +106,12 @@ public class TensorDSE {
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
 		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
 				.help("Run Demo instead of solving input specification");
-		parser.addArgument("-j", "--objective").type(String.class).setDefault("slack_time")
+		parser.addArgument("-j", "--objective").type(String.class).setDefault("average_finish_time")
 				.help("Specifies which object should be optimized for, must be one of the following:\n'average_finish_time', 'max_finish_time', 'deadline_misses', 'slack_time'");
 
 		// RT
+		parser.addArgument("-x", "--extraconstraints").type(Boolean.class).setDefault(true).help(
+				"Adds in extra constraints for slack time and deadline misses allowing for them to be read out even if they are not being optimized for");
 		parser.addArgument("-b", "--realtime").type(Boolean.class).setDefault(true).help(
 				"Enables real-time constraints, ie. task deadline constraints are added to schedule ILP");
 		parser.addArgument("-z", "--hardrealtime").type(Boolean.class).setDefault(false)
@@ -145,7 +147,8 @@ public class TensorDSE {
 	}
 
 	/**
-	 * @brief The specification module binds an evaluator to the problem'sspecification
+	 * @brief The specification module binds an evaluator to the
+	 *        problem's specification
 	 * @param specification_definition
 	 * @return Module
 	 */
@@ -157,17 +160,16 @@ public class TensorDSE {
 
 			@Override
 			protected void config() {
-				SpecificationWrapperInstance specification_wrapper =
-						new SpecificationWrapperInstance(
-								specification_definition.getSpecification());
+				SpecificationWrapperInstance specification_wrapper = new SpecificationWrapperInstance(
+						specification_definition.getSpecification());
 				bind(SpecificationWrapper.class).toInstance(specification_wrapper);
 
-				EvaluatorMinimizeCost evaluator =
-						new EvaluatorMinimizeCost("cost_of_mapping", specification_definition, K,
-								real_time, hard_real_time, objective, verbose, visualise);
+				EvaluatorMinimizeCost evaluator = new EvaluatorMinimizeCost("cost_of_mapping", specification_definition,
+						K,
+						real_time, hard_real_time, objective, verbose, visualise);
 
-				Multibinder<ImplementationEvaluator> multibinder =
-						Multibinder.newSetBinder(binder(), ImplementationEvaluator.class);
+				Multibinder<ImplementationEvaluator> multibinder = Multibinder.newSetBinder(binder(),
+						ImplementationEvaluator.class);
 				multibinder.addBinding().toInstance(evaluator);
 			}
 		};
@@ -291,7 +293,7 @@ public class TensorDSE {
 		FileWriter csv_writer = GetResultsWriter(results_file);
 
 		String models_description_file_path = GetModelSummaryFilePath(args_namespace);
-		String profiling_costs_directory_path = args_namespace.getString("profilingcosts");;
+		String profiling_costs_directory_path = args_namespace.getString("profilingcosts");
 		String hardware_description_file_path = GetArchitectureSummaryFilePath(args_namespace);
 
 		System.out.println("Working Directory: " + System.getProperty("user.dir"));
@@ -305,9 +307,8 @@ public class TensorDSE {
 		// Specification contains, architecture and application graph as well as a
 		// generated
 		// set of possible mappings
-		SpecificationDefinition specification_definition =
-				new SpecificationDefinition(models_description_file_path,
-						profiling_costs_directory_path, hardware_description_file_path);
+		SpecificationDefinition specification_definition = new SpecificationDefinition(models_description_file_path,
+				profiling_costs_directory_path, hardware_description_file_path);
 
 		String time_string = new SimpleDateFormat("yyyy-MM--dd_hh-mm-ss").format(new Date());
 
@@ -342,7 +343,8 @@ public class TensorDSE {
 					schedule_solver = new ScheduleSolver(specification_definition, null,
 							args_namespace.getDouble("deactivationnumber"),
 							specification_definition.getDeadlines(),
-							args_namespace.getBoolean("verbose"));
+							args_namespace.getBoolean("verbose"),
+							args_namespace.getBoolean("extraconstraints"));
 
 					long startILP = System.currentTimeMillis();
 					Triplet<Double, ArrayList<ArrayList<ILPTask>>, ArrayList<Double>> ret = schedule_solver
@@ -360,8 +362,7 @@ public class TensorDSE {
 					// Populate model summary with mapping information
 					for (ArrayList<ILPTask> model : models) {
 						for (ILPTask task : model) {
-							Pattern pat =
-									Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
+							Pattern pat = Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
 							Matcher mat = pat.matcher(task.getID());
 							if (mat.matches()) {
 								String layer_index = mat.group(2);
@@ -370,7 +371,7 @@ public class TensorDSE {
 								specification_definition.json_models
 										.get(Integer.parseInt(model_index)).getLayers()
 										.get(Integer.parseInt(layer_index))
-										.setMapping(task.getTarget_resource_string());;
+										.setMapping(task.getTarget_resource_string());
 							}
 						}
 					}
@@ -508,9 +509,8 @@ public class TensorDSE {
 
 						for (Individual individual : archive) {
 
-							Specification implementation =
-									((ImplementationWrapper) individual.getPhenotype())
-											.getImplementation();
+							Specification implementation = ((ImplementationWrapper) individual.getPhenotype())
+									.getImplementation();
 
 							if (args_namespace.getBoolean("visualise"))
 								SpecificationViewer.view(implementation);
@@ -530,7 +530,7 @@ public class TensorDSE {
 									specification_definition.json_models
 											.get(Integer.parseInt(model_index)).getLayers()
 											.get(Integer.parseInt(layer_index))
-											.setMapping(mapped_device);;
+											.setMapping(mapped_device);
 								}
 							}
 
