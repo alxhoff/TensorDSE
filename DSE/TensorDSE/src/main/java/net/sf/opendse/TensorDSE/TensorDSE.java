@@ -106,7 +106,7 @@ public class TensorDSE {
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
 		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
 				.help("Run Demo instead of solving input specification");
-		parser.addArgument("-j", "--objective").type(String.class).setDefault("average_finish_time")
+		parser.addArgument("-j", "--objective").type(String.class).setDefault("max_finish_time")
 				.help("Specifies which object should be optimized for, must be one of the following:\n'average_finish_time', 'max_finish_time', 'deadline_misses', 'slack_time'");
 
 		// RT
