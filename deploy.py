@@ -26,11 +26,11 @@ def GetInputTestDataModule(m: Model, dataset_module: str):
     m.input_vector = random.choice(dataset)
 
 
-def SplitForDeployment(model_path: str, model_summary: dict):
+def SplitForDeployment(model_summary: dict):
     from utils.splitter.split import Splitter
 
     # Create operation models/layers from the operations in the provided model
-    splitter = Splitter(model_path, model_summary)
+    splitter = Splitter(model_summary)
     try:
         log.info("Running Model Splitter ...")
         splitter.Run(sequences=True)
@@ -111,44 +111,43 @@ def AnalyzeDeploymentResults(models: list) -> None:
             sys.exit(-1)
 
     result = dict()
-    result["model_name"] = models[0].parent
-    result["submodels"] = []
-    result["total_inference_time (s)"] = 0
+    result["models"] = []
 
-    for m in models:
-        submodel = dict()
-        submodel["name"] = m.model_name
-        submodel["layers"] = m.details
-        submodel["inference_time (s)"] = m.results[0] / 1000000000.0
-        result["submodels"].append(submodel)
-        result["total_inference_time (s)"] += m.results[0] / 1000000000.0
+    for i, model in enumerate(models):
+        submodels_result = dict()
+        submodels_result["model_name"] = model[i].parent
+        submodels_result["submodels"] = []
+        submodels_result["total_inference_time (s)"] = 0
+        for m in model:
+            submodel = dict()
+            submodel["name"] = m.model_name
+            submodel["layers"] = m.details
+            submodel["inference_time (s)"] = m.results[0] / 1000000000.0
+            submodels_result["submodels"].append(submodel)
+            submodels_result["total_inference_time (s)"] += m.results[0] / 1000000000.0
+        result["models"].append(submodels_result)
 
     with open(results_path, 'w') as json_file:
         json.dump(result, json_file, indent=4)
 
 
-def DeployModel(model_path: str, model_summary_path: str, hw_summary_path: str, platform: str, data_module : str = None) -> None:
+def DeployModel(model_summary: dict, platform: str, data_module : str = None) -> None:
     from utils.splitter.utils import ReadJSON
     from utils.logging.logger import log
 
-    model_name = (model_path.split("/")[-1]).split(".tflite")[0]
-
-    if model_summary_path is not None:
-        try:
-            model_summary = ReadJSON(model_summary_path)
-            hardware_summary = ReadJSON(hw_summary_path)
-        except Exception as e:
-            log.error(f"Exception occured while trying to read Model and HW Summary!")
-
-    multi_models_sequences = SplitForDeployment(model_path=model_path, model_summary=model_summary)
+    multi_models_sequences = []
+    if (platform == "desktop"):
+        multi_models_sequences = SplitForDeployment(model_summary=model_summary)
 
     models = []
 
     for i, model_sequences in enumerate(multi_models_sequences):
+        submodels = []
+        model_name = (model_summary["models"][i]["path"].split("/")[-1]).split(".tflite")[0]
         for j, sequence in enumerate(model_sequences):
             layers = []
             for op in sequence:
-                layers.append(model_summary["models"][0]["layers"][op[0]])
+                layers.append(model_summary["models"][i]["layers"][op[0]])
 
             m = Model(layers, layers[0]["mapping"], model_name)
 
@@ -166,10 +165,12 @@ def DeployModel(model_path: str, model_summary_path: str, hw_summary_path: str, 
                 else:
                     GetInputTestDataModule(m, dataset_module=data_module)
             elif j < len(model_sequences):
-                m.input_vector = copy.deepcopy(models[len(models) - 1].output_vector)
+                m.input_vector = copy.deepcopy(submodels[-1].output_vector)
 
             m = DeployLayer(m, platform)
-            models.append(m)
+            submodels.append(m)
+        models.append(submodels)
+    
     AnalyzeDeploymentResults(models=models)
 
 
@@ -179,15 +180,8 @@ def getArgs():
             )
 
     parser.add_argument(
-            "-m",
-            "--model",
-            default="resources/models/example_models/MNIST_full_quanitization.tflite",
-            help="File path to the SOURCE .tflite file.",
-            )
-
-    parser.add_argument(
             "-s",
-            "--summary",
+            "--summarypath",
             default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json",
             help="File that contains a model summary with mapping annotations"
             )
@@ -200,20 +194,6 @@ def getArgs():
             )
 
     parser.add_argument(
-            "-o",
-            "--summaryoutputdir",
-            default="resources/model_summaries/example_summaries/MNIST",
-            help="Directory where model summary should be saved",
-            )
-
-    parser.add_argument(
-            "-n",
-            "--summaryoutputname",
-            default="MNIST_full_quanitization_summary_with_mappings",
-            help="Name that the model summary should have",
-            )
-
-    parser.add_argument(
             "-p",
             "--platform",
             default="desktop",
@@ -222,17 +202,25 @@ def getArgs():
     
     return parser.parse_args()
 
+
 if __name__ == "__main__":
     import os
 
+    from utils.splitter.utils import ReadJSON
+
     args = getArgs()
 
-    if args.summary:
-        DeployModel(args.model, args.summary, args.platform, args.dataset)
+    if args.summarypath is not None:
+        model_summary_json = ReadJSON(args.summarypath)
+        if model_summary_json is None:
+            log.error("The provided Model Summary is empty!")
+            sys.exit(-1)
     else:
-        DeployModel(
-                args.model,
-                os.path.join(args.summaryoutputdir, "{}.json".format(args.summaryoutputname)),
-                args.platform,
-                args.dataset
-                )
+        log.error("The provided Model Summary is empty!")
+        sys.exit(-1)
+    
+    log.info("[PROFILER] Starting")
+
+    DeployModel(args.summary, args.platform, args.dataset)
+
+    log.info("[DEPLOY] Finished")

@@ -109,6 +109,9 @@ run: $(if $(call exist-docker-image),,build)
 					--VERBOSE=$$VERBOSE \
 					--PLATFORM=$$PLATFORM \
 					--BRANCH=$$BRANCH \
+					--MULTI_MODEL=$$MULTI_MODEL \
+					--WORKLOAD_DIR=$$WORKLOAD_DIR \
+					--MODEL_NAME=$$MODEL_NAME \
 					;
 else
 run: $(if $(call exist-docker-image),,build)
@@ -148,6 +151,9 @@ run: $(if $(call exist-docker-image),,build)
 					--VERBOSE=$$VERBOSE \
 					--PLATFORM=$$PLATFORM \
 					--BRANCH=$$BRANCH \
+					--MULTI_MODEL=$$MULTI_MODEL \
+					--WORKLOAD_DIR=$$WORKLOAD_DIR \
+					--MODEL_NAME=$$MODEL_NAME \
 					;
 endif
 

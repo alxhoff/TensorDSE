@@ -1,4 +1,5 @@
 import os
+import sys
 import urllib
 import argparse
 import multiprocessing
@@ -8,30 +9,24 @@ from .utils import CopyFile, RunTerminalCommand, ReadJSON
 from utils.logging.logger import log
 
 
-MODEL_LAB_DIR = os.path.dirname(os.path.abspath(__file__))
-MODELS_DIR = os.path.join(MODEL_LAB_DIR, "models")
-MAPPING_DIR = os.path.join(MODEL_LAB_DIR, "mapping")
+SPLITTER_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR = os.path.join(SPLITTER_DIR, "models")
+MAPPING_DIR = os.path.join(SPLITTER_DIR, "mapping")
 
 SOURCE_DIR = os.path.join(MODELS_DIR, "source")
 SUB_DIR = os.path.join(MODELS_DIR, "sub")
 LAYERS_DIR = os.path.join(SUB_DIR, "tflite")
 COMPILED_DIR = os.path.join(MODELS_DIR, "sub", "compiled")
-UTILS_DIR = os.path.dirname(MODEL_LAB_DIR)
+UTILS_DIR = os.path.dirname(SPLITTER_DIR)
 WORK_DIR = os.path.dirname(UTILS_DIR)
 RESOURCES_DIR = os.path.join(WORK_DIR, "resources")
 
 
 class Splitter:
-    def __init__(self, source_model_path: str, model_summary: dict) -> None:
-        log.info("Initializing Environment ...")
-        self.InitializeEnv(source_model_path)
-        log.info("Initializing Source Model ...")
-        self.source_model = Model(self.source_model_path, self.schema_path)
-        log.info(
-            "Source Model saved under: {}".format(
-                os.path.join(MODELS_DIR, "source", "tflite")
-            )
-        )
+    def __init__(self, model_summary: dict) -> None:
+        self.CheckSchema()
+        self.models = []
+        self.models_details = []
         self.summary = model_summary
         self.submodel_list = multiprocessing.Manager().list()
 
@@ -50,33 +45,32 @@ class Splitter:
             log.info("    File schema.fbs found.")
 
 
-    def InitializeEnv(self, source_model_path):
-        self.CheckSchema()
-        if not os.path.exists(MODELS_DIR):
-            os.mkdir(MODELS_DIR)
+    def InitializeEnv(self, source_model: Model):
 
+        source_model_path = source_model.paths["tflite"]
+        log.info(
+            "Source Model saved under: {}".format(
+                source_model_path
+                )
+            )
+        if os.path.exists(MODELS_DIR):
+            RunTerminalCommand("rm", "-rf", MODELS_DIR)
+        os.mkdir(MODELS_DIR)
+        os.mkdir(os.path.join(MODELS_DIR, source_model.name))
+        
         for directory in ["source", "sub", "final"]:
-            sub_dir = os.path.join(MODELS_DIR, directory)
-            if not os.path.exists(sub_dir):
-                os.mkdir(sub_dir)
+            sub_dir = os.path.join(MODELS_DIR, source_model.name, directory)
+            if os.path.exists(sub_dir):
+                RunTerminalCommand("rm", "-rf", sub_dir)
+            os.mkdir(sub_dir)
             for ext in ["tflite", "json"]:
                 ext_dir = os.path.join(sub_dir, ext)
-                if not os.path.exists(ext_dir):
-                    os.mkdir(ext_dir)
+                if os.path.exists(ext_dir):
+                    RunTerminalCommand("rm", "-rf", ext_dir)
+                os.mkdir(ext_dir)
 
-        model_filename = source_model_path.split("/")[
-            len(source_model_path.split("/")) - 1
-        ]
-        self.source_model_path = os.path.join(SOURCE_DIR, "tflite", model_filename)
-        CopyFile(os.path.join(WORK_DIR, source_model_path), self.source_model_path)
-
-        # if not os.path.exists(MAPPING_DIR):
-        #    os.mkdir(MAPPING_DIR)
-        #
-        # mapping_filename = model_summary_path.split("/")[len(model_summary_path.split("/"))-1]
-        # self.model_summary_path = os.path.join(MAPPING_DIR, mapping_filename)
-        # CopyFile(model_summary_path, MAPPING_DIR)
-        # log.info("Mapping saved under: {}".format(os.path.join(MAPPING_DIR)))
+        CopyFile(os.path.join(WORK_DIR, source_model_path), source_model.paths["tflite"])
+        source_model.paths["tflite"] = os.path.join(os.path.join(MODELS_DIR, source_model.name, "source"), "tflite", source_model.name)
 
 
     def Clean(self, all: bool):
@@ -98,12 +92,13 @@ class Splitter:
         the device name of where the layer should be mapped (eg. "cpu1").
         """
 
-        self.models = []
+    
         for model in self.summary["models"]:
             layers = []
             for j, layer in enumerate(model["layers"]):
                 layers.append((j, layer["type"], layer["mapping"]))
-            self.models.append(layers)
+            self.models_details.append(layers)
+            self.models.append(Model(model.get("path", ""), self.schema_path))
 
 
     def CreateSubmodelLayerSequences(self) -> None:
@@ -115,7 +110,7 @@ class Splitter:
 
         self.model_layer_sequences = []
 
-        for model in self.models:
+        for model in self.models_details:
             layer_seuqences = []
             self.model_layer_sequences.append(layer_seuqences)
 
@@ -136,8 +131,10 @@ class Splitter:
             layer_seuqences.append(current_sequence)
 
 
-    def ReadSourceModel(self):
-        self.source_model.Convert("tflite", "json")
+    def ReadSourceModels(self):
+        for model in self.models:
+            self.InitializeEnv(model.paths.get("tflite", ""))
+            model.Convert("tflite", "json")
 
 
     def CompileAndSaveSubmodel(
@@ -153,12 +150,6 @@ class Splitter:
             sequence_index (int): The index at where the sequence appears in the
             set of sequences to be run on the respective hardware.
         """
-
-        log.info(
-            "Initializing shell model for layer {} from model {} ...".format(
-                sequence_index, model_index
-            )
-        )
         
         if len(layer_sequence) == 1:
             ops_range = layer_sequence[0][0]
@@ -168,7 +159,7 @@ class Splitter:
         ops_name = f"ops{ops_range}"
 
         submodel = Submodel(
-            self.source_model.json,
+            self.models[model_index].json,
             ops_name,
             layer_sequence[0][2],
             sequence_index,
@@ -223,7 +214,7 @@ class Splitter:
         # Else each individual layer will be run in its own inference session
         # which gives clearer overhead vs. execution time numbers
         else:
-            for i, model in enumerate(self.models):
+            for i, model in enumerate(self.models_details):
                 with multiprocessing.Pool() as pool:
                     items = [([layer], i, j) for j, layer in enumerate(model)]
                     pool.starmap(self.CompileAndSaveSubmodel, items)
@@ -244,8 +235,8 @@ class Splitter:
         log.info("[SPLIT] Created matrix")
         self.CreateSubmodelLayerSequences()
         log.info("[SPLIT] Submodel layer sequences created")
-        self.ReadSourceModel()
-        log.info("[SPLIT] Source model read")
+        self.ReadSourceModels()
+        log.info("[SPLIT] Source models read")
         self.CreateSubmodels(sequences=sequences)
         log.info("[SPLIT] Submodels created")
 
@@ -257,13 +248,6 @@ class Splitter:
 def GetArgs():
     parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
-            )
-    
-    parser.add_argument(
-            "-m",
-            "--model",
-            default="resources/models/example_models/MNIST_full_quanitization.tflite",
-            help="File path to the SOURCE .tflite file.",
             )
     
     parser.add_argument(
@@ -279,6 +263,14 @@ def GetArgs():
                 default="desktop",
                 help="Platform supporting the profiling/deployment process",
             )
+
+    parser.add_argument(
+                "-q",
+                "--sequences",
+                default=False,
+                help="Flag signaling the splitter to split for deployment.",
+            )
+
     
     args = parser.parse_args()
 
@@ -287,17 +279,24 @@ def GetArgs():
 if __name__ == "__main__":
     args = GetArgs()
 
+    if args.summary is not None:
+        model_summary = ReadJSON(args.summary)
+        if model_summary is None:
+            log.error("The provided Model Summary is empty!")
+            sys.exit(-1)
+
     # Create single operation models/layers from the operations in the provided model
-    splitter = Splitter(args.model, ReadJSON(args.summary))
+        
+    splitter = Splitter(model_summary=model_summary)
 
     try:
         log.info("Running Model Splitter ...")
-        splitter.Run()
+        splitter.Run(sequences=args.sequences)
         log.info("Splitting Process Complete!\n")
         splitter.CompileForEdgeTPU()
-        log.info("[PROFILE MODEL] Models successfully compiled!")
+        log.info("[SPLIT MODEL] Models successfully compiled!")
     except Exception as e:
         splitter.Clean(True)
         log.error("Failed to run splitter! {}".format(str(e)))
         raise(e)
-        
+            

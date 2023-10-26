@@ -28,63 +28,43 @@ def SummarizeModel(model: str, output_dir: str, output_name: str) -> None:
 
 
 def ProfileModel(
-        model_path: str,
+        model_summary_json: dict,
+        hardware_summary_json: dict,
         count: int,
-        hardware_summary_path: str,
-        model_summary_path: str,
         platform: str,
         usbmon: int,
-        ) -> None:
+        )  -> None:
 
     from utils.benchmark import ProfileModelLayers
     from utils.analysis import AnalyzeModelResults
 
-    from utils.splitter.utils import ReadJSON
     from utils.splitter.split import Splitter
-
-    if not model_path.endswith(".tflite"):
-        raise Exception(f"File: {model_path} is not a tflite file!")
-
-    model_name = (model_path.split("/")[-1]).split(".tflite")[0]
-    log.info(f"Benchmarking {model_name} for {count} time(s)")
 
     hardware_to_benchmark = ["cpu", "gpu", "tpu"]
 
     hardware_summary_json = None
 
-    if hardware_summary_path is not None:
-        hardware_summary_json = ReadJSON(hardware_summary_path)
+    if hardware_summary_json is not None:
 
-        if hardware_summary_json is not None:
+        req_hardware = []
+        if int(hardware_summary_json["CPU_count"]) > 0:
+            req_hardware.append("cpu")
 
-            req_hardware = []
-            if int(hardware_summary_json["CPU_count"]) > 0:
-                req_hardware.append("cpu")
+        if int(hardware_summary_json["GPU_count"]) > 0:
+            req_hardware.append("gpu")
 
-            if int(hardware_summary_json["GPU_count"]) > 0:
-                req_hardware.append("gpu")
+        if int(hardware_summary_json["TPU_count"]) > 0:
+            req_hardware.append("tpu")
 
-            if int(hardware_summary_json["TPU_count"]) > 0:
-                req_hardware.append("tpu")
-
-            hardware_to_benchmark = req_hardware
-        else:
-            log.error("Could not read provided hardware summary")
-            sys.exit(-1)
+        hardware_to_benchmark = req_hardware
     else:
-        log.error("The provided Hardware Summary is empty!")
+        log.error("Could not read provided hardware summary")
         sys.exit(-1)
-
-    if model_summary_path is not None:
-        model_summary_json = ReadJSON(model_summary_path)
-        if model_summary_json is None:
-            log.error("The provided Model Summary is empty!")
-            sys.exit(-1)
-
+    
     # Create single operation models/layers from the operations in the provided model
     splitter = None
     if (platform == "desktop"):
-        splitter = Splitter(model_path, model_summary_json)
+        splitter = Splitter(model_summary_json)
         try:
             log.info("Running Model Splitter ...")
             splitter.Run()
@@ -101,35 +81,35 @@ def ProfileModel(
     
     
     # Deploy the generated models/layers onto the target test hardware using docker
+    for model in model_summary_json["models"]:
 
-    results_dict = ProfileModelLayers(
-            parent_model=model_name,
-            hardware_list=hardware_to_benchmark,
-            model_summary=model_summary_json,
-            count=count,
-            platform=platform,
-            usbmon_bus=usbmon
-            )
+        if not model["path"].endswith(".tflite"):
+            raise Exception("File: {} is not a tflite file!".format(model["path"]))
 
-    log.info("Models profiled!")
+        model_name = (model["path"].split("/")[-1]).split(".tflite")[0]
+        log.info(f"Benchmarking {model_name} for {count} time(s)")
 
-    # Process results
-    log.info("[PROFILE MODEL] Analyzing profiling results for: {}".format(model_name))
-    AnalyzeModelResults(model_name, results_dict, hardware_summary_json)
+        results_dict = ProfileModelLayers(
+                parent_model=model_name,
+                hardware_list=hardware_to_benchmark,
+                model_summary=model_summary_json,
+                count=count,
+                platform=platform,
+                usbmon_bus=usbmon
+                )
 
-    log.info("Analyzed and merged results")
+        log.info(f"Model {model_name} profiled!")
 
-    log.info("Final Clean up")
-    if (platform == "desktop"):
-        splitter.Clean(True)
+        # Process results
+        log.info("[PROFILE MODEL] Analyzing profiling results for: {}".format(model_name))
+        AnalyzeModelResults(model_name, results_dict, hardware_summary_json, platform)
 
+        log.info("Analyzed and merged results")
 
-def list_of_strings(arg):
-    return arg.split(',')
+        log.info("Final Clean up")
+        if (platform == "desktop"):
+            splitter.Clean(True)
 
-
-def list_of_strings(arg):
-    return arg.split(',')
 
 def GetArgs() -> argparse.Namespace:
     """Argument parser, returns the Namespace containing all of the arguments.
@@ -140,13 +120,12 @@ def GetArgs() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
             )
-
+ 
     parser.add_argument(
-            "-m",
-            "--models",
-            default="resources/models/example_models/MNIST_full_quanitization.tflite,resources/models/example_models/MNIST_extended_full_quanitization.tflite",
-            type=list_of_strings,
-            help="File path to the SOURCE .tflite file.",
+            "-s",
+            "--summarypath",
+            default="resources/model_summaries/example/summaries/MNIST",
+            help="Directory where model summary should be saved",
             )
 
     parser.add_argument(
@@ -163,20 +142,6 @@ def GetArgs() -> argparse.Namespace:
             type=str,
             default="resources/architecture_summaries/example_output_architecture_summary.json",
             help="Hardware summary file to tell benchmarking which devices to benchmark, by default all devices will be benchmarked",
-            )
-
-    parser.add_argument(
-            "-o",
-            "--summaryoutputdir",
-            default="resources/model_summaries/example_summaries/MNIST",
-            help="Directory where model summary should be saved",
-            )
-
-    parser.add_argument(
-            "-n",
-            "--summaryoutputname",
-            default="MNIST_full_quanitization_summary",
-            help="Name that the model summary should have",
             )
 
     parser.add_argument(
@@ -212,7 +177,9 @@ if __name__ == "__main__":
     """
 
     import sys
-    print (sys.version)
+    log.info(sys.version)
+
+    from utils.splitter.utils import ReadJSON
 
     args = GetArgs()
     DisableTFlogging()
@@ -223,24 +190,31 @@ if __name__ == "__main__":
         log.error("Benchmarking Count must be greater than 2")
         sys.exit('Count was not greater than 2')
 
-    for model in args.models:
+    if args.summarypath is not None:
+        model_summary_json = ReadJSON(args.summarypath)
+        if model_summary_json is None:
+            log.error("The provided Model Summary is empty!")
+            sys.exit(-1)
+    else:
+        log.error("The provided Model Summary is empty!")
+        sys.exit(-1)
 
-        model_name = os.path.splitext(model)[0].split("/")[-1]
+    if args.hardwaresummary is not None:
+        hardware_summary_json = ReadJSON(args.hardwaresummary)
+        if hardware_summary_json is None:
+            log.error("The provided Hardware Summary is empty!")
+            sys.exit(-1)
+    else:
+        log.error("The provided Hardware Summary is empty!")
+        sys.exit(-1)
 
-        if (args.platform == "desktop"):
-            SummarizeModel(model, args.summaryoutputdir, model_name)
 
-        log.info("[PROFILER] Model {} summarized".format(model))
-
-        ProfileModel(
-            model,
-            args.count,
-            args.hardwaresummary,
-            os.path.join(args.summaryoutputdir, "{}.json".format(model_name)),
-            args.platform,
-            args.usbmon,
-        )
-
-        log.info("[PROFILER] Model {} profiled".format(model))
+    ProfileModel(
+        model_summary_json=model_summary_json,
+        hardware_summary_json=hardware_summary_json,
+        count=args.count,
+        platform=args.platform,
+        usbmon=args.usbmon
+    )
 
     log.info("[PROFILER] Finished")

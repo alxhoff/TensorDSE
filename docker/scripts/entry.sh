@@ -97,6 +97,18 @@ for i in "$@"; do
         OBJECTIVE="${i#*=}"
         shift
         ;;
+    -q=* | --MULTI_MODEL=*)
+        MULTI_MODEL="${i#*=}"
+        shift # past argument=value
+        ;;
+    -l=* | --WORKLOAD_DIR=*)
+        WORKLOAD_DIR="${i#*=}"
+        shift # past argument=value
+        ;;
+    -x=* | --MODEL_NAME=*)
+        MODEL_NAME="${i#*=}"
+        shift # past argument=value
+        ;;
     --default)
         DEFAULT=YES
         shift # past argument with no value
@@ -118,8 +130,8 @@ DEPLOY_MODE=7
 SETUP_MODE=8
 
 mode="$MODE"
-model_with_extension=$(basename "$MODEL")
-model_name="${model_with_extension%.*}"
+model_name="$MODEL_NAME"
+workload_name=$(basename "$WORKLOAD_DIR")
 
 coral_hello_world() {
     local coral_folder="/home/coral"
@@ -143,70 +155,89 @@ test() {
 }
 
 run_full_flow() {
-    python3 profiler.py -u $USBMON -m $MODEL -c $COUNT
+    run_profile_only
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
     pushd DSE/TensorDSE
     if [ -z ${GA_CONFIG+x} ];
     then
       echo gradle6 run --args="--objective $OBJECTIVE --model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
-      gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+      gradle6 run --args="--model $MODEL --modelsummary ../../$MODEL_SUMMARY --architecturesummary ../../$ARCHITECTURE_SUMMARY --profilingcosts ../../$PROFILING_COSTS --outputfolder ../../$OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
     else
       echo gradle6 run --args="--objective $OBJECTIVE --model $MODEL --config $GA_CONFIG --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
-      gradle6 run --args="--model $MODEL --config $GA_CONFIG --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+      gradle6 run --args="--model $MODEL --config $GA_CONFIG --modelsummary ../../$MODEL_SUMMARY --architecturesummary ../../$ARCHITECTURE_SUMMARY --profilingcosts ../../$PROFILING_COSTS --outputfolder ../../$OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
     fi
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
     popd
-    python3 deploy.py -m $MODEL -s $MODEL_SUMMARY_W_MAPPINGS -d $DATASET
+    run_deploy_only
 }
 
 run_no_deploy() {
-    python3 profiler.py -u $USBMON -m $MODEL -c $COUNT
+    run_profile_only
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
     pushd DSE/TensorDSE
     if [ -z ${GA_CONFIG+x} ];
     then
-      echo gradle6 run --args="--objective $OBJECTIVE --model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
-      gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+      echo gradle6 run --args="--objective $OBJECTIVE --model $MODEL --modelsummary ../../$MODEL_SUMMARY --architecturesummary ../../$ARCHITECTURE_SUMMARY --profilingcosts ../../$PROFILING_COSTS --outputfolder ../../$OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+      gradle6 run --args="--model $MODEL --modelsummary ../../$MODEL_SUMMARY --architecturesummary ../../$ARCHITECTURE_SUMMARY --profilingcosts ../../$PROFILING_COSTS --outputfolder ../../$OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
     else
-      echo gradle6 run --args="--objective $OBJECTIVE --model $MODEL --config $GA_CONFIG --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
-      gradle6 run --args="--model $MODEL --config $GA_CONFIG --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+      echo gradle6 run --args="--objective $OBJECTIVE --model $MODEL --config $GA_CONFIG --modelsummary ../../$MODEL_SUMMARY --architecturesummary ../../$ARCHITECTURE_SUMMARY --profilingcosts ../../$PROFILING_COSTS --outputfolder ../../$OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+      gradle6 run --args="--model $MODEL --config $GA_CONFIG --modelsummary ../../$MODEL_SUMMARY --architecturesummary ../../$ARCHITECTURE_SUMMARY --profilingcosts ../../$PROFILING_COSTS --outputfolder ../../$OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
     fi
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
     popd
 }
 
 run_profile_only() {
+    export PYTHONPATH=$(pwd):$PYTHONPATH
+    if [ "$MULTI_MODEL" == "true" ]; then
+        for FILE in "$WORKLOAD_DIR"/*; do
+            if [ -f "$FILE" ]; then
+                file_with_extension=$(basename "$FILE")
+                file_name="${file_with_extension%.*}"
+                python3 resources/model_summaries/CreateModelSummary.py --model $"$FILE" --outputname "$file_name"_summary --outputdir resources/artifacts/model_summaries
+            fi
+        done
+        python3 resources/model_summaries/MergeSummaries.py -s resources/artifacts/model_summaries -o $WORKLOAD_DIR -w "$workload_name"
+        find resources/artifacts/model_summaries -type f -name "*.json" -exec rm {} \;
+        model_summary_dir=$WORKLOAD_DIR
+        model_summary="$WORKLOAD_DIR/${workload_name}_multi_model.json"
+
+    elif [ "$MULTI_MODEL" == "false" ]; then
+        python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname "$model_name"_summary --outputdir resources/artifacts/model_summaries
+        model_summary_dir=resources/artifacts/model_summaries
+        model_summary="resources/artifacts/model_summaries/${$model_name}.json"
+
+    else
+        echo "Cannot Create Summary. Unknown MULTI_MODEL $MULTI_MODEL"
+    fi
+
     if [ "$PLATFORM" == "DESKTOP" ]; then
-        python3 profiler.py -u $USBMON -m $MODEL -c $COUNT
+        python3 profiler.py -s "$model_summary" -u $USBMON -c $COUNT -p $PLATFORM 
         echo "Profiling for Desktop Environment successfully completed!"
 
     elif [ "$PLATFORM" == "CORAL" ]; then
         echo "Profiling for Coral Dev Board"
-        python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname "$model_name"_summary --outputdir resources/model_summaries/example_summaries/MNIST
         echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
         source ~/.bash_profile
-        mdt push resources/model_summaries/example_summaries/MNIST/"$model_name"_summary.json /media/afUSB/TensorDSE/resources/model_summaries/example_summaries/MNIST/
-        export PYTHONPATH=$(pwd):$PYTHONPATH
-        python3 -m utils.splitter.split -m "$MODEL" -s resources/model_summaries/example_summaries/MNIST/"$model_name"_summary.json
+        mdt push "$model_summary" /media/afUSB/TensorDSE/"$model_summary_dir"
+        python3 -m utils.splitter.split -s "$model_summary"
         mdt push utils/splitter/models /media/afUSB/TensorDSE/utils/splitter/
-        mdt exec 'cd /media/afUSB/TensorDSE && python3 profiler.py -m '$MODEL' -p coral -c '$COUNT''
-        mdt pull /media/afUSB/TensorDSE/resources/profiling_results/*.json resources/coral/
-        mdt pull /media/afUSB/TensorDSE/resources/logs resources/
+        mdt exec "cd /media/afUSB/TensorDSE && python3 profiler.py -s "$model_summary" -p coral -c "$COUNT""
+        mdt pull /media/afUSB/TensorDSE/resources/profiling_results/coral/* resources/profiling_results/coral/
+        mdt pull /media/afUSB/TensorDSE/resources/logs/* resources/logs/
         echo "Profiling for Coral Dev Board successfully completed!"
     
     elif [ "$PLATFORM" == "RPI" ]; then
         echo "Profiling for Raspberry Pi"
-        python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname "$model_name" --outputdir resources/model_summaries/example_summaries/
         echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
         source ~/.bash_profile
-        scp resources/model_summaries/example_summaries/"$model_name".json starkaf@192.168.0.6:/home/starkaf/TensorDSE/resources/model_summaries/example_summaries/
-        export PYTHONPATH=$(pwd):$PYTHONPATH
-        python3 -m utils.splitter.split -m $MODEL -s resources/model_summaries/example_summaries/"$model_name".json
+        scp "$model_summary" starkaf@192.168.0.6:/home/starkaf/TensorDSE/"$model_summary_dir"
+        python3 -m utils.splitter.split -s "$model_summary"
         scp -r utils/splitter/models starkaf@192.168.0.6:/home/starkaf/TensorDSE/utils/splitter/
         ssh starkaf@192.168.0.6 "sudo modprobe usbmon"
-        ssh starkaf@192.168.0.6 "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -m '$MODEL' -p rpi -c '$COUNT'"
-        scp -r starkaf@192.168.0.6:/home/starkaf/TensorDSE/resources/profiling_results resources/profiling_results/rpi/
-        scp -r starkaf@192.168.0.6:/home/starkaf/TensorDSE/resources/logs resources/
+        ssh starkaf@192.168.0.6 "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -m '$MODEL' -p rpi -c '$COUNT' -u '$USBMON'"
+        scp starkaf@192.168.0.6:/home/starkaf/TensorDSE/resources/profiling_results/rpi/* resources/profiling_results/rpi/
+        scp starkaf@192.168.0.6:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
         echo "Profiling for Raspberry Pi successfully completed!"
 
     else
@@ -216,31 +247,36 @@ run_profile_only() {
 }
 
 run_deploy_only() {
-    if [ "$PLATFORM" -eq "DESKTOP" ]; then
-        python3 deploy.py -m $MODEL -s $MODEL_SUMMARY_W_MAPPINGS
+    export PYTHONPATH=$(pwd):$PYTHONPATH
+    if [ "$PLATFORM" == "DESKTOP" ]; then
+        python3 deploy.py -s $MODEL_SUMMARY_W_MAPPINGS -p desktop
         echo "Deployment for Desktop Environment successfully completed!"
 
-    elif [ "$PLATFORM" -eq "CORAL" ]; then
+    elif [ "$PLATFORM" == "CORAL" ]; then
         echo "Deployment for Coral Dev Board"
-        python3 -m utils.splitter.split -m $MODEL -s utils/splitter/$MODEL_SUMMARY_W_MAPPINGS
+        echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
+        source ~/.bash_profile
+        python3 -m utils.splitter.split -s $MODEL_SUMMARY_W_MAPPINGS -q True
         mdt push utils/splitter/models /media/afUSB/TensorDSE/utils/splitter/
-        mdt exec "cd /media/afUSB/TensorDSE && python3 deploy.py -m '$MODEL' -p coral -s '$MODEL_SUMMARY_W_MAPPINGS'"
-        mdt pull /media/afUSB/TensorDSE/resources/deployment_results/* resources/deployment_results/*
+        mdt exec "cd /media/afUSB/TensorDSE && python3 deploy.py -s '$MODEL_SUMMARY_W_MAPPINGS' -p coral"
+        mdt pull /media/afUSB/TensorDSE/resources/deployment_results/coral/* resources/deployment_results/
         mdt pull /media/afUSB/TensorDSE/resources/logs/* resources/logs/
         echo "Deployment for Coral Dev Board successfully completed!"
     
-    elif [ "$PLATFORM" -eq "RPI" ]; then
+    elif [ "$PLATFORM" == "RPI" ]; then
         echo "Deployment for Raspberry Pi"
-        python3 -m utils.splitter.split -m $MODEL -s utils/splitter/$MODEL_SUMMARY_W_MAPPINGS
+        echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
+        source ~/.bash_profile
+        python3 -m utils.splitter.split -s $MODEL_SUMMARY_W_MAPPINGS -q True
         scp -r utils/splitter/models starkaf@192.168.0.12:/home/starkaf/TensorDSE/utils/splitter/
         ssh starkaf@192.168.0.12 "sudo modprobe usbmon"
-        ssh starkaf@192.168.0.12 "cd /home/starkaf/TensorDSE && sudo deploy.py -m '$MODEL' -p rpi -s '$MODEL_SUMMARY_W_MAPPINGS'"
-        scp starkaf@192.168.0.12:/home/starkaf/TensorDSE/resources/deployment_results/* resources/deployment_results/
-        scp -r starkaf@192.168.0.12:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
+        ssh starkaf@192.168.0.12 "cd /home/starkaf/TensorDSE && sudo deploy.py -s '$MODEL_SUMMARY_W_MAPPINGS' -p rpi"
+        scp starkaf@192.168.0.12:/home/starkaf/TensorDSE/resources/deployment_results/rpi/* resources/deployment_results/rpi/
+        scp starkaf@192.168.0.12:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
         echo "Deployment for Raspberry Pi successfully completed!"
 
     else
-        echo "Unknown PLATFORM"
+        echo "Cannot Deploy. Unknown PLATFORM $PLATFORM"
     fi
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
 }
@@ -259,7 +295,7 @@ setup_board() {
     echo "Setting Up Raspberry Pi successfully completed!"
     
     else
-        echo "Unknown PLATFORM"
+        echo "Cannot Setup. Unknown PLATFORM $PLATFORM"
     fi
 
 }
