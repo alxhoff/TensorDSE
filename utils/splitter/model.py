@@ -46,18 +46,19 @@ class Model:
             import sys
             sys.exit("Couldn't convert using 'flatc': {}".format(e))
 
-    def Compile(self):
-        if not os.path.exists(COMPILED_DIR):
-            os.mkdir(COMPILED_DIR)
-        compiling_command = "/usr/bin/edgetpu_compiler -o {0} -s {1}".format(COMPILED_DIR, self.paths["tflite"])
+    def Compile(self, parent_model_name: str):
+        compiled_dir = os.path.join(MODELS_DIR, parent_model_name, "sub", "compiled")
+        if not os.path.exists(compiled_dir):
+            os.mkdir(compiled_dir)
+        compiling_command = "/usr/bin/edgetpu_compiler -o {0} -s {1}".format(compiled_dir, self.paths["tflite"])
         os.system(compiling_command)
-        self.paths["edgetpu_tflite"] = os.path.join(COMPILED_DIR, self.paths["tflite"].split("/")[-1].split(".")[0] + "_edgetpu.tflite")
+        self.paths["edgetpu_tflite"] = os.path.join(compiled_dir, self.paths["tflite"].split("/")[-1].split(".")[0] + "_edgetpu.tflite")
 
 class Submodel(Model):
     def __init__(self, source_model: Model, op_name: str, target_hardware: str, sequence_index: int):
-        self.name = "submodel_{0}_{1}_{2}".format(sequence_index, op_name, "bm" if target_hardware.lower() == "" else target_hardware.lower())
-        self.dirs = {"json": os.path.join(MODELS_DIR, source_model.name, "json", self.name),
-                      "tflite": os.path.join(MODELS_DIR, source_model.name, "tflite", self.name)}
+        name = "submodel_{0}_{1}_{2}".format(sequence_index, op_name, "bm" if target_hardware.lower() == "" else target_hardware.lower())
+        self.dirs = {"json": os.path.join(MODELS_DIR, source_model.name, "sub", "json", name),
+                      "tflite": os.path.join(MODELS_DIR, source_model.name, "sub", "tflite", name)}
         os.mkdir(self.dirs["json"])
         os.mkdir(self.dirs["tflite"])
         CopyFile(os.path.join(RESOURCES_DIR, "shell", "shell_model.json"),
@@ -65,7 +66,9 @@ class Submodel(Model):
         super().__init__(path_to_model=os.path.join(self.dirs["json"], "shell_model.json"),
                           schema_path=os.path.join(RESOURCES_DIR, "schema", "schema.fbs"))
         self.json = ReadJSON(self.paths["json"])
+        self.source_model_name = source_model.name
         self.source_model_json = source_model.json
+        self.name = name
 
     def AddOps(self, layers):
         """Adds the appropriate operations, specified by the given layers, to

@@ -69,8 +69,9 @@ class Splitter:
                     RunTerminalCommand("rm", "-rf", ext_dir)
                 os.mkdir(ext_dir)
 
-        CopyFile(os.path.join(WORK_DIR, source_model_path), source_model.paths["tflite"])
-        source_model.paths["tflite"] = os.path.join(os.path.join(MODELS_DIR, source_model.name, "source"), "tflite", source_model.name)
+        target_path = os.path.join(os.path.join(MODELS_DIR, source_model.name, "source"), "tflite", "{}.tflite".format(source_model.name))
+        CopyFile(source_model.paths["tflite"], target_path)
+        source_model.paths["tflite"] = target_path
 
 
     def Clean(self, all: bool):
@@ -133,7 +134,7 @@ class Splitter:
 
     def ReadSourceModels(self):
         for model in self.models:
-            self.InitializeEnv(model.paths.get("tflite", ""))
+            self.InitializeEnv(model)
             model.Convert("tflite", "json")
 
 
@@ -159,7 +160,7 @@ class Splitter:
         ops_name = f"ops{ops_range}"
 
         submodel = Submodel(
-            self.models[model_index].json,
+            self.models[model_index],
             ops_name,
             layer_sequence[0][2],
             sequence_index,
@@ -223,10 +224,10 @@ class Splitter:
     def CompileForEdgeTPU(self, bm=True):
         for submodel in self.submodel_list:
             if bm:
-                submodel.Compile()
+                submodel.Compile(submodel.source_model_name)
             else:
                 if ("tpu" in submodel.name):
-                    submodel.Compile()
+                    submodel.Compile(submodel.source_model_name)
 
 
     def Run(self, sequences=False):

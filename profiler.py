@@ -42,8 +42,6 @@ def ProfileModel(
 
     hardware_to_benchmark = ["cpu", "gpu", "tpu"]
 
-    hardware_summary_json = None
-
     if hardware_summary_json is not None:
 
         req_hardware = []
@@ -92,7 +90,7 @@ def ProfileModel(
         results_dict = ProfileModelLayers(
                 parent_model=model_name,
                 hardware_list=hardware_to_benchmark,
-                model_summary=model_summary_json,
+                model_summary=model,
                 count=count,
                 platform=platform,
                 usbmon_bus=usbmon
@@ -168,8 +166,8 @@ if __name__ == "__main__":
 
     Flags
     ---------
-    -m or --models
-        Target input tflite models to be processed and splitted. Should be a comma seperated list.
+    -s or ----summarypath
+        Provide Path to Model Summary.
 
     -c or --count
         Used in the tflite deployment that may occur directly after conversion.

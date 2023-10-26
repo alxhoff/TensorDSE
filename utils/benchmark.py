@@ -148,7 +148,7 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
     input_size = GetArraySizeFromShape(m.input_shape)
     output_size = GetArraySizeFromShape(m.output_shape)
 
-    #time.sleep(DEPLOY_WAIT_TIME)
+    time.sleep(10)
 
     for i in range(count):
         signalsQ = Queue()
@@ -196,6 +196,8 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
                 1,
                 core_index
                 )
+        
+        time.sleep(DEPLOY_WAIT_TIME)
 
         results.append(mean_inference_time)
 
@@ -258,11 +260,14 @@ def StandardDeploy(m: Model, count: int, hardware_target: str, platform: str) ->
 
 def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbmon: int=None) -> Model:
     import os
-    from utils.splitter.split import SUB_DIR, COMPILED_DIR
+    from utils.splitter.split import MODELS_DIR
 
     if (hardware_target == "tpu"):
         m.model_path = os.path.join(
-                COMPILED_DIR,
+                MODELS_DIR,
+                m.parent,
+                "sub",
+                "compiled",
                 "submodel_{0}_ops{1}_bm_edgetpu.tflite".format(
                     m.index,
                     m.index
@@ -270,7 +275,9 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
                 )
     else:
         m.model_path = os.path.join(
-                SUB_DIR,
+                MODELS_DIR,
+                m.parent,
+                "sub",
                 "tflite",
                 "submodel_{0}_ops{1}_bm".format(m.index, m.index),
                 "submodel_{0}_ops{1}_bm.tflite".format(m.index, m.index),
@@ -287,6 +294,7 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
                 m = StandardDeploy(m=m, count=count, hardware_target=hardware_target, platform=platform)
 
         else:
+            print("#########################################       {}       #######################################\n".format(m.model_path) )
             m.results = [-1] * count
             m.timers = {
                     "error": {
@@ -341,7 +349,7 @@ def ProfileModelLayers(
         log.info("No CPU cores in hardware summary, skipping benchmarking")
     else:
         log.info(f"[PROFILE MODEL LAYERS] CPU is available on this machine!")
-        for layer in model_summary["models"][0]["layers"]:
+        for layer in model_summary["layers"]:
             m = ProfileLayer(
                     Model(layer, "cpu", parent_model), count, "cpu", platform, usbmon=usbmon_bus
                     )
@@ -361,7 +369,7 @@ def ProfileModelLayers(
             log.info(
                     f"[PROFILE MODEL LAYERS] GPU is available on this machine! Type: {gpu}"
                     )
-            for layer in model_summary["models"][0]["layers"]:
+            for layer in model_summary["layers"]:
                 m = ProfileLayer(
                         Model(layer, "gpu", parent_model), count, "gpu", platform, usbmon=usbmon_bus
                         )
@@ -370,7 +378,7 @@ def ProfileModelLayers(
                 # AnalyzeLayerResults(m, "gpu")
 
     elif (platform == "coral") or (platform == "rpi"):
-        for layer in model_summary["models"][0]["layers"]:
+        for layer in model_summary["layers"]:
             m = ProfileLayer(
                     Model(layer, "gpu", parent_model), count, "gpu", platform, usbmon=usbmon_bus
                     )
@@ -392,7 +400,7 @@ def ProfileModelLayers(
                 sys.exit(1)
             else:
                 log.info("usbmon module already present")
-                for layer in model_summary["models"][0]["layers"]:
+                for layer in model_summary["layers"]:
                     m = ProfileLayer(
                         Model(layer, "tpu", parent_model), count, "tpu", platform, usbmon=usbmon_bus
                     )
@@ -400,7 +408,7 @@ def ProfileModelLayers(
                     models["tpu"].append(m)
                     # AnalyzeLayerResults(m, "tpu")
     elif platform == "coral":
-        for layer in model_summary["models"][0]["layers"]:
+        for layer in model_summary["layers"]:
             m = ProfileLayer(Model(layer, "tpu", parent_model), count, "tpu", platform, usbmon=usbmon_bus)
             m.model_name = "{0}_{1}_{2}".format(m.model_name, m.index, "_".join(m.input_shape))
             models["tpu"].append(m)
