@@ -308,11 +308,14 @@ setup_board() {
 }
 
 run_just_dse() {
+    export PYTHONPATH=$(pwd):$PYTHONPATH
+    python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname "$model_name" --outputdir resources/artifacts/model_summaries
     pushd DSE/TensorDSE
-    echo gradle6 run --args="--objective $OBJECTIVE --model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
-    gradle6 run --args="--model $MODEL --modelsummary $MODEL_SUMMARY --architecturesummary $ARCHITECTURE_SUMMARY --profilingcosts $PROFILING_COSTS --outputfolder $OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    echo gradle6 run --args="--objective $OBJECTIVE --model $MODEL --modelsummary ../../$MODEL_SUMMARY --architecturesummary ../../$ARCHITECTURE_SUMMARY --profilingcosts ../../$PROFILING_COSTS --outputfolder ../../$OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
+    gradle6 run --args="--model $MODEL --modelsummary ../../$MODEL_SUMMARY --architecturesummary ../../$ARCHITECTURE_SUMMARY --profilingcosts ../../$PROFILING_COSTS --outputfolder ../../$OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
     cp -r /home/sources/TensorDSE/resources/* /home/tensorDSE/resources
     popd
+    ls -ll resources/GA_results
 }
 
 main() {

@@ -21,7 +21,7 @@ override WORKLOAD_DIR = resources/workloads/MNIST
 $(info Using default WORKLOAD_DIR: $(WORKLOAD_DIR))
 endif
 ifndef MODEL
-override MODEL = resources/models/example_models/kws_ref_model.tflite
+override MODEL = resources/models/example_models/MNIST_full_quanitization.tflite
 $(info Using default MODEL: $(MODEL))
 endif
 ifndef MODEL_NAME
@@ -37,7 +37,7 @@ override COUNT = 20
 $(info Using default COUNT: $(COUNT))
 endif
 ifndef MODEL_SUMMARY
-override MODEL_SUMMARY = resources/artifacts/model_summaries/$(MODEL_NAME)_summary.json
+override MODEL_SUMMARY = resources/artifacts/model_summaries/$(MODEL_NAME).json
 $(info Using default MODEL_SUMMARY: $(MODEL_SUMMARY))
 endif
 ifndef MODEL_SUMMARY_W_MAPPINGS
@@ -115,8 +115,8 @@ shell:
 
 .PHONY: dse
 dse:
-	git fetch https://git@github.com/alxhoff/TensorDSE.git
-	git reset --hard origin/$(BRANCH)
+	#git fetch https://git@github.com/alxhoff/TensorDSE.git
+	#git reset --hard origin/$(BRANCH)
 	$(info USBMON is $(USBMON))
 	${MAKE} -C docker dse OBJECTIVE=$(OBJECTIVE) USBMON=$(USBMON) DATASET=$(DATASET) COUNT=$(COUNT) MODEL_SUMMARY_W_MAPPINGS=$(MODEL_SUMMARY_W_MAPPINGS) MODEL=$(MODEL) MODEL_SUMMARY=$(MODEL_SUMMARY) ARCHITECTURE_SUMMARY=$(ARCHITECTURE_SUMMARY) PROFILING_COSTS=$(PROFILING_COSTS) OUTPUT_FOLDER=$(OUTPUT_FOLDER) OUTPUT_NAME=$(OUTPUT_NAME) ILP_MAPPING=$(ILP_MAPPING) RUNS=$(RUNS) CROSSOVER=$(CROSSOVER) POPULATION_SIZE=$(POPULATION_SIZE) PARENTS_PER_GENERATION=$(PARENTS_PER_GENERATION) OFFSPRING_PER_GENERATION=$(OFFSPRING_PER_GENERATION) GENERATIONS=$(GENERATIONS) VERBOSE=$(VERBOSE) BRANCH=$(BRANCH) MULTI_MODEL=$(MULTI_MODEL) MODEL_NAME=$(MODEL_NAME) WORKLOAD_DIR=$(WORKLOAD_DIR)
 
