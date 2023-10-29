@@ -143,7 +143,7 @@ def DeployModel(model_summary: dict, platform: str, data_module : str = None) ->
 
     for i, model_sequences in enumerate(multi_models_sequences):
         submodels = []
-        model_name = (model_summary["models"][i]["path"].split("/")[-1]).split(".tflite")[0]
+        model_name = os.path.basename(model_summary["models"][i]["path"]).split(".tflite")[0]
         for j, sequence in enumerate(model_sequences):
             layers = []
             for op in sequence:

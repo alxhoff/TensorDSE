@@ -84,7 +84,7 @@ def ProfileModel(
         if not model["path"].endswith(".tflite"):
             raise Exception("File: {} is not a tflite file!".format(model["path"]))
 
-        model_name = (model["path"].split("/")[-1]).split(".tflite")[0]
+        model_name = os.path.basename(model["path"]).split(".tflite")[0]
         log.info(f"Benchmarking {model_name} for {count} time(s)")
 
         results_dict = ProfileModelLayers(

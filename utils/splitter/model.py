@@ -16,7 +16,8 @@ FINAL_DIR     = os.path.join(MODELS_DIR, "final")
 class Model:
     def __init__(self, path_to_model: str, schema_path: str):
         try:
-            self.name = path_to_model.split("/")[-1].split(".")[0]
+            model_basename = os.path.basename(path_to_model)
+            self.name = model_basename.split(".")[0]
         except Exception as e:
             log.error("Could not fetch model name from {}. Aborting!".format(path_to_model))
             sys.exit(-1)
@@ -52,7 +53,7 @@ class Model:
             os.mkdir(compiled_dir)
         compiling_command = "/usr/bin/edgetpu_compiler -o {0} -s {1}".format(compiled_dir, self.paths["tflite"])
         os.system(compiling_command)
-        self.paths["edgetpu_tflite"] = os.path.join(compiled_dir, self.paths["tflite"].split("/")[-1].split(".")[0] + "_edgetpu.tflite")
+        self.paths["edgetpu_tflite"] = os.path.join(compiled_dir, os.path.basename(self.paths["tflite"]).split(".")[0] + "_edgetpu.tflite")
 
 class Submodel(Model):
     def __init__(self, source_model: Model, op_name: str, target_hardware: str, sequence_index: int):

@@ -21,7 +21,7 @@ override WORKLOAD_DIR = resources/workloads/MNIST
 $(info Using default WORKLOAD_DIR: $(WORKLOAD_DIR))
 endif
 ifndef MODEL
-override MODEL = resources/models/example_models/MNIST_full_quanitization.tflite
+override MODEL = resources/models/example_models/MNIST_extended_full_quanitization.tflite
 $(info Using default MODEL: $(MODEL))
 endif
 ifndef MODEL_NAME
