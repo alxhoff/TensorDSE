@@ -109,6 +109,14 @@ for i in "$@"; do
         MODEL_NAME="${i#*=}"
         shift # past argument=value
         ;;
+    -y=* | --NATIVE_DEPLOYMENT=*)
+        NATIVE_DEPLOYMENT="${i#*=}"
+        shift # past argument=value
+        ;;
+    -hw=* | --HW_NATIVE_DEPLOYMENT=*)
+        HW_NATIVE_DEPLOYMENT="${i#*=}"
+        shift # past argument=value
+        ;;
     --default)
         DEFAULT=YES
         shift # past argument with no value
@@ -132,6 +140,8 @@ SETUP_MODE=8
 mode="$MODE"
 model_name="$MODEL_NAME"
 workload_name=$(basename "$WORKLOAD_DIR")
+native_deployment="$NATIVE_DEPLOYMENT"
+hw_native_deployment="$HW_NATIVE_DEPLOYMENT"
 
 coral_hello_world() {
     local coral_folder="/home/coral"
@@ -235,16 +245,16 @@ run_profile_only() {
         echo "Profiling for Raspberry Pi"
         echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
         source ~/.bash_profile
-        ssh starkaf@192.168.0.11 "cd /home/starkaf/TensorDSE && mkdir resources/artifacts && mkdir resources/artifacts/models_summaries"
-        scp "$model_summary" starkaf@192.168.0.11:/home/starkaf/TensorDSE/"$model_summary_dir"/
+        ssh starkaf@192.168.0.7 "cd /home/starkaf/TensorDSE && mkdir resources/artifacts && mkdir resources/artifacts/models_summaries"
+        scp "$model_summary" starkaf@192.168.0.7:/home/starkaf/TensorDSE/"$model_summary_dir"/
         python3 -m utils.splitter.split -s "$model_summary"
-        scp -r utils/splitter/models starkaf@192.168.0.11:/home/starkaf/TensorDSE/utils/splitter/
+        scp -r utils/splitter/models starkaf@192.168.0.7:/home/starkaf/TensorDSE/utils/splitter/
         rm -rf utils/splitter/models
-        ssh starkaf@192.168.0.11 "sudo modprobe usbmon"
-        ssh starkaf@192.168.0.11 "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -s "$model_summary" -p rpi -c "$COUNT" -u "$USBMON""
-        ssh starkaf@192.168.0.11 "cd /home/starkaf/TensorDSE/utils/splitter && rm -rf models"
-        scp starkaf@192.168.0.11:/home/starkaf/TensorDSE/resources/profiling_results/rpi/* resources/profiling_results/rpi/
-        scp starkaf@192.168.0.11:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
+        ssh starkaf@192.168.0.7 "sudo modprobe usbmon"
+        ssh starkaf@192.168.0.7 "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -s "$model_summary" -p rpi -c "$COUNT" -u "$USBMON""
+        ssh starkaf@192.168.0.7 "cd /home/starkaf/TensorDSE/utils/splitter && rm -rf models"
+        scp starkaf@192.168.0.7:/home/starkaf/TensorDSE/resources/profiling_results/rpi/* resources/profiling_results/rpi/
+        scp starkaf@192.168.0.7:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
         echo "Profiling for Raspberry Pi successfully completed!"
 
     else
@@ -255,8 +265,9 @@ run_profile_only() {
 
 run_deploy_only() {
     export PYTHONPATH=$(pwd):$PYTHONPATH
+
     if [ "$PLATFORM" == "desktop" ]; then
-        python3 deploy.py -s $MODEL_SUMMARY_W_MAPPINGS -p desktop
+        python3 deploy.py -s $MODEL_SUMMARY_W_MAPPINGS -p desktop -n $NATIVE_DEPLOYMENT -h $HW_NATIVE_DEPLOYMENT
         echo "Deployment for Desktop Environment successfully completed!"
 
     elif [ "$PLATFORM" == "coral" ]; then
@@ -265,7 +276,7 @@ run_deploy_only() {
         source ~/.bash_profile
         python3 -m utils.splitter.split -s $MODEL_SUMMARY_W_MAPPINGS -q True
         mdt push utils/splitter/models /media/afUSB/TensorDSE/utils/splitter/
-        mdt exec "cd /media/afUSB/TensorDSE && python3 deploy.py -s '$MODEL_SUMMARY_W_MAPPINGS' -p coral"
+        mdt exec "cd /media/afUSB/TensorDSE && python3 deploy.py -s '$MODEL_SUMMARY_W_MAPPINGS' -p coral -n '$NATIVE_DEPLOYMENT' -h '$HW_NATIVE_DEPLOYMENT'"
         mdt pull /media/afUSB/TensorDSE/resources/deployment_results/coral/* resources/deployment_results/
         mdt pull /media/afUSB/TensorDSE/resources/logs/* resources/logs/
         echo "Deployment for Coral Dev Board successfully completed!"
@@ -275,11 +286,11 @@ run_deploy_only() {
         echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
         source ~/.bash_profile
         python3 -m utils.splitter.split -s $MODEL_SUMMARY_W_MAPPINGS -q True
-        scp -r utils/splitter/models starkaf@192.168.0.11:/home/starkaf/TensorDSE/utils/splitter/
-        ssh starkaf@192.168.0.11 "sudo modprobe usbmon"
-        ssh starkaf@192.168.0.11 "cd /home/starkaf/TensorDSE && sudo deploy.py -s '$MODEL_SUMMARY_W_MAPPINGS' -p rpi"
-        scp starkaf@192.168.0.11:/home/starkaf/TensorDSE/resources/deployment_results/rpi/* resources/deployment_results/rpi/
-        scp starkaf@192.168.0.11:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
+        scp -r utils/splitter/models starkaf@192.168.0.7:/home/starkaf/TensorDSE/utils/splitter/
+        ssh starkaf@192.168.0.7 "sudo modprobe usbmon"
+        ssh starkaf@192.168.0.7 "cd /home/starkaf/TensorDSE && sudo deploy.py -s '$MODEL_SUMMARY_W_MAPPINGS' -p rpi -n '$NATIVE_DEPLOYMENT' -h '$HW_NATIVE_DEPLOYMENT'"
+        scp starkaf@192.168.0.7:/home/starkaf/TensorDSE/resources/deployment_results/rpi/* resources/deployment_results/rpi/
+        scp starkaf@192.168.0.7:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
         echo "Deployment for Raspberry Pi successfully completed!"
 
     else

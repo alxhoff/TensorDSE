@@ -112,6 +112,8 @@ run: $(if $(call exist-docker-image),,build)
 					--MULTI_MODEL=$$MULTI_MODEL \
 					--WORKLOAD_DIR=$$WORKLOAD_DIR \
 					--MODEL_NAME=$$MODEL_NAME \
+					--NATIVE_DEPLOYMENT=$NATIVE_DEPLOYMENT \
+					--HW_NATIVE_DEPLOYMENT=$HW_NATIVE_DEPLOYMENT \
 					;
 else
 run: $(if $(call exist-docker-image),,build)
@@ -154,6 +156,7 @@ run: $(if $(call exist-docker-image),,build)
 					--MULTI_MODEL=$$MULTI_MODEL \
 					--WORKLOAD_DIR=$$WORKLOAD_DIR \
 					--MODEL_NAME=$$MODEL_NAME \
+					--NATIVE_DEPLOYMENT=$NATIVE_DEPLOYMENT \
 					;
 endif
 

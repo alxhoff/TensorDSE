@@ -148,7 +148,7 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
     input_size = GetArraySizeFromShape(m.input_shape)
     output_size = GetArraySizeFromShape(m.output_shape)
 
-    time.sleep(10)
+    time.sleep(5)
 
     for i in range(count):
         signalsQ = Queue()
@@ -171,14 +171,20 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
         if sig == END_DEPLOYMENT:
             p.join()
             break
+        
 
-        input_data_vector = np.array(
-                np.random.random_sample(input_size),
-                dtype=m.get_np_dtype(m.input_datatype),
-                )
+        if (m.input_vector is None):
+            input_data_vector = np.array(
+                    np.random.random_sample(input_size),
+                    dtype=m.get_np_dtype(m.input_datatype),
+                    )
+        else:
+            input_data_vector = m.input_vector
+            
         output_data_vector = np.zeros(output_size).astype(
                 m.get_np_dtype(m.output_datatype)
                 )
+        
         inference_times_vector = np.zeros(count).astype(np.uint32)
 
         if (platform == "rpi"):
@@ -219,6 +225,8 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
 
     m.results = results
     m.timers = timers
+    m.output_vector = output_data_vector
+
     return m
 
 
@@ -253,6 +261,7 @@ def StandardDeploy(m: Model, count: int, hardware_target: str, platform: str) ->
     except Exception as e:
         print(e)
 
+    m.output_vector = output_data_vector
     m.results = [t/1000000000.0 for t in inference_times_vector.tolist()]
 
     return m
@@ -294,7 +303,6 @@ def ProfileLayer(m: Model, count: int, hardware_target: str, platform: str, usbm
                 m = StandardDeploy(m=m, count=count, hardware_target=hardware_target, platform=platform)
 
         else:
-            print("#########################################       {}       #######################################\n".format(m.model_path) )
             m.results = [-1] * count
             m.timers = {
                     "error": {

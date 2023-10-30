@@ -26,30 +26,43 @@ def GetInputTestDataModule(m: Model, dataset_module: str):
     m.input_vector = random.choice(dataset)
 
 
-def SplitForDeployment(model_summary: dict):
+def SplitForDeployment(model_summary: dict, platform: str, native: bool, hardware: str):
     from utils.splitter.split import Splitter
+    from utils.splitter.utils import ReadJSON
 
-    # Create operation models/layers from the operations in the provided model
+    model_layer_sequences = []
+
+    if native is True:
+        for model in model_summary["models"]:
+            for layer in model["layers"]:
+                layer["mapping"] = hardware
+
     splitter = Splitter(model_summary)
-    try:
-        log.info("Running Model Splitter ...")
-        splitter.Run(sequences=True)
-        log.info("Splitting Process Complete!\n")
-    except Exception as e:
-        splitter.Clean(True)
-        log.error("Failed to run splitter! {}".format(str(e)))
-        sys.exit(1)
+    if (platform == "desktop"):
+    # Create operation models/layers from the operations in the provided model
+        try:
+            log.info("Running Model Splitter ...")
+            splitter.Run(sequences=True)
+            log.info("Splitting Process Complete!\n")
+        except Exception as e:
+            splitter.Clean(True)
+            log.error("Failed to run splitter! {}".format(str(e)))
+            sys.exit(1)
 
-    # Compiles created models/layers into Coral models for execution
-    splitter.CompileForEdgeTPU(bm=False)
-    log.info("Models successfully compiled!")
+        # Compiles created models/layers into Coral models for execution
+        splitter.CompileForEdgeTPU(bm=False)
+        log.info("Models successfully compiled!")
+        model_layer_sequences = splitter.model_layer_sequences
+    else:
+        model_layer_sequences = ReadJSON("utils/splitter/model_layer_sequences.json")
+        
 
-    return splitter.model_layer_sequences
+    return model_layer_sequences, model_summary
 
 
-def DeployLayer(m: Model, platform: str):
-    from utils.splitter.split import SUB_DIR, COMPILED_DIR
-    from utils.benchmark import GetArraySizeFromShape
+def DeployLayer(m: Model, platform: str, usbmon: int=None):
+    from utils.splitter.split import MODELS_DIR
+    from utils.benchmark import GetArraySizeFromShape, StandardDeploy, TPUDeploy
     from backend.distributed_inference import distributed_inference
 
     delegate_type  = m.delegate[:3]
@@ -57,43 +70,44 @@ def DeployLayer(m: Model, platform: str):
 
     if delegate_type == "tpu":
         m.model_path = os.path.join(
-                COMPILED_DIR,
+                MODELS_DIR,
+                m.parent,
+                "sub",
+                "compiled",
                 "{}_edgetpu.tflite".format(
                     m.model_name),
                 )
     else:
         m.model_path = os.path.join(
-                SUB_DIR,
+                MODELS_DIR,
+                m.parent,
+                "sub",
                 "tflite",
-                m.model_name,
                 "{0}.tflite".format(
                     m.model_name
                     ),
                 )
 
-    output_size = GetArraySizeFromShape(m.output_shape)
-    output_data_vector = np.zeros(output_size).astype(m.get_np_dtype(m.output_datatype))
+    if ((platform == "desktop") or (platform == "rpi")):
+        if os.path.isfile(m.model_path):
+            if (delegate_type == "tpu"):
+                if usbmon == None:
+                    raise Exception("usbmon interface not provided to Deploy Layer for TPU device")
+                else:
+                    m = TPUDeploy(m=m, count=1, usbmon=usbmon, platform=platform)
+            else:
+                m = StandardDeploy(m=m, count=1, hardware_target=delegate_type, platform=platform)
 
-    inference_times_vector = np.zeros(1).astype(np.uint32)
-
-    try:
-        mean_inference_time = distributed_inference(
-                m.model_path,
-                m.input_vector,
-                output_data_vector,
-                inference_times_vector,
-                len(m.input_vector),
-                len(output_data_vector),
-                delegate_type,
-                platform,
-                1,
-                delegate_index
-                )
-    except Exception as e:
-        log.error(f"Failed to run distributed inference. Possible Error {e}")
-
-    m.output_vector = output_data_vector
-    m.results = inference_times_vector.tolist()
+        else:
+            m.results = [-1]
+            m.timers = {
+                    "error": {
+                        "name": "file_not_found",
+                        "reason": "Cannot find model {}".format(m.model_path),
+                        },
+                    }
+    else:
+        m = StandardDeploy(m=m, count=1, hardware_target=delegate_type, platform=platform)
 
     return m
 
@@ -131,16 +145,13 @@ def AnalyzeDeploymentResults(models: list) -> None:
         json.dump(result, json_file, indent=4)
 
 
-def DeployModel(model_summary: dict, platform: str, data_module : str = None) -> None:
-    from utils.splitter.utils import ReadJSON
-    from utils.logging.logger import log
-
-    multi_models_sequences = []
-    if (platform == "desktop"):
-        multi_models_sequences = SplitForDeployment(model_summary=model_summary)
+def DeployModels(model_summary: dict, platform: str, hardware: str, native: bool = False, data_module: str = None) -> None:
 
     models = []
-
+    multi_models_sequences = []
+    
+    multi_models_sequences, model_summary = SplitForDeployment(model_summary=model_summary, platform=platform, native=native, hardware=hardware)
+        
     for i, model_sequences in enumerate(multi_models_sequences):
         submodels = []
         model_name = os.path.basename(model_summary["models"][i]["path"]).split(".tflite")[0]
@@ -156,15 +167,21 @@ def DeployModel(model_summary: dict, platform: str, data_module : str = None) ->
             else:
                 ops_range = '-'.join(map(str, [sequence[0][0], sequence[-1][0]]))
 
-            m.model_name = "submodel_{0}_{1}_{2}".format(j, f"ops{ops_range}", m.delegate)
+            if native is False:
+                m.model_name = "submodel_{0}_{1}_{2}".format(j, f"ops{ops_range}", m.delegate)
+            else:
+                m.model_name = model_name
 
             if j == 0:
-                data_module = None
-                if data_module == None:
-                    GetInputData(m)
+                #Foced random input for rpi and dev board due to unsupported dataset installation
+                if not (platform == "desktop"):
+                    data_module = None
                 else:
-                    GetInputTestDataModule(m, dataset_module=data_module)
-            elif j < len(model_sequences):
+                    if data_module == None:
+                        GetInputData(m)
+                    else:
+                        GetInputTestDataModule(m, dataset_module=data_module)
+            else:
                 m.input_vector = copy.deepcopy(submodels[-1].output_vector)
 
             m = DeployLayer(m, platform)
@@ -182,7 +199,7 @@ def getArgs():
     parser.add_argument(
             "-s",
             "--summarypath",
-            default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_with_mappings.json",
+            default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_w_mappings.json",
             help="File that contains a model summary with mapping annotations"
             )
 
@@ -198,6 +215,20 @@ def getArgs():
             "--platform",
             default="desktop",
             help="Platform supporting the profiling/deployment process",
+            )
+    
+    parser.add_argument(
+            "-n",
+            "--native",
+            default=False,
+            help="Native deployment on one specific HW Target",
+            )
+    
+    parser.add_argument(
+            "-h",
+            "--hardware",
+            default="cpu",
+            help="HW Target for native deployment",
             )
     
     return parser.parse_args()
@@ -221,6 +252,16 @@ if __name__ == "__main__":
     
     log.info("[PROFILER] Starting")
 
-    DeployModel(args.summary, args.platform, args.dataset)
+    try:
+        DeployModels(
+            model_summary=model_summary_json, 
+            platform=args.platform,
+            hardware=args.hardware, 
+            native=args.native, 
+            data_module=args.dataset
+            )
+        
+    except Exception as e:
+        log.error(f"An error occured in the deployment process. ({e})")
 
     log.info("[DEPLOY] Finished")

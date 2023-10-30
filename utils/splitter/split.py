@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import urllib
 import argparse
 import multiprocessing
@@ -242,6 +243,12 @@ class Splitter:
         log.info("[SPLIT] Submodels created")
 
 
+    def SaveSequences(self):
+        seq_path = os.path.join(SPLITTER_DIR, "model_layer_sequences.json")
+        with open(seq_path, 'w') as f:
+            json.dump(self.model_layer_sequences, f)
+
+
     def __del__(self):
         self.Clean(False)
 
@@ -277,6 +284,7 @@ def GetArgs():
 
     return args
 
+
 if __name__ == "__main__":
     args = GetArgs()
 
@@ -296,6 +304,9 @@ if __name__ == "__main__":
         log.info("Splitting Process Complete!\n")
         splitter.CompileForEdgeTPU()
         log.info("[SPLIT MODEL] Models successfully compiled!")
+        if (args.sequences is True):
+            splitter.SaveSequences()
+
     except Exception as e:
         splitter.Clean(True)
         log.error("Failed to run splitter! {}".format(str(e)))
