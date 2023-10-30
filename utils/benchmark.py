@@ -147,6 +147,9 @@ def TPUDeploy(m: Model, count: int, usbmon:int, platform: str, timeout: int = 10
 
     input_size = GetArraySizeFromShape(m.input_shape)
     output_size = GetArraySizeFromShape(m.output_shape)
+    input_data_vector = None
+    output_data_vector = None  # or some default value
+
 
     time.sleep(5)
 

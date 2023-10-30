@@ -4,6 +4,7 @@ import json
 import argparse
 import random
 import numpy as np
+import traceback
 
 from utils.logging.logger import log
 from utils.model import Model
@@ -60,7 +61,7 @@ def SplitForDeployment(model_summary: dict, platform: str, native: bool, hardwar
     return model_layer_sequences, model_summary
 
 
-def DeployLayer(m: Model, platform: str, usbmon: int=None):
+def DeployLayer(m: Model, platform: str, usbmon: int=0):
     from utils.splitter.split import MODELS_DIR
     from utils.benchmark import GetArraySizeFromShape, StandardDeploy, TPUDeploy
     from backend.distributed_inference import distributed_inference
@@ -83,6 +84,7 @@ def DeployLayer(m: Model, platform: str, usbmon: int=None):
                 m.parent,
                 "sub",
                 "tflite",
+                m.model_name,
                 "{0}.tflite".format(
                     m.model_name
                     ),
@@ -112,10 +114,9 @@ def DeployLayer(m: Model, platform: str, usbmon: int=None):
     return m
 
 
-def AnalyzeDeploymentResults(models: list) -> None:
+def AnalyzeDeploymentResults(models: list, platform: str) -> None:
 
-    RESULTS_FOLDER = os.path.join(os.getcwd(), "resources/deployment_results")
-    results_path = os.path.join(RESULTS_FOLDER, f"{models[0].parent}.json")
+    RESULTS_FOLDER = os.path.join(os.getcwd(), "resources/deployment_results", platform)
 
     if not os.path.isdir(RESULTS_FOLDER):
         import sys
@@ -124,25 +125,22 @@ def AnalyzeDeploymentResults(models: list) -> None:
         if not os.path.isdir(RESULTS_FOLDER):
             sys.exit(-1)
 
-    result = dict()
-    result["models"] = []
-
     for i, model in enumerate(models):
-        submodels_result = dict()
-        submodels_result["model_name"] = model[i].parent
-        submodels_result["submodels"] = []
-        submodels_result["total_inference_time (s)"] = 0
+        results_path = os.path.join(RESULTS_FOLDER, f"{model[0].parent}.json")
+        model_results = dict()
+        model_results["model_name"] = model[i].parent
+        model_results["submodels"] = []
+        model_results["total_inference_time (s)"] = 0
         for m in model:
             submodel = dict()
             submodel["name"] = m.model_name
             submodel["layers"] = m.details
-            submodel["inference_time (s)"] = m.results[0] / 1000000000.0
-            submodels_result["submodels"].append(submodel)
-            submodels_result["total_inference_time (s)"] += m.results[0] / 1000000000.0
-        result["models"].append(submodels_result)
+            submodel["inference_time (s)"] = m.results[0]
+            model_results["submodels"].append(submodel)
+            model_results["total_inference_time (s)"] += m.results[0]
 
-    with open(results_path, 'w') as json_file:
-        json.dump(result, json_file, indent=4)
+        with open(results_path, 'w') as json_file:
+            json.dump(model_results, json_file, indent=4)
 
 
 def DeployModels(model_summary: dict, platform: str, hardware: str, native: bool = False, data_module: str = None) -> None:
@@ -186,9 +184,12 @@ def DeployModels(model_summary: dict, platform: str, hardware: str, native: bool
 
             m = DeployLayer(m, platform)
             submodels.append(m)
+        log.info(f"Model {i} | Sequence {j} deployed!")
         models.append(submodels)
-    
-    AnalyzeDeploymentResults(models=models)
+
+    log.info("All models deployed!")
+
+    AnalyzeDeploymentResults(models=models, platform=platform)
 
 
 def getArgs():
@@ -225,9 +226,9 @@ def getArgs():
             )
     
     parser.add_argument(
-            "-h",
+            "-hw",
             "--hardware",
-            default="cpu",
+            default="cpu0",
             help="HW Target for native deployment",
             )
     
@@ -240,7 +241,7 @@ if __name__ == "__main__":
     from utils.splitter.utils import ReadJSON
 
     args = getArgs()
-
+    
     if args.summarypath is not None:
         model_summary_json = ReadJSON(args.summarypath)
         if model_summary_json is None:
@@ -250,7 +251,7 @@ if __name__ == "__main__":
         log.error("The provided Model Summary is empty!")
         sys.exit(-1)
     
-    log.info("[PROFILER] Starting")
+    log.info("[DEPLOYMENT] Starting")
 
     try:
         DeployModels(
@@ -263,5 +264,7 @@ if __name__ == "__main__":
         
     except Exception as e:
         log.error(f"An error occured in the deployment process. ({e})")
+        trace_string = traceback.format_exc()
+        log.info(f"Traceback to the Excepton: {trace_string}")
 
     log.info("[DEPLOY] Finished")

@@ -300,11 +300,11 @@ if __name__ == "__main__":
 
     try:
         log.info("Running Model Splitter ...")
-        splitter.Run(sequences=args.sequences)
+        splitter.Run(sequences=bool(args.sequences))
         log.info("Splitting Process Complete!\n")
         splitter.CompileForEdgeTPU()
         log.info("[SPLIT MODEL] Models successfully compiled!")
-        if (args.sequences is True):
+        if (bool(args.sequences) is True):
             splitter.SaveSequences()
 
     except Exception as e:
