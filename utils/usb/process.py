@@ -1,7 +1,7 @@
 from typing import Dict, Tuple
 from json.encoder import py_encode_basestring
 from utils.analysis.analysis import Analyzer
-
+from utils.logging.logger import log
 from typing import Dict, List
 
 
@@ -12,11 +12,14 @@ def faulty_timestamps(timestamps: List) -> Tuple[bool, Dict, int]:
         for k in t:
             if k == "error":
                 total_errors += 1
-                name = t["error"]["name"]
-                if name in t:
-                    d[name]["count"] = d[name]["count"] + 1
+                if "name" in t["error"].keys():
+                    name = t["error"]["name"]
+                    if name in t:
+                        d[name]["count"] = d[name]["count"] + 1
+                    else:
+                        d[name] = {"reason": t["error"]["reason"], "count": 0}
                 else:
-                    d[name] = {"reason": t["error"]["reason"], "count": 0}
+                    log.error('[Analyze][Faulty Timestamps] Could not find key "name" among timestamp error. t["error"].keys() returns {}'.format(t["error"].keys()))
     if d == {}:
         return False, {}, 0
     return True, d, total_errors

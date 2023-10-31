@@ -16,6 +16,8 @@ SHELL_MODE 			:= 3
 DSE_ONLY_MODE		:= 4
 NO_DEPLOY_MODE		:= 5
 PROFILE				:= 6
+DEPLOY				:= 7
+SETUP               := 8
 
 exist-docker-image = $(shell docker image ls | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ')
 is-docker-running = $(shell docker ps -a | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ')
@@ -27,6 +29,7 @@ filter-docker = $(shell docker images --filter=reference="*${REGEX}*" -q)
 		debug \
 		dse \
 		profile \
+		deploy \
 		nodeploy \
 		test \
 		shell \
@@ -104,7 +107,13 @@ run: $(if $(call exist-docker-image),,build)
 					--OFFSPRING_PER_GENERATION=$$OFFSPRING_PER_GENERATION \
 					--GENERATIONS=$$GENERATIONS \
 					--VERBOSE=$$VERBOSE \
+					--PLATFORM=$$PLATFORM \
 					--BRANCH=$$BRANCH \
+					--MULTI_MODEL=$$MULTI_MODEL \
+					--WORKLOAD_DIR=$$WORKLOAD_DIR \
+					--MODEL_NAME=$$MODEL_NAME \
+					--NATIVE_DEPLOYMENT=$NATIVE_DEPLOYMENT \
+					--HW_NATIVE_DEPLOYMENT=$HW_NATIVE_DEPLOYMENT \
 					;
 else
 run: $(if $(call exist-docker-image),,build)
@@ -142,7 +151,12 @@ run: $(if $(call exist-docker-image),,build)
 					--OFFSPRING_PER_GENERATION=$$OFFSPRING_PER_GENERATION \
 					--GENERATIONS=$$GENERATIONS \
 					--VERBOSE=$$VERBOSE \
+					--PLATFORM=$$PLATFORM \
 					--BRANCH=$$BRANCH \
+					--MULTI_MODEL=$$MULTI_MODEL \
+					--WORKLOAD_DIR=$$WORKLOAD_DIR \
+					--MODEL_NAME=$$MODEL_NAME \
+					--NATIVE_DEPLOYMENT=$NATIVE_DEPLOYMENT \
 					;
 endif
 
@@ -151,6 +165,9 @@ profile:
 
 dse: 
 	$(MAKE) -f ${FILE} run MODE=${DSE_ONLY_MODE}
+
+deploy:
+	$(MAKE) -f ${FILE} run MODE=${DEPLOY}
 
 nodeploy: 
 	$(MAKE) -f ${FILE} run MODE=${NO_DEPLOY_MODE}
@@ -163,6 +180,9 @@ test:
 
 shell:
 	$(MAKE) -f ${FILE} run MODE=${SHELL_MODE}
+
+setup:
+	$(MAKE) -f ${FILE} run MODE=${SETUP_MODE}
 
 capture:
 	ipdb3 scripts/capture.py

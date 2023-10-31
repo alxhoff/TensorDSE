@@ -1,0 +1,726 @@
+{
+    "model_name": "kws_ref_model",
+    "submodels": [
+        {
+            "name": "submodel_0_ops0-3_cpu0",
+            "layers": [
+                {
+                    "index": 0,
+                    "type": "conv_2d",
+                    "args": [
+                        {
+                            "key": "Padding",
+                            "value": "Same"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "2x2"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "cpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                49,
+                                10,
+                                1
+                            ],
+                            "type": "int8",
+                            "tensor": 0
+                        },
+                        {
+                            "shape": [
+                                10,
+                                4,
+                                1
+                            ],
+                            "type": "int8",
+                            "tensor": 17
+                        },
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int32",
+                            "tensor": 3
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 22
+                        }
+                    ]
+                },
+                {
+                    "index": 1,
+                    "type": "depthwise_conv_2d",
+                    "args": [
+                        {
+                            "key": "Multiplier",
+                            "value": "1"
+                        },
+                        {
+                            "key": "padding",
+                            "value": "Same"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "1x1"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "cpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 22
+                        },
+                        {
+                            "shape": [
+                                3,
+                                3,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 5
+                        },
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int32",
+                            "tensor": 4
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 23
+                        }
+                    ]
+                },
+                {
+                    "index": 2,
+                    "type": "conv_2d",
+                    "args": [
+                        {
+                            "key": "Padding",
+                            "value": "Same"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "1x1"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "cpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 23
+                        },
+                        {
+                            "shape": [
+                                1,
+                                1,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 18
+                        },
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int32",
+                            "tensor": 6
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 24
+                        }
+                    ]
+                },
+                {
+                    "index": 3,
+                    "type": "depthwise_conv_2d",
+                    "args": [
+                        {
+                            "key": "Multiplier",
+                            "value": "1"
+                        },
+                        {
+                            "key": "padding",
+                            "value": "Same"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "1x1"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "cpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 24
+                        },
+                        {
+                            "shape": [
+                                3,
+                                3,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 8
+                        },
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int32",
+                            "tensor": 7
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 25
+                        }
+                    ]
+                }
+            ],
+            "inference_time (s)": 0.001157872
+        },
+        {
+            "name": "submodel_1_ops4-5_gpu0",
+            "layers": [
+                {
+                    "index": 4,
+                    "type": "conv_2d",
+                    "args": [
+                        {
+                            "key": "Padding",
+                            "value": "Same"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "1x1"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "gpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 25
+                        },
+                        {
+                            "shape": [
+                                1,
+                                1,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 19
+                        },
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int32",
+                            "tensor": 9
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 26
+                        }
+                    ]
+                },
+                {
+                    "index": 5,
+                    "type": "depthwise_conv_2d",
+                    "args": [
+                        {
+                            "key": "Multiplier",
+                            "value": "1"
+                        },
+                        {
+                            "key": "padding",
+                            "value": "Same"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "1x1"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "gpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 26
+                        },
+                        {
+                            "shape": [
+                                3,
+                                3,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 11
+                        },
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int32",
+                            "tensor": 10
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 27
+                        }
+                    ]
+                }
+            ],
+            "inference_time (s)": 0.000198553
+        },
+        {
+            "name": "submodel_2_ops6_cpu0",
+            "layers": [
+                {
+                    "index": 6,
+                    "type": "conv_2d",
+                    "args": [
+                        {
+                            "key": "Padding",
+                            "value": "Same"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "1x1"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "cpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 27
+                        },
+                        {
+                            "shape": [
+                                1,
+                                1,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 20
+                        },
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int32",
+                            "tensor": 12
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 28
+                        }
+                    ]
+                }
+            ],
+            "inference_time (s)": 0.000148942
+        },
+        {
+            "name": "submodel_3_ops7_gpu0",
+            "layers": [
+                {
+                    "index": 7,
+                    "type": "depthwise_conv_2d",
+                    "args": [
+                        {
+                            "key": "Multiplier",
+                            "value": "1"
+                        },
+                        {
+                            "key": "padding",
+                            "value": "Same"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "1x1"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "gpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 28
+                        },
+                        {
+                            "shape": [
+                                3,
+                                3,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 14
+                        },
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int32",
+                            "tensor": 13
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 29
+                        }
+                    ]
+                }
+            ],
+            "inference_time (s)": 5.7425e-05
+        },
+        {
+            "name": "submodel_4_ops8_tpu0",
+            "layers": [
+                {
+                    "index": 8,
+                    "type": "conv_2d",
+                    "args": [
+                        {
+                            "key": "Padding",
+                            "value": "Same"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "1x1"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "tpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 29
+                        },
+                        {
+                            "shape": [
+                                1,
+                                1,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 21
+                        },
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int32",
+                            "tensor": 15
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 30
+                        }
+                    ]
+                }
+            ],
+            "inference_time (s)": 0.003204007
+        },
+        {
+            "name": "submodel_5_ops9-12_gpu0",
+            "layers": [
+                {
+                    "index": 9,
+                    "type": "average_pool_2d",
+                    "args": [
+                        {
+                            "key": "Padding",
+                            "value": "Valid"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "5x25"
+                        },
+                        {
+                            "key": "filter",
+                            "value": "5x25"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "None"
+                        }
+                    ],
+                    "mapping": "gpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                25,
+                                5,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 30
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                1,
+                                1,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 31
+                        }
+                    ]
+                },
+                {
+                    "index": 10,
+                    "type": "reshape",
+                    "args": [
+                        {
+                            "key": "Type",
+                            "value": "none"
+                        }
+                    ],
+                    "mapping": "gpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                1,
+                                1,
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 31
+                        },
+                        {
+                            "shape": [
+                                2
+                            ],
+                            "type": "int32",
+                            "tensor": 2
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 32
+                        }
+                    ]
+                },
+                {
+                    "index": 11,
+                    "type": "fully_connected",
+                    "args": [
+                        {
+                            "key": "Activation",
+                            "value": "None"
+                        }
+                    ],
+                    "mapping": "gpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 32
+                        },
+                        {
+                            "shape": [
+                                64
+                            ],
+                            "type": "int8",
+                            "tensor": 16
+                        },
+                        {
+                            "shape": [
+                                12
+                            ],
+                            "type": "int32",
+                            "tensor": 1
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                12
+                            ],
+                            "type": "int8",
+                            "tensor": 33
+                        }
+                    ]
+                },
+                {
+                    "index": 12,
+                    "type": "softmax",
+                    "args": [
+                        {
+                            "key": "Type",
+                            "value": "softmaxoptions"
+                        }
+                    ],
+                    "mapping": "gpu0",
+                    "inputs": [
+                        {
+                            "shape": [
+                                12
+                            ],
+                            "type": "int8",
+                            "tensor": 33
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                12
+                            ],
+                            "type": "int8",
+                            "tensor": 34
+                        }
+                    ]
+                }
+            ],
+            "inference_time (s)": 4.3333e-05
+        }
+    ],
+    "total_inference_time (s)": 0.004810132
+}
