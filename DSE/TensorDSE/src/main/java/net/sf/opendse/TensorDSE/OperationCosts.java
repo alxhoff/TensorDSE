@@ -264,7 +264,10 @@ public class OperationCosts {
                             comm_recv_cost = 10000.0;
                         } else {
                             data_type = deligate.getInput().getType().toLowerCase();
-                            mean_exec_cost = deligate.getMean();
+                            if(device_type.equals("tpu"))
+                                mean_exec_cost = deligate.getUsb().getInference().getMean();
+                            else
+                                mean_exec_cost = deligate.getMean();
                             USB usb = deligate.getUsb();
                             comm_send_cost = usb.getSend().getMean();
                             comm_recv_cost = usb.getRecv().getMean();
