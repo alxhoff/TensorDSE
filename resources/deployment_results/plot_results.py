@@ -5,6 +5,34 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
 
+def compare_distributed_to_native(profiling_results_path: str, deployment_results_path: str):
+    profiling_filename = os.path.splitext(os.path.basename(profiling_results_path))[0]
+    deployment_filename = os.path.splitext(os.path.basename(deployment_results_path))[0]
+
+    if profiling_filename == deployment_filename:
+        profiling_data = pd.read_json(profiling_results_path)["models"][0]
+        deployment_data = pd.read_json(deployment_results_path)
+        cpu_total = 0
+        gpu_total = 0
+        tpu_total = 0
+        for layer in profiling_data["layers"]:
+            cpu_total += layer["delegates"][0]["mean"]
+            gpu_total += layer["delegates"][1]["mean"]
+            tpu_total += layer["delegates"][2]["mean"]
+
+        # Getting total inference time from deployment results
+        total_inference_time = deployment_data["total_inference_time (s)"]
+
+        # Plotting the bar chart
+        categories = ["CPU", "GPU", "TPU", "Total Inference Time"]
+        values = [cpu_total, gpu_total, tpu_total, total_inference_time]
+        
+        plt.figure(figsize=(10, 5))
+        plt.bar(categories, values, color=['blue', 'green', 'red', 'purple'])
+        plt.ylabel('Time (s)')
+        plt.title('Comparison of Layer-wise Accumulated Time and Total Inference Time')
+        plt.savefig(os.path.join(os.path.dirname(deployment_results_path), f"{deployment_filename}_compare_native.png"))
+        plt.close()
 
 
 def plot_bar_chart(json_path):
@@ -53,15 +81,21 @@ def plot_gantt_chart(json_path):
     plt.close()
 
 
-
 def getArgs():
     parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
             )
 
     parser.add_argument(
-            "-r",
-            "--resultspath",
+            "-dr",
+            "--deployresultspath",
+            default="resources/deployment_results/",
+            help="Path to results file"
+            )
+
+    parser.add_argument(
+            "-pr",
+            "--profileresultspath",
             default="resources/deployment_results/",
             help="Path to results file"
             )
@@ -69,7 +103,7 @@ def getArgs():
     parser.add_argument(
             "-m",
             "--mode",
-            default="all",
+            default="compare",
             help="Plot mode"
             )
     
@@ -81,21 +115,23 @@ if __name__ == "__main__":
 
     args = getArgs()
 
-    if os.path.isfile(args.resultspath):
-        if args.mode == "bar":
-            plot_bar_chart(args.resultspath)
+    if os.path.isfile(args.deployresultspath) and os.path.isfile(args.profileresultspath):
+        if args.mode == "compare":
+            compare_distributed_to_native(args.profileresultspath, args.deployresultspath)
+        elif args.mode == "bar":
+            plot_bar_chart(args.deployresultspath)
         elif args.mode == "pie":
-            plot_pie_chart(args.resultspath)
+            plot_pie_chart(args.deployresultspath)
         elif args.mode == "gantt":
-            plot_gantt_chart(args.resultspath)
+            plot_gantt_chart(args.deployresultspath)
         elif args.mode == "all":
-            plot_bar_chart(args.resultspath)
-            plot_pie_chart(args.resultspath)
-            plot_gantt_chart(args.resultspath)
+            plot_bar_chart(args.deployresultspath)
+            plot_pie_chart(args.deployresultspath)
+            plot_gantt_chart(args.deployresultspath)
         else:
             print(f"The provided Plot mode is not supported. (Mode: {args.mode})")
     else:
-        print("The provided Path to the results file is not valid. (Path: {args.resultspath})")
+        print("The provided Paths to the results files are not valid. (Deployment Results Path: {args.deployresultspath} | Profiling Results Path: {args.profileresultspath})")
 
 
     

@@ -1,9 +1,11 @@
 {
     "models": [
         {
-            "name": "MNIST_extended_full_quanitization_summary",
+            "name": "MNIST_full_quanitization",
+            "path": "resources/models/example_models/MNIST/MNIST_full_quanitization.tflite",
+            "deadline": 0.0,
             "starting_tensor": "0",
-            "finishing_tensor": "20",
+            "finishing_tensor": "13",
             "layers": [
                 {
                     "index": "0",
@@ -40,14 +42,14 @@
                                 "1"
                             ],
                             "type": "int8",
-                            "tensor": "11"
+                            "tensor": "7"
                         },
                         {
                             "shape": [
-                                "24"
+                                "32"
                             ],
                             "type": "int32",
-                            "tensor": "10"
+                            "tensor": "6"
                         }
                     ],
                     "outputs": [
@@ -55,10 +57,10 @@
                             "shape": [
                                 "26",
                                 "26",
-                                "24"
+                                "32"
                             ],
                             "type": "int8",
-                            "tensor": "12"
+                            "tensor": "8"
                         }
                     ]
                 },
@@ -89,7 +91,162 @@
                             "shape": [
                                 "26",
                                 "26",
-                                "24"
+                                "32"
+                            ],
+                            "type": "int8",
+                            "tensor": "8"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                "13",
+                                "13",
+                                "32"
+                            ],
+                            "type": "int8",
+                            "tensor": "9"
+                        }
+                    ]
+                },
+                {
+                    "index": "2",
+                    "type": "reshape",
+                    "args": [
+                        {
+                            "key": "Type",
+                            "value": "none"
+                        }
+                    ],
+                    "mapping": "",
+                    "inputs": [
+                        {
+                            "shape": [
+                                "13",
+                                "13",
+                                "32"
+                            ],
+                            "type": "int8",
+                            "tensor": "9"
+                        },
+                        {
+                            "shape": [
+                                "2"
+                            ],
+                            "type": "int32",
+                            "tensor": "1"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                "5408"
+                            ],
+                            "type": "int8",
+                            "tensor": "10"
+                        }
+                    ]
+                },
+                {
+                    "index": "3",
+                    "type": "fully_connected",
+                    "args": [
+                        {
+                            "key": "Activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "",
+                    "inputs": [
+                        {
+                            "shape": [
+                                "5408"
+                            ],
+                            "type": "int8",
+                            "tensor": "10"
+                        },
+                        {
+                            "shape": [
+                                "5408"
+                            ],
+                            "type": "int8",
+                            "tensor": "5"
+                        },
+                        {
+                            "shape": [
+                                "128"
+                            ],
+                            "type": "int32",
+                            "tensor": "4"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                "128"
+                            ],
+                            "type": "int8",
+                            "tensor": "11"
+                        }
+                    ]
+                },
+                {
+                    "index": "4",
+                    "type": "fully_connected",
+                    "args": [
+                        {
+                            "key": "Activation",
+                            "value": "None"
+                        }
+                    ],
+                    "mapping": "",
+                    "inputs": [
+                        {
+                            "shape": [
+                                "128"
+                            ],
+                            "type": "int8",
+                            "tensor": "11"
+                        },
+                        {
+                            "shape": [
+                                "128"
+                            ],
+                            "type": "int8",
+                            "tensor": "3"
+                        },
+                        {
+                            "shape": [
+                                "10"
+                            ],
+                            "type": "int32",
+                            "tensor": "2"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                "10"
+                            ],
+                            "type": "int8",
+                            "tensor": "12"
+                        }
+                    ]
+                },
+                {
+                    "index": "5",
+                    "type": "softmax",
+                    "args": [
+                        {
+                            "key": "Type",
+                            "value": "softmaxoptions"
+                        }
+                    ],
+                    "mapping": "",
+                    "inputs": [
+                        {
+                            "shape": [
+                                "10"
                             ],
                             "type": "int8",
                             "tensor": "12"
@@ -98,17 +255,24 @@
                     "outputs": [
                         {
                             "shape": [
-                                "13",
-                                "13",
-                                "24"
+                                "10"
                             ],
                             "type": "int8",
                             "tensor": "13"
                         }
                     ]
-                },
+                }
+            ]
+        },
+        {
+            "name": "MNIST_full_quanitization",
+            "path": "resources/models/example_models/MNIST/MNIST_full_quanitization.tflite",
+            "deadline": 0.0,
+            "starting_tensor": "0",
+            "finishing_tensor": "13",
+            "layers": [
                 {
-                    "index": "2",
+                    "index": "0",
                     "type": "conv_2d",
                     "args": [
                         {
@@ -128,44 +292,44 @@
                     "inputs": [
                         {
                             "shape": [
-                                "13",
-                                "13",
-                                "24"
+                                "28",
+                                "28",
+                                "1"
                             ],
                             "type": "int8",
-                            "tensor": "13"
+                            "tensor": "0"
                         },
                         {
                             "shape": [
                                 "3",
                                 "3",
-                                "24"
+                                "1"
                             ],
                             "type": "int8",
-                            "tensor": "9"
+                            "tensor": "7"
                         },
                         {
                             "shape": [
                                 "32"
                             ],
                             "type": "int32",
-                            "tensor": "8"
+                            "tensor": "6"
                         }
                     ],
                     "outputs": [
                         {
                             "shape": [
-                                "11",
-                                "11",
+                                "26",
+                                "26",
                                 "32"
                             ],
                             "type": "int8",
-                            "tensor": "14"
+                            "tensor": "8"
                         }
                     ]
                 },
                 {
-                    "index": "3",
+                    "index": "1",
                     "type": "max_pool_2d",
                     "args": [
                         {
@@ -189,28 +353,28 @@
                     "inputs": [
                         {
                             "shape": [
-                                "11",
-                                "11",
+                                "26",
+                                "26",
                                 "32"
                             ],
                             "type": "int8",
-                            "tensor": "14"
+                            "tensor": "8"
                         }
                     ],
                     "outputs": [
                         {
                             "shape": [
-                                "5",
-                                "5",
+                                "13",
+                                "13",
                                 "32"
                             ],
                             "type": "int8",
-                            "tensor": "15"
+                            "tensor": "9"
                         }
                     ]
                 },
                 {
-                    "index": "4",
+                    "index": "2",
                     "type": "reshape",
                     "args": [
                         {
@@ -222,12 +386,12 @@
                     "inputs": [
                         {
                             "shape": [
-                                "5",
-                                "5",
+                                "13",
+                                "13",
                                 "32"
                             ],
                             "type": "int8",
-                            "tensor": "15"
+                            "tensor": "9"
                         },
                         {
                             "shape": [
@@ -240,15 +404,15 @@
                     "outputs": [
                         {
                             "shape": [
-                                "800"
+                                "5408"
                             ],
                             "type": "int8",
-                            "tensor": "16"
+                            "tensor": "10"
                         }
                     ]
                 },
                 {
-                    "index": "5",
+                    "index": "3",
                     "type": "fully_connected",
                     "args": [
                         {
@@ -260,64 +424,21 @@
                     "inputs": [
                         {
                             "shape": [
-                                "800"
+                                "5408"
                             ],
                             "type": "int8",
-                            "tensor": "16"
+                            "tensor": "10"
                         },
                         {
                             "shape": [
-                                "800"
-                            ],
-                            "type": "int8",
-                            "tensor": "7"
-                        },
-                        {
-                            "shape": [
-                                "128"
-                            ],
-                            "type": "int32",
-                            "tensor": "6"
-                        }
-                    ],
-                    "outputs": [
-                        {
-                            "shape": [
-                                "128"
-                            ],
-                            "type": "int8",
-                            "tensor": "17"
-                        }
-                    ]
-                },
-                {
-                    "index": "6",
-                    "type": "fully_connected",
-                    "args": [
-                        {
-                            "key": "Activation",
-                            "value": "Relu"
-                        }
-                    ],
-                    "mapping": "",
-                    "inputs": [
-                        {
-                            "shape": [
-                                "128"
-                            ],
-                            "type": "int8",
-                            "tensor": "17"
-                        },
-                        {
-                            "shape": [
-                                "128"
+                                "5408"
                             ],
                             "type": "int8",
                             "tensor": "5"
                         },
                         {
                             "shape": [
-                                "64"
+                                "128"
                             ],
                             "type": "int32",
                             "tensor": "4"
@@ -326,15 +447,15 @@
                     "outputs": [
                         {
                             "shape": [
-                                "64"
+                                "128"
                             ],
                             "type": "int8",
-                            "tensor": "18"
+                            "tensor": "11"
                         }
                     ]
                 },
                 {
-                    "index": "7",
+                    "index": "4",
                     "type": "fully_connected",
                     "args": [
                         {
@@ -346,14 +467,14 @@
                     "inputs": [
                         {
                             "shape": [
-                                "64"
+                                "128"
                             ],
                             "type": "int8",
-                            "tensor": "18"
+                            "tensor": "11"
                         },
                         {
                             "shape": [
-                                "64"
+                                "128"
                             ],
                             "type": "int8",
                             "tensor": "3"
@@ -372,12 +493,12 @@
                                 "10"
                             ],
                             "type": "int8",
-                            "tensor": "19"
+                            "tensor": "12"
                         }
                     ]
                 },
                 {
-                    "index": "8",
+                    "index": "5",
                     "type": "softmax",
                     "args": [
                         {
@@ -392,7 +513,7 @@
                                 "10"
                             ],
                             "type": "int8",
-                            "tensor": "19"
+                            "tensor": "12"
                         }
                     ],
                     "outputs": [
@@ -401,7 +522,7 @@
                                 "10"
                             ],
                             "type": "int8",
-                            "tensor": "20"
+                            "tensor": "13"
                         }
                     ]
                 }

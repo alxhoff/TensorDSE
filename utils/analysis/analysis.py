@@ -19,7 +19,7 @@ class Analyzer:
         data = self.results
         self.mean           = mean(data)
         self.median         = median(data)
-        self.std_deviation  = stdev(data)
+        self.std_deviation  = stdev(data) if (len(data)>1) else 0
         self.avg_absolute_deviation  = (
             ((mean([abs(n - self.mean) for n in data])) / self.mean) *100
         )

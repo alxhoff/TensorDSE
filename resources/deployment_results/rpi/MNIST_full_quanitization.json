@@ -62,7 +62,8 @@
                     ]
                 }
             ],
-            "inference_time (s)": 0.001049803
+            "inference_time (s)": 0.001483794,
+            "usb": {}
         },
         {
             "name": "submodel_1_ops1-2_cpu0",
@@ -151,7 +152,8 @@
                     ]
                 }
             ],
-            "inference_time (s)": 2.637e-05
+            "inference_time (s)": 2.6759e-05,
+            "usb": {}
         },
         {
             "name": "submodel_2_ops3-5_gpu0",
@@ -272,8 +274,9 @@
                     ]
                 }
             ],
-            "inference_time (s)": 0.000480532
+            "inference_time (s)": 0.000499215,
+            "usb": {}
         }
     ],
-    "total_inference_time (s)": 0.0015567049999999998
+    "total_inference_time (s)": 0.002009768
 }

@@ -294,6 +294,8 @@ int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_
 
     spdlog::info("  [6]  Interpreter successfully invoked({} times)!", benchmarking_count);
 
+    interpreter.reset();
+
     return mean;
 
 }
@@ -332,14 +334,14 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
     spdlog::info("  [2]  Done!");
 
     spdlog::info("  [3]  Creating Interpreter Object and Edge TPU Context ...");
-    const std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(available_tpus[0].type, available_tpus[0].path);
+    std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice(available_tpus[0].type, available_tpus[0].path);
     tflite::ops::builtin::BuiltinOpResolver resolver;
     resolver.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
     tflite::InterpreterBuilder builder(*model, resolver);
     std::unique_ptr<tflite::Interpreter> interpreter;
     builder(&interpreter);
     interpreter->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context.get());
-    interpreter->SetNumThreads(1);
+    interpreter->SetNumThreads(4);
     spdlog::info("  [3]  Done!");
 
     // Allocate tensors 
@@ -390,6 +392,8 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
     int mean = calculateMean(inference_times_vec);
 
     spdlog::info("  [5]  Interpreter successfully invoked ({} times)!", benchmarking_count);
+
+    interpreter.reset();
 
     return mean;
 }

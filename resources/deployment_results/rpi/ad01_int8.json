@@ -435,8 +435,9 @@
                     ]
                 }
             ],
-            "inference_time (s)": 0.00020333
+            "inference_time (s)": 0.000206344,
+            "usb": {}
         }
     ],
-    "total_inference_time (s)": 0.00020333
+    "total_inference_time (s)": 0.000206344
 }

@@ -116,6 +116,8 @@ def DeployLayer(m: Model, platform: str, usbmon: int=0):
 
 def AnalyzeDeploymentResults(models: list, platform: str) -> None:
 
+    from utils.usb.process import process_streams
+
     RESULTS_FOLDER = os.path.join(os.getcwd(), "resources/deployment_results", platform)
 
     if not os.path.isdir(RESULTS_FOLDER):
@@ -136,6 +138,10 @@ def AnalyzeDeploymentResults(models: list, platform: str) -> None:
             submodel["name"] = m.model_name
             submodel["layers"] = m.details
             submodel["inference_time (s)"] = m.results[0]
+            submodel["usb"] = dict()
+            if not (platform == "coral"):
+                if ("tpu" in m.delegate):
+                    submodel["usb"] = process_streams(m.timers, m.results)
             model_results["submodels"].append(submodel)
             model_results["total_inference_time (s)"] += m.results[0]
 
