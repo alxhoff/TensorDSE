@@ -1,10 +1,10 @@
 #!/bin/bash
 
-MODEL="resources/models/example_models/MNIST/MNIST_extended_full_quanitization.tflite"
+MODEL="resources/models/example_models/key_word_spotting/kws_ref_model.tflite"
 filename_with_extension="${MODEL##*/}"
 file_basename="${filename_with_extension%.*}"
 
-model_type="MNIST_extended"
+model_type="key_word_spotting"
 
 platform="rpi"
 

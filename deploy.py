@@ -5,9 +5,17 @@ import argparse
 import random
 import numpy as np
 import traceback
+import multiprocessing
 
 from utils.logging.logger import log
 from utils.model import Model
+
+HARDWARE_LOCKS = {
+    'cpu0': multiprocessing.Lock(),
+    'gpu0': multiprocessing.Lock(),
+    'tpu0': multiprocessing.Lock(),
+}
+
 
 def GetInputData(m: Model):
     from utils.benchmark import GetArraySizeFromShape
@@ -149,6 +157,47 @@ def AnalyzeDeploymentResults(models: list, platform: str) -> None:
             json.dump(model_results, json_file, indent=4)
 
 
+def DeploySequences(model_sequence, model_index, model_summary, platform, native, data_module, HARDWARE_LOCKS):
+    submodels = []
+    model_name = os.path.basename(model_summary["models"][model_index]["path"]).split(".tflite")[0]
+
+    for j, sequence in enumerate(model_sequence):
+        layers = [model_summary["models"][model_index]["layers"][op[0]] for op in sequence]
+        m = Model(layers, layers[0]["mapping"], model_name)
+
+        if len(sequence) == 1:
+            ops_range = sequence[0][0]
+        else:
+            ops_range = '-'.join(map(str, [sequence[0][0], sequence[-1][0]]))
+
+        if native is False:
+            m.model_name = "submodel_{0}_{1}_{2}".format(j, f"ops{ops_range}", m.delegate)
+        else:
+            m.model_name = model_name
+
+        if j == 0:
+            #Foced random input for rpi and dev board due to unsupported dataset installation
+            if not (platform == "desktop"):
+                data_module = None
+            else:
+                if data_module == None:
+                    GetInputData(m)
+                else:
+                    GetInputTestDataModule(m, dataset_module=data_module)
+        else:
+            m.input_vector = copy.deepcopy(submodels[-1].output_vector)
+
+        hardware_lock = HARDWARE_LOCKS[m.hardware]
+
+        with hardware_lock:
+            m = DeployLayer(m, platform)
+
+        submodels.append(m)
+        log.info(f"Model {model_index} | Layer {j} deployed on {m.hardware}")
+
+    return submodels
+
+
 def DeployModels(model_summary: dict, platform: str, hardware: str, native: bool = False, data_module: str = None) -> None:
 
     models = []
@@ -156,42 +205,16 @@ def DeployModels(model_summary: dict, platform: str, hardware: str, native: bool
     
     multi_models_sequences, model_summary = SplitForDeployment(model_summary=model_summary, platform=platform, native=native, hardware=hardware)
         
-    for i, model_sequences in enumerate(multi_models_sequences):
-        submodels = []
-        model_name = os.path.basename(model_summary["models"][i]["path"]).split(".tflite")[0]
-        for j, sequence in enumerate(model_sequences):
-            layers = []
-            for op in sequence:
-                layers.append(model_summary["models"][i]["layers"][op[0]])
+    # Create a process pool with the number of processes equal to the number of CPU cores
+    with multiprocessing.Pool(processes=os.cpu_count()) as pool:
+        # Asynchronously apply `DeploySequences` function to each sequence
+        async_results = [
+            pool.apply_async(DeploySequences, (model_sequences, i, model_summary, platform, native, data_module, HARDWARE_LOCKS))
+            for i, model_sequences in enumerate(multi_models_sequences)
+        ]
 
-            m = Model(layers, layers[0]["mapping"], model_name)
-
-            if len(sequence) == 1:
-                ops_range = sequence[0][0]
-            else:
-                ops_range = '-'.join(map(str, [sequence[0][0], sequence[-1][0]]))
-
-            if native is False:
-                m.model_name = "submodel_{0}_{1}_{2}".format(j, f"ops{ops_range}", m.delegate)
-            else:
-                m.model_name = model_name
-
-            if j == 0:
-                #Foced random input for rpi and dev board due to unsupported dataset installation
-                if not (platform == "desktop"):
-                    data_module = None
-                else:
-                    if data_module == None:
-                        GetInputData(m)
-                    else:
-                        GetInputTestDataModule(m, dataset_module=data_module)
-            else:
-                m.input_vector = copy.deepcopy(submodels[-1].output_vector)
-
-            m = DeployLayer(m, platform)
-            submodels.append(m)
-        log.info(f"Model {i} | Sequence {j} deployed!")
-        models.append(submodels)
+        # Collect the results as they complete
+        models = [async_result.get() for async_result in async_results]
 
     log.info("All models deployed!")
 
