@@ -68,7 +68,7 @@ public class Model {
         this.deadline = deadline;
     }
 
-    public Integer getPath() {
+    public String getPath() {
         return path;
     }
 
