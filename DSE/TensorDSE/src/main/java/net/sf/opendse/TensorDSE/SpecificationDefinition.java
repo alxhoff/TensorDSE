@@ -52,8 +52,8 @@ public class SpecificationDefinition {
 	/**
 	 *
 	 */
-	public final List<String> supported_layers = Arrays.asList("conv_2d", "max_pool_2d", "reshape", "fully_connected",
-			"softmax");
+	public final List<String> supported_layers = Arrays.asList("conv_2d", "depthwise_conv_2d", "max_pool_2d", "average_pool_2d", "reshape", "fully_connected",
+			"softmax", "add");
 
 	/**
 	 *
