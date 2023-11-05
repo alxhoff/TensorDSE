@@ -66,7 +66,7 @@ public class EvaluatorMinimizeCost implements ImplementationEvaluator {
 			SpecificationViewer.view(solution_specification);
 
 		ScheduleSolver schedule_solver = new ScheduleSolver(this.specification_definition,
-				solution_specification.getMappings(), this.K, this.verbose);
+				solution_specification.getMappings(), this.K, this.verbose, false);
 
 		Double cost_of_mapping = 0.0;
 		try {
