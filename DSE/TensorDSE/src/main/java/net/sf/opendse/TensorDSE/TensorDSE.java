@@ -84,7 +84,7 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary").setDefault(
-				"../../resources/model_summaries/example_summaries/MNIST/MNIST_multi_3.json")
+				"../../resources/model_summaries/example_summaries/MNIST/MNIST_multi_1.json")
 				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary").setDefault(
 				"../../resources/architecture_summaries/example_output_architecture_summary.json")
@@ -100,7 +100,7 @@ public class TensorDSE {
 				.type(String.class);
 
 		// ILP
-		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(true)
+		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
 		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(1.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
