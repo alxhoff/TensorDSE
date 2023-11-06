@@ -1,0 +1,1262 @@
+{
+    "models": [
+        {
+            "name": "pretrainedResnet_quant",
+            "runs": 20,
+            "layers": [
+                {
+                    "name": "add_11_8_8_64",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_11_ops11_bm/submodel_11_ops11_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_11_ops11_bm/submodel_11_ops11_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_11_ops11_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "8",
+                                    "8",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 2.475005e-05,
+                            "median": 2.424e-05,
+                            "standard_deviation": 2.229591666060945e-06,
+                            "avg_absolute_deviation": 3.8185579423071845,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "8",
+                                    "8",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 2.469e-05,
+                            "median": 2.424e-05,
+                            "standard_deviation": 1.8483506160899237e-06,
+                            "avg_absolute_deviation": 3.1713244228432553,
+                            "distribution": "chi",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "8",
+                                    "8",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0005298318,
+                            "median": 0.0004908015000000001,
+                            "standard_deviation": 0.00010591895980746193,
+                            "avg_absolute_deviation": 11.9970488747561,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "add_3_32_32_16",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_3_ops3_bm/submodel_3_ops3_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_3_ops3_bm/submodel_3_ops3_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_3_ops3_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 9.433825e-05,
+                            "median": 9.276e-05,
+                            "standard_deviation": 4.9085055274653505e-06,
+                            "avg_absolute_deviation": 2.9982006238190726,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 9.84783e-05,
+                            "median": 9.29405e-05,
+                            "standard_deviation": 2.0338334698945138e-05,
+                            "avg_absolute_deviation": 10.195687780962908,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0017897992,
+                            "median": 0.0017851255,
+                            "standard_deviation": 0.0002984850101556896,
+                            "avg_absolute_deviation": 12.2785528119579,
+                            "distribution": "betaprime",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "add_7_16_16_32",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_7_ops7_bm/submodel_7_ops7_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_7_ops7_bm/submodel_7_ops7_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_7_ops7_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 4.816815e-05,
+                            "median": 4.7459999999999996e-05,
+                            "standard_deviation": 2.933005235787672e-06,
+                            "avg_absolute_deviation": 2.5809274385667735,
+                            "distribution": "beta",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 4.78921e-05,
+                            "median": 4.728e-05,
+                            "standard_deviation": 2.8841654252140254e-06,
+                            "avg_absolute_deviation": 2.553218589287171,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00081802425,
+                            "median": 0.000772922,
+                            "standard_deviation": 0.00013354078647320297,
+                            "avg_absolute_deviation": 9.336135206260693,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "average_pool_2d_12_8_8_64",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_12_ops12_bm/submodel_12_ops12_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_12_ops12_bm/submodel_12_ops12_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_12_ops12_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "8",
+                                    "8",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 7.686e-06,
+                            "median": 7.32e-06,
+                            "standard_deviation": 1.7556537244001162e-06,
+                            "avg_absolute_deviation": 9.672131147540991,
+                            "distribution": "chi",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "8",
+                                    "8",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 7.674e-06,
+                            "median": 7.32e-06,
+                            "standard_deviation": 1.5931577382504747e-06,
+                            "avg_absolute_deviation": 8.928850664581702,
+                            "distribution": "dweibull",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "8",
+                                    "8",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00038313115,
+                            "median": 0.000296821,
+                            "standard_deviation": 0.0001932650878198878,
+                            "avg_absolute_deviation": 35.20790204607482,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "conv_2d_0_32_32_3",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_0_ops0_bm/submodel_0_ops0_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_0_ops0_bm/submodel_0_ops0_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_0_ops0_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "3"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0004254012,
+                            "median": 0.000383221,
+                            "standard_deviation": 0.00016198755593680323,
+                            "avg_absolute_deviation": 17.25812245005421,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "3"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00039365515,
+                            "median": 0.000384361,
+                            "standard_deviation": 3.245121423285795e-05,
+                            "avg_absolute_deviation": 4.356419571800349,
+                            "distribution": "beta",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "3"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0008784446,
+                            "median": 0.0008247625,
+                            "standard_deviation": 0.00024988380764802203,
+                            "avg_absolute_deviation": 21.440919552581917,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "conv_2d_10_16_16_32",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_10_ops10_bm/submodel_10_ops10_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_10_ops10_bm/submodel_10_ops10_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_10_ops10_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 7.156815e-05,
+                            "median": 6.88205e-05,
+                            "standard_deviation": 9.768865350667584e-06,
+                            "avg_absolute_deviation": 6.945086606262706,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 7.10522e-05,
+                            "median": 6.876e-05,
+                            "standard_deviation": 9.777281258100333e-06,
+                            "avg_absolute_deviation": 5.841874002493939,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0006014357,
+                            "median": 0.000465601,
+                            "standard_deviation": 0.00022873919883388685,
+                            "avg_absolute_deviation": 31.982152040525698,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "conv_2d_1_32_32_16",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_1_ops1_bm/submodel_1_ops1_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_1_ops1_bm/submodel_1_ops1_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_1_ops1_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0008406624,
+                            "median": 0.0008152825,
+                            "standard_deviation": 6.507096990565884e-05,
+                            "avg_absolute_deviation": 4.692737536495029,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0008283324,
+                            "median": 0.000815522,
+                            "standard_deviation": 3.26726496958445e-05,
+                            "avg_absolute_deviation": 2.2415035316739997,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00105812115,
+                            "median": 0.000985683,
+                            "standard_deviation": 0.0002273493388953093,
+                            "avg_absolute_deviation": 11.846362772353622,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "conv_2d_2_32_32_16",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_2_ops2_bm/submodel_2_ops2_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_2_ops2_bm/submodel_2_ops2_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_2_ops2_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0008358505,
+                            "median": 0.0008157625,
+                            "standard_deviation": 4.7666011461881426e-05,
+                            "avg_absolute_deviation": 3.7482360781024857,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0008266224,
+                            "median": 0.0008144425,
+                            "standard_deviation": 3.10744490104855e-05,
+                            "avg_absolute_deviation": 2.1891567419416647,
+                            "distribution": "beta",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00116649945,
+                            "median": 0.000982623,
+                            "standard_deviation": 0.0002838491166101558,
+                            "avg_absolute_deviation": 20.18372404719094,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "conv_2d_4_32_32_16",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_4_ops4_bm/submodel_4_ops4_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_4_ops4_bm/submodel_4_ops4_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_4_ops4_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00036778315,
+                            "median": 0.000359581,
+                            "standard_deviation": 2.3363833714063735e-05,
+                            "avg_absolute_deviation": 3.799400543499613,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0003675071,
+                            "median": 0.000360241,
+                            "standard_deviation": 2.253530897082457e-05,
+                            "avg_absolute_deviation": 3.568578675078663,
+                            "distribution": "alpha",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0011126733,
+                            "median": 0.000787442,
+                            "standard_deviation": 0.00045256015864786304,
+                            "avg_absolute_deviation": 36.039793531488534,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "conv_2d_5_16_16_32",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_5_ops5_bm/submodel_5_ops5_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_5_ops5_bm/submodel_5_ops5_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_5_ops5_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0006354019,
+                            "median": 0.0006285015,
+                            "standard_deviation": 2.1649842789996858e-05,
+                            "avg_absolute_deviation": 1.7186193494227873,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0006409399,
+                            "median": 0.000630242,
+                            "standard_deviation": 2.6287761965358865e-05,
+                            "avg_absolute_deviation": 2.835621561397562,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0008342664,
+                            "median": 0.0006033620000000001,
+                            "standard_deviation": 0.00035552106770358175,
+                            "avg_absolute_deviation": 33.37418119679757,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "conv_2d_6_32_32_16",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_6_ops6_bm/submodel_6_ops6_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_6_ops6_bm/submodel_6_ops6_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_6_ops6_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0001138743,
+                            "median": 0.00011124,
+                            "standard_deviation": 1.1564083043722284e-05,
+                            "avg_absolute_deviation": 4.310516069034011,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0001134423,
+                            "median": 0.0001108805,
+                            "standard_deviation": 1.0711935055913345e-05,
+                            "avg_absolute_deviation": 4.005357789819137,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "32",
+                                    "32",
+                                    "16"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0011208032,
+                            "median": 0.0008798425,
+                            "standard_deviation": 0.0004366626345333913,
+                            "avg_absolute_deviation": 33.896150546322495,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "conv_2d_8_16_16_32",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_8_ops8_bm/submodel_8_ops8_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_8_ops8_bm/submodel_8_ops8_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_8_ops8_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00031116685,
+                            "median": 0.000307861,
+                            "standard_deviation": 1.368366117241943e-05,
+                            "avg_absolute_deviation": 1.8663347332789473,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00031213285,
+                            "median": 0.00030870050000000003,
+                            "standard_deviation": 1.4328962195773104e-05,
+                            "avg_absolute_deviation": 1.944945878013155,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "16",
+                                    "16",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00079107835,
+                            "median": 0.0004856415,
+                            "standard_deviation": 0.00046547454529411787,
+                            "avg_absolute_deviation": 49.53081954524479,
+                            "distribution": "dweibull",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "conv_2d_9_8_8_64",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_9_ops9_bm/submodel_9_ops9_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_9_ops9_bm/submodel_9_ops9_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_9_ops9_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "8",
+                                    "8",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00058446165,
+                            "median": 0.0005783419999999999,
+                            "standard_deviation": 1.9383111211554096e-05,
+                            "avg_absolute_deviation": 1.7082455281710953,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "8",
+                                    "8",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0005845697,
+                            "median": 0.000574742,
+                            "standard_deviation": 2.518960222017264e-05,
+                            "avg_absolute_deviation": 2.663295754124783,
+                            "distribution": "alpha",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "8",
+                                    "8",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00041523115,
+                            "median": 0.00038712100000000004,
+                            "standard_deviation": 0.0001269779710821299,
+                            "avg_absolute_deviation": 12.989652871659557,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "fully_connected_14_64",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_14_ops14_bm/submodel_14_ops14_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_14_ops14_bm/submodel_14_ops14_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_14_ops14_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 3.204e-06,
+                            "median": 2.64e-06,
+                            "standard_deviation": 2.4700615803105628e-06,
+                            "avg_absolute_deviation": 32.69662921348315,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 3.198e-06,
+                            "median": 2.64e-06,
+                            "standard_deviation": 2.526840340279369e-06,
+                            "avg_absolute_deviation": 33.527204502814264,
+                            "distribution": "dweibull",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0002521268,
+                            "median": 0.0002328605,
+                            "standard_deviation": 8.528211530012115e-05,
+                            "avg_absolute_deviation": 14.36873033727473,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "reshape_13_1_1_64",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_13_ops13_bm/submodel_13_ops13_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_13_ops13_bm/submodel_13_ops13_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_13_ops13_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "1",
+                                    "1",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 1.1339999999999999e-06,
+                            "median": 9.6e-07,
+                            "standard_deviation": 8.372662281748293e-07,
+                            "avg_absolute_deviation": 31.26984126984127,
+                            "distribution": "exponweib",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "1",
+                                    "1",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 1.086e-06,
+                            "median": 8.4e-07,
+                            "standard_deviation": 8.254147282937291e-07,
+                            "avg_absolute_deviation": 34.143646408839786,
+                            "distribution": "exponweib",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "1",
+                                    "1",
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00028119695,
+                            "median": 0.000241681,
+                            "standard_deviation": 9.862981592456289e-05,
+                            "avg_absolute_deviation": 22.510137467707246,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "softmax_15_10",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_15_ops15_bm/submodel_15_ops15_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/tflite/submodel_15_ops15_bm/submodel_15_ops15_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/pretrainedResnet_quant/sub/compiled/submodel_15_ops15_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "10"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 1.722e-06,
+                            "median": 1.44e-06,
+                            "standard_deviation": 1.161666679251932e-06,
+                            "avg_absolute_deviation": 30.17421602787456,
+                            "distribution": "beta",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "10"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 1.614e-06,
+                            "median": 1.32e-06,
+                            "standard_deviation": 1.0103693957110307e-06,
+                            "avg_absolute_deviation": 27.583643122676577,
+                            "distribution": "beta",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "10"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00033362495000000003,
+                            "median": 0.000249181,
+                            "standard_deviation": 0.00018287360616167745,
+                            "avg_absolute_deviation": 40.817966402093134,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
