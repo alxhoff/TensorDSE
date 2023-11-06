@@ -1,3 +1,6 @@
 *.json
 !MNIST_full_quanitization.json
 !MNIST_extended_full_quanitization.json
+!ad01_int8.json
+!kws_ref_model.json
+!pretrainedResnet_quant.json

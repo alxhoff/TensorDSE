@@ -2,6 +2,7 @@
     "models": [
         {
             "name": "pretrainedResnet_quant",
+            "deadline": 0.0,
             "starting_tensor": "0",
             "finishing_tensor": "37",
             "layers": [

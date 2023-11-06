@@ -1,0 +1,697 @@
+{
+    "models": [
+        {
+            "name": "MNIST_extended_full_quanitization",
+            "runs": 20,
+            "layers": [
+                {
+                    "name": "conv_2d_0_28_28_1",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_0_ops0_bm/submodel_0_ops0_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_0_ops0_bm/submodel_0_ops0_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/compiled/submodel_0_ops0_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "28",
+                                    "28",
+                                    "1"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00029806275,
+                            "median": 0.000261601,
+                            "standard_deviation": 0.00016275368492711697,
+                            "avg_absolute_deviation": 23.198479179300335,
+                            "distribution": "alpha",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "28",
+                                    "28",
+                                    "1"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00026386865,
+                            "median": 0.000261601,
+                            "standard_deviation": 9.641199304492533e-06,
+                            "avg_absolute_deviation": 1.5512017058487273,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "28",
+                                    "28",
+                                    "1"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00108345285,
+                            "median": 0.0010586430000000002,
+                            "standard_deviation": 0.00020370949542328136,
+                            "avg_absolute_deviation": 14.915125286716446,
+                            "distribution": "chi",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "conv_2d_2_13_13_24",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_2_ops2_bm/submodel_2_ops2_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_2_ops2_bm/submodel_2_ops2_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/compiled/submodel_2_ops2_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "13",
+                                    "13",
+                                    "24"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.000253435,
+                            "median": 0.000250561,
+                            "standard_deviation": 1.2730927282554248e-05,
+                            "avg_absolute_deviation": 2.130960601337615,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "13",
+                                    "13",
+                                    "24"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00025371695,
+                            "median": 0.000250801,
+                            "standard_deviation": 1.3148360379970539e-05,
+                            "avg_absolute_deviation": 2.19788429586593,
+                            "distribution": "alpha",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "13",
+                                    "13",
+                                    "24"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00046404125000000003,
+                            "median": 0.00040422099999999996,
+                            "standard_deviation": 0.0001453525701700506,
+                            "avg_absolute_deviation": 18.926824932050764,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "fully_connected_5_800",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_5_ops5_bm/submodel_5_ops5_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_5_ops5_bm/submodel_5_ops5_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/compiled/submodel_5_ops5_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "800"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0001003142,
+                            "median": 9.438e-05,
+                            "standard_deviation": 1.6254888384081486e-05,
+                            "avg_absolute_deviation": 10.002412420175808,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "800"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 9.714625e-05,
+                            "median": 9.4081e-05,
+                            "standard_deviation": 1.2495500629700362e-05,
+                            "avg_absolute_deviation": 5.495580117606187,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "800"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0003118689,
+                            "median": 0.000268861,
+                            "standard_deviation": 0.00011599071531712763,
+                            "avg_absolute_deviation": 20.510589545799533,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "fully_connected_6_128",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_6_ops6_bm/submodel_6_ops6_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_6_ops6_bm/submodel_6_ops6_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/compiled/submodel_6_ops6_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "128"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 1.03201e-05,
+                            "median": 9.72e-06,
+                            "standard_deviation": 2.4620120334051132e-06,
+                            "avg_absolute_deviation": 10.116084146471445,
+                            "distribution": "dweibull",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "128"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 1.03681e-05,
+                            "median": 9.72e-06,
+                            "standard_deviation": 2.8183695342482944e-06,
+                            "avg_absolute_deviation": 11.527570143034884,
+                            "distribution": "dweibull",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "128"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00025093265,
+                            "median": 0.0002396405,
+                            "standard_deviation": 5.139422945928033e-05,
+                            "avg_absolute_deviation": 8.688719861684001,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "fully_connected_7_64",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_7_ops7_bm/submodel_7_ops7_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_7_ops7_bm/submodel_7_ops7_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/compiled/submodel_7_ops7_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 3.1681e-06,
+                            "median": 2.641e-06,
+                            "standard_deviation": 2.0528979491133224e-06,
+                            "avg_absolute_deviation": 27.498816325242263,
+                            "distribution": "beta",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 3.18e-06,
+                            "median": 2.64e-06,
+                            "standard_deviation": 2.0855593721438004e-06,
+                            "avg_absolute_deviation": 28.11320754716981,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "64"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00026180465,
+                            "median": 0.0002347205,
+                            "standard_deviation": 8.447130741156089e-05,
+                            "avg_absolute_deviation": 18.864168378980278,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "max_pool_2d_1_26_26_24",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_1_ops1_bm/submodel_1_ops1_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_1_ops1_bm/submodel_1_ops1_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/compiled/submodel_1_ops1_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "26",
+                                    "26",
+                                    "24"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 3.1356099999999996e-05,
+                            "median": 3.06e-05,
+                            "standard_deviation": 2.5851757325994413e-06,
+                            "avg_absolute_deviation": 3.9838181406488635,
+                            "distribution": "exponweib",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "26",
+                                    "26",
+                                    "24"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 3.2178199999999996e-05,
+                            "median": 3.06005e-05,
+                            "standard_deviation": 4.3315684481550825e-06,
+                            "avg_absolute_deviation": 7.883660366334968,
+                            "distribution": "dweibull",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "26",
+                                    "26",
+                                    "24"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0008582063,
+                            "median": 0.0006961815,
+                            "standard_deviation": 0.0003535628563176344,
+                            "avg_absolute_deviation": 28.877355013590556,
+                            "distribution": "alpha",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "max_pool_2d_3_11_11_32",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_3_ops3_bm/submodel_3_ops3_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_3_ops3_bm/submodel_3_ops3_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/compiled/submodel_3_ops3_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "11",
+                                    "11",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 5.814e-06,
+                            "median": 5.4e-06,
+                            "standard_deviation": 1.4627026175434367e-06,
+                            "avg_absolute_deviation": 10.639834881320946,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "11",
+                                    "11",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 5.796e-06,
+                            "median": 5.4e-06,
+                            "standard_deviation": 1.4676813077274753e-06,
+                            "avg_absolute_deviation": 10.848861283643894,
+                            "distribution": "dgamma",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "11",
+                                    "11",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00036322895,
+                            "median": 0.000330481,
+                            "standard_deviation": 7.415354859626356e-05,
+                            "avg_absolute_deviation": 13.045031239938337,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "reshape_4_5_5_32",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_4_ops4_bm/submodel_4_ops4_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_4_ops4_bm/submodel_4_ops4_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/compiled/submodel_4_ops4_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "5",
+                                    "5",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 1.2e-06,
+                            "median": 1.08e-06,
+                            "standard_deviation": 6.289841433864441e-07,
+                            "avg_absolute_deviation": 23.0,
+                            "distribution": "beta",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "5",
+                                    "5",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 2.856e-06,
+                            "median": 1.08e-06,
+                            "standard_deviation": 7.886397616682857e-06,
+                            "avg_absolute_deviation": 117.31092436974791,
+                            "distribution": "dweibull",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "5",
+                                    "5",
+                                    "32"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.0004382471,
+                            "median": 0.000289381,
+                            "standard_deviation": 0.00024564613585911706,
+                            "avg_absolute_deviation": 50.143476134810705,
+                            "distribution": "fatiguelife",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                },
+                {
+                    "name": "softmax_8_10",
+                    "path": {
+                        "cpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_8_ops8_bm/submodel_8_ops8_bm.tflite",
+                        "gpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/tflite/submodel_8_ops8_bm/submodel_8_ops8_bm.tflite",
+                        "tpu": "/media/afUSB/TensorDSE/utils/splitter/models/MNIST_extended_full_quanitization/sub/compiled/submodel_8_ops8_bm_edgetpu.tflite"
+                    },
+                    "delegates": [
+                        {
+                            "device": "cpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "10"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 1.632e-06,
+                            "median": 1.38e-06,
+                            "standard_deviation": 1.0876222254363683e-06,
+                            "avg_absolute_deviation": 28.235294117647058,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "gpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "10"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 1.608e-06,
+                            "median": 1.32e-06,
+                            "standard_deviation": 1.0924891906005056e-06,
+                            "avg_absolute_deviation": 28.805970149253735,
+                            "distribution": "beta",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        },
+                        {
+                            "device": "tpu",
+                            "count": "1",
+                            "input": {
+                                "shape": [
+                                    "10"
+                                ],
+                                "type": "int8"
+                            },
+                            "mean": 0.00027915065,
+                            "median": 0.00025188,
+                            "standard_deviation": 7.117346662114368e-05,
+                            "avg_absolute_deviation": 15.734588115771894,
+                            "distribution": "cauchy",
+                            "usb": {
+                                "communication": {
+                                    "mean": 0.0
+                                }
+                            },
+                            "mean_computation": 0
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

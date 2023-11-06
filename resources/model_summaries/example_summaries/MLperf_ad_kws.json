@@ -1,0 +1,1136 @@
+{
+  "models": [
+    {
+      "name": "ad01_int8",
+      "path": "resources/models/example_models/anomaly_detection/ad01_int8.tflite",
+      "deadline": 0.0,
+      "starting_tensor": "0",
+      "finishing_tensor": "30",
+      "layers": [
+          {
+              "index": "0",
+              "type": "fully_connected",
+              "args": [
+                  {
+                      "key": "Activation",
+                      "value": "Relu"
+                  }
+              ],
+              "mapping": "",
+              "inputs": [
+                  {
+                      "shape": [
+                          "640"
+                      ],
+                      "type": "int8",
+                      "tensor": "0"
+                  },
+                  {
+                      "shape": [
+                          "640"
+                      ],
+                      "type": "int8",
+                      "tensor": "11"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int32",
+                      "tensor": "1"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "21"
+                  }
+              ]
+          },
+          {
+              "index": "1",
+              "type": "fully_connected",
+              "args": [
+                  {
+                      "key": "Activation",
+                      "value": "Relu"
+                  }
+              ],
+              "mapping": "",
+              "inputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "21"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "12"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int32",
+                      "tensor": "2"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "22"
+                  }
+              ]
+          },
+          {
+              "index": "2",
+              "type": "fully_connected",
+              "args": [
+                  {
+                      "key": "Activation",
+                      "value": "Relu"
+                  }
+              ],
+              "mapping": "",
+              "inputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "22"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "13"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int32",
+                      "tensor": "3"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "23"
+                  }
+              ]
+          },
+          {
+              "index": "3",
+              "type": "fully_connected",
+              "args": [
+                  {
+                      "key": "Activation",
+                      "value": "Relu"
+                  }
+              ],
+              "mapping": "",
+              "inputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "23"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "14"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int32",
+                      "tensor": "4"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "24"
+                  }
+              ]
+          },
+          {
+              "index": "4",
+              "type": "fully_connected",
+              "args": [
+                  {
+                      "key": "Activation",
+                      "value": "Relu"
+                  }
+              ],
+              "mapping": "",
+              "inputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "24"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "15"
+                  },
+                  {
+                      "shape": [
+                          "8"
+                      ],
+                      "type": "int32",
+                      "tensor": "5"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "shape": [
+                          "8"
+                      ],
+                      "type": "int8",
+                      "tensor": "25"
+                  }
+              ]
+          },
+          {
+              "index": "5",
+              "type": "fully_connected",
+              "args": [
+                  {
+                      "key": "Activation",
+                      "value": "Relu"
+                  }
+              ],
+              "mapping": "",
+              "inputs": [
+                  {
+                      "shape": [
+                          "8"
+                      ],
+                      "type": "int8",
+                      "tensor": "25"
+                  },
+                  {
+                      "shape": [
+                          "8"
+                      ],
+                      "type": "int8",
+                      "tensor": "16"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int32",
+                      "tensor": "6"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "26"
+                  }
+              ]
+          },
+          {
+              "index": "6",
+              "type": "fully_connected",
+              "args": [
+                  {
+                      "key": "Activation",
+                      "value": "Relu"
+                  }
+              ],
+              "mapping": "",
+              "inputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "26"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "17"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int32",
+                      "tensor": "7"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "27"
+                  }
+              ]
+          },
+          {
+              "index": "7",
+              "type": "fully_connected",
+              "args": [
+                  {
+                      "key": "Activation",
+                      "value": "Relu"
+                  }
+              ],
+              "mapping": "",
+              "inputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "27"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "18"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int32",
+                      "tensor": "8"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "28"
+                  }
+              ]
+          },
+          {
+              "index": "8",
+              "type": "fully_connected",
+              "args": [
+                  {
+                      "key": "Activation",
+                      "value": "Relu"
+                  }
+              ],
+              "mapping": "",
+              "inputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "28"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "19"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int32",
+                      "tensor": "9"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "29"
+                  }
+              ]
+          },
+          {
+              "index": "9",
+              "type": "fully_connected",
+              "args": [
+                  {
+                      "key": "Activation",
+                      "value": "None"
+                  }
+              ],
+              "mapping": "",
+              "inputs": [
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "29"
+                  },
+                  {
+                      "shape": [
+                          "128"
+                      ],
+                      "type": "int8",
+                      "tensor": "20"
+                  },
+                  {
+                      "shape": [
+                          "640"
+                      ],
+                      "type": "int32",
+                      "tensor": "10"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "shape": [
+                          "640"
+                      ],
+                      "type": "int8",
+                      "tensor": "30"
+                  }
+              ]
+          }
+      ]
+    },
+    {
+      "name": "kws_ref_model",
+      "path": "resources/models/example_models/key_word_spotting/kws_ref_model.tflite",
+      "deadline": 0.0,
+      "starting_tensor": 0,
+      "finishing_tensor": 34,
+      "layers": [
+        {
+          "index": 0,
+          "type": "conv_2d",
+          "args": [
+            {
+              "key": "Padding",
+              "value": "Same"
+            },
+            {
+              "key": "stride",
+              "value": "2x2"
+            },
+            {
+              "key": "activation",
+              "value": "Relu"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                49,
+                10,
+                1
+              ],
+              "type": "int8",
+              "tensor": 0
+            },
+            {
+              "shape": [
+                10,
+                4,
+                1
+              ],
+              "type": "int8",
+              "tensor": 17
+            },
+            {
+              "shape": [
+                64
+              ],
+              "type": "int32",
+              "tensor": 3
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 22
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "type": "depthwise_conv_2d",
+          "args": [
+            {
+              "key": "Multiplier",
+              "value": "1"
+            },
+            {
+              "key": "padding",
+              "value": "Same"
+            },
+            {
+              "key": "stride",
+              "value": "1x1"
+            },
+            {
+              "key": "activation",
+              "value": "Relu"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 22
+            },
+            {
+              "shape": [
+                3,
+                3,
+                64
+              ],
+              "type": "int8",
+              "tensor": 5
+            },
+            {
+              "shape": [
+                64
+              ],
+              "type": "int32",
+              "tensor": 4
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 23
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "type": "conv_2d",
+          "args": [
+            {
+              "key": "Padding",
+              "value": "Same"
+            },
+            {
+              "key": "stride",
+              "value": "1x1"
+            },
+            {
+              "key": "activation",
+              "value": "Relu"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 23
+            },
+            {
+              "shape": [
+                1,
+                1,
+                64
+              ],
+              "type": "int8",
+              "tensor": 18
+            },
+            {
+              "shape": [
+                64
+              ],
+              "type": "int32",
+              "tensor": 6
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 24
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "type": "depthwise_conv_2d",
+          "args": [
+            {
+              "key": "Multiplier",
+              "value": "1"
+            },
+            {
+              "key": "padding",
+              "value": "Same"
+            },
+            {
+              "key": "stride",
+              "value": "1x1"
+            },
+            {
+              "key": "activation",
+              "value": "Relu"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 24
+            },
+            {
+              "shape": [
+                3,
+                3,
+                64
+              ],
+              "type": "int8",
+              "tensor": 8
+            },
+            {
+              "shape": [
+                64
+              ],
+              "type": "int32",
+              "tensor": 7
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 25
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "type": "conv_2d",
+          "args": [
+            {
+              "key": "Padding",
+              "value": "Same"
+            },
+            {
+              "key": "stride",
+              "value": "1x1"
+            },
+            {
+              "key": "activation",
+              "value": "Relu"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 25
+            },
+            {
+              "shape": [
+                1,
+                1,
+                64
+              ],
+              "type": "int8",
+              "tensor": 19
+            },
+            {
+              "shape": [
+                64
+              ],
+              "type": "int32",
+              "tensor": 9
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 26
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "type": "depthwise_conv_2d",
+          "args": [
+            {
+              "key": "Multiplier",
+              "value": "1"
+            },
+            {
+              "key": "padding",
+              "value": "Same"
+            },
+            {
+              "key": "stride",
+              "value": "1x1"
+            },
+            {
+              "key": "activation",
+              "value": "Relu"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 26
+            },
+            {
+              "shape": [
+                3,
+                3,
+                64
+              ],
+              "type": "int8",
+              "tensor": 11
+            },
+            {
+              "shape": [
+                64
+              ],
+              "type": "int32",
+              "tensor": 10
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 27
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "type": "conv_2d",
+          "args": [
+            {
+              "key": "Padding",
+              "value": "Same"
+            },
+            {
+              "key": "stride",
+              "value": "1x1"
+            },
+            {
+              "key": "activation",
+              "value": "Relu"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 27
+            },
+            {
+              "shape": [
+                1,
+                1,
+                64
+              ],
+              "type": "int8",
+              "tensor": 20
+            },
+            {
+              "shape": [
+                64
+              ],
+              "type": "int32",
+              "tensor": 12
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 28
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "type": "depthwise_conv_2d",
+          "args": [
+            {
+              "key": "Multiplier",
+              "value": "1"
+            },
+            {
+              "key": "padding",
+              "value": "Same"
+            },
+            {
+              "key": "stride",
+              "value": "1x1"
+            },
+            {
+              "key": "activation",
+              "value": "Relu"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 28
+            },
+            {
+              "shape": [
+                3,
+                3,
+                64
+              ],
+              "type": "int8",
+              "tensor": 14
+            },
+            {
+              "shape": [
+                64
+              ],
+              "type": "int32",
+              "tensor": 13
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 29
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "type": "conv_2d",
+          "args": [
+            {
+              "key": "Padding",
+              "value": "Same"
+            },
+            {
+              "key": "stride",
+              "value": "1x1"
+            },
+            {
+              "key": "activation",
+              "value": "Relu"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 29
+            },
+            {
+              "shape": [
+                1,
+                1,
+                64
+              ],
+              "type": "int8",
+              "tensor": 21
+            },
+            {
+              "shape": [
+                64
+              ],
+              "type": "int32",
+              "tensor": 15
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 30
+            }
+          ]
+        },
+        {
+          "index": 9,
+          "type": "average_pool_2d",
+          "args": [
+            {
+              "key": "Padding",
+              "value": "Valid"
+            },
+            {
+              "key": "stride",
+              "value": "5x25"
+            },
+            {
+              "key": "filter",
+              "value": "5x25"
+            },
+            {
+              "key": "activation",
+              "value": "None"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                25,
+                5,
+                64
+              ],
+              "type": "int8",
+              "tensor": 30
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                1,
+                1,
+                64
+              ],
+              "type": "int8",
+              "tensor": 31
+            }
+          ]
+        },
+        {
+          "index": 10,
+          "type": "reshape",
+          "args": [
+            {
+              "key": "Type",
+              "value": "none"
+            }
+          ],
+          "mapping": "gpu0",
+          "inputs": [
+            {
+              "shape": [
+                1,
+                1,
+                64
+              ],
+              "type": "int8",
+              "tensor": 31
+            },
+            {
+              "shape": [
+                2
+              ],
+              "type": "int32",
+              "tensor": 2
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                64
+              ],
+              "type": "int8",
+              "tensor": 32
+            }
+          ]
+        },
+        {
+          "index": 11,
+          "type": "fully_connected",
+          "args": [
+            {
+              "key": "Activation",
+              "value": "None"
+            }
+          ],
+          "mapping": "cpu0",
+          "inputs": [
+            {
+              "shape": [
+                64
+              ],
+              "type": "int8",
+              "tensor": 32
+            },
+            {
+              "shape": [
+                64
+              ],
+              "type": "int8",
+              "tensor": 16
+            },
+            {
+              "shape": [
+                12
+              ],
+              "type": "int32",
+              "tensor": 1
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                12
+              ],
+              "type": "int8",
+              "tensor": 33
+            }
+          ]
+        },
+        {
+          "index": 12,
+          "type": "softmax",
+          "args": [
+            {
+              "key": "Type",
+              "value": "softmaxoptions"
+            }
+          ],
+          "mapping": "gpu0",
+          "inputs": [
+            {
+              "shape": [
+                12
+              ],
+              "type": "int8",
+              "tensor": 33
+            }
+          ],
+          "outputs": [
+            {
+              "shape": [
+                12
+              ],
+              "type": "int8",
+              "tensor": 34
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
