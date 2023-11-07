@@ -164,7 +164,7 @@ public class SpecificationDefinition {
 		Specification specification = new Specification(application, architecture, mappings);
 
 		// For debugging
-		SpecificationViewer.view(specification);
+		// SpecificationViewer.view(specification);
 
 		SpecificationWriter writer = new SpecificationWriter();
 		writer.write(specification, "src/main/resources/generated_specs/spec_"
@@ -180,7 +180,7 @@ public class SpecificationDefinition {
 	 * @param task_type
 	 * @return
 	 */
-	private static Task CreateTaskNode(Layer layer, Integer model_index) {
+	private static Task CreateTaskNode(Layer layer, Integer task_index, Integer model_index) {
 		Task ret = new Task(String.format("%s-index%d_model%d", layer.getType(), layer.getIndex(),
 				model_index));
 		// TODO Input size?
@@ -192,6 +192,8 @@ public class SpecificationDefinition {
 		ret.setAttribute("cost", 0.0);
 		ret.setAttribute("start_time", 0.0);
 		ret.setAttribute("end_time", 0.0);
+		ret.setAttribute("task_index", task_index);
+		ret.setAttribute("model_index", model_index);
 
 		return ret;
 	}
@@ -218,7 +220,7 @@ public class SpecificationDefinition {
 
 				// Create task nodes in Application and populate hashmap
 				for (int i = 0; i < layers.size(); i++) {
-					Task t = CreateTaskNode(layers.get(i), k);
+					Task t = CreateTaskNode(layers.get(i), i, k);
 
 					// We want to keep track of our entry point tasks to our models such
 					// that they can be traveresed more easily

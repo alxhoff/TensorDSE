@@ -14,6 +14,8 @@ public class ILPTask {
     private String ID;
     private Task task;
     private Integer task_index;
+    private ArrayList<Integer> prev_task_indexes = new ArrayList<Integer>();
+    private Integer model_index;
     private GRBModel grb_model;
     private GRBVar start_time;
     private GRBVar finish_time;
@@ -44,14 +46,16 @@ public class ILPTask {
     private Double recv_cost;
     private HashMap<Resource, Double> recv_costs;
 
-    public ILPTask(GRBModel model, Integer task_index) {
-        this(model, task_index, false);
+    public ILPTask(GRBModel model, Integer prev_task_index, Integer task_index, Integer model_index) {
+        this(model, prev_task_index, task_index, model_index, false);
     }
 
-    public ILPTask(GRBModel model, Integer task_index, Boolean verbose) {
+    public ILPTask(GRBModel model, Integer prev_task_index, Integer task_index, Integer model_index, Boolean verbose) {
 
         this.grb_model = model;
         this.task_index = task_index;
+        this.model_index = model_index;
+        this.prev_task_indexes.add(prev_task_index);
         try {
 
             String start_label = String.format("Ts_%d", task_index);
@@ -544,6 +548,22 @@ public class ILPTask {
 
     public void setTarget_resource_string(String target_resource_string) {
         this.target_resource_string = target_resource_string;
+    }
+
+    public Integer getModel_index() {
+        return model_index;
+    }
+
+    public void setModel_index(Integer model_index) {
+        this.model_index = model_index;
+    }
+
+    public ArrayList<Integer> getPrev_task_indexes() {
+        return prev_task_indexes;
+    }
+
+    public void setPrev_task_indexes(ArrayList<Integer> prev_task_indexes) {
+        this.prev_task_indexes = prev_task_indexes;
     }
 
 }

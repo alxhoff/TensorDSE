@@ -66,7 +66,7 @@ public class TensorDSE {
 		parser.addArgument("-c", "--crossover").setDefault(0.9).type(Double.class)
 				.help("Cross over rate of the EA");
 		parser.addArgument("-s", "--populationsize").setDefault(100).type(int.class)
-				.help("Pupulation size for the EA");
+				.help("Population size for the EA");
 		parser.addArgument("-p", "--parentspergeneration").setDefault(50).type(int.class)
 				.help("Perfecntage of parents per generation in the EA");
 		parser.addArgument("-o", "--offspringspergeneration").setDefault(50).type(int.class)
@@ -74,7 +74,7 @@ public class TensorDSE {
 		parser.addArgument("-g", "--generations").setDefault(20).type(int.class)
 				.help("Number of generations in the EA");
 
-		parser.addArgument("-v", "--verbose").setDefault(false).type(Boolean.class)
+		parser.addArgument("-v", "--verbose").setDefault(true).type(Boolean.class)
 				.help("Enables verbose output messages");
 		parser.addArgument("-u", "--visualise").setDefault(false).type(Boolean.class)
 				.help("If set, OpenDSE will visualise all specificatons");
@@ -84,7 +84,7 @@ public class TensorDSE {
 
 		// Input Files
 		parser.addArgument("-m", "--modelsummary").setDefault(
-				"../../resources/model_summaries/example_summaries/MNIST/MNIST_multi_1.json")
+				"../../resources/model_summaries/example_summaries/MLperf_ad_kws_resnet.json")
 				.type(String.class).help("Location of model summary CSV");
 		parser.addArgument("-a", "--architecturesummary").setDefault(
 				"../../resources/architecture_summaries/example_output_architecture_summary.json")
@@ -102,11 +102,11 @@ public class TensorDSE {
 		// ILP
 		parser.addArgument("-i", "--ilpmapping").type(Boolean.class).setDefault(false)
 				.help("If the ILP should be run instead of the DSE for finding task mappings");
-		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(1.0).help(
+		parser.addArgument("-k", "--deactivationnumber").type(Double.class).setDefault(10.0).help(
 				"The large integer value used for deactivating pair-wise resource mapping constraints");
 		parser.addArgument("-e", "--demo").type(Boolean.class).setDefault(false)
 				.help("Run Demo instead of solving input specification");
-		parser.addArgument("-j", "--objective").type(String.class).setDefault("max_finish_time")
+		parser.addArgument("-j", "--objective").type(String.class).setDefault("average_finish_time")
 				.help("Specifies which object should be optimized for, must be one of the following:\n'average_finish_time', 'max_finish_time', 'deadline_misses', 'slack_time'");
 
 		// RT
@@ -347,7 +347,7 @@ public class TensorDSE {
 							args_namespace.getBoolean("extraconstraints"));
 
 					long startILP = System.currentTimeMillis();
-					Triplet<Double, ArrayList<ArrayList<ILPTask>>, ArrayList<Double>> ret = schedule_solver
+					Triplet<Double, ArrayList<ILPTask[]>, ArrayList<Double>> ret = schedule_solver
 							.solveILPMappingAndSchedule(args_namespace.getBoolean("realtime"),
 									args_namespace.getBoolean("hardrealtime"),
 									args_namespace.getString("objective"));
@@ -357,10 +357,10 @@ public class TensorDSE {
 					// Incremental average for all tests
 					obj_val = obj_val + ((ret.getValue0() / 1000 - obj_val) / (test_runs));
 
-					ArrayList<ArrayList<ILPTask>> models = ret.getValue1();
+					ArrayList<ILPTask[]> models = ret.getValue1();
 
 					// Populate model summary with mapping information
-					for (ArrayList<ILPTask> model : models) {
+					for (ILPTask[] model : models) {
 						for (ILPTask task : model) {
 							Pattern pat = Pattern.compile("([a-z0-9_]+)-index([0-9]+)_model([0-9]+)");
 							Matcher mat = pat.matcher(task.getID());

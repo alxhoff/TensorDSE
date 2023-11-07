@@ -71,7 +71,8 @@ public class ILPFormuation {
 
         GRBLinExpr obj = new GRBLinExpr();
         GRBVar max = model.addVar(0.0, GRB.INFINITY, 0.0, GRB.CONTINUOUS, var_name);
-        // model.addGenConstrMax(max, var_array.toArray(new GRBVar[0]), 0.0, constr_name);
+        // model.addGenConstrMax(max, var_array.toArray(new GRBVar[0]), 0.0,
+        // constr_name);
         model.addGenConstrMax(max, var_array.toArray(new GRBVar[0]), 0.0, constr_name);
         obj.addTerm(1.0, max);
 
@@ -537,14 +538,15 @@ public class ILPFormuation {
      * @param model
      * @return ILPTask
      */
-    private ILPTask initILPTaskBase(Task task, GRBModel model, Integer task_index) {
-        return initILPTaskBase(task, model, task_index, false);
+    private ILPTask initILPTaskBase(Task task, GRBModel model, Integer prev_task_index, Integer task_index,
+            Integer model_index) {
+        return initILPTaskBase(task, model, prev_task_index, task_index, model_index, false);
     }
 
-    private ILPTask initILPTaskBase(Task task, GRBModel model, Integer task_index,
-            Boolean verbose) {
+    private ILPTask initILPTaskBase(Task task, GRBModel model, Integer prev_task_index, Integer task_index,
+            Integer model_index, Boolean verbose) {
 
-        ILPTask ret = new ILPTask(model, task_index, verbose);
+        ILPTask ret = new ILPTask(model, prev_task_index, task_index, model_index, verbose);
 
         ret.setID(task.getId());
         ret.setTask(task);
@@ -561,9 +563,10 @@ public class ILPFormuation {
      * @return ILPTask
      */
     public ILPTask initILPTask(Task task, Resource target_resource, Pair<Double, Double> comm_cost,
-            Double exec_cost, GRBModel model, Integer task_index) {
+            Double exec_cost, GRBModel model, Integer prev_task_index, Integer task_index, Integer model_index,
+            Boolean verbose) {
 
-        ILPTask ret = initILPTaskBase(task, model, task_index);
+        ILPTask ret = initILPTaskBase(task, model, prev_task_index, task_index, model_index, verbose);
 
         ret.setSend_cost(comm_cost.getValue0());
         ret.setRecv_cost(comm_cost.getValue1());
@@ -584,20 +587,23 @@ public class ILPFormuation {
      */
     public ILPTask initILPTask(Task task, ArrayList<Resource> target_resources,
             HashMap<Resource, Pair<Double, Double>> comm_costs,
-            HashMap<Resource, Double> exec_costs, GRBModel model, Integer task_index) {
-        return initILPTask(task, target_resources, comm_costs, exec_costs, model, task_index,
+            HashMap<Resource, Double> exec_costs, GRBModel model, Integer prev_task_index, Integer task_index,
+            Integer model_index) {
+        return initILPTask(task, target_resources, comm_costs, exec_costs, model, prev_task_index, task_index,
+                model_index,
                 false);
     }
 
     public ILPTask initILPTask(Task task, ArrayList<Resource> target_resources,
             HashMap<Resource, Pair<Double, Double>> comm_costs,
-            HashMap<Resource, Double> exec_costs, GRBModel model, Integer task_index,
+            HashMap<Resource, Double> exec_costs, GRBModel model, Integer prev_task_index, Integer task_index,
+            Integer model_index,
             Boolean verbose) {
 
         if (verbose)
             System.out.println(String.format("Init'ing task #%d", task_index));
 
-        ILPTask ret = initILPTaskBase(task, model, task_index, verbose);
+        ILPTask ret = initILPTaskBase(task, model, prev_task_index, task_index, model_index, verbose);
 
         HashMap<Resource, Double> send_costs = new HashMap<Resource, Double>();
 

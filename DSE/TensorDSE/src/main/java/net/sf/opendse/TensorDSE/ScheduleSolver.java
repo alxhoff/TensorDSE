@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -94,7 +95,7 @@ public class ScheduleSolver {
             Boolean hard_real_time, String objective) throws Exception {
 
         // Sequential arrays of models and their tasks
-        ArrayList<ArrayList<ILPTask>> models = new ArrayList<ArrayList<ILPTask>>();
+        ArrayList<ILPTask[]> models = new ArrayList<ILPTask[]>();
         ArrayList<GRBVar> final_task_finish_times = new ArrayList<GRBVar>();
 
         // Hashmap for quickly accessing all tasks mapped to the same resource
@@ -125,11 +126,8 @@ public class ScheduleSolver {
 
                 // Array to sequentially store all the tasks in the model, used for sequential
                 // constraints
-                ArrayList<ILPTask> model_tasks = new ArrayList<ILPTask>();
+                ILPTask[] model_tasks = new ILPTask[this.json_models.get(model_index).getLayers().size()];
                 models.add(model_tasks);
-
-                // Comm task coming after starting_task
-                Task following_comm = this.application.getSuccessors(starting_task).iterator().next();
 
                 Resource target_resource = getTargetResource(starting_task);
                 Pair<Double, Double> comm_costs = this.operation_costs.get(this.json_models.get(model_index).getName())
@@ -141,42 +139,16 @@ public class ScheduleSolver {
                                 starting_task.getAttribute("type"),
                                 starting_task.getAttribute("dtype"));
 
+                Integer starting_task_index = starting_task.getAttribute("task_index");
                 ILPTask ilp_task = ilps.initILPTask(starting_task, target_resource, comm_costs,
-                        exec_costs, grb_model, task_index);
-                model_tasks.add(ilp_task);
+                        exec_costs, grb_model, -1, starting_task_index, model_index, verbose);
+                model_tasks[starting_task_index] = ilp_task;
 
-                // following tasks
-                int count = this.application.getSuccessorCount(starting_task);
-                task_index += 1;
+                // Comm task coming after starting_task
+                Iterator<Task> following_comms = this.application.getSuccessors(starting_task).iterator();
 
-                // Compile a list of all tasks in the application graph
-                while (count > 0) {
-
-                    // Get next task
-                    Task task = this.application.getSuccessors(following_comm).iterator().next();
-
-                    // Get next comm task
-                    if (this.application.getSuccessorCount(task) > 0)
-                        following_comm = this.application.getSuccessors(task).iterator().next();
-                    else
-                        following_comm = null;
-
-                    // For all possible resources
-                    target_resource = getTargetResource(task);
-                    comm_costs = this.operation_costs.get(this.json_models.get(model_index).getName())
-                            .GetCommCost(target_resource.getId().replaceAll("\\d", ""),
-                                    task.getAttribute("type"), task.getAttribute("dtype"));
-                    exec_costs = this.operation_costs.get(this.json_models.get(model_index).getName())
-                            .GetOpCost(target_resource.getId().replaceAll("\\d", ""),
-                                    task.getAttribute("type"), task.getAttribute("dtype"));
-
-                    ilp_task = ilps.initILPTask(task, target_resource, comm_costs, exec_costs,
-                            grb_model, task_index);
-                    model_tasks.add(ilp_task);
-
-                    count = this.application.getSuccessorCount(task);
-                    task_index += 1;
-                }
+                model_tasks = find_ga_tasks(ilps, grb_model, model_tasks, following_comms, starting_task_index,
+                        model_index);
 
                 model_index += 1;
             }
@@ -187,7 +159,7 @@ public class ScheduleSolver {
 
             // Step through sequential model list and create scheduling and finish time
             // dependencies
-            for (ArrayList<ILPTask> model : models) {
+            for (ILPTask[] model : models) {
 
                 ILPTask prev_task = null;
 
@@ -326,7 +298,7 @@ public class ScheduleSolver {
                             task.getSame_resource_sending_cost(),
                             task.getSame_resource_receiving_cost(), grb_model);
 
-                    if (task == model.get(model.size() - 1)) {
+                    if (task == model[model.length - 1]) {
                         // Last task, so we can add its finish time to the list of final tasks
                         final_task_finish_times.add(task.getFinish_time());
 
@@ -548,12 +520,96 @@ public class ScheduleSolver {
         return 10000.0;
     }
 
-    public Triplet<Double, ArrayList<ArrayList<ILPTask>>, ArrayList<Double>> solveILPMappingAndSchedule(
+    private ILPTask[] find_ilp_tasks(ILPFormuation ilps, GRBModel grb_model, ILPTask[] model_tasks,
+            Iterator<Task> comms, Integer prev_task_index, Integer model_index) {
+
+        while (comms.hasNext()) {
+            // Get next task
+            Task comm_task = comms.next();
+            Task task = this.application.getSuccessors(comm_task).iterator().next();
+            Integer task_index = task.getAttribute("task_index");
+            ILPTask it = null;
+            if (model_tasks[task_index] == null) {
+                // For all possible resources
+                ArrayList<Resource> possible_resources = getPossibleTargetResources(task);
+                HashMap<Resource, Pair<Double, Double>> comm_costs = new HashMap<Resource, Pair<Double, Double>>();
+                HashMap<Resource, Double> exec_costs = new HashMap<Resource, Double>();
+                for (Resource resource : possible_resources) {
+                    comm_costs.put(resource, this.operation_costs
+                            .get(this.json_models.get(model_index).getName())
+                            .GetCommCost(resource.getId().replaceAll("\\d", ""),
+                                    task.getAttribute("type"), task.getAttribute("dtype")));
+                    exec_costs.put(resource, this.operation_costs
+                            .get(this.json_models.get(model_index).getName())
+                            .GetOpCost(resource.getId().replaceAll("\\d", ""),
+                                    task.getAttribute("type"), task.getAttribute("dtype")));
+                }
+
+                ILPTask ilp_task = ilps.initILPTask(task, possible_resources, comm_costs, exec_costs,
+                        grb_model, prev_task_index, task_index, model_index, verbose);
+
+                model_tasks[task_index] = ilp_task;
+
+                // Get next comm task
+                if (this.application.getSuccessorCount(task) > 0) {
+                    Iterator<Task> following_comms = this.application.getSuccessors(task).iterator();
+                    model_tasks = find_ilp_tasks(ilps, grb_model, model_tasks, following_comms, task_index,
+                            model_index);
+                }
+            } else {
+                model_tasks[task_index].getPrev_task_indexes().add(prev_task_index);
+            }
+        }
+
+        return model_tasks;
+    }
+
+    private ILPTask[] find_ga_tasks(ILPFormuation ilps, GRBModel grb_model, ILPTask[] model_tasks,
+            Iterator<Task> comms, Integer prev_task_index, Integer model_index) {
+
+        while (comms.hasNext()) {
+            // Get next task
+            Task comm_task = comms.next();
+            Task task = this.application.getSuccessors(comm_task).iterator().next();
+            Integer task_index = task.getAttribute("task_index");
+            ILPTask it = null;
+            if (model_tasks[task_index] == null) {
+                // For all possible resources
+                Resource target_resource = getTargetResource(task);
+                Pair<Double, Double> comm_costs = this.operation_costs.get(this.json_models.get(model_index).getName())
+                        .GetCommCost(target_resource.getId().replaceAll("\\d", ""),
+                                task.getAttribute("type"),
+                                task.getAttribute("dtype"));
+                Double exec_costs = this.operation_costs.get(this.json_models.get(model_index).getName())
+                        .GetOpCost(target_resource.getId().replaceAll("\\d", ""),
+                                task.getAttribute("type"),
+                                task.getAttribute("dtype"));
+
+                ILPTask ilp_task = ilps.initILPTask(task, target_resource, comm_costs, exec_costs,
+                        grb_model, prev_task_index, task_index, model_index, verbose);
+
+                model_tasks[task_index] = ilp_task;
+
+                // Get next comm task
+                if (this.application.getSuccessorCount(task) > 0) {
+                    Iterator<Task> following_comms = this.application.getSuccessors(task).iterator();
+                    model_tasks = find_ga_tasks(ilps, grb_model, model_tasks, following_comms, task_index,
+                            model_index);
+                }
+            } else {
+                model_tasks[task_index].getPrev_task_indexes().add(prev_task_index);
+            }
+        }
+
+        return model_tasks;
+    }
+
+    public Triplet<Double, ArrayList<ILPTask[]>, ArrayList<Double>> solveILPMappingAndSchedule(
             Boolean real_time,
             Boolean hard_real_time, String objective) throws Exception {
 
         // Sequential arrays of models and their tasks
-        ArrayList<ArrayList<ILPTask>> models = new ArrayList<ArrayList<ILPTask>>();
+        ArrayList<ILPTask[]> models = new ArrayList<ILPTask[]>();
         ArrayList<GRBVar> final_task_finish_times = new ArrayList<GRBVar>();
 
         // For soft real-time constraints if used
@@ -573,7 +629,6 @@ public class ScheduleSolver {
             grb_env.start();
             GRBModel grb_model = new GRBModel(grb_env);
 
-            Integer task_index = 0;
             Integer model_index = 0;
 
             // Process each branch of the application graph
@@ -581,11 +636,8 @@ public class ScheduleSolver {
 
                 // Array to sequentially store all the tasks in the model, used for sequential
                 // constraints
-                ArrayList<ILPTask> model_tasks = new ArrayList<ILPTask>();
+                ILPTask[] model_tasks = new ILPTask[this.json_models.get(model_index).getLayers().size()];
                 models.add(model_tasks);
-
-                // Comm task coming after starting_task
-                Task following_comm = this.application.getSuccessors(starting_task).iterator().next();
 
                 // For all possible resources
                 ArrayList<Resource> possible_resources = getPossibleTargetResources(starting_task);
@@ -605,50 +657,16 @@ public class ScheduleSolver {
                                             starting_task.getAttribute("dtype")));
                 }
 
+                Integer starting_task_index = starting_task.getAttribute("task_index");
                 ILPTask ilp_task = ilps.initILPTask(starting_task, possible_resources, comm_costs,
-                        exec_costs, grb_model, task_index, verbose);
+                        exec_costs, grb_model, -1, starting_task_index, model_index, verbose);
+                model_tasks[starting_task_index] = ilp_task;
 
-                model_tasks.add(ilp_task);
-                task_index += 1;
+                // Comm task coming after starting_task
+                Iterator<Task> following_comms = this.application.getSuccessors(starting_task).iterator();
 
-                // following tasks
-                int count = this.application.getSuccessorCount(starting_task);
-
-                // Compile a list of all tasks in the application graph
-                while (count > 0) {
-
-                    // Get next task
-                    Task task = this.application.getSuccessors(following_comm).iterator().next();
-
-                    // Get next comm task
-                    if (this.application.getSuccessorCount(task) > 0)
-                        following_comm = this.application.getSuccessors(task).iterator().next();
-                    else
-                        following_comm = null;
-
-                    // For all possible resources
-                    possible_resources = getPossibleTargetResources(task);
-                    comm_costs = new HashMap<Resource, Pair<Double, Double>>();
-                    exec_costs = new HashMap<Resource, Double>();
-                    for (Resource resource : possible_resources) {
-                        comm_costs.put(resource, this.operation_costs
-                                .get(this.json_models.get(model_index).getName())
-                                .GetCommCost(resource.getId().replaceAll("\\d", ""),
-                                        task.getAttribute("type"), task.getAttribute("dtype")));
-                        exec_costs.put(resource, this.operation_costs
-                                .get(this.json_models.get(model_index).getName())
-                                .GetOpCost(resource.getId().replaceAll("\\d", ""),
-                                        task.getAttribute("type"), task.getAttribute("dtype")));
-                    }
-
-                    ilp_task = ilps.initILPTask(task, possible_resources, comm_costs, exec_costs,
-                            grb_model, task_index, verbose);
-
-                    model_tasks.add(ilp_task);
-                    task_index += 1;
-
-                    count = this.application.getSuccessorCount(task);
-                }
+                model_tasks = find_ilp_tasks(ilps, grb_model, model_tasks, following_comms, starting_task_index,
+                        model_index);
 
                 model_index += 1;
             }
@@ -660,9 +678,8 @@ public class ScheduleSolver {
 
             model_index = 0;
 
-            // Step through sequential model list and create scheduling and finish time
-            // dependencies
-            for (ArrayList<ILPTask> model : models) {
+            // Step through sequential model list and create scheduling and finish time dependencies
+            for (ILPTask[] model : models) {
 
                 ILPTask prev_task = null;
 
@@ -691,16 +708,27 @@ public class ScheduleSolver {
                     grb_model.update();
 
                     // 2.5 Task scheduling dependencies
-                    if (prev_task != null) {
-                        ilps.addTaskSchedulingDependencyConstraint(prev_task.getFinish_time(),
-                                task.getStart_time(), grb_model,
-                                String.format("Scheduling dep: %s >= %s",
-                                        task.getStart_time().get(GRB.StringAttr.VarName),
-                                        prev_task.getFinish_time().get(GRB.StringAttr.VarName)));
-                        if (verbose)
-                            System.out.println(String.format("Constraint: %s >= %s",
-                                    task.getStart_time().get(GRB.StringAttr.VarName),
-                                    prev_task.getFinish_time().get(GRB.StringAttr.VarName)));
+                    for (Integer prev_task_index : task.getPrev_task_indexes()) {
+                        if (prev_task_index != -1) {
+                            ILPTask pt = null;
+                            for (ILPTask t : model)
+                                if (t.getTask_index() == prev_task_index) {
+                                    pt = t;
+                                    break;
+                                }
+
+                            if (pt != null) {
+                                ilps.addTaskSchedulingDependencyConstraint(pt.getFinish_time(),
+                                        task.getStart_time(), grb_model,
+                                        String.format("Scheduling dep: %s >= %s",
+                                                task.getStart_time().get(GRB.StringAttr.VarName),
+                                                pt.getFinish_time().get(GRB.StringAttr.VarName)));
+                                if (verbose)
+                                    System.out.println(String.format("Constraint: %s >= %s",
+                                            task.getStart_time().get(GRB.StringAttr.VarName),
+                                            pt.getFinish_time().get(GRB.StringAttr.VarName)));
+                            }
+                        }
                     }
 
                     grb_model.update();
@@ -913,7 +941,7 @@ public class ScheduleSolver {
 
                     grb_model.update();
 
-                    if (task == model.get(model.size() - 1)) {
+                    if (task == model[model.length - 1]) {
                         // Last task, so we can add its finish time to the list of final tasks
                         final_task_finish_times.add(task.getFinish_time());
 
@@ -1064,7 +1092,7 @@ public class ScheduleSolver {
             }
 
             for (int j = 0; j < models.size(); j++) {
-                ArrayList<ILPTask> model = models.get(j);
+                ILPTask[] model = models.get(j);
                 Double finish_time = final_task_finish_times.get(j).get(GRB.DoubleAttr.X);
                 this.schedule_result += "\n";
                 this.schedule_result += "Finish time\n";
@@ -1075,8 +1103,8 @@ public class ScheduleSolver {
                     this.schedule_result += "Deadline misses\n";
                     this.schedule_result += String.format("%f\n", n_vars.get(j).get(GRB.DoubleAttr.X));
                 }
-                for (int k = 0; k < model.size(); k++) {
-                    ILPTask task = model.get(k);
+                for (int k = 0; k < model.length; k++) {
+                    ILPTask task = model[k];
                     this.schedule_result += String.format("\n%s on %s: %f -> %f", task.getID(),
                             task.getTarget_resource_string(), task.getD_start_time(),
                             task.getD_finish_time());
@@ -1225,7 +1253,7 @@ public class ScheduleSolver {
                 System.out.println();
 
                 System.out.println("Model wise shedule");
-                for (ArrayList<ILPTask> model : models) {
+                for (ILPTask[] model : models) {
                     for (ILPTask task : model) {
                         System.out.println(String.format("%s on %s: %f -> %f", task.getID(),
                                 task.getTarget_resource_string(), task.getD_start_time(),
@@ -1286,7 +1314,7 @@ public class ScheduleSolver {
             System.out.println("Error code: " + e.getErrorCode() + ". " + e.getMessage());
         }
 
-        return new Triplet<Double, ArrayList<ArrayList<ILPTask>>, ArrayList<Double>>(obj_val, models,
+        return new Triplet<Double, ArrayList<ILPTask[]>, ArrayList<Double>>(obj_val, models,
                 all_tasks_finish_times);
     }
 
