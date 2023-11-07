@@ -1,5 +1,6 @@
 package net.sf.opendse.TensorDSE.JSON.Model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Model {
@@ -41,13 +42,14 @@ public class Model {
         this.finishing_tensor = finishing_tensor;
     }
 
-    public Layer getLayerWithInputTensor(Integer tensor) {
+    public List<Layer> getLayersWithInputTensor(Integer tensor) {
+        ArrayList<Layer> ret = new ArrayList<Layer>();
         for (int i = 0; i < this.layers.size(); i++) {
             if (this.layers.get(i).getInputTensorArray().contains(tensor))
-                return this.layers.get(i);
+                ret.add(this.layers.get(i));
         }
 
-        return null;
+        return ret;
     }
 
     public Layer getLayerWithOutputTensor(Integer tensor) {

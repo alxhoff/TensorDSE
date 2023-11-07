@@ -30,6 +30,7 @@ import net.sf.opendse.model.Resource;
 import net.sf.opendse.model.Specification;
 import net.sf.opendse.model.Task;
 // import net.sf.opendse.visualization.SpecificationViewer;
+import net.sf.opendse.visualization.SpecificationViewer;
 
 /**
  * The {@code SpecificationDefinition} is the class defining the Specification
@@ -52,7 +53,8 @@ public class SpecificationDefinition {
 	/**
 	 *
 	 */
-	public final List<String> supported_layers = Arrays.asList("conv_2d", "depthwise_conv_2d", "max_pool_2d", "average_pool_2d", "reshape", "fully_connected",
+	public final List<String> supported_layers = Arrays.asList("conv_2d", "depthwise_conv_2d", "max_pool_2d",
+			"average_pool_2d", "reshape", "fully_connected",
 			"softmax", "add");
 
 	/**
@@ -162,7 +164,7 @@ public class SpecificationDefinition {
 		Specification specification = new Specification(application, architecture, mappings);
 
 		// For debugging
-		// SpecificationViewer.view(specification);
+		SpecificationViewer.view(specification);
 
 		SpecificationWriter writer = new SpecificationWriter();
 		writer.write(specification, "src/main/resources/generated_specs/spec_"
@@ -243,38 +245,34 @@ public class SpecificationDefinition {
 						if (sending_layer_output_tensor_index != model.getFinishing_tensor()) {
 
 							// Get OpenDSE task and set input shape
-							Integer target_task_index = 0;
-							try {
-								target_task_index = model
-										.getLayerWithInputTensor(sending_layer_output_tensor_index)
-										.getIndex();
-							} catch (Exception ex) {
-								ex.printStackTrace();
-								System.exit(1);
+							List<Layer> target_tasks = model
+									.getLayersWithInputTensor(sending_layer_output_tensor_index);
+
+							for (Layer task : target_tasks) {
+								Integer target_task_index = task.getIndex();
+								Task target_task = application_graphs.get(k).get(target_task_index);
+								target_task.setAttribute("input_shape", sending_layer.getOutputs()
+										.get(sending_layer.getOutputs().size() - 1).getShapeProduct());
+
+								// Comm task between two layers
+								Communication comm = new Communication(String.format("comm_%s_TO_%s",
+										sending_layer_task.getId(), target_task.getId()));
+								application.addVertex(comm);
+
+								// Create dependencies from:
+								// - sending task -> communication
+								// - communication -> target task
+								application
+										.addEdge(
+												new Dependency(String.format("%s[%s] -> comm_%s",
+														sending_layer_task.getId(),
+														sending_layer.getIndex(), comm.getId())),
+												sending_layer_task, comm);
+								application.addEdge(
+										new Dependency(String.format("comm_%s -> %s[%d]", comm.getId(),
+												target_task.getId(), target_task_index)),
+										comm, target_task);
 							}
-
-							Task target_task = application_graphs.get(k).get(target_task_index);
-							target_task.setAttribute("input_shape", sending_layer.getOutputs()
-									.get(sending_layer.getOutputs().size() - 1).getShapeProduct());
-
-							// Comm task between two layers
-							Communication comm = new Communication(String.format("comm_%s_TO_%s",
-									sending_layer_task.getId(), target_task.getId()));
-							application.addVertex(comm);
-
-							// Create dependencies from:
-							// - sending task -> communication
-							// - communication -> target task
-							application
-									.addEdge(
-											new Dependency(String.format("%s[%s] -> comm_%s",
-													sending_layer_task.getId(),
-													sending_layer.getIndex(), comm.getId())),
-											sending_layer_task, comm);
-							application.addEdge(
-									new Dependency(String.format("comm_%s -> %s[%d]", comm.getId(),
-											target_task.getId(), target_task_index)),
-									comm, target_task);
 						}
 					}
 				}
@@ -508,12 +506,12 @@ public class SpecificationDefinition {
 
 	public List<Double> getDeadlines() {
 
-        List<Double> ret = new ArrayList<Double>();
+		List<Double> ret = new ArrayList<Double>();
 
-        for(Model m: this.json_models)
-            ret.add(m.getDeadline());
+		for (Model m : this.json_models)
+			ret.add(m.getDeadline());
 
-        return ret;
-    }
+		return ret;
+	}
 
 }
