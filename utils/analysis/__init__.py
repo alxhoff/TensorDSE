@@ -8,24 +8,20 @@ def ExportResults(file:str, data:Dict) -> None:
         json_data = data
         json.dump(json_data, json_file, indent=4)
 
-def AnalyzeModelResults(parent_model:str, models_dict:Dict, hardware_summary:Dict):
+def AnalyzeModelResults(parent_model:str, models_dict:Dict, hardware_summary:Dict, platform: str):
 
     from utils.logging.logger import log
+    from utils.splitter.utils import RunTerminalCommand
     from utils.usb.process import process_streams
     from utils.analysis.analysis import Analyzer
     import os
 
-    RESULTS_FOLDER = os.path.join(os.getcwd(), "resources/profiling_results")
+    RESULTS_FOLDER = os.path.join(os.getcwd(), f"resources/profiling_results/{platform}")
+    if os.path.exists(RESULTS_FOLDER):
+        RunTerminalCommand("rm", "-rf", RESULTS_FOLDER)
+    os.mkdir(RESULTS_FOLDER)
     results_path = os.path.join(RESULTS_FOLDER, f"{parent_model}.json")
-    print("Results file: {} from {}".format(results_path, os.getcwd()))
-
-    if not os.path.isdir(RESULTS_FOLDER):
-        import sys
-        print("Results folder {} doesn't exist, creating".format(RESULTS_FOLDER))
-        log.error(f"{RESULTS_FOLDER} is not a valid folder to store results!")
-        os.mkdir(RESULTS_FOLDER)
-        if not os.path.isdir(RESULTS_FOLDER):
-            sys.exit(-1)
+    log.info("Results file: {} from {}".format(results_path, os.getcwd()))
 
     data = {
             "models": [{

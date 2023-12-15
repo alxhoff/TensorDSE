@@ -23,6 +23,8 @@ set(FB_SRC ${TF_ENV}/flatbuffers)
 
 find_package(Flatbuffers REQUIRED)
 find_package(TFLite REQUIRED)
+find_package(spdlog REQUIRED)
+find_package(fmt REQUIRED)
 
 set(LIB_SOURCES)
 
@@ -72,6 +74,8 @@ target_link_libraries(${BACKEND_LIB} PRIVATE ${TFL_LIB_PATH}
                                              ${GL_LIBRARY_PATH}
                                              ${GLESv2_LIBRARY_PATH}
                                              ${EDGETPU_LIBRARY_PATH}
+                                             spdlog::spdlog
+                                             fmt::fmt
 )
 
 # Install library to lib dir
