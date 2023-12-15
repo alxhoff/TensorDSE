@@ -47,6 +47,11 @@ RUN echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" \
 apt-get update && \
 apt-get install -y libedgetpu1-std edgetpu-compiler
 
+# CoralDev MDT
+RUN python3 -m pip install --user mendel-development-tool
+RUN echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile \
+source ~/.bash_profile
+
 # TensorRT
 RUN apt-get install -y tensorrt && \
 find / -name 'libnvinfer_plugin.so.8' -exec sh -c 'ln -sf "$0" "$(dirname "$0")/libnvinfer_plugin.so.7"' {} \; && \

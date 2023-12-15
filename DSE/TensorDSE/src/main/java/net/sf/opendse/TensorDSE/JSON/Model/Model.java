@@ -5,6 +5,7 @@ import java.util.List;
 
 public class Model {
     String name;
+    String path;
     Double deadline;
     Integer starting_tensor;
     Integer finishing_tensor;
@@ -67,5 +68,13 @@ public class Model {
 
     public void setDeadline(Double deadline) {
         this.deadline = deadline;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
     }
 }

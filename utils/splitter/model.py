@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 from .utils import RunTerminalCommand, ReadJSON, CopyFile, MoveFile
 from ..logging.logger import log
@@ -14,6 +15,13 @@ FINAL_DIR     = os.path.join(MODELS_DIR, "final")
 
 class Model:
     def __init__(self, path_to_model: str, schema_path: str):
+        try:
+            model_basename = os.path.basename(path_to_model)
+            self.name = model_basename.split(".")[0]
+        except Exception as e:
+            log.error("Could not fetch model name from {}. Aborting!".format(path_to_model))
+            sys.exit(-1)
+
         self.paths = {"json": "",
                       "tflite": "",
                       "edgetpu_tflite": ""}
@@ -26,12 +34,12 @@ class Model:
         try:
             if ([source_ext, target_ext] == ["json", "tflite"]):
                 RunTerminalCommand("flatc", "-b", self.schema, self.paths["json"])
-                tmp_filename = self.paths["json"].split("/")[-1].split(".")[0] + ".tflite"
+                tmp_filename = "{}.tflite".format(self.name)
                 self.paths["tflite"] = self.paths["json"].replace(source_ext, target_ext)
                 MoveFile(tmp_filename, self.paths["tflite"])
             elif ([source_ext, target_ext] == ["tflite", "json"]):
                 RunTerminalCommand("flatc", "-t", "--strict-json", "--defaults-json", self.schema, "--", self.paths["tflite"])
-                tmp_filename = self.paths["tflite"].split("/")[-1].split(".")[0] + ".json"
+                tmp_filename = "{}.json".format(self.name)
                 self.paths["json"] = self.paths["tflite"].replace(source_ext, target_ext)
                 MoveFile(tmp_filename, self.paths["json"])
                 self.json = ReadJSON(self.paths["json"])
@@ -39,18 +47,19 @@ class Model:
             import sys
             sys.exit("Couldn't convert using 'flatc': {}".format(e))
 
-    def Compile(self):
-        if not os.path.exists(COMPILED_DIR):
-            os.mkdir(COMPILED_DIR)
-        compiling_command = "/usr/bin/edgetpu_compiler -o {0} -s {1}".format(COMPILED_DIR, self.paths["tflite"])
+    def Compile(self, parent_model_name: str):
+        compiled_dir = os.path.join(MODELS_DIR, parent_model_name, "sub", "compiled")
+        if not os.path.exists(compiled_dir):
+            os.mkdir(compiled_dir)
+        compiling_command = "/usr/bin/edgetpu_compiler -o {0} -s {1}".format(compiled_dir, self.paths["tflite"])
         os.system(compiling_command)
-        self.paths["edgetpu_tflite"] = os.path.join(COMPILED_DIR, self.paths["tflite"].split("/")[-1].split(".")[0] + "_edgetpu.tflite")
+        self.paths["edgetpu_tflite"] = os.path.join(compiled_dir, os.path.basename(self.paths["tflite"]).split(".")[0] + "_edgetpu.tflite")
 
 class Submodel(Model):
-    def __init__(self, source_model_json: dict, op_name: str, target_hardware: str, sequence_index: int):
-        self.name = "submodel_{0}_{1}_{2}".format(sequence_index, op_name, "bm" if target_hardware.lower() == "" else target_hardware.lower())
-        self.dirs = {"json": os.path.join(SUB_DIR, "json", self.name),
-                      "tflite": os.path.join(SUB_DIR, "tflite", self.name)}
+    def __init__(self, source_model: Model, op_name: str, target_hardware: str, sequence_index: int):
+        name = "submodel_{0}_{1}_{2}".format(sequence_index, op_name, "bm" if target_hardware.lower() == "" else target_hardware.lower())
+        self.dirs = {"json": os.path.join(MODELS_DIR, source_model.name, "sub", "json", name),
+                      "tflite": os.path.join(MODELS_DIR, source_model.name, "sub", "tflite", name)}
         os.mkdir(self.dirs["json"])
         os.mkdir(self.dirs["tflite"])
         CopyFile(os.path.join(RESOURCES_DIR, "shell", "shell_model.json"),
@@ -58,7 +67,9 @@ class Submodel(Model):
         super().__init__(path_to_model=os.path.join(self.dirs["json"], "shell_model.json"),
                           schema_path=os.path.join(RESOURCES_DIR, "schema", "schema.fbs"))
         self.json = ReadJSON(self.paths["json"])
-        self.source_model_json = source_model_json
+        self.source_model_name = source_model.name
+        self.source_model_json = source_model.json
+        self.name = name
 
     def AddOps(self, layers):
         """Adds the appropriate operations, specified by the given layers, to
