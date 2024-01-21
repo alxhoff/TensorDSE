@@ -199,7 +199,7 @@ class InferenceScenarioB(InferenceStrategy):
         return model
 
 
-class Infernece:
+class Inference:
     """
     Missing  Docstring: TODO
     """

@@ -1,227 +1,252 @@
+"""
+Missing  Docstring: TODO
+"""
+
+import os
 import sys
 import copy
 import json
 import argparse
 import random
-import numpy as np
 import traceback
 import multiprocessing
 
-from utils.logging.logger import log
+import numpy as np
+
 from utils.model import Model
+from utils.logging.logger import log
+from utils.splitter.utils import ReadJSON
+from utils.splitter.split import Splitter
+from utils.splitter.split import MODELS_DIR
+from utils.usb.process import process_streams
 
-HARDWARE_LOCKS = {
-    'cpu0': multiprocessing.Lock(),
-    'gpu0': multiprocessing.Lock(),
-    'tpu0': multiprocessing.Lock(),
-}
+from utils.inference import Inference
 
-
-def GetInputData(m: Model):
-    from utils.benchmark import GetArraySizeFromShape
-
-    input_size = GetArraySizeFromShape(m.input_shape)
-    m.input_vector = np.array(
-            np.random.random_sample(input_size), dtype=m.get_np_dtype(m.input_datatype)
-            )
+from status_verifier import StatusVerifierSingleton as verifier
 
 
-def GetInputTestDataModule(m: Model, dataset_module: str):
-    module = __import__(dataset_module)
-    for comp in dataset_module.split(".")[1:]:
-        module = getattr(module, comp)
-    dataset = module.GetData()["test_data"]
-    input_shape = module.GetInputShape()
-    m.input_vector = random.choice(dataset)
+class Deployer:
+    """
+    Missing  Docstring: TODO
+    """
+
+    HARDWARE_LOCKS = {
+        'cpu0': multiprocessing.Lock(),
+        'gpu0': multiprocessing.Lock(),
+        'tpu0': multiprocessing.Lock(),
+    }
 
 
-def SplitForDeployment(model_summary: dict, platform: str, native: bool, hardware: str):
-    from utils.splitter.split import Splitter
-    from utils.splitter.utils import ReadJSON
+    def __init__(self,
+                 native_deployment: bool,
+                 data_module: str,
+                 hardware: str) -> None:
 
-    model_layer_sequences = []
+        self.model_summary = verifier.get_model_summary(verifier)
+        self.platform = verifier.get_platform(verifier)
+        self.native_deployment = native_deployment
+        self.data_module = data_module
+        self.native_hardware = hardware
 
-    if native is True:
-        for model in model_summary["models"]:
-            for layer in model["layers"]:
-                layer["mapping"] = hardware
-
-    splitter = Splitter(model_summary)
-    if (platform == "desktop"):
-    # Create operation models/layers from the operations in the provided model
-        try:
-            log.info("Running Model Splitter ...")
-            splitter.Run(sequences=True)
-            log.info("Splitting Process Complete!\n")
-        except Exception as e:
-            splitter.Clean(True)
-            log.error("Failed to run splitter! {}".format(str(e)))
-            sys.exit(1)
-
-        # Compiles created models/layers into Coral models for execution
-        splitter.CompileForEdgeTPU(bm=False)
-        log.info("Models successfully compiled!")
-        model_layer_sequences = splitter.model_layer_sequences
-    else:
-        model_layer_sequences = ReadJSON("utils/splitter/model_layer_sequences.json")
-        
-
-    return model_layer_sequences, model_summary
+        self.models = []
+        self.multi_models_sequences = []
 
 
-def DeployLayer(m: Model, platform: str, usbmon: int=0):
-    from utils.splitter.split import MODELS_DIR
-    from utils.benchmark import GetArraySizeFromShape, StandardDeploy, TPUDeploy
-    from backend.distributed_inference import distributed_inference
+    def split(self):
+        """
+        Missing  Docstring: TODO
+        """
 
-    delegate_type  = m.delegate[:3]
-    delegate_index = int(m.delegate[-1])
+        model_layer_sequences = []
 
-    if delegate_type == "tpu":
-        m.model_path = os.path.join(
-                MODELS_DIR,
-                m.parent,
-                "sub",
-                "compiled",
-                "{}_edgetpu.tflite".format(
-                    m.model_name),
-                )
-    else:
-        m.model_path = os.path.join(
-                MODELS_DIR,
-                m.parent,
-                "sub",
-                "tflite",
-                m.model_name,
-                "{0}.tflite".format(
-                    m.model_name
-                    ),
+        if self.native_deployment is True:
+            for model in self.model_summary["models"]:
+                for layer in model["layers"]:
+                    layer["mapping"] = self.native_hardware
+
+        splitter = Splitter(self.model_summary)
+
+        if self.platform == "desktop":
+            try:
+                log.info("Running Model Splitter ...")
+                splitter.Run(sequences=True)
+                log.info("Splitting Process Complete!\n")
+            except RuntimeError:
+                splitter.Clean(True)
+                log.fatal("Failed to run splitter!")
+
+            # Compiles created models/layers into Coral models for execution
+            splitter.CompileForEdgeTPU(bm=False)
+            log.info("Models successfully compiled!")
+            model_layer_sequences = splitter.model_layer_sequences
+        else:
+            model_layer_sequences = ReadJSON("utils/splitter/model_layer_sequences.json")
+
+        self.multi_models_sequences = model_layer_sequences
+
+
+    def set_random_input_data(self, m: Model):
+        """
+        Missing  Docstring: TODO
+        """
+        input_size = m.get_array_size_from_shape(m.input_shape)
+        m.input_vector = np.array(
+                np.random.random_sample(input_size), dtype=m.get_np_dtype(m.input_datatype)
                 )
 
-    if ((platform == "desktop") or (platform == "rpi")):
-        if os.path.isfile(m.model_path):
-            if (delegate_type == "tpu"):
-                if usbmon == None:
-                    raise Exception("usbmon interface not provided to Deploy Layer for TPU device")
-                else:
-                    m = TPUDeploy(m=m, count=1, usbmon=usbmon, platform=platform)
+
+    def set_input_test_data_module(self, m: Model):
+        """
+        Missing  Docstring: TODO
+        """
+        module = __import__(self.data_module)
+        for comp in self.data_module.split(".")[1:]:
+            module = getattr(module, comp)
+        dataset = module.GetData()["test_data"]
+        m.input_vector = random.choice(dataset)
+
+
+    def analyse_results(self):
+        """
+        Missing  Docstring: TODO
+        """
+
+        results_folder = os.path.join(os.getcwd(), "resources/deployment_results", self.platform)
+
+        if not os.path.isdir(results_folder):
+            log.error("%s is not a valid folder to store results!", results_folder)
+            os.mkdir(results_folder)
+            if not os.path.isdir(results_folder):
+                log.fatal("Unable to create Results Folder to store Deployment results!")
+                sys.exit(-1)
+
+        for i, model in enumerate(self.models):
+            results_path = os.path.join(results_folder, f"{model[0].parent}.json")
+            model_results = dict()
+            model_results["model_name"] = model[i].parent
+            model_results["submodels"] = []
+            model_results["total_inference_time (s)"] = 0
+            for m in model:
+                submodel = dict()
+                submodel["name"] = m.model_name
+                submodel["layers"] = m.details
+                submodel["inference_time (s)"] = m.results[0]
+                submodel["usb"] = dict()
+                if not self.platform == "coral":
+                    if "tpu" in m.delegate:
+                        submodel["usb"] = process_streams(m.timers, m.results)
+                model_results["submodels"].append(submodel)
+                model_results["total_inference_time (s)"] += m.results[0]
+
+            with open(results_path, 'w', encoding="utf-8") as json_file:
+                json.dump(model_results, json_file, indent=4)
+
+
+    def layer_deploy(self, m: Model):
+        """
+        Missing  Docstring: TODO
+        """
+
+        delegate_type  = m.delegate[:3]
+
+        if delegate_type == "tpu":
+            m.model_path = os.path.join(
+                    MODELS_DIR,
+                    m.parent,
+                    "sub",
+                    "compiled",
+                    f"{m.model_name}_edgetpu.tflite"
+                    )
+        else:
+            m.model_path = os.path.join(
+                    MODELS_DIR,
+                    m.parent,
+                    "sub",
+                    "tflite",
+                    m.model_name,
+                    f"{m.model_name}.tflite"
+                    )
+
+        inference_instance = Inference(model=m, count=1, platform=self.platform)
+        m = inference_instance.invoke()
+
+        return m
+
+
+    def sequences_deploy(self, model_sequence, model_index):
+        """
+        Missing  Docstring: TODO
+        """
+
+        submodels = []
+        model_name = os.path.basename(
+            self.model_summary["models"][model_index]["path"]).split(".tflite")[0]
+
+        for j, sequence in enumerate(model_sequence):
+            layers = [self.model_summary["models"][model_index]["layers"][op[0]] for op in sequence]
+            m = Model(layers, layers[0]["mapping"], model_name)
+
+            if len(sequence) == 1:
+                ops_range = sequence[0][0]
             else:
-                m = StandardDeploy(m=m, count=1, hardware_target=delegate_type, platform=platform)
+                ops_range = '-'.join(map(str, [sequence[0][0], sequence[-1][0]]))
 
-        else:
-            m.results = [-1]
-            m.timers = {
-                    "error": {
-                        "name": "file_not_found",
-                        "reason": "Cannot find model {}".format(m.model_path),
-                        },
-                    }
-    else:
-        m = StandardDeploy(m=m, count=1, hardware_target=delegate_type, platform=platform)
-
-    return m
-
-
-def AnalyzeDeploymentResults(models: list, platform: str) -> None:
-
-    from utils.usb.process import process_streams
-
-    RESULTS_FOLDER = os.path.join(os.getcwd(), "resources/deployment_results", platform)
-
-    if not os.path.isdir(RESULTS_FOLDER):
-        import sys
-        log.error(f"{RESULTS_FOLDER} is not a valid folder to store results!")
-        os.mkdir(RESULTS_FOLDER)
-        if not os.path.isdir(RESULTS_FOLDER):
-            sys.exit(-1)
-
-    for i, model in enumerate(models):
-        results_path = os.path.join(RESULTS_FOLDER, f"{model[0].parent}.json")
-        model_results = dict()
-        model_results["model_name"] = model[i].parent
-        model_results["submodels"] = []
-        model_results["total_inference_time (s)"] = 0
-        for m in model:
-            submodel = dict()
-            submodel["name"] = m.model_name
-            submodel["layers"] = m.details
-            submodel["inference_time (s)"] = m.results[0]
-            submodel["usb"] = dict()
-            if not (platform == "coral"):
-                if ("tpu" in m.delegate):
-                    submodel["usb"] = process_streams(m.timers, m.results)
-            model_results["submodels"].append(submodel)
-            model_results["total_inference_time (s)"] += m.results[0]
-
-        with open(results_path, 'w') as json_file:
-            json.dump(model_results, json_file, indent=4)
-
-
-def DeploySequences(model_sequence, model_index, model_summary, platform, native, data_module, HARDWARE_LOCKS):
-    submodels = []
-    model_name = os.path.basename(model_summary["models"][model_index]["path"]).split(".tflite")[0]
-
-    for j, sequence in enumerate(model_sequence):
-        layers = [model_summary["models"][model_index]["layers"][op[0]] for op in sequence]
-        m = Model(layers, layers[0]["mapping"], model_name)
-
-        if len(sequence) == 1:
-            ops_range = sequence[0][0]
-        else:
-            ops_range = '-'.join(map(str, [sequence[0][0], sequence[-1][0]]))
-
-        if native is False:
-            m.model_name = "submodel_{0}_{1}_{2}".format(j, f"ops{ops_range}", m.delegate)
-        else:
-            m.model_name = model_name
-
-        if j == 0:
-            #Foced random input for rpi and dev board due to unsupported dataset installation
-            if not (platform == "desktop"):
-                data_module = None
+            if self.native_deployment is False:
+                m.model_name = f"submodel_{j}_{f'ops{ops_range}'}_{m.delegate}"
             else:
-                if data_module == None:
-                    GetInputData(m)
+                m.model_name = model_name
+
+            if j == 0:
+                #Foced random input for rpi and dev board due to unsupported dataset installation
+                if not self.platform == "desktop":
+                    self.data_module = None
                 else:
-                    GetInputTestDataModule(m, dataset_module=data_module)
-        else:
-            m.input_vector = copy.deepcopy(submodels[-1].output_vector)
+                    if self.data_module is None:
+                        self.set_random_input_data(m)
+                    else:
+                        self.set_input_test_data_module(m)
+            else:
+                m.input_vector = copy.deepcopy(submodels[-1].output_vector)
 
-        hardware_lock = HARDWARE_LOCKS[m.hardware]
+            hardware_lock = self.HARDWARE_LOCKS[m.delegate]
 
-        with hardware_lock:
-            m = DeployLayer(m, platform)
+            with hardware_lock:
+                m = self.layer_deploy(m)
 
-        submodels.append(m)
-        log.info(f"Model {model_index} | Layer {j} deployed on {m.hardware}")
+            submodels.append(m)
+            log.info("Model %s | Layer %s deployed on %s", model_index, j, m.hardware)
 
-    return submodels
-
-
-def DeployModels(model_summary: dict, platform: str, hardware: str, native: bool = False, data_module: str = None) -> None:
-
-    models = []
-    multi_models_sequences = []
-    
-    multi_models_sequences, model_summary = SplitForDeployment(model_summary=model_summary, platform=platform, native=native, hardware=hardware)
-        
-    # Create a process pool with the number of processes equal to the number of CPU cores
-    with multiprocessing.Pool(processes=os.cpu_count()) as pool:
-        # Asynchronously apply `DeploySequences` function to each sequence
-        async_results = [
-            pool.apply_async(DeploySequences, (model_sequences, i, model_summary, platform, native, data_module, HARDWARE_LOCKS))
-            for i, model_sequences in enumerate(multi_models_sequences)
-        ]
-
-        # Collect the results as they complete
-        models = [async_result.get() for async_result in async_results]
-
-    log.info("All models deployed!")
-
-    AnalyzeDeploymentResults(models=models, platform=platform)
+        return submodels
 
 
-def getArgs():
+    def multi_model_deploy(self):
+        """
+        Missing  Docstring: TODO
+        """
+
+        self.split()
+
+        # Create a process pool with the number of processes equal to the number of CPU cores
+        with multiprocessing.Pool(processes=os.cpu_count()) as pool:
+            # Asynchronously apply `DeploySequences` function to each sequence
+            async_results = [
+                pool.apply_async(self.sequences_deploy, (model_sequences, i))
+                for i, model_sequences in enumerate(self.multi_models_sequences)
+            ]
+
+            # Collect the results as they complete
+            self.models = [async_result.get() for async_result in async_results]
+
+        log.info("All models deployed!")
+
+        self.analyse_results()
+
+
+def get_arguments():
+    """
+    Missing  Docstring: TODO
+    """
+
     parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
             )
@@ -229,7 +254,8 @@ def getArgs():
     parser.add_argument(
             "-s",
             "--summarypath",
-            default="resources/model_summaries/example_summaries/MNIST/MNIST_full_quanitization_summary_w_mappings.json",
+            default="resources/model_summaries/example_summaries/\
+                MNIST/MNIST_full_quanitization_summary_w_mappings.json",
             help="File that contains a model summary with mapping annotations"
             )
 
@@ -246,54 +272,36 @@ def getArgs():
             default="desktop",
             help="Platform supporting the profiling/deployment process",
             )
-    
+
     parser.add_argument(
             "-n",
             "--native",
             default=False,
-            help="Native deployment on one specific HW Target",
+            help="Native deployment on one single HW Target",
             )
-    
+
     parser.add_argument(
             "-hw",
             "--hardware",
             default="cpu0",
             help="HW Target for native deployment",
             )
-    
+
     return parser.parse_args()
 
 
 if __name__ == "__main__":
-    import os
 
-    from utils.splitter.utils import ReadJSON
+    args = get_arguments()
 
-    args = getArgs()
-    
-    if args.summarypath is not None:
-        model_summary_json = ReadJSON(args.summarypath)
-        if model_summary_json is None:
-            log.error("The provided Model Summary is empty!")
-            sys.exit(-1)
-    else:
-        log.error("The provided Model Summary is empty!")
-        sys.exit(-1)
-    
-    log.info("[DEPLOYMENT] Starting")
+    if verifier.verify_args_for_deployer(verifier, args=args) is True:
+        deployer = Deployer(args.native, args.dataset, args.hardware)
 
     try:
-        DeployModels(
-            model_summary=model_summary_json, 
-            platform=args.platform,
-            hardware=args.hardware, 
-            native=args.native, 
-            data_module=args.dataset
-            )
-        
-    except Exception as e:
-        log.error(f"An error occured in the deployment process. ({e})")
-        trace_string = traceback.format_exc()
-        log.info(f"Traceback to the Excepton: {trace_string}")
+        deployer.multi_model_deploy()
+    except RuntimeError:
+        log.error("An error occured in the deployment process.")
+        TRACE_STR = traceback.format_exc()
+        log.info("Traceback to the Excepton: %s", TRACE_STR)
 
     log.info("[DEPLOY] Finished")

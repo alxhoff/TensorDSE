@@ -36,6 +36,7 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
         self._multi_model_summary = None
         self._hardware_summary = None
         self._requested_hardware = None
+        self._active_process = None
 
 
     def verify_hardware_for_profiling(self, hardware_summary: dict) -> bool:
@@ -102,8 +103,23 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
 
         self._multi_model_summary = model_summary_json
         self._hardware_summary = hardware_summary_json
+        self._active_process = "Profiling"
 
         return True
+
+
+    def verify_args_for_deployer(self, args: argparse.Namespace) -> bool:
+        """
+        Verifies the arguments given to the deploy.py script 
+        """
+        if args.summarypath is not None:
+            summary = ReadJSON(args.summarypath)
+            if summary is None:
+                log.fatal("The provided Model Summary is empty!")
+        else:
+            log.fatal("The provided Path to the Summary is not valid!")
+
+        self._multi_model_summary = summary
 
 
     def set_model_summary(self, summary: dict) -> None:
@@ -192,3 +208,17 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
             case _:
                 log.error("Invalid PE type.")
         return result
+
+
+    def get_active_process(self) -> str:
+        """
+        getter function for active_process
+        """
+        return self._active_process
+
+
+    def set_active_process (self, active_process: str) -> None:
+        """
+        setter function for active_process
+        """
+        self._active_process = active_process

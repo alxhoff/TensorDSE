@@ -11,7 +11,7 @@ from utils.logging.logger import log
 from utils.model import Model
 from utils.splitter.split import Splitter
 from utils.analysis import AnalyzeModelResults
-from utils.inference import Infernece
+from utils.inference import Inference
 from status_verifier import StatusVerifierSingleton as verifier
 
 class Proflier:
@@ -45,8 +45,8 @@ class Proflier:
         for delegate in self.hardware_to_benchmark:
             models[delegate] = []
             for layer in model_summary["layers"]:
-                inference_instance = Infernece(
-                    model=(Model(layer, delegate, parent_model_path), self.count, self.platform),
+                inference_instance = Inference(
+                    model=Model(layer, delegate, parent_model_path),
                     count=self.count,
                     platform=self.platform
                     )
@@ -169,9 +169,9 @@ if __name__ == "__main__":
 
     args = get_arguments()
 
-    if verifier.verify_args_for_profiler(verifier, args=args):
+    if verifier.verify_args_for_profiler(verifier, args=args) is True:
         profiler = Proflier(
             count=args.count,
             usbmon=args.usbmon
         )
-        profiler.run()
+        profiler.multi_model_profile()
