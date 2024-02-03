@@ -1,11 +1,16 @@
-from typing import Dict, Tuple
-from json.encoder import py_encode_basestring
+"""
+Missing  Docstring: TODO
+"""
+
+from typing import List, Dict, Tuple
 from utils.analysis.analysis import Analyzer
 from utils.logging.logger import log
-from typing import Dict, List
 
 
 def faulty_timestamps(timestamps: List) -> Tuple[bool, Dict, int]:
+    """
+    Missing  Docstring: TODO
+    """
     d = {}
     total_errors = 0
     for t in timestamps:
@@ -19,13 +24,18 @@ def faulty_timestamps(timestamps: List) -> Tuple[bool, Dict, int]:
                     else:
                         d[name] = {"reason": t["error"]["reason"], "count": 0}
                 else:
-                    log.error('[Analyze][Faulty Timestamps] Could not find key "name" among timestamp error. t["error"].keys() returns {}'.format(t["error"].keys()))
-    if d == {}:
+                    log.error('[Analyze][Faulty Timestamps] \
+                               Could not find key "name" among timestamp error. \
+                               t["error"].keys() returns %s', t["error"].keys())
+    if not d:
         return False, {}, 0
     return True, d, total_errors
 
 
 def process_streams(timestamps: List, py_results: List) -> Dict:
+    """
+    Missing  Docstring: TODO
+    """
     if len(timestamps) == 0:  # cpu, gpu
         return {
             "communication": {"mean": 0.0},

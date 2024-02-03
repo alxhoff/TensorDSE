@@ -10,7 +10,7 @@ from utils.logging.logger import log
 
 from utils.model import Model
 from utils.splitter.split import Splitter
-from utils.analysis import AnalyzeModelResults
+from utils.analysis import analyse_model_results
 from utils.inference import Inference
 from status_verifier import StatusVerifierSingleton as verifier
 
@@ -74,15 +74,15 @@ class Proflier:
         if self.platform == "desktop":
             try:
                 log.info("Running Model Splitter ...")
-                self.splitter.Run()
+                self.splitter.run()
                 log.info("Splitting Process Complete!\n")
             except RuntimeError:
-                self.splitter.Clean(True)
+                self.splitter.clean(True)
                 log.fatal("Failed to run splitter!")
 
             if "tpu" in self.hardware_to_benchmark:
                 # Compiles created models/layers into Coral models for execution
-                self.splitter.CompileForEdgeTPU()
+                self.splitter.compile_for_edge_tpu()
                 log.info("[PROFILE MODEL] Models successfully compiled \
                          for Benchmarking on the Edge TPU!")
 
@@ -103,13 +103,13 @@ class Proflier:
 
             # Process results
             log.info("[PROFILE MODEL] Analyzing profiling results for: %s", model_path)
-            AnalyzeModelResults(model_path, results_dict, self.hardware_summary, self.platform)
+            analyse_model_results(model_path, results_dict, self.hardware_summary, self.platform)
 
             log.info("Analyzed and merged results")
 
             log.info("Final Clean up")
             if self.platform == "desktop":
-                self.splitter.Clean(True)
+                self.splitter.clean(True)
 
 
 def get_arguments() -> argparse.Namespace:

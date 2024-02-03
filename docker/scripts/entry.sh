@@ -205,16 +205,16 @@ run_profile_only() {
             if [ -f "$FILE" ]; then
                 file_with_extension=$(basename "$FILE")
                 file_name="${file_with_extension%.*}"
-                python3 resources/model_summaries/CreateModelSummary.py --model $"$FILE" --outputname "$file_name"_summary --outputdir resources/artifacts/model_summaries
+                python3 resources/model_summaries/create_model_summary.py --model $"$FILE" --outputname "$file_name"_summary --outputdir resources/artifacts/model_summaries
             fi
         done
-        python3 resources/model_summaries/MergeSummaries.py -s resources/artifacts/model_summaries -o $WORKLOAD_DIR -w "$workload_name"
+        python3 resources/model_summaries/merge_summaries.py -s resources/artifacts/model_summaries -o $WORKLOAD_DIR -w "$workload_name"
         find resources/artifacts/model_summaries -type f -name "*.json" -exec rm {} \;
         model_summary_dir=$WORKLOAD_DIR
         model_summary="$WORKLOAD_DIR/${workload_name}_multi_model.json"
 
     elif [ "$MULTI_MODEL" == "false" ]; then
-        python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname "$model_name"_summary --outputdir resources/artifacts/model_summaries
+        python3 resources/model_summaries/create_model_summary.py --model $MODEL --outputname "$model_name"_summary --outputdir resources/artifacts/model_summaries
         model_summary_dir=resources/artifacts/model_summaries
         model_summary=resources/artifacts/model_summaries/"$model_name"_summary.json
 
@@ -330,7 +330,7 @@ setup_board() {
 
 run_just_dse() {
     export PYTHONPATH=$(pwd):$PYTHONPATH
-    #python3 resources/model_summaries/CreateModelSummary.py --model $MODEL --outputname "$model_name" --outputdir resources/artifacts/model_summaries
+    #python3 resources/model_summaries/create_model_summary.py --model $MODEL --outputname "$model_name" --outputdir resources/artifacts/model_summaries
     pushd DSE/TensorDSE
     echo gradle6 run --args="--objective $OBJECTIVE --model $MODEL --modelsummary ../../$MODEL_SUMMARY --architecturesummary ../../$ARCHITECTURE_SUMMARY --profilingcosts ../../$PROFILING_COSTS --outputfolder ../../$OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"
     gradle6 run --args="--model $MODEL --modelsummary ../../$MODEL_SUMMARY --architecturesummary ../../$ARCHITECTURE_SUMMARY --profilingcosts ../../$PROFILING_COSTS --outputfolder ../../$OUTPUT_FOLDER --resultsfile $OUTPUT_NAME --ilpmapping $ILP_MAPPING --runs $RUNS --crossover $CROSSOVER --populationsize $POPULATION_SIZE --parentspergeneration $PARENTS_PER_GENERATION --offspringspergeneration $OFFSPRING_PER_GENERATION --generations $GENERATIONS --verbose $VERBOSE"

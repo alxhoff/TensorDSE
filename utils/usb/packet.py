@@ -1,3 +1,7 @@
+"""
+Missing  Docstring: TODO
+"""
+
 class UsbPacket:
     """Class containing all necessary methods to decode/retreive human
     understandable information regarding incoming usb packets.
@@ -6,8 +10,8 @@ class UsbPacket:
     as easy to use booleans that are useful in conditional statements.
     """
 
-    def __init__(self, raw_packet, id, addr):
-        self.id             = id
+    def __init__(self, raw_packet, p_id, addr):
+        self.id             = p_id
         self.addr           = addr
         self.ts             = 0.0
 
@@ -38,6 +42,9 @@ class UsbPacket:
         self.verify_communication()
 
     def timestamp(self, packet):
+        """
+        Missing  Docstring: TODO
+        """
         self.ts = float(packet.frame_info.time_relative)
 
     def store_direction(self, packet):
@@ -54,13 +61,16 @@ class UsbPacket:
         self.dest = packet.usb.dst
 
     def store_data_len_info(self, packet):
+        """
+        Missing  Docstring: TODO
+        """
         self.data_flag = packet.usb.data_flag
         self.data_size = float(packet.usb.data_len)
         self.urb_size  = float(packet.usb.urb_len)
 
     def find_transfer_type(self, packet):
         """Finds the urb transfer type of the overloaded packet."""
-        transfer_type = "0x{}".format(packet.usb.transfer_type[-2:])
+        transfer_type = f"0x{packet.usb.transfer_type[-2:]}"
         transfer_dict = {
             ""    :   None,
             "0x01":   "INTERRUPT",
@@ -112,19 +122,37 @@ class UsbPacket:
             self.empty_data = True
 
     def is_host_src(self):
-        return ("host" == self.src)
+        """
+        Missing  Docstring: TODO
+        """
+        return "host" == self.src
 
     def is_host_dest(self):
-        return ("host" == self.dest)
+        """
+        Missing  Docstring: TODO
+        """
+        return "host" == self.dest
 
     def is_tpu_src(self):
-        return (self.addr in self.src)
+        """
+        Missing  Docstring: TODO
+        """
+        return self.addr in self.src
 
     def is_tpu_dest(self):
-        return (self.addr in self.dest)
+        """
+        Missing  Docstring: TODO
+        """
+        return self.addr in self.dest
 
     def is_data_valid(self):
+        """
+        Missing  Docstring: TODO
+        """
         return (self.present_data and self.data_size > 0)
 
     def is_data_present(self):
-        return (self.present_data == True)
+        """
+        Missing  Docstring: TODO
+        """
+        return self.present_data is True

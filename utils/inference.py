@@ -3,7 +3,7 @@ Module Docstring: TODO
 """
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Event
 
 import sys
 import time
@@ -12,8 +12,8 @@ import numpy as np
 from utils.model import Model
 from utils.logging.log import Log
 from utils.logging.logger import log
-from utils.usb import END_DEPLOYMENT
-from utils.usb.usb import capture_stream
+from utils.usb.usb import END_DEPLOYMENT
+from utils.usb.usb import capture_stream, capture_packets
 from backend.distributed_inference import distributed_inference
 
 
@@ -45,7 +45,7 @@ class InferneceContext():
 
 class InferenceStrategy(ABC):
     """
-    The Inference Strategy
+    The Abstract Class for Inference Strategy 
     """
     def __init__(self, count: int, platform: str) -> None:
         super().__init__()
@@ -132,9 +132,8 @@ class InferenceScenarioB(InferenceStrategy):
                     args=(
                         signals_q,
                         data_q,
-                        self.TIMEOUT,
-                        Log(f"resources/logs/layer_{model.index}_{model.model_name}_USB.log"),
                         self.USBMON,
+                        Log(f"resources/logs/layer_{model.index}_{model.model_name}_USB.log"),
                         ),
                     )
 
@@ -196,6 +195,92 @@ class InferenceScenarioB(InferenceStrategy):
 
         model.output_vector = output_data_vector
 
+        return model
+
+
+class InferenceScenarioC(InferenceStrategy):
+    """
+    Missing  Docstring: TODO
+    """
+
+    TIMEOUT = 10
+    CORE_INDEX = 0
+    USBMON = 0
+    DEPLOY_WAIT_TIME = 3
+    START_CAPTURE    = 2
+    END_CAPTURE      = 3
+
+    def invoke(self, model: Model) -> Model:
+
+        results = []
+        timers = []
+
+        input_size = model.get_array_size_from_shape(model.input_shape)
+        output_size = model.get_array_size_from_shape(model.output_shape)
+
+        for i in range(self.count):
+            signals_queue = Queue()
+            data_queue = Queue()
+            end_deployment_event = Event()
+
+            p = Process(
+                    target=capture_packets,
+                    args=(
+                        signals_queue,
+                        data_queue,
+                        end_deployment_event,
+                        self.USBMON,
+                        Log(f"resources/logs/layer_{model.index}_{model.model_name}_USB.log")
+                        ),
+                    )
+            p.start()
+
+            input_data_vector = np.array(
+                    np.random.random_sample(input_size),
+                    dtype=model.get_np_dtype(model.input_datatype),
+                    )
+            output_data_vector = np.zeros(output_size).astype(
+                    model.get_np_dtype(model.output_datatype)
+                    )
+            inference_times_vector = np.zeros(self.count).astype(np.uint32)
+
+            mean_inference_time = distributed_inference(
+                    model.model_path,
+                    input_data_vector,
+                    output_data_vector,
+                    inference_times_vector,
+                    len(input_data_vector),
+                    len(output_data_vector),
+                    "tpu",
+                    self.platform,
+                    1,
+                    self.CORE_INDEX,
+                    )
+
+            time.sleep(self.DEPLOY_WAIT_TIME/2)
+
+            end_deployment_event.set()
+
+            results.append(mean_inference_time)
+
+            try:
+                data = data_queue.get()
+            except RuntimeError:
+                data = None
+
+            if not data == {}:
+                timers.append(data)
+
+            if p.is_alive():
+                p.join()
+
+            sys.stdout.write(f"\r {i+1}/{self.count} for TPU ran -> {model.model_name}")
+            sys.stdout.flush()
+
+        sys.stdout.write("\n")
+
+        model.results = results
+        model.timers = timers
         return model
 
 

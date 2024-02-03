@@ -1,77 +1,104 @@
-import os
-import sys
-import json
-from .utils import RunTerminalCommand, ReadJSON, CopyFile, MoveFile
-from ..logging.logger import log
+"""
+    Missing  Docstring: TODO
+"""
 
-WORK_DIR      = os.path.dirname(os.path.abspath(__file__))
-MODELS_DIR    = os.path.join(WORK_DIR, "models")
-MAPPING_DIR   = os.path.join(WORK_DIR, "mapping")
-RESOURCES_DIR = os.path.join(WORK_DIR, "resources")
-SOURCE_DIR    = os.path.join(MODELS_DIR, "source")
-SUB_DIR       = os.path.join(MODELS_DIR, "sub")
-COMPILED_DIR  = os.path.join(MODELS_DIR, "sub", "compiled")
-FINAL_DIR     = os.path.join(MODELS_DIR, "final")
+import os
+import json
+
+from utils.logging.logger import log
+from utils.splitter import RESOURCES_DIR, MODELS_DIR
+
+from .utils import run_command_and_echo, read_json_file, copy_file, move_file
 
 class Model:
+    """
+        Missing  Docstring: TODO
+    """
+
     def __init__(self, path_to_model: str, schema_path: str):
         try:
             model_basename = os.path.basename(path_to_model)
             self.name = model_basename.split(".")[0]
-        except Exception as e:
-            log.error("Could not fetch model name from {}. Aborting!".format(path_to_model))
-            sys.exit(-1)
+        except IOError:
+            log.fatal("Could not fetch model name from %s. Aborting!", path_to_model)
 
         self.paths = {"json": "",
                       "tflite": "",
                       "edgetpu_tflite": ""}
-        for ext in self.paths.keys():
+        for ext in self.paths:
             if path_to_model.endswith(ext):
                 self.paths[ext] = path_to_model
         self.schema = schema_path
+        self.json = None
 
-    def Convert(self, source_ext: str, target_ext: str):
+    def convert(self, source_ext: str, target_ext: str):
+        """
+            Missing  Docstring: TODO
+        """
         try:
             if ([source_ext, target_ext] == ["json", "tflite"]):
-                RunTerminalCommand("flatc", "-b", self.schema, self.paths["json"])
-                tmp_filename = "{}.tflite".format(self.name)
+                run_command_and_echo("flatc", "-b", self.schema, self.paths["json"])
+                tmp_filename = f"{self.name}.tflite"
                 self.paths["tflite"] = self.paths["json"].replace(source_ext, target_ext)
-                MoveFile(tmp_filename, self.paths["tflite"])
+                move_file(tmp_filename, self.paths["tflite"])
             elif ([source_ext, target_ext] == ["tflite", "json"]):
-                RunTerminalCommand("flatc", "-t", "--strict-json", "--defaults-json", self.schema, "--", self.paths["tflite"])
-                tmp_filename = "{}.json".format(self.name)
+                run_command_and_echo(
+                    "flatc",
+                    "-t",
+                    "--strict-json",
+                    "--defaults-json",
+                    self.schema,
+                    "--",
+                    self.paths["tflite"]
+                    )
+                tmp_filename = f"{self.name}.json"
                 self.paths["json"] = self.paths["tflite"].replace(source_ext, target_ext)
-                MoveFile(tmp_filename, self.paths["json"])
-                self.json = ReadJSON(self.paths["json"])
-        except Exception as e:
-            import sys
-            sys.exit("Couldn't convert using 'flatc': {}".format(e))
+                move_file(tmp_filename, self.paths["json"])
+                self.json = read_json_file(self.paths["json"])
+        except RuntimeError:
+            log.fatal("An error occured while convert using flatc")
 
-    def Compile(self, parent_model_name: str):
+    def edgetpu_compile(self, parent_model_name: str):
+        """
+            Missing  Docstring: TODO
+        """
         compiled_dir = os.path.join(MODELS_DIR, parent_model_name, "sub", "compiled")
         if not os.path.exists(compiled_dir):
             os.mkdir(compiled_dir)
-        compiling_command = "/usr/bin/edgetpu_compiler -o {0} -s {1}".format(compiled_dir, self.paths["tflite"])
+        compiling_command = f'/usr/bin/edgetpu_compiler -o {compiled_dir} -s {self.paths["tflite"]}'
         os.system(compiling_command)
-        self.paths["edgetpu_tflite"] = os.path.join(compiled_dir, os.path.basename(self.paths["tflite"]).split(".")[0] + "_edgetpu.tflite")
+        self.paths["edgetpu_tflite"] = os.path.join(
+            compiled_dir,
+            os.path.basename(self.paths["tflite"]).split(".")[0] + "_edgetpu.tflite"
+            )
 
 class Submodel(Model):
-    def __init__(self, source_model: Model, op_name: str, target_hardware: str, sequence_index: int):
-        name = "submodel_{0}_{1}_{2}".format(sequence_index, op_name, "bm" if target_hardware.lower() == "" else target_hardware.lower())
+    """
+        Missing  Docstring: TODO
+    """
+
+    def __init__(self,
+                 source_model: Model,
+                 op_name: str,
+                 target_hardware: str,
+                 sequence_index: int):
+
+        name = f'submodel_{sequence_index}_{op_name}_\
+            {"bm" if target_hardware.lower() == "" else target_hardware.lower()}'
         self.dirs = {"json": os.path.join(MODELS_DIR, source_model.name, "sub", "json", name),
                       "tflite": os.path.join(MODELS_DIR, source_model.name, "sub", "tflite", name)}
         os.mkdir(self.dirs["json"])
         os.mkdir(self.dirs["tflite"])
-        CopyFile(os.path.join(RESOURCES_DIR, "shell", "shell_model.json"),
+        copy_file(os.path.join(RESOURCES_DIR, "shell", "shell_model.json"),
                  os.path.join(self.dirs["json"], "shell_model.json"))
         super().__init__(path_to_model=os.path.join(self.dirs["json"], "shell_model.json"),
                           schema_path=os.path.join(RESOURCES_DIR, "schema", "schema.fbs"))
-        self.json = ReadJSON(self.paths["json"])
+        self.json = read_json_file(self.paths["json"])
         self.source_model_name = source_model.name
         self.source_model_json = source_model.json
         self.name = name
 
-    def AddOps(self, layers):
+    def add_ops(self, layers):
         """Adds the appropriate operations, specified by the given layers, to
         the submodel in preparation for saving the submodel.
 
@@ -95,10 +122,14 @@ class Submodel(Model):
         new_opcodes = []
         for new_op in new_ops:
             if self.source_model_json["operator_codes"][new_op["opcode_index"]] not in new_opcodes:
-                new_opcodes.append(self.source_model_json["operator_codes"][new_op["opcode_index"]].copy())
+                new_opcodes.append(
+                    self.source_model_json["operator_codes"][new_op["opcode_index"]].copy()
+                    )
                 new_op["opcode_index"] = len(new_opcodes) - 1
             else:
-                new_op["opcode_index"] = new_opcodes.index(self.source_model_json["operator_codes"][new_op["opcode_index"]])
+                new_op["opcode_index"] = new_opcodes.index(
+                    self.source_model_json["operator_codes"][new_op["opcode_index"]]
+                    )
 
         #Add Tensors according to added Operators
         new_tensors = []
@@ -140,7 +171,7 @@ class Submodel(Model):
         new_buffers = [{}]
         for i,new_tensor in enumerate(new_tensors):
             buffer_index = new_tensor["buffer"]
-            if (buffer_index > 0):
+            if buffer_index > 0:
                 new_buffers.append(self.source_model_json["buffers"][buffer_index].copy())
                 new_tensor["buffer"] = len(new_buffers) - 1
 
@@ -148,7 +179,9 @@ class Submodel(Model):
         new_metadata = []
         if "metadata" in self.source_model_json.keys():
             for i, source_metadata in enumerate(self.source_model_json["metadata"]):
-                new_buffers.append(self.source_model_json["buffers"][source_metadata["buffer"]].copy())
+                new_buffers.append(
+                    self.source_model_json["buffers"][source_metadata["buffer"]].copy()
+                    )
                 new_metadata.append(source_metadata)
                 new_metadata[-1]["buffer"] = len(new_buffers) - 1
             self.json["metadata"]                    =   new_metadata
@@ -160,7 +193,8 @@ class Submodel(Model):
         #    for entry in ["inputs", "outputs"]:
         #        for this_entry in sig_def[entry]:
         #            if this_entry["tensor_index"] in tensor_indexes:
-        #                self.json["signature_defs"][i] = self.source_model_json["signature_defs"][i].copy()
+        #                self.json["signature_defs"][i] =
+        #    self.source_model_json["signature_defs"][i].copy()
         #                self.json["signature_defs"][i][entry]["tensor_index"]
 
 
@@ -177,7 +211,7 @@ class Submodel(Model):
         self.json["description"]                 =   new_description
         self.json["buffers"]                     =   new_buffers
 
-    def Save(self):
+    def save(self):
         """Saves a submodel to a JSON file, labeled using the target hardware,
         the index of the sequence, and the indexes of the layers (in their model)
         that are contained withing the submodel.
@@ -189,7 +223,7 @@ class Submodel(Model):
         """
         submodel_filename = f"{self.name}.json"
         submodel_filepath = os.path.join(self.dirs["json"], submodel_filename)
-        MoveFile(self.paths["json"], submodel_filepath)
+        move_file(self.paths["json"], submodel_filepath)
         self.paths["json"] = submodel_filepath
-        with open(submodel_filepath, "w") as fout:
+        with open(submodel_filepath, "w", encoding="utf-8") as fout:
             json.dump(self.json, fout, indent=2)

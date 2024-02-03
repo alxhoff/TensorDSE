@@ -1,10 +1,18 @@
-#!/bin/python
+"""
+Missing  Docstring: TODO
+"""
+
 import sys
 import argparse
+
+from summarize import SummarizeGraph
+
 from utils.logging.logger import log
-from utils.splitter.utils import ReadJSON
-    
-def GetArgs() -> argparse.Namespace:
+
+def get_arguments() -> argparse.Namespace:
+    """
+    Missing  Docstring: TODO
+    """
     parser = argparse.ArgumentParser(description="Pass in the model file to be summarized")
     parser.add_argument(
         "--model",
@@ -33,17 +41,20 @@ def GetArgs() -> argparse.Namespace:
 
 
 def main() -> int:
+    """
+    Missing  Docstring: TODO
+    """
 
-    from summarize import SummarizeGraph
-
-    args = GetArgs()
+    args = get_arguments()
 
     log.info(
-        "Converting {0} into {1}/{2}.json...".format(args.model, args.outputdir, args.outputname)
+        "Converting %s into %s/%s.json...",
+        args.model,
+        args.outputdir,
+        args.outputname
     )
 
     SummarizeGraph(args.model, args.outputdir, args.outputname)
-
 
     log.info("Graph summarized")
 

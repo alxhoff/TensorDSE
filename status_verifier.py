@@ -9,7 +9,7 @@ from typing import Tuple
 import utils
 
 from utils.logging.logger import log
-from utils.splitter.utils import ReadJSON
+from utils.splitter.utils import read_json_file
 
 
 class SingletonMeta(type):
@@ -84,7 +84,7 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
             return False
 
         if args.summarypath is not None:
-            model_summary_json = ReadJSON(args.summarypath)
+            model_summary_json = read_json_file(args.summarypath)
             if model_summary_json is None:
                 log.fatal("The provided Model Summary is empty!")
                 return False
@@ -93,7 +93,7 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
             return False
 
         if args.hardwaresummary is not None:
-            hardware_summary_json = ReadJSON(args.hardwaresummary)
+            hardware_summary_json = read_json_file(args.hardwaresummary)
             if hardware_summary_json is None:
                 log.fatal("The provided Hardware Summary is empty!")
                 return False
@@ -113,7 +113,7 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
         Verifies the arguments given to the deploy.py script 
         """
         if args.summarypath is not None:
-            summary = ReadJSON(args.summarypath)
+            summary = read_json_file(args.summarypath)
             if summary is None:
                 log.fatal("The provided Model Summary is empty!")
         else:

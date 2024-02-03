@@ -1,13 +1,16 @@
-from utils.usb.usb import START_DEPLOYMENT, END_DEPLOYMENT
+"""
+Missing  Docstring: TODO
+"""
 
-import sys
+import os
 from utils.logging.logger import log
 
 def init_usbmon(usb_bus: int) -> bool:
-    import os
+    """
+    Missing  Docstring: TODO
+    """
     dirs = os.listdir("/dev/")
-    if "usbmon{}".format(usb_bus) in dirs:
+    if f"usbmon{usb_bus}" in dirs:
         return False
-    else:
-        log.error("usbmon module has to be loaded!!!")
-        return True
+    log.error("usbmon module has to be loaded!!!")
+    return True

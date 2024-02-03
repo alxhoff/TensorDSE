@@ -15,7 +15,7 @@ import numpy as np
 
 from utils.model import Model
 from utils.logging.logger import log
-from utils.splitter.utils import ReadJSON
+from utils.splitter.utils import read_json_file
 from utils.splitter.split import Splitter
 from utils.splitter.split import MODELS_DIR
 from utils.usb.process import process_streams
@@ -69,18 +69,18 @@ class Deployer:
         if self.platform == "desktop":
             try:
                 log.info("Running Model Splitter ...")
-                splitter.Run(sequences=True)
+                splitter.run(sequences=True)
                 log.info("Splitting Process Complete!\n")
             except RuntimeError:
-                splitter.Clean(True)
+                splitter.clean(True)
                 log.fatal("Failed to run splitter!")
 
             # Compiles created models/layers into Coral models for execution
-            splitter.CompileForEdgeTPU(bm=False)
+            splitter.compile_for_edge_tpu(bm=False)
             log.info("Models successfully compiled!")
             model_layer_sequences = splitter.model_layer_sequences
         else:
-            model_layer_sequences = ReadJSON("utils/splitter/model_layer_sequences.json")
+            model_layer_sequences = read_json_file("utils/splitter/model_layer_sequences.json")
 
         self.multi_models_sequences = model_layer_sequences
 
