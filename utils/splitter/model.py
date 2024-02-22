@@ -83,8 +83,7 @@ class Submodel(Model):
                  target_hardware: str,
                  sequence_index: int):
 
-        name = f'submodel_{sequence_index}_{op_name}_\
-            {"bm" if target_hardware.lower() == "" else target_hardware.lower()}'
+        name = f'submodel_{sequence_index}_{op_name}_{"bm" if target_hardware.lower() == "" else target_hardware.lower()}'
         self.dirs = {"json": os.path.join(MODELS_DIR, source_model.name, "sub", "json", name),
                       "tflite": os.path.join(MODELS_DIR, source_model.name, "sub", "tflite", name)}
         os.mkdir(self.dirs["json"])

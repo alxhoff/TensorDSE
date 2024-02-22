@@ -101,10 +101,6 @@ for i in "$@"; do
         MULTI_MODEL="${i#*=}"
         shift # past argument=value
         ;;
-    -l=* | --WORKLOAD_DIR=*)
-        WORKLOAD_DIR="${i#*=}"
-        shift # past argument=value
-        ;;
     -x=* | --MODEL_NAME=*)
         MODEL_NAME="${i#*=}"
         shift # past argument=value
@@ -139,7 +135,7 @@ SETUP_MODE=8
 
 mode="$MODE"
 model_name="$MODEL_NAME"
-workload_name=$(basename "$WORKLOAD_DIR")
+model_summary="$MODEL_SUMMARY"
 native_deployment="$NATIVE_DEPLOYMENT"
 hw_native_deployment="$HW_NATIVE_DEPLOYMENT"
 
@@ -199,23 +195,11 @@ run_no_deploy() {
 
 run_profile_only() {
     export PYTHONPATH=$(pwd):$PYTHONPATH
-    mkdir resources/artifacts && mkdir resources/artifacts/model_summaries
-    if [ "$MULTI_MODEL" == "true" ]; then
-        for FILE in "$WORKLOAD_DIR"/*; do
-            if [ -f "$FILE" ]; then
-                file_with_extension=$(basename "$FILE")
-                file_name="${file_with_extension%.*}"
-                python3 resources/model_summaries/create_model_summary.py --model $"$FILE" --outputname "$file_name"_summary --outputdir resources/artifacts/model_summaries
-            fi
-        done
-        python3 resources/model_summaries/merge_summaries.py -s resources/artifacts/model_summaries -o $WORKLOAD_DIR -w "$workload_name"
-        find resources/artifacts/model_summaries -type f -name "*.json" -exec rm {} \;
-        model_summary_dir=$WORKLOAD_DIR
-        model_summary="$WORKLOAD_DIR/${workload_name}_multi_model.json"
+    mkdir resources/artifacts/model_summaries
+    model_summary_dir=resources/artifacts/model_summaries
 
-    elif [ "$MULTI_MODEL" == "false" ]; then
+    if [ "$MULTI_MODEL" == "false" ]; then
         python3 resources/model_summaries/create_model_summary.py --model $MODEL --outputname "$model_name"_summary --outputdir resources/artifacts/model_summaries
-        model_summary_dir=resources/artifacts/model_summaries
         model_summary=resources/artifacts/model_summaries/"$model_name"_summary.json
 
     else

@@ -2,7 +2,10 @@
 Missing  Docstring: TODO
 """
 
+import os
 import numpy as np
+
+from utils.splitter.split import MODELS_DIR
 
 class Model:
     """
@@ -15,10 +18,13 @@ class Model:
         self.model_path     = ""
         self.model_name     = layer["type"] if isinstance(layer, dict) else None
         self.index          = layer["index"] if isinstance(layer, dict) else None
+        self.id             = f'submodel_{self.index}_ops{self.index}_bm'
         self.results        = []
         self.timers         = []
         self.input_vector   = None
         self.output_vector   = None
+
+        self.set_model_path()
         self.set_input_details()
         self.set_output_details()
 
@@ -77,3 +83,26 @@ class Model:
         for dim in shape:
             size *= int(dim)
         return size
+
+
+    def set_model_path(self):
+        """
+        Missing  Docstring: TODO
+        """
+        if self.delegate[:3] == "tpu":
+            self.model_path = os.path.join(
+                    MODELS_DIR,
+                    self.parent,
+                    "sub",
+                    "compiled",
+                    f"{self.id}_edgetpu.tflite"
+                    )
+        else:
+            self.model_path = os.path.join(
+                    MODELS_DIR,
+                    self.parent,
+                    "sub",
+                    "tflite",
+                    self.id,
+                    f"{self.id}.tflite"
+                    )

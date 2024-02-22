@@ -27,7 +27,7 @@ class Proflier:
         self.usbmon = usbmon
         self.model_summary = verifier.get_model_summary(verifier)
         self.hardware_summary = verifier.get_hardware_summary(verifier)
-        self.platform = verifier.get_platform(verifier)
+        self.platform = verifier.get_platform()
 
         self.splitter = Splitter(self.model_summary)
 
@@ -53,7 +53,7 @@ class Proflier:
                 m = inference_instance.invoke()
                 m.model_name = f"{m.model_name}_{m.index}_{'_'.join(map(str, m.input_shape))}"
                 models["cpu"].append(m)
-                log.info("[PROFILE MODEL LAYERS] TPUs profiled")
+                log.info("[PROFILE MODEL LAYERS] Layer profiled")
                 #AnalyzeLayerResults(m, "delegate")
 
         return models

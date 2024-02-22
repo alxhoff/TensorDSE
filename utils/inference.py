@@ -36,11 +36,11 @@ class InferneceContext():
     def strategy(self, strategy: InferenceStrategy) -> None:
         self._strategy = strategy
 
-    def initiate(self) -> Model:
+    def initiate(self, model: Model) -> Model:
         """
         Missing  Docstring: TODO
         """
-        return self._strategy.invoke()
+        return self._strategy.invoke(model)
 
 
 class InferenceStrategy(ABC):
@@ -316,4 +316,4 @@ class Inference:
         """
         strategy = self.identify_strategy()
         context = InferneceContext(strategy)
-        return context.initiate()
+        return context.initiate(self.model)

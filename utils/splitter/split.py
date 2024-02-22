@@ -145,7 +145,7 @@ class Splitter:
         """
         for model in self.models:
             self.single_model_env_init(model)
-            model.Convert("tflite", "json")
+            model.convert("tflite", "json")
 
 
     def compile_and_save_submodel_sequence(

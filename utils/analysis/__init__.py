@@ -9,7 +9,7 @@ from itertools import groupby
 import json
 
 from utils.logging.logger import log
-from utils.splitter.utils import RunTerminalCommand
+from utils.splitter.utils import run_command_and_echo
 from utils.usb.process import process_streams
 from utils.analysis.analysis import Analyzer
 
@@ -29,7 +29,7 @@ def analyse_model_results(parent_model:str, models_dict:Dict, hardware_summary:D
 
     results_folder = os.path.join(os.getcwd(), f"resources/profiling_results/{platform}")
     if os.path.exists(results_folder):
-        RunTerminalCommand("rm", "-rf", results_folder)
+        run_command_and_echo("rm", "-rf", results_folder)
     os.mkdir(results_folder)
     results_path = os.path.join(results_folder, f"{parent_model}.json")
     log.info("Results file: %s from %s", results_path, os.getcwd())

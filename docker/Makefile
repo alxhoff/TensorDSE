@@ -110,7 +110,6 @@ run: $(if $(call exist-docker-image),,build)
 					--PLATFORM=$$PLATFORM \
 					--BRANCH=$$BRANCH \
 					--MULTI_MODEL=$$MULTI_MODEL \
-					--WORKLOAD_DIR=$$WORKLOAD_DIR \
 					--MODEL_NAME=$$MODEL_NAME \
 					--NATIVE_DEPLOYMENT=$NATIVE_DEPLOYMENT \
 					--HW_NATIVE_DEPLOYMENT=$HW_NATIVE_DEPLOYMENT \
@@ -154,7 +153,6 @@ run: $(if $(call exist-docker-image),,build)
 					--PLATFORM=$$PLATFORM \
 					--BRANCH=$$BRANCH \
 					--MULTI_MODEL=$$MULTI_MODEL \
-					--WORKLOAD_DIR=$$WORKLOAD_DIR \
 					--MODEL_NAME=$$MODEL_NAME \
 					--NATIVE_DEPLOYMENT=$NATIVE_DEPLOYMENT \
 					;

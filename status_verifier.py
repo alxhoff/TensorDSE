@@ -30,13 +30,14 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
     """
     StatusVerifier Docstring
     """
+    _platform = ""
+    _multi_model_summary = None
+    _hardware_summary = None
+    _requested_hardware = None
+    _active_process = None
 
     def __init__(self):
-        self._platform = None
-        self._multi_model_summary = None
-        self._hardware_summary = None
-        self._requested_hardware = None
-        self._active_process = None
+        pass
 
 
     def verify_hardware_for_profiling(self, hardware_summary: dict) -> bool:
@@ -46,21 +47,21 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
 
         req_hw = []
         if int(hardware_summary["CPU_count"]) > 0:
-            pe_vailable = self.verify_pe("cpu")[0]
+            pe_vailable = self.verify_pe(pe="cpu")[0]
             if pe_vailable:
                 req_hw.append("cpu")
             else:
                 log.fatal("The CPU requested for Profiling is not available. Abort")
 
         if int(hardware_summary["GPU_count"]) > 0:
-            pe_vailable= self.verify_pe("gpu")[0]
+            pe_vailable= self.verify_pe(pe="gpu")[0]
             if pe_vailable:
                 req_hw.append("gpu")
             else:
                 log.fatal("The GPU requested for Profiling is not available. Abort")
 
         if int(hardware_summary["TPU_count"]) > 0:
-            pe_vailable = self.verify_pe("tpu")[0]
+            pe_vailable = self.verify_pe(pe="tpu")[0]
             if pe_vailable:
                 req_hw.append("tpu")
             else:
@@ -101,6 +102,7 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
             log.fatal("The provided path to the Hardware Summary is not valid!")
             return False
 
+        self._platform = args.platform
         self._multi_model_summary = model_summary_json
         self._hardware_summary = hardware_summary_json
         self._active_process = "Profiling"
@@ -163,12 +165,12 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
         """
         return self._requested_hardware
 
-
-    def get_platform(self) -> str:
+    @staticmethod
+    def get_platform() -> str:
         """
         getter function for platform
         """
-        return self._platform
+        return StatusVerifierSingleton._platform
 
 
     def set_platform(self, platform: str) -> None:
@@ -177,36 +179,43 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
         """
         self._platform = platform
 
-
-    def verify_pe(self, pe: str) -> Tuple[bool, str]:
+    @staticmethod
+    def verify_pe(pe: str) -> Tuple[bool, str]:
         """
         Verifies if a specific PE is available or not.
         """
         result = None
-        match pe:
-            case "cpu":
-                result =  True, "cpu0"
-            case "gpu":
-                if self.get_platform() != "desktop":
-                    result =  True, ""
+        if pe == "cpu":
+            result = True, "cpu0"
+        elif pe == "gpu":
+            if StatusVerifierSingleton.get_platform() != "desktop":
+                result = True, ""
+            else:
                 out = utils.run("lshw -numeric -C display").split("\n")
                 for line in out:
                     if "vendor" in line:
                         gpu = line.split()[1].lower()
                         if "intel" in line.lower():
-                            result =  False, gpu
-                        result =  True, gpu
-                result =  False, ""
-            case "tpu":
-                if self.get_platform() == "coral":
-                    result =  True, ""
+                            result = False, gpu
+                            break  # Ensures exit after the first match
+                        result = True, gpu
+                if result is None:  # If no vendor was found
+                    result = False, ""
+        elif pe == "tpu":
+            if StatusVerifierSingleton.get_platform() == "coral":
+                result = True, "tpu0"
+            else:
                 out = utils.run("lsusb").split("\n")
                 for device in out:
                     if ("Global" in device) or ("Google" in device):
-                        result =  True
-                result =  False, ""
-            case _:
-                log.error("Invalid PE type.")
+                        result = True, "tpu0"
+                        break  # Ensures exit after the first match
+                if result is None:  # If no device matched
+                    result = False, ""
+        else:
+            log.error("Invalid PE type.")
+            result = False, "Invalid PE type."  # Provide a default result for invalid PE
+
         return result
 
 
