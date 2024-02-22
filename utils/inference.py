@@ -68,9 +68,13 @@ class InferenceScenarioA(InferenceStrategy):
         input_size = model.get_array_size_from_shape(model.input_shape)
         output_size = model.get_array_size_from_shape(model.output_shape)
 
-        input_data_vector = np.zeros(input_size).astype(
-                model.get_np_dtype(model.input_datatype)
-                )
+        if model.input_vector is None:
+            input_data_vector = np.zeros(input_size).astype(
+                    model.get_np_dtype(model.input_datatype)
+                    )
+        else:
+            input_data_vector = model.input_vector
+
         output_data_vector = np.zeros(output_size).astype(
                 model.get_np_dtype(model.output_datatype)
                 )

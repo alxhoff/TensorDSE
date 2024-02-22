@@ -100,7 +100,7 @@ ifndef OBJECTIVE
 override OBJECTIVE = "average_finish_time"
 endif
 ifndef NATIVE_DEPLOYMENT
-override OBJECTIVE = false
+override NATIVE_DEPLOYMENT = false
 endif
 ifndef HW_NATIVE_DEPLOYMENT
 override HW_NATIVE_DEPLOYMENT = None
