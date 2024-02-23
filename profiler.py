@@ -34,7 +34,7 @@ class Proflier:
         self.hardware_to_benchmark = []
 
 
-    def single_model_profile(self, model_summary: dict, parent_model_path: str) -> Dict:
+    def single_model_profile(self, model_summary: dict, parent_model_id: str) -> Dict:
         """
         Missing  Docstring: TODO
         """
@@ -46,7 +46,7 @@ class Proflier:
             models[delegate] = []
             for layer in model_summary["layers"]:
                 inference_instance = Inference(
-                    model=Model(layer, delegate, parent_model_path),
+                    model=Model(layer, delegate, parent_model_id),
                     count=self.count,
                     platform=self.platform
                     )
@@ -87,29 +87,29 @@ class Proflier:
                          for Benchmarking on the Edge TPU!")
 
         # Deploy the generated models/layers onto the target test hardware using docker
-        for single_model_summary in self.model_summary.get("models"):
+        for i, single_model_summary in enumerate(self.model_summary.get("models")):
             if not single_model_summary.get("path").endswith(".tflite"):
                 log.fatal("File: %s is not a tflite file!", single_model_summary.get("path"))
 
-            model_path = os.path.basename(single_model_summary.get("path")).split(".tflite")[0]
-            log.info("Benchmarking %s for %s time(s)", model_path, self.count)
+            model_name = os.path.basename(single_model_summary.get("path")).split(".tflite")[0]
+            log.info("Benchmarking %s for %s time(s)", model_name, self.count)
 
             results_dict = self.single_model_profile(
-                    parent_model_path=model_path,
+                    parent_model_id=f"model_{i}_{model_name}",
                     model_summary=single_model_summary
                     )
 
-            log.info("Model %s profiled!", model_path)
+            log.info("Model %s profiled!", model_name)
 
             # Process results
-            log.info("[PROFILE MODEL] Analyzing profiling results for: %s", model_path)
-            analyse_model_results(model_path, results_dict, self.hardware_summary, self.platform)
+            log.info("[PROFILE MODEL] Analyzing profiling results for: %s", model_name)
+            analyse_model_results(f"model_{i}_{model_name}", results_dict, self.hardware_summary, self.platform)
 
             log.info("Analyzed and merged results")
 
-            log.info("Final Clean up")
-            if self.platform == "desktop":
-                self.splitter.clean(True)
+        log.info("Final Clean up")
+        if self.platform == "desktop":
+            self.splitter.clean(True)
 
 
 def get_arguments() -> argparse.Namespace:

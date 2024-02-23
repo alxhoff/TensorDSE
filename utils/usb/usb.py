@@ -2,7 +2,7 @@
 Missing  Docstring: TODO
 """
 
-from multiprocessing import Queue, Event
+from multiprocessing import Queue
 
 import queue
 import pyshark
@@ -65,7 +65,7 @@ def peek_queue(q:Queue):
         return False
 
 
-def capture_packets(signals_q:Queue, data_q:Queue, stop_event: Event, usbmon:int, log: Log) -> None:
+def capture_packets(signals_q:Queue, data_q:Queue, stop_event, usbmon:int, log: Log) -> None:
     """
     Missing  Docstring: TODO
     """
@@ -122,11 +122,11 @@ def capture_stream(signals_q:Queue, data_q:Queue, usbmon:int, log: Log) -> None:
 
     log.info("- Packet Capture is started -")
     for i, raw_packet in enumerate(capture.sniff_continuously()):
-        log.info("   - Frame Nr. %s -   ", i)
+        log.info(f"   - Frame Nr. {i} -   ")
         p = UsbPacket(raw_packet, id, addr)
         context.set_phase(p)
-        log.info("   - Current Communication phase is: %s -   ", context.current_phase)
-        log.info("   - Current Transfer Type is: %s -   ", p.transfer_type)
+        log.info(f"   - Current Communication phase is: {context.current_phase} -   ")
+        log.info(f"   - Current Transfer Type is: {p.transfer_type} -   ")
 
         if context.is_inference_ended():
             break

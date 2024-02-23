@@ -19,6 +19,7 @@ class Model:
         try:
             model_basename = os.path.basename(path_to_model)
             self.name = model_basename.split(".")[0]
+            self.index = 0
         except IOError:
             log.fatal("Could not fetch model name from %s. Aborting!", path_to_model)
 
@@ -84,8 +85,22 @@ class Submodel(Model):
                  sequence_index: int):
 
         name = f'submodel_{sequence_index}_{op_name}_{"bm" if target_hardware.lower() == "" else target_hardware.lower()}'
-        self.dirs = {"json": os.path.join(MODELS_DIR, source_model.name, "sub", "json", name),
-                      "tflite": os.path.join(MODELS_DIR, source_model.name, "sub", "tflite", name)}
+        self.dirs = {
+            "json": os.path.join(
+                MODELS_DIR,
+                f"model_{source_model.index}_{source_model.name}",
+                "sub",
+                "json",
+                name
+                ),
+            "tflite": os.path.join(
+                MODELS_DIR,
+                f"model_{source_model.index}_{source_model.name}",
+                "sub",
+                "tflite",
+                name
+                )
+            }
         os.mkdir(self.dirs["json"])
         os.mkdir(self.dirs["tflite"])
         copy_file(os.path.join(RESOURCES_DIR, "shell", "shell_model.json"),
@@ -96,6 +111,7 @@ class Submodel(Model):
         self.source_model_name = source_model.name
         self.source_model_json = source_model.json
         self.name = name
+        self.source_model_folder_name = f"model_{source_model.index}_{source_model.name}"
 
     def add_ops(self, layers):
         """Adds the appropriate operations, specified by the given layers, to

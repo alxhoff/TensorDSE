@@ -53,15 +53,19 @@ class Splitter:
         """
         source_model_path = source_model.paths["tflite"]
         log.info("Source Model saved under: %s", source_model_path)
-        if os.path.exists(MODELS_DIR):
-            run_command_and_echo("rm", "-rf", MODELS_DIR)
-        os.mkdir(MODELS_DIR)
-        os.mkdir(os.path.join(MODELS_DIR, source_model.name))
+
+        os.mkdir(
+            os.path.join(
+                MODELS_DIR,
+                f"model_{source_model.index}_{source_model.name}")
+        )
 
         for directory in ["source", "sub", "final"]:
-            sub_dir = os.path.join(MODELS_DIR, source_model.name, directory)
-            if os.path.exists(sub_dir):
-                run_command_and_echo("rm", "-rf", sub_dir)
+            sub_dir = os.path.join(
+                MODELS_DIR,
+                f"model_{source_model.index}_{source_model.name}",
+                directory
+                )
             os.mkdir(sub_dir)
             for ext in ["tflite", "json"]:
                 ext_dir = os.path.join(sub_dir, ext)
@@ -70,10 +74,9 @@ class Splitter:
                 os.mkdir(ext_dir)
 
         target_path = os.path.join(
-            os.path.join(
-                MODELS_DIR,
-                source_model.name, "source"
-                ),
+            MODELS_DIR,
+            f"model_{source_model.index}_{source_model.name}",
+            "source",  
             "tflite",
             f"{source_model.name}.tflite"
             )
@@ -103,12 +106,14 @@ class Splitter:
         the device name of where the layer should be mapped (eg. "cpu1").
         """
 
-        for model in self.summary["models"]:
+        for i, model in enumerate(self.summary["models"]):
             layers = []
             for j, layer in enumerate(model["layers"]):
                 layers.append((j, layer["type"], layer["mapping"]))
             self.models_details.append(layers)
-            self.models.append(Model(model.get("path", ""), self.schema_path))
+            m = Model(model.get("path", ""), self.schema_path)
+            m.index = i
+            self.models.append(m)
 
 
     def create_submodel_layer_sequences(self) -> None:
@@ -143,6 +148,10 @@ class Splitter:
         """
             Missing  Docstring: TODO
         """
+        if os.path.exists(MODELS_DIR):
+            run_command_and_echo("rm", "-rf", MODELS_DIR)
+        os.mkdir(MODELS_DIR)
+
         for model in self.models:
             self.single_model_env_init(model)
             model.convert("tflite", "json")
@@ -228,10 +237,10 @@ class Splitter:
         """
         for submodel in self.submodel_list:
             if bm:
-                submodel.edgetpu_compile(submodel.source_model_name)
+                submodel.edgetpu_compile(submodel.source_model_folder_name)
             else:
                 if "tpu" in submodel.name:
-                    submodel.edgetpu_compile(submodel.source_model_name)
+                    submodel.edgetpu_compile(submodel.source_model_folder_name)
 
 
     def run(self, sequences=False):
