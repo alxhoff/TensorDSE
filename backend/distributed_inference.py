@@ -1,6 +1,16 @@
+"""
+Missing  Docstring: TODO
+"""
+
 import numpy as np
 from cffi import FFI
 
+try:
+    from backend import cpp_interface
+
+except (ModuleNotFoundError, ImportError) as e:
+    print(f"Importing of Backend failed:\n{e}\n")
+    raise
 
 def distributed_inference(
     tflite_model_path:str,
@@ -14,12 +24,9 @@ def distributed_inference(
     benchmarking_count: int,
     core_index: int
 ):
-    try:
-        from backend import cpp_interface
-
-    except (ModuleNotFoundError, ImportError) as e:
-        print(f"Importing of Backend failed:\n{e}\n")
-        raise
+    """
+    Missing  Docstring: TODO
+    """
 
     _ffi = FFI()
 
@@ -31,18 +38,24 @@ def distributed_inference(
     output_data_ptr = _ffi.cast("int8_t*", output_data.ctypes.data)
     inference_times_ptr = _ffi.cast("uint32_t*", inference_times.ctypes.data)
 
-    result = cpp_interface.lib.distributed_inference_interface(tflite_model_path_ptr, input_data_ptr,
-                                                                                      output_data_ptr,
-                                                                                      inference_times_ptr,
-                                                                                      input_data_size,
-                                                                                      output_data_size,
-                                                                                      hardware_target_ptr,
-                                                                                      platform_ptr,
-                                                                                      benchmarking_count,
-                                                                                      core_index)
+    # pylint: disable=no-member
+    result = cpp_interface.lib.distributed_inference_interface(
+
+        tflite_model_path_ptr,
+        input_data_ptr,
+        output_data_ptr,
+        inference_times_ptr,
+        input_data_size,
+        output_data_size,
+        hardware_target_ptr,
+        platform_ptr,
+        benchmarking_count,
+        core_index
+        )
+    # pylint: enable=no-member
 
     if result == -1:
-        raise Exception("C++ distributed inference failed")
+        raise IOError("C++ distributed inference failed")
 
     result /= 1000000000.0
 

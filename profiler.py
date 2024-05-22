@@ -44,7 +44,7 @@ class Proflier:
 
         for delegate in self.hardware_to_benchmark:
             models[delegate] = []
-            for layer in model_summary["layers"]:
+            for layer in (model_summary["layers"]):
                 inference_instance = Inference(
                     model=Model(layer, delegate, parent_model_id),
                     count=self.count,
@@ -52,8 +52,11 @@ class Proflier:
                     )
                 m = inference_instance.invoke()
                 m.model_name = f"{m.model_name}_{m.index}_{'_'.join(map(str, m.input_shape))}"
-                models["cpu"].append(m)
-                log.info("[PROFILE MODEL LAYERS] Layer profiled")
+                models[delegate].append(m)
+                log.info("[PROFILE MODEL LAYERS] Finished Profiling Layer %s (%s) profiled on %s",
+                         layer.get('index'),
+                         {layer.get('type')},
+                         delegate)
                 #AnalyzeLayerResults(m, "delegate")
 
         return models
@@ -103,7 +106,9 @@ class Proflier:
 
             # Process results
             log.info("[PROFILE MODEL] Analyzing profiling results for: %s", model_name)
-            analyse_model_results(f"model_{i}_{model_name}", results_dict, self.hardware_summary, self.platform)
+            analyse_model_results(f"model_{i}_{model_name}",
+                                  results_dict, self.hardware_summary,
+                                  self.platform)
 
             log.info("Analyzed and merged results")
 
