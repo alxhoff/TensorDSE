@@ -77,6 +77,9 @@ def analyse_model_results(parent_model:str, models_dict:Dict, hardware_summary:D
                     "avg_absolute_deviation"   : a.avg_absolute_deviation,
                     "distribution"             : a.distribution_name,
                     "usb"                      : process_streams(delegate.timers, delegate.results),
+                    "cpp_preprocessing"        : delegate.cpp_times[0],
+                    "cpp_postprocessing"       : delegate.cpp_times[1],
+                    "backend_indference_time"  : delegate.total_inf_time,
                     "mean_computation"         : 0
                     }
 

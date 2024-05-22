@@ -28,9 +28,13 @@
 int distributed_inference_cpu(std::string& tflite_model_path, int8_t* input_data,
                                                               int8_t* output_data,
                                                               uint32_t* inference_times,
+                                                              uint32_t* data_times,
                                                               const unsigned int input_data_size,
                                                               const unsigned int output_data_size,
-                                                              const unsigned int benchmarking_count) {
+                                                              const unsigned int benchmarking_count,
+                                                              DataType data_type) {
+    
+    auto check_point_1 = std::chrono::high_resolution_clock::now();
 
     // Load the model
     spdlog::info("  [1]  Loading TFLite Model from: {}", tflite_model_path);
@@ -62,19 +66,34 @@ int distributed_inference_cpu(std::string& tflite_model_path, int8_t* input_data
     // Invoke
     spdlog::info("  [4]  Invoking Interpreter ...");
     std::vector<uint32_t> inference_times_vec(benchmarking_count, 0);
+    std::vector<uint32_t> data_times_vec(2, 0);
+
+    auto check_point_2 = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < benchmarking_count; i++) {
-        std::vector<int8_t> randomVector
-            = generateRandomVector(input_data_size);
-        std::vector<int8_t> data(input_data, input_data + input_data_size);
-
-        // Copy Input Data into the Input Tensor
+        
         if (benchmarking_count > 1) {
-            std::copy(randomVector.begin(), randomVector.end(),
-                interpreter->typed_input_tensor<int8_t>(0));
+            if (data_type == INT8) {
+                std::vector<int8_t> randomVector = generateRandomVector<int8_t>(input_data_size);
+                std::copy(randomVector.begin(), randomVector.end(), interpreter->typed_input_tensor<int8_t>(0));
+            } else if (data_type == UINT8) {
+                std::vector<uint8_t> randomVector = generateRandomVector<uint8_t>(input_data_size);
+                std::copy(randomVector.begin(), randomVector.end(), interpreter->typed_input_tensor<uint8_t>(0));
+            } else {
+                std::cerr << "Unsupported data type" << std::endl;
+                return -1;
+            }
         } else {
-            std::copy(data.begin(), data.end(),
-                interpreter->typed_input_tensor<int8_t>(0));
+            if (data_type == INT8) {
+                std::vector<int8_t> data(static_cast<int8_t*>(input_data), static_cast<int8_t*>(input_data) + input_data_size);
+                std::copy(data.begin(), data.end(), interpreter->typed_input_tensor<int8_t>(0));
+            } else if (data_type == UINT8) {
+                std::vector<uint8_t> data(static_cast<uint8_t*>(input_data), static_cast<uint8_t*>(input_data) + input_data_size);
+                std::copy(data.begin(), data.end(), interpreter->typed_input_tensor<uint8_t>(0));
+            } else {
+                std::cerr << "Unsupported data type" << std::endl;
+                return -1;
+            }
         }
 
         auto inference_start = std::chrono::high_resolution_clock::now();
@@ -83,17 +102,24 @@ int distributed_inference_cpu(std::string& tflite_model_path, int8_t* input_data
             return 1;
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
+
         auto inference_time_ns
             = std::chrono::duration_cast<std::chrono::nanoseconds>(
                 inference_end - inference_start)
                     .count();
         inference_times_vec[i] = inference_time_ns;
+
     }
+    
+    auto check_point_3 = std::chrono::high_resolution_clock::now();
 
-    std::vector<int8_t> final_data 
-        = GetTensorData(*interpreter->output_tensor(0));
-
-    std::copy(final_data.begin(), final_data.end(), output_data);
+    if (data_type == INT8) {
+        std::vector<int8_t> final_data = GetTensorData<int8_t>(*interpreter->output_tensor(0));
+        std::copy(final_data.begin(), final_data.end(), static_cast<int8_t*>(output_data));
+    } else if (data_type == UINT8) {
+        std::vector<uint8_t> final_data = GetTensorData<uint8_t>(*interpreter->output_tensor(0));
+        std::copy(final_data.begin(), final_data.end(), static_cast<uint8_t*>(output_data));
+    }
 
     std::copy(inference_times_vec.begin(), inference_times_vec.end(),
         inference_times);
@@ -102,6 +128,22 @@ int distributed_inference_cpu(std::string& tflite_model_path, int8_t* input_data
 
     spdlog::info("  [5]  Interpreter successfully invoked ({} times)!", benchmarking_count);
 
+    auto check_point_4 = std::chrono::high_resolution_clock::now();
+
+    auto pre_processing_time_ns 
+            = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                check_point_2 - check_point_1)
+                    .count();
+    data_times_vec[0] = pre_processing_time_ns;
+    
+    auto post_processing_time_ns 
+            = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                check_point_4 - check_point_3)
+                    .count();
+    data_times_vec[1] = post_processing_time_ns;
+
+    std::copy(data_times_vec.begin(), data_times_vec.end(),
+        data_times);
 
     return mean;
 }
@@ -110,10 +152,13 @@ int distributed_inference_cpu(std::string& tflite_model_path, int8_t* input_data
 int distributed_inference_gpu(std::string& tflite_model_path, int8_t* input_data,
                                                               int8_t* output_data,
                                                               uint32_t* inference_times,
+                                                              uint32_t* data_times,
                                                               const unsigned int input_data_size,
                                                               const unsigned int output_data_size,
-                                                              const unsigned int benchmarking_count) {
+                                                              const unsigned int benchmarking_count,
+                                                              DataType data_type) {
 
+    auto check_point_1 = std::chrono::high_resolution_clock::now();
 
     // Load the model
     spdlog::info("  [1]  Loading TFLite Model from: {}", tflite_model_path);
@@ -153,19 +198,33 @@ int distributed_inference_gpu(std::string& tflite_model_path, int8_t* input_data
     // Invoke
     spdlog::info("  [5]  Invoking Interpreter ...");
     std::vector<uint32_t> inference_times_vec(benchmarking_count, 0);
+    std::vector<uint32_t> data_times_vec(2, 0);
+
+    auto check_point_2 = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < benchmarking_count; i++) {
-        std::vector<int8_t> randomVector
-            = generateRandomVector(input_data_size);
-        std::vector<int8_t> data(input_data, input_data + input_data_size);
-
-        // Copy Input Data into the Input Tensor
         if (benchmarking_count > 1) {
-            std::copy(randomVector.begin(), randomVector.end(), 
-                interpreter->typed_input_tensor<int8_t>(0));
+            if (data_type == INT8) {
+                std::vector<int8_t> randomVector = generateRandomVector<int8_t>(input_data_size);
+                std::copy(randomVector.begin(), randomVector.end(), interpreter->typed_input_tensor<int8_t>(0));
+            } else if (data_type == UINT8) {
+                std::vector<uint8_t> randomVector = generateRandomVector<uint8_t>(input_data_size);
+                std::copy(randomVector.begin(), randomVector.end(), interpreter->typed_input_tensor<uint8_t>(0));
+            } else {
+                std::cerr << "Unsupported data type" << std::endl;
+                return -1;
+            }
         } else {
-            std::copy(data.begin(), data.end(),
-                interpreter->typed_input_tensor<int8_t>(0));
+            if (data_type == INT8) {
+                std::vector<int8_t> data(static_cast<int8_t*>(input_data), static_cast<int8_t*>(input_data) + input_data_size);
+                std::copy(data.begin(), data.end(), interpreter->typed_input_tensor<int8_t>(0));
+            } else if (data_type == UINT8) {
+                std::vector<uint8_t> data(static_cast<uint8_t*>(input_data), static_cast<uint8_t*>(input_data) + input_data_size);
+                std::copy(data.begin(), data.end(), interpreter->typed_input_tensor<uint8_t>(0));
+            } else {
+                std::cerr << "Unsupported data type" << std::endl;
+                return -1;
+            }
         }
 
         auto inference_start = std::chrono::high_resolution_clock::now();
@@ -174,23 +233,48 @@ int distributed_inference_gpu(std::string& tflite_model_path, int8_t* input_data
             return 1;
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
+
         auto inference_time_ns 
             = std::chrono::duration_cast<std::chrono::nanoseconds>(
                 inference_end - inference_start)
                 .count();
         inference_times_vec[i] = inference_time_ns;
+
     }
 
-    std::vector<int8_t> final_data 
-        = GetTensorData(*interpreter->output_tensor(0));
+    auto check_point_3 = std::chrono::high_resolution_clock::now();
 
-    std::copy(final_data.begin(), final_data.end(), output_data);
+    if (data_type == INT8) {
+        std::vector<int8_t> final_data = GetTensorData<int8_t>(*interpreter->output_tensor(0));
+        std::copy(final_data.begin(), final_data.end(), static_cast<int8_t*>(output_data));
+    } else if (data_type == UINT8) {
+        std::vector<uint8_t> final_data = GetTensorData<uint8_t>(*interpreter->output_tensor(0));
+        std::copy(final_data.begin(), final_data.end(), static_cast<uint8_t*>(output_data));
+    }
+
     std::copy(inference_times_vec.begin(), inference_times_vec.end(),
         inference_times);
 
     int mean = calculateMean(inference_times_vec);
 
     spdlog::info("  [5]  Interpreter successfully invoked ({} times)!", benchmarking_count);
+
+    auto check_point_4 = std::chrono::high_resolution_clock::now();
+
+    auto pre_processing_time_ns 
+            = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                check_point_2 - check_point_1)
+                    .count();
+    data_times_vec[0] = pre_processing_time_ns;
+    
+    auto post_processing_time_ns 
+            = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                check_point_4 - check_point_3)
+                    .count();
+    data_times_vec[1] = post_processing_time_ns;
+
+    std::copy(data_times_vec.begin(), data_times_vec.end(),
+        data_times);
 
     return mean;
 }
@@ -199,10 +283,14 @@ int distributed_inference_gpu(std::string& tflite_model_path, int8_t* input_data
 int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_data,
                                                               int8_t* output_data,
                                                               uint32_t* inference_times,
+                                                              uint32_t* data_times,
                                                               const unsigned int input_data_size,
                                                               const unsigned int output_data_size,
                                                               const unsigned int benchmarking_count,
-                                                              const unsigned int core_index) {
+                                                              const unsigned int core_index,
+                                                              DataType data_type) {
+    
+    auto check_point_1 = std::chrono::high_resolution_clock::now();
 
     // Find TPU device.
     spdlog::info("  [1]  Detecting Edge TPUs Devices ...");
@@ -256,18 +344,33 @@ int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_
     // Invoke
     spdlog::info("  [6]  Invoking Interpreter ...");
     std::vector<uint32_t> inference_times_vec(benchmarking_count, 0);
-    for (int i = 0; i < benchmarking_count; i++) {
-        std::vector<int8_t> randomVector 
-            = generateRandomVector(input_data_size);
-        std::vector<int8_t> data(input_data, input_data + input_data_size);
+    std::vector<uint32_t> data_times_vec(2, 0);
 
-        // Copy Input Data into the Input Tensor
+    auto check_point_2 = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < benchmarking_count; i++) {
         if (benchmarking_count > 1) {
-            std::copy(randomVector.begin(), randomVector.end(), 
-                interpreter->typed_input_tensor<int8_t>(0));
+            if (data_type == INT8) {
+                std::vector<int8_t> randomVector = generateRandomVector<int8_t>(input_data_size);
+                std::copy(randomVector.begin(), randomVector.end(), interpreter->typed_input_tensor<int8_t>(0));
+            } else if (data_type == UINT8) {
+                std::vector<uint8_t> randomVector = generateRandomVector<uint8_t>(input_data_size);
+                std::copy(randomVector.begin(), randomVector.end(), interpreter->typed_input_tensor<uint8_t>(0));
+            } else {
+                std::cerr << "Unsupported data type" << std::endl;
+                return -1;
+            }
         } else {
-            std::copy(data.begin(), data.end(), 
-                interpreter->typed_input_tensor<int8_t>(0));
+            if (data_type == INT8) {
+                std::vector<int8_t> data(static_cast<int8_t*>(input_data), static_cast<int8_t*>(input_data) + input_data_size);
+                std::copy(data.begin(), data.end(), interpreter->typed_input_tensor<int8_t>(0));
+            } else if (data_type == UINT8) {
+                std::vector<uint8_t> data(static_cast<uint8_t*>(input_data), static_cast<uint8_t*>(input_data) + input_data_size);
+                std::copy(data.begin(), data.end(), interpreter->typed_input_tensor<uint8_t>(0));
+            } else {
+                std::cerr << "Unsupported data type" << std::endl;
+                return -1;
+            }
         }
 
         auto inference_start = std::chrono::high_resolution_clock::now();
@@ -276,6 +379,7 @@ int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_
             return 1;
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
+
         auto inference_time_ns 
             = std::chrono::duration_cast<std::chrono::nanoseconds>(
                 inference_end - inference_start)
@@ -283,10 +387,16 @@ int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_
         inference_times_vec[i] = inference_time_ns;
     }
 
-    std::vector<int8_t> final_data 
-        = GetTensorData(*interpreter->output_tensor(0));
+    auto check_point_3 = std::chrono::high_resolution_clock::now();
 
-    std::copy(final_data.begin(), final_data.end(), output_data);
+    if (data_type == INT8) {
+        std::vector<int8_t> final_data = GetTensorData<int8_t>(*interpreter->output_tensor(0));
+        std::copy(final_data.begin(), final_data.end(), static_cast<int8_t*>(output_data));
+    } else if (data_type == UINT8) {
+        std::vector<uint8_t> final_data = GetTensorData<uint8_t>(*interpreter->output_tensor(0));
+        std::copy(final_data.begin(), final_data.end(), static_cast<uint8_t*>(output_data));
+    }
+
     std::copy(inference_times_vec.begin(), inference_times_vec.end(), 
         inference_times);
 
@@ -296,6 +406,23 @@ int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_
 
     interpreter.reset();
 
+    auto check_point_4 = std::chrono::high_resolution_clock::now();
+
+    auto pre_processing_time_ns 
+            = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                check_point_2 - check_point_1)
+                    .count();
+    data_times_vec[0] = pre_processing_time_ns;
+    
+    auto post_processing_time_ns 
+            = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                check_point_4 - check_point_3)
+                    .count();
+    data_times_vec[1] = post_processing_time_ns;
+
+    std::copy(data_times_vec.begin(), data_times_vec.end(),
+        data_times);
+
     return mean;
 
 }
@@ -304,10 +431,14 @@ int distributed_inference_tpu_rpi(std::string& tflite_model_path, int8_t* input_
 int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_data,
                                                               int8_t* output_data,
                                                               uint32_t* inference_times,
+                                                              uint32_t* data_times,
                                                               const unsigned int input_data_size,
                                                               const unsigned int output_data_size,
                                                               const unsigned int benchmarking_count,
-                                                              const unsigned int core_index) {
+                                                              const unsigned int core_index,
+                                                              DataType data_type) {
+
+    auto check_point_1 = std::chrono::high_resolution_clock::now();
 
     // Find TPU device.
     spdlog::info("  [1]  Detecting Edge TPUs Devices ...");
@@ -355,18 +486,33 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
     // Invoke
     spdlog::info("  [5]  Invoking Interpreter ...");
     std::vector<uint32_t> inference_times_vec(benchmarking_count, 0);
-    for (int i = 0; i < benchmarking_count; i++) {
-        std::vector<int8_t> randomVector 
-            = generateRandomVector(input_data_size);
-        std::vector<int8_t> data(input_data, input_data + input_data_size);
+    std::vector<uint32_t> data_times_vec(2, 0);
 
-        // Copy Input Data into the Input Tensor
+    auto check_point_2 = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < benchmarking_count; i++) {
         if (benchmarking_count > 1) {
-            std::copy(randomVector.begin(), randomVector.end(), 
-                interpreter->typed_input_tensor<int8_t>(0));
+            if (data_type == INT8) {
+                std::vector<int8_t> randomVector = generateRandomVector<int8_t>(input_data_size);
+                std::copy(randomVector.begin(), randomVector.end(), interpreter->typed_input_tensor<int8_t>(0));
+            } else if (data_type == UINT8) {
+                std::vector<uint8_t> randomVector = generateRandomVector<uint8_t>(input_data_size);
+                std::copy(randomVector.begin(), randomVector.end(), interpreter->typed_input_tensor<uint8_t>(0));
+            } else {
+                std::cerr << "Unsupported data type" << std::endl;
+                return -1;
+            }
         } else {
-            std::copy(data.begin(), data.end(), 
-                interpreter->typed_input_tensor<int8_t>(0));
+            if (data_type == INT8) {
+                std::vector<int8_t> data(static_cast<int8_t*>(input_data), static_cast<int8_t*>(input_data) + input_data_size);
+                std::copy(data.begin(), data.end(), interpreter->typed_input_tensor<int8_t>(0));
+            } else if (data_type == UINT8) {
+                std::vector<uint8_t> data(static_cast<uint8_t*>(input_data), static_cast<uint8_t*>(input_data) + input_data_size);
+                std::copy(data.begin(), data.end(), interpreter->typed_input_tensor<uint8_t>(0));
+            } else {
+                std::cerr << "Unsupported data type" << std::endl;
+                return -1;
+            }
         }
 
         auto inference_start = std::chrono::high_resolution_clock::now();
@@ -375,17 +521,24 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
             return 1;
         }
         auto inference_end = std::chrono::high_resolution_clock::now();
+
         auto inference_time_ns 
             = std::chrono::duration_cast<std::chrono::nanoseconds>(
                 inference_end - inference_start)
                 .count();
         inference_times_vec[i] = inference_time_ns;
     }
+    
+    auto check_point_3 = std::chrono::high_resolution_clock::now();
 
-    std::vector<int8_t> final_data 
-        = GetTensorData(*interpreter->output_tensor(0));
-
-    std::copy(final_data.begin(), final_data.end(), output_data);
+    if (data_type == INT8) {
+        std::vector<int8_t> final_data = GetTensorData<int8_t>(*interpreter->output_tensor(0));
+        std::copy(final_data.begin(), final_data.end(), static_cast<int8_t*>(output_data));
+    } else if (data_type == UINT8) {
+        std::vector<uint8_t> final_data = GetTensorData<uint8_t>(*interpreter->output_tensor(0));
+        std::copy(final_data.begin(), final_data.end(), static_cast<uint8_t*>(output_data));
+    }
+    
     std::copy(inference_times_vec.begin(), inference_times_vec.end(), 
         inference_times);
 
@@ -395,6 +548,23 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
 
     interpreter.reset();
 
+    auto check_point_4 = std::chrono::high_resolution_clock::now();
+
+    auto pre_processing_time_ns 
+            = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                check_point_2 - check_point_1)
+                    .count();
+    data_times_vec[0] = pre_processing_time_ns;
+    
+    auto post_processing_time_ns 
+            = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                check_point_4 - check_point_3)
+                    .count();
+    data_times_vec[1] = post_processing_time_ns;
+
+    std::copy(data_times_vec.begin(), data_times_vec.end(),
+        data_times);
+
     return mean;
 }
 
@@ -402,12 +572,14 @@ int distributed_inference_tpu_std(std::string& tflite_model_path, int8_t* input_
 int distributed_inference_wrapper(std::string& tflite_model_path, int8_t* input_data,
                                                                   int8_t* output_data,
                                                                   uint32_t* inference_times,
+                                                                  uint32_t* data_times,
                                                                   const unsigned int input_data_size,
                                                                   const unsigned int output_data_size,
                                                                   std::string& hardware_target,
                                                                   std::string& platform,
                                                                   const unsigned int benchmarking_count,
-                                                                  const unsigned int core_index
+                                                                  const unsigned int core_index,
+                                                                  DataType data_type
                                                                   ) {
    
     int result = 0;
@@ -424,34 +596,42 @@ int distributed_inference_wrapper(std::string& tflite_model_path, int8_t* input_
         result = distributed_inference_cpu(tflite_model_path, input_data,
                                                               output_data,
                                                               inference_times,
+                                                              data_times,
                                                               input_data_size,
                                                               output_data_size,
-                                                              benchmarking_count);
+                                                              benchmarking_count,
+                                                              data_type);
     } else if (hardware_target.compare("gpu") == 0) {
         result = distributed_inference_gpu(tflite_model_path, input_data,
                                                               output_data,
                                                               inference_times,
+                                                              data_times,
                                                               input_data_size,
                                                               output_data_size,
-                                                              benchmarking_count);
+                                                              benchmarking_count,
+                                                              data_type);
     } else if (hardware_target.compare("tpu") == 0) {
         if (platform.compare("rpi") == 0) {
             result = distributed_inference_tpu_rpi(tflite_model_path, input_data,
                                                               output_data,
                                                               inference_times,
+                                                              data_times,
                                                               input_data_size,
                                                               output_data_size,
                                                               benchmarking_count,
-                                                              core_index);
+                                                              core_index,
+                                                              data_type);
 
         } else {
             result = distributed_inference_tpu_std(tflite_model_path, input_data,
                                                               output_data,
                                                               inference_times,
+                                                              data_times,
                                                               input_data_size,
                                                               output_data_size,
                                                               benchmarking_count,
-                                                              core_index);
+                                                              core_index,
+                                                              data_type);
         }
         
     } else {

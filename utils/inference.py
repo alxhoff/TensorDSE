@@ -79,20 +79,23 @@ class InferenceScenarioA(InferenceStrategy):
                 model.get_np_dtype(model.output_datatype)
                 )
         inference_times_vector = np.zeros(self.count).astype(np.uint32)
+        data_times_vector = np.zeros(2).astype(np.uint32)
 
         mean_inference_time = 0
         try:
-            mean_inference_time = distributed_inference(
+            mean_inference_time, backend_inference_time = distributed_inference(
                     model.model_path,
                     input_data_vector,
                     output_data_vector,
                     inference_times_vector,
+                    data_times_vector,
                     len(input_data_vector),
                     len(output_data_vector),
                     model.delegate,
                     self.platform,
                     self.count,
-                    0
+                    0,
+                    model.input_datatype
                     )
         except RuntimeError:
             log.error("An error was encountered while trying to invoke \
@@ -101,6 +104,8 @@ class InferenceScenarioA(InferenceStrategy):
 
         model.output_vector = output_data_vector
         model.results = [t/1000000000.0 for t in inference_times_vector.tolist()]
+        model.cpp_times = [t/1000000000.0 for t in data_times_vector.tolist()]
+        model.total_inf_time = backend_inference_time
 
         return model
 
@@ -162,23 +167,28 @@ class InferenceScenarioB(InferenceStrategy):
                     )
 
             inference_times_vector = np.zeros(self.count).astype(np.uint32)
+            data_times_vector = np.zeros(2).astype(np.uint32)
 
-            mean_inference_time = distributed_inference(
+            mean_inference_time, backend_inference_time = distributed_inference(
                     model.model_path,
                     input_data_vector,
                     output_data_vector,
                     inference_times_vector,
+                    data_times_vector,
                     len(input_data_vector),
                     len(output_data_vector),
                     "tpu",
                     "rpi_test" if self.platform == "rpi" else self.platform,
                     1,
-                    self.CORE_INDEX
+                    self.CORE_INDEX,
+                    model.input_datatype
                     )
 
             time.sleep(self.DEPLOY_WAIT_TIME)
 
             model.results.append(mean_inference_time)
+            model.cpp_times = [t/1000000000.0 for t in data_times_vector.tolist()]
+            model.total_inf_time = backend_inference_time
 
             try:
                 data = data_q.get(timeout=10)
@@ -247,18 +257,21 @@ class InferenceScenarioC(InferenceStrategy):
                     model.get_np_dtype(model.output_datatype)
                     )
             inference_times_vector = np.zeros(self.count).astype(np.uint32)
+            data_times_vector = np.zeros(2).astype(np.uint32)
 
-            mean_inference_time = distributed_inference(
+            mean_inference_time, backend_inference_time = distributed_inference(
                     model.model_path,
                     input_data_vector,
                     output_data_vector,
                     inference_times_vector,
+                    data_times_vector,
                     len(input_data_vector),
                     len(output_data_vector),
                     "tpu",
                     self.platform,
                     1,
                     self.CORE_INDEX,
+                    model.input_datatype
                     )
 
             time.sleep(self.DEPLOY_WAIT_TIME/2)
@@ -266,6 +279,8 @@ class InferenceScenarioC(InferenceStrategy):
             end_deployment_event.set()
 
             results.append(mean_inference_time)
+            model.cpp_times = [t/1000000000.0 for t in data_times_vector.tolist()]
+            model.total_inf_time = backend_inference_time
 
             try:
                 data = data_queue.get()

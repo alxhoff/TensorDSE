@@ -12,15 +12,18 @@ def compile_interface(verbose:bool = True) -> object:
 
     ffi = FFI()
     ffi.cdef("""int distributed_inference_interface(
-                                                      char* tflite_model_path_ptr,
-                                                      int8_t* input_data,
-                                                      int8_t* output_data,
-                                                      uint32_t* inference_times,
-                                                      const unsigned int input_data_size,
-                                                      const unsigned int output_data_size,
-                                                      char* hardware_target_ptr, char* platform_ptr,
-                                                      const unsigned int benchmarking_count,
-                                                      const unsigned int core_index
+             char* tflite_model_path_ptr, 
+             void* input_data, 
+             void* output_data, 
+             uint32_t* inference_times,
+             uint32_t* data_times,
+             const unsigned int input_data_size, 
+             const unsigned int output_data_size, 
+             char* hardware_target_ptr, 
+             char* platform_ptr, 
+             const unsigned int benchmarking_count,
+             const unsigned int core_index, 
+             int data_type
              );""")
 
     print(os.getcwd())

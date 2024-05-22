@@ -11,6 +11,9 @@ import random
 import traceback
 import multiprocessing
 
+import tensorflow as tf
+import tensorflow_datasets as tfds
+
 import numpy as np
 
 from utils.model import Model
@@ -23,6 +26,77 @@ from utils.usb.process import process_streams
 from utils.inference import Inference
 
 from status_verifier import StatusVerifierSingleton as verifier
+
+
+def preprocess_image_mnist(image, label, image_size, data_type):
+    """
+    Missing  Docstring: TODO
+    """
+
+    image = tf.image.resize(image, image_size)  # Resize to the input size required by the model
+    image = tf.image.grayscale_to_rgb(image)  # Convert grayscale to RGB
+    image = tf.cast(image, tf.float32) / 255.0  # Normalize the image to [0, 1] range
+    if data_type == np.int8:
+        image = tf.cast(image * 255.0 - 128, data_type)  # Convert to int8
+    elif data_type == np.uint8:
+        image = tf.cast(image * 255.0, data_type)  # Convert to uint8
+    return image, label
+
+
+def preprocess_image_imagenet(image, label, image_size, data_type):
+    """
+    Missing  Docstring: TODO
+    """
+
+    image = tf.image.resize(image, image_size)  # Resize to the input size required by the model
+    image = tf.cast(image, tf.float32) / 255.0  # Normalize the image to [0, 1] range
+    if data_type == np.int8:
+        image = tf.cast(image * 255.0 - 128, data_type)  # Convert to int8
+    elif data_type == np.uint8:
+        image = tf.cast(image * 255.0, data_type)  # Convert to uint8
+    return image, label
+
+
+def load_and_preprocess_dataset(dataset_name, image_size, data_type, preprocess_fn):
+    """
+    Missing  Docstring: TODO
+    """
+
+    dataset, info = tfds.load(dataset_name, with_info=True, as_supervised=True)
+    test_dataset = dataset['test']
+
+    test_dataset = test_dataset.map(lambda image, label: preprocess_fn(image,
+                                                                       label,
+                                                                       image_size,
+                                                                       data_type))
+
+    images = []
+    labels = []
+
+    for image, label in tfds.as_numpy(test_dataset):
+        images.append(image)
+        labels.append(label)
+
+    images_np = np.array(images)
+    labels_np = np.array(labels)
+
+    return images_np, labels_np
+
+
+def interpret_output(output_data, data_type, labels_np):
+    """
+    Missing  Docstring: TODO
+    """
+
+    output_data = output_data.astype(np.float32)
+    if data_type == np.int8:
+        output_data = (output_data + 128) / 255.0  # Dequantize int8
+    elif data_type == np.uint8:
+        output_data = output_data / 255.0  # Dequantize uint8
+    predicted_label = np.argmax(output_data)
+    if predicted_label == labels_np[0]:
+        result = True
+    return result
 
 
 class Deployer:
@@ -43,13 +117,15 @@ class Deployer:
                  hardware: str) -> None:
 
         self.model_summary = verifier.get_model_summary(verifier)
-        self.platform = verifier.get_platform(verifier)
+        self.platform = verifier.get_platform()
         self.native_deployment = native_deployment
         self.data_module = data_module
         self.native_hardware = hardware
 
         self.models = []
         self.multi_models_sequences = []
+        self.images = None
+        self.labels = None
 
 
     def split(self):
@@ -99,11 +175,27 @@ class Deployer:
         """
         Missing  Docstring: TODO
         """
-        module = __import__(self.data_module)
-        for comp in self.data_module.split(".")[1:]:
-            module = getattr(module, comp)
-        dataset = module.GetData()["test_data"]
-        m.input_vector = random.choice(dataset)
+        if self.data_module == 'MNIST':
+            dataset_name = 'mnist'
+            image_size = [224, 224]
+            preprocess_fn = preprocess_image_mnist
+
+        elif self.data_module == 'IMAGENET':
+            dataset_name = 'imagenet2012'
+            image_size = [224, 224]
+            preprocess_fn = preprocess_image_imagenet
+
+        data_type = np.int8 if m.input_datatype == 'int8' else np.uint8
+
+        images_np, labels_np = load_and_preprocess_dataset(dataset_name,
+                                                           image_size,
+                                                           data_type,
+                                                           preprocess_fn)
+
+        self.images = images_np
+        self.labels = labels_np
+
+        m.input_vector = images_np[0]
 
 
     def analyse_results(self):
@@ -213,6 +305,15 @@ class Deployer:
             with hardware_lock:
                 m = self.layer_deploy(m)
 
+            if j == (len(model_sequence) - 1):
+                if interpret_output(m.output_vector,
+                                    m.get_np_dtype(m.output_datatype),
+                                    self.labels) is True:
+                    print("Correct Prediction for Image")
+                else:
+                    print("False Prediction for Image")
+
+
             submodels.append(m)
             log.info("Model %s | Layer %s deployed on %s", model_index, j, m.hardware)
 
@@ -262,8 +363,8 @@ def get_arguments():
     parser.add_argument(
             "-d",
             "--dataset",
-            default="utils.datasets.MNIST",
-            help="Dataset import module to be used for providing input data"
+            default="MNIST",
+            help="Dataset to be used for providing input data"
             )
 
     parser.add_argument(

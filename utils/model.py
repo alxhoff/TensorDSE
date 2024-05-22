@@ -21,8 +21,10 @@ class Model:
         self.id             = f'submodel_{self.index}_ops{self.index}_bm'
         self.results        = []
         self.timers         = []
+        self.cpp_times      = []
+        self.total_inf_time = 0
         self.input_vector   = None
-        self.output_vector   = None
+        self.output_vector  = None
 
         self.set_model_path()
         self.set_input_details()
