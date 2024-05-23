@@ -118,10 +118,17 @@ class StatusVerifierSingleton(metaclass=SingletonMeta):
             summary = read_json_file(args.summarypath)
             if summary is None:
                 log.fatal("The provided Model Summary is empty!")
+                return False
         else:
             log.fatal("The provided Path to the Summary is not valid!")
+            return False
+
+        self._platform = args.platform
 
         self._multi_model_summary = summary
+        self._active_process = "Deployment"
+
+        return True
 
 
     def set_model_summary(self, summary: dict) -> None:

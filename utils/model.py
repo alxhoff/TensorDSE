@@ -13,7 +13,7 @@ class Model:
     """
     def __init__(self, layer, delegate:str, parent:str=""):
         self.details        = layer
-        self.delegate       = delegate
+        self.delegate       = delegate if len(delegate)==3 else delegate[:3]
         self.parent         = parent
         self.model_path     = ""
         self.model_name     = layer["type"] if isinstance(layer, dict) else None

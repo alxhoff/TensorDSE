@@ -3,6 +3,7 @@ Missing Docstring: TODO
 """
 
 import os
+import sys
 from typing import Dict
 from itertools import groupby
 
@@ -22,7 +23,8 @@ def export_results(file:str, data:Dict) -> None:
         json_data = data
         json.dump(json_data, json_file, indent=4)
 
-def analyse_model_results(parent_model:str, models_dict:Dict, hardware_summary:Dict, platform: str):
+def analyse_model_results_profile(parent_model:str,
+                                  models_dict:Dict, hardware_summary:Dict, platform: str):
     """
     Missing Docstring: TODO
     """
@@ -79,12 +81,14 @@ def analyse_model_results(parent_model:str, models_dict:Dict, hardware_summary:D
                     "usb"                      : process_streams(delegate.timers, delegate.results),
                     "cpp_preprocessing"        : delegate.cpp_times[0],
                     "cpp_postprocessing"       : delegate.cpp_times[1],
-                    "backend_indference_time"  : delegate.total_inf_time,
+                    "backend_inference_time"   : delegate.total_inf_time,
                     "mean_computation"         : 0
                     }
 
             if delegate == "tpu":
-                delegate_dict["mean"] = delegate_dict["mean"] - (delegate_dict["usb"]["communication"]["mean"])
+                delegate_dict["mean"] = delegate_dict["mean"] - (
+                    delegate_dict["usb"]["communication"]["mean"]
+                    )
 
             layer_dict["delegates"].append(delegate_dict)
             layer_dict["path"][delegate_name] = delegate.model_path
@@ -100,3 +104,51 @@ def analyse_model_results(parent_model:str, models_dict:Dict, hardware_summary:D
         data["models"][0]["layers"].append(layer_dict)
 
     export_results(results_path, data)
+
+
+def analyse_model_results_deploy(models, platform):
+    """
+    Missing  Docstring: TODO
+    """
+
+    results_folder = os.path.join(os.getcwd(), "resources/deployment_results", platform)
+
+    if not os.path.isdir(results_folder):
+        log.error("%s is not a valid folder to store results!", results_folder)
+        os.mkdir(results_folder)
+        if not os.path.isdir(results_folder):
+            log.fatal("Unable to create Results Folder to store Deployment results!")
+            sys.exit(-1)
+
+    for i, model in enumerate(models):
+        results_path = os.path.join(results_folder, f"{model[0].parent}.json")
+        model_results = {
+            "model_name": model[0].parent,
+            "submodels": [],
+            "total_inference_time (s)": 0,
+            "total_inference_time (c++)": 0,
+            "pre_processing_time (c++)": 0,
+            "post_processing_time (c++)": 0,
+            "total_inference_time (python)": 0
+        }
+        
+        for m in model:
+            submodel = {
+                "name": m.model_name,
+                "layers": m.details,
+                "total_inference_time (c++)": m.results[0],
+                "usb": {}
+            }
+            model_results["pre_processing_time (c++)"] = m.cpp_times[0]
+            model_results["post_processing_time (c++)"] = m.cpp_times[0]
+            model_results["total_inference_time (python)"] = m.total_inf_time
+            if platform != "coral" and "tpu" in m.delegate:
+                submodel["usb"] = process_streams(m.timers, m.results)
+            model_results["submodels"].append(submodel)
+            model_results["total_inference_time (c++)"] += m.results[0]
+            model_results["pre_processing_time (c++)"] += m.cpp_times[0]
+            model_results["post_processing_time (c++)"] += m.cpp_times[0]
+            model_results["total_inference_time (python)"] += m.total_inf_time
+
+        with open(results_path, 'w', encoding="utf-8") as json_file:
+            json.dump(model_results, json_file, indent=4)

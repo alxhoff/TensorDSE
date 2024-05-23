@@ -159,13 +159,13 @@ run: $(if $(call exist-docker-image),,build)
 endif
 
 profile:
-	$(MAKE) -f ${FILE} run MODE=${PROFILE}
+	$(MAKE) -f ${FILE} run MODE=${PROFILE_MODE}
 
 dse: 
 	$(MAKE) -f ${FILE} run MODE=${DSE_ONLY_MODE}
 
 deploy:
-	$(MAKE) -f ${FILE} run MODE=${DEPLOY}
+	$(MAKE) -f ${FILE} run MODE=${DEPLOY_MODE}
 
 nodeploy: 
 	$(MAKE) -f ${FILE} run MODE=${NO_DEPLOY_MODE}

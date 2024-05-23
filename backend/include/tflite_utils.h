@@ -41,4 +41,8 @@ std::vector<int8_t> GetTensorData(const TfLiteTensor& tensor);
 
 std::vector<int8_t> generateRandomVector(int vectorSize);
 
+std::vector<uint8_t> GetTensorDataUn(const TfLiteTensor& tensor);
+
+std::vector<uint8_t> generateRandomVectorUn(int vectorSize);
+
 #endif

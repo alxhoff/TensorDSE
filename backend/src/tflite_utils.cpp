@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <random>
+#include <cstring>
 
 #include <stdlib.h>
 #include <filesystem>
@@ -250,6 +251,29 @@ std::vector<int8_t> generateRandomVector(int vectorSize) {
     // Generate random values for each element of the vector
     for (int i = 0; i < vectorSize; ++i) {
         std::uniform_int_distribution<int8_t> distribution(-128, 127);
+        randomVector[i] = distribution(gen);
+    }
+
+    return randomVector;
+}
+
+std::vector<uint8_t> GetTensorDataUn(const TfLiteTensor& tensor) {
+    const auto* data = reinterpret_cast<const uint8_t*>(tensor.data.data);
+    std::vector<uint8_t> result(tensor.bytes);
+    for (int i = 0; i < tensor.bytes; ++i)
+        result[i] = data[i];
+    return result;
+}
+
+std::vector<uint8_t> generateRandomVectorUn(int vectorSize) {
+    std::random_device rd;
+    std::mt19937 gen(rd());  // Initialize random number generator
+
+    std::vector<uint8_t> randomVector(vectorSize);
+
+    // Generate random values for each element of the vector
+    for (int i = 0; i < vectorSize; ++i) {
+        std::uniform_int_distribution<int8_t> distribution(0, 255);
         randomVector[i] = distribution(gen);
     }
 

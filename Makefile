@@ -13,11 +13,11 @@ $(eval USBMON = $(shell python3 utils/usb/detect_tpu_bus.py 2>&1))
 $(info Finding USBMON as $(USBMON))
 endif
 ifndef MULTI_MODEL
-override MULTI_MODEL = true
+override MULTI_MODEL = false
 $(info Using default MULTI_MODEL: $(MULTI_MODEL))
 endif
 ifndef MODEL
-override MODEL = resources/models/example_models/mobilenet/mobilenet_v1_1_0_224_quant.tflite
+override MODEL = resources/models/example_models/resnet/pretrainedResnet_quant.tflite
 $(info Using default MODEL: $(MODEL))
 endif
 ifndef MODEL_NAME

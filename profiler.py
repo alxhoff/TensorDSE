@@ -10,7 +10,7 @@ from utils.logging.logger import log
 
 from utils.model import Model
 from utils.splitter.split import Splitter
-from utils.analysis import analyse_model_results
+from utils.analysis import analyse_model_results_profile
 from utils.inference import Inference
 from status_verifier import StatusVerifierSingleton as verifier
 
@@ -106,7 +106,7 @@ class Proflier:
 
             # Process results
             log.info("[PROFILE MODEL] Analyzing profiling results for: %s", model_name)
-            analyse_model_results(f"model_{i}_{model_name}",
+            analyse_model_results_profile(f"model_{i}_{model_name}",
                                   results_dict, self.hardware_summary,
                                   self.platform)
 

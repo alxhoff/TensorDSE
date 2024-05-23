@@ -105,7 +105,7 @@ class InferenceScenarioA(InferenceStrategy):
         model.output_vector = output_data_vector
         model.results = [t/1000000000.0 for t in inference_times_vector.tolist()]
         model.cpp_times = [t/1000000000.0 for t in data_times_vector.tolist()]
-        model.total_inf_time = backend_inference_time
+        model.total_inf_time = backend_inference_time / 1000000000.0
 
         return model
 
@@ -146,6 +146,7 @@ class InferenceScenarioB(InferenceStrategy):
                         ),
                     )
 
+            p.daemon = False
             p.start()
 
             sig = signals_q.get()
@@ -188,7 +189,7 @@ class InferenceScenarioB(InferenceStrategy):
 
             model.results.append(mean_inference_time)
             model.cpp_times = [t/1000000000.0 for t in data_times_vector.tolist()]
-            model.total_inf_time = backend_inference_time
+            model.total_inf_time = backend_inference_time / 1000000000.0
 
             try:
                 data = data_q.get(timeout=10)
@@ -280,7 +281,7 @@ class InferenceScenarioC(InferenceStrategy):
 
             results.append(mean_inference_time)
             model.cpp_times = [t/1000000000.0 for t in data_times_vector.tolist()]
-            model.total_inf_time = backend_inference_time
+            model.total_inf_time = backend_inference_time / 1000000000.0
 
             try:
                 data = data_queue.get()
@@ -325,10 +326,13 @@ class Inference:
             return InferenceScenarioA(self.count, self.platform)
 
 
-    def invoke(self) -> Model:
+    def invoke(self, force_a: False) -> Model:
         """
         Missing  Docstring: TODO
         """
         strategy = self.identify_strategy()
+        if force_a is True:
+            strategy = InferenceScenarioA(self.count, self.platform)
+
         context = InferneceContext(strategy)
         return context.initiate(self.model)

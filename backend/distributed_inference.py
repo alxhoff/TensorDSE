@@ -39,6 +39,9 @@ def distributed_inference(
     hardware_target_ptr = _ffi.new("char[]", hardware_target.encode("utf-8"))
     platform_ptr = _ffi.new("char[]", platform.encode("utf-8"))
 
+    #input_data_ptr = _ffi.cast("int8_t*", input_data.ctypes.data)
+    #output_data_ptr = _ffi.cast("int8_t*", output_data.ctypes.data)
+
     if data_type == 'int8':
         input_data_ptr = _ffi.cast("int8_t*", input_data.ctypes.data)
         output_data_ptr = _ffi.cast("int8_t*", output_data.ctypes.data)
@@ -68,8 +71,8 @@ def distributed_inference(
         data_type_flag
         )
 
-    if result == -1:
-        raise IOError("C++ distributed inference failed")
+    if result < 0:
+        raise IOError(f"C++ distributed inference failed {result}, {tflite_model_path}")
 
     result /= 1000000000.0
 

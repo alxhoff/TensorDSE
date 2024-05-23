@@ -2,13 +2,13 @@
 Missing  Docstring: TODO
 """
 
+import multiprocessing.pool
 import os
 import sys
 import copy
-import json
 import argparse
-import random
 import traceback
+import threading
 import multiprocessing
 
 import tensorflow as tf
@@ -21,11 +21,23 @@ from utils.logging.logger import log
 from utils.splitter.utils import read_json_file
 from utils.splitter.split import Splitter
 from utils.splitter.split import MODELS_DIR
-from utils.usb.process import process_streams
+from utils.analysis import analyse_model_results_deploy
 
 from utils.inference import Inference
 
 from status_verifier import StatusVerifierSingleton as verifier
+
+
+def softmax(x):
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=0)
+
+
+def set_start_method():
+    try:
+        multiprocessing.set_start_method('spawn', force=True)
+    except RuntimeError:
+        pass
 
 
 def preprocess_image_mnist(image, label, image_size, data_type):
@@ -44,6 +56,20 @@ def preprocess_image_mnist(image, label, image_size, data_type):
 
 
 def preprocess_image_imagenet(image, label, image_size, data_type):
+    """
+    Missing  Docstring: TODO
+    """
+
+    image = tf.image.resize(image, image_size)  # Resize to the input size required by the model
+    image = tf.cast(image, tf.float32) / 255.0  # Normalize the image to [0, 1] range
+    if data_type == np.int8:
+        image = tf.cast(image * 255.0 - 128, data_type)  # Convert to int8
+    elif data_type == np.uint8:
+        image = tf.cast(image * 255.0, data_type)  # Convert to uint8
+    return image, label
+
+
+def preprocess_image_cifar10(image, label, image_size, data_type):
     """
     Missing  Docstring: TODO
     """
@@ -88,12 +114,17 @@ def interpret_output(output_data, data_type, labels_np):
     Missing  Docstring: TODO
     """
 
+    result = True
     output_data = output_data.astype(np.float32)
     if data_type == np.int8:
         output_data = (output_data + 128) / 255.0  # Dequantize int8
     elif data_type == np.uint8:
         output_data = output_data / 255.0  # Dequantize uint8
     predicted_label = np.argmax(output_data)
+
+    probabilities = softmax(output_data)
+    predicted_label = np.argmax(probabilities)
+
     if predicted_label == labels_np[0]:
         result = True
     return result
@@ -105,9 +136,9 @@ class Deployer:
     """
 
     HARDWARE_LOCKS = {
-        'cpu0': multiprocessing.Lock(),
-        'gpu0': multiprocessing.Lock(),
-        'tpu0': multiprocessing.Lock(),
+        'cpu': multiprocessing.Lock(),
+        'gpu': multiprocessing.Lock(),
+        'tpu': multiprocessing.Lock(),
     }
 
 
@@ -126,6 +157,16 @@ class Deployer:
         self.multi_models_sequences = []
         self.images = None
         self.labels = None
+
+
+    def debug_active_threads_and_processes(self):
+        log.info("Active threads and processes:")
+        log.info(f"Active threads: {[thread.name for thread in threading.enumerate()]}")
+        log.info(f"Active children: {multiprocessing.active_children()}")
+        for p in multiprocessing.active_children():
+            log.info(f"Terminating process: {p.pid}")
+            p.terminate()
+            p.join()
 
 
     def split(self):
@@ -161,6 +202,13 @@ class Deployer:
         self.multi_models_sequences = model_layer_sequences
 
 
+    def analyse_results(self):
+        """
+        Missing  Docstring: TODO
+        """
+        analyse_model_results_deploy(self.models, self.platform)
+
+
     def set_random_input_data(self, m: Model):
         """
         Missing  Docstring: TODO
@@ -185,6 +233,11 @@ class Deployer:
             image_size = [224, 224]
             preprocess_fn = preprocess_image_imagenet
 
+        elif self.data_module == 'CIFAR10':
+            dataset_name = 'cifar10'
+            image_size = [224, 224]
+            preprocess_fn = preprocess_image_cifar10
+
         data_type = np.int8 if m.input_datatype == 'int8' else np.uint8
 
         images_np, labels_np = load_and_preprocess_dataset(dataset_name,
@@ -198,43 +251,7 @@ class Deployer:
         m.input_vector = images_np[0]
 
 
-    def analyse_results(self):
-        """
-        Missing  Docstring: TODO
-        """
-
-        results_folder = os.path.join(os.getcwd(), "resources/deployment_results", self.platform)
-
-        if not os.path.isdir(results_folder):
-            log.error("%s is not a valid folder to store results!", results_folder)
-            os.mkdir(results_folder)
-            if not os.path.isdir(results_folder):
-                log.fatal("Unable to create Results Folder to store Deployment results!")
-                sys.exit(-1)
-
-        for i, model in enumerate(self.models):
-            results_path = os.path.join(results_folder, f"{model[0].parent}.json")
-            model_results = dict()
-            model_results["model_name"] = model[i].parent
-            model_results["submodels"] = []
-            model_results["total_inference_time (s)"] = 0
-            for m in model:
-                submodel = dict()
-                submodel["name"] = m.model_name
-                submodel["layers"] = m.details
-                submodel["inference_time (s)"] = m.results[0]
-                submodel["usb"] = dict()
-                if not self.platform == "coral":
-                    if "tpu" in m.delegate:
-                        submodel["usb"] = process_streams(m.timers, m.results)
-                model_results["submodels"].append(submodel)
-                model_results["total_inference_time (s)"] += m.results[0]
-
-            with open(results_path, 'w', encoding="utf-8") as json_file:
-                json.dump(model_results, json_file, indent=4)
-
-
-    def layer_deploy(self, m: Model):
+    def layer_deploy(self, m: Model, model_index):
         """
         Missing  Docstring: TODO
         """
@@ -244,7 +261,7 @@ class Deployer:
         if delegate_type == "tpu":
             m.model_path = os.path.join(
                     MODELS_DIR,
-                    m.parent,
+                    f"model_{model_index}_{m.parent}",
                     "sub",
                     "compiled",
                     f"{m.model_name}_edgetpu.tflite"
@@ -252,7 +269,7 @@ class Deployer:
         else:
             m.model_path = os.path.join(
                     MODELS_DIR,
-                    m.parent,
+                    f"model_{model_index}_{m.parent}",
                     "sub",
                     "tflite",
                     m.model_name,
@@ -260,7 +277,7 @@ class Deployer:
                     )
 
         inference_instance = Inference(model=m, count=1, platform=self.platform)
-        m = inference_instance.invoke()
+        m = inference_instance.invoke(force_a=True if m.delegate == "tpu" else False)
 
         return m
 
@@ -303,7 +320,7 @@ class Deployer:
             hardware_lock = self.HARDWARE_LOCKS[m.delegate]
 
             with hardware_lock:
-                m = self.layer_deploy(m)
+                m = self.layer_deploy(m, model_index)
 
             if j == (len(model_sequence) - 1):
                 if interpret_output(m.output_vector,
@@ -315,31 +332,29 @@ class Deployer:
 
 
             submodels.append(m)
-            log.info("Model %s | Layer %s deployed on %s", model_index, j, m.hardware)
+            log.info("Model %s | Layer %s deployed on %s", model_index, j, m.delegate)
 
         return submodels
 
 
     def multi_model_deploy(self):
-        """
-        Missing  Docstring: TODO
-        """
-
         self.split()
-
-        # Create a process pool with the number of processes equal to the number of CPU cores
-        with multiprocessing.Pool(processes=os.cpu_count()) as pool:
-            # Asynchronously apply `DeploySequences` function to each sequence
+        pool = None
+        try:
+            pool = multiprocessing.Pool(processes=4)
             async_results = [
                 pool.apply_async(self.sequences_deploy, (model_sequences, i))
                 for i, model_sequences in enumerate(self.multi_models_sequences)
             ]
-
-            # Collect the results as they complete
             self.models = [async_result.get() for async_result in async_results]
-
+        except Exception as e:
+            log.error(f"An error occurred during deployment: {e}")
+        finally:
+            if pool is not None:
+                pool.close()
+                pool.join()
+            self.debug_active_threads_and_processes()
         log.info("All models deployed!")
-
         self.analyse_results()
 
 
@@ -388,21 +403,27 @@ def get_arguments():
             help="HW Target for native deployment",
             )
 
+
     return parser.parse_args()
 
 
 if __name__ == "__main__":
 
+    set_start_method()
     args = get_arguments()
 
+    deployer = None
     if verifier.verify_args_for_deployer(verifier, args=args) is True:
         deployer = Deployer(args.native, args.dataset, args.hardware)
 
-    try:
-        deployer.multi_model_deploy()
-    except RuntimeError:
-        log.error("An error occured in the deployment process.")
-        TRACE_STR = traceback.format_exc()
-        log.info("Traceback to the Excepton: %s", TRACE_STR)
+        try:
+            deployer.multi_model_deploy()
+        except RuntimeError:
+            log.error("An error occured in the deployment process.")
+            TRACE_STR = traceback.format_exc()
+            log.info("Traceback to the Excepton: %s", TRACE_STR)
 
-    log.info("[DEPLOY] Finished")
+        log.info("[DEPLOY] Finished")
+        sys.exit(0)
+    else:
+        log.fatal("Problem in Deployment!")

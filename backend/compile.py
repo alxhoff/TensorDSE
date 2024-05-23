@@ -23,7 +23,7 @@ def compile_interface(verbose:bool = True) -> object:
              char* platform_ptr, 
              const unsigned int benchmarking_count,
              const unsigned int core_index, 
-             int data_type
+             const unsigned int data_type
              );""")
 
     print(os.getcwd())

@@ -24,7 +24,7 @@ RUN apt-get update && \
 RUN apt-get install -y \
     sudo build-essential locales curl gnupg curl zip unzip tar openjdk-11-jdk kmod \
     git vim usbutils udev lshw software-properties-common apt-utils python3-dev python3-scipy python-argparse \
-    python3-numpy python3-matplotlib python3-tabulate python3-pandas python3-ipdb && \
+    python3-numpy python3-matplotlib python3-tabulate python3-pandas python3-ipdb libspdlog-dev libfmt-dev && \
     apt-get clean && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen && update-locale
@@ -36,7 +36,7 @@ echo "wireshark-common wireshark-common/install-setuid boolean true" | sudo debc
 apt-get -y install tshark
 
 # Python Libraries
-RUN python -m pip install pip install pyshark pycoral metrics wget
+RUN python -m pip install pip install pyshark pycoral metrics wget tensorflow-datasets
 RUN python -m pip install silabs-mltk --upgrade
 
 # CoralDev APT Paackages
