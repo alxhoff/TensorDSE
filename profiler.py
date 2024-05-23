@@ -50,7 +50,7 @@ class Proflier:
                     count=self.count,
                     platform=self.platform
                     )
-                m = inference_instance.invoke()
+                m = inference_instance.invoke(force_a=False)
                 m.model_name = f"{m.model_name}_{m.index}_{'_'.join(map(str, m.input_shape))}"
                 models[delegate].append(m)
                 log.info("[PROFILE MODEL LAYERS] Finished Profiling Layer %s (%s) profiled on %s",

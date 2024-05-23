@@ -202,6 +202,8 @@ run_profile_only() {
         python3 resources/model_summaries/create_model_summary.py --model $MODEL --outputname "$model_name"_summary --outputdir resources/artifacts/model_summaries
         model_summary=resources/artifacts/model_summaries/"$model_name"_summary.json
 
+    elif [ "$MULTI_MODEL" == "true" ]; then
+        model_summary="$MODEL_SUMMARY"
     else
         echo "Cannot Create Summary. Unknown MULTI_MODEL $MULTI_MODEL"
     fi
@@ -229,16 +231,16 @@ run_profile_only() {
         echo "Profiling for Raspberry Pi"
         echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
         source ~/.bash_profile
-        ssh starkaf@192.168.0.5 "cd /home/starkaf/TensorDSE && mkdir resources/artifacts && mkdir resources/artifacts/models_summaries"
-        scp "$model_summary" starkaf@192.168.0.5:/home/starkaf/TensorDSE/"$model_summary_dir"/
+        ssh starkaf@192.168.0.37 "cd /home/starkaf/TensorDSE && mkdir resources/artifacts && mkdir resources/artifacts/models_summaries"
+        scp "$model_summary" starkaf@192.168.0.37:/home/starkaf/TensorDSE/"$model_summary_dir"/
         python3 -m utils.splitter.split -s "$model_summary"
-        scp -r utils/splitter/models starkaf@192.168.0.5:/home/starkaf/TensorDSE/utils/splitter/
+        scp -r utils/splitter/models starkaf@192.168.0.37:/home/starkaf/TensorDSE/utils/splitter/
         rm -rf utils/splitter/models
-        ssh starkaf@192.168.0.5 "sudo modprobe usbmon"
-        ssh starkaf@192.168.0.5 "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -s "$model_summary" -p rpi -c "$COUNT" -u "$USBMON""
-        ssh starkaf@192.168.0.5 "cd /home/starkaf/TensorDSE/utils/splitter && rm -rf models"
-        scp starkaf@192.168.0.5:/home/starkaf/TensorDSE/resources/profiling_results/rpi/* resources/profiling_results/rpi/
-        scp starkaf@192.168.0.5:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
+        ssh starkaf@192.168.0.37 "sudo modprobe usbmon"
+        ssh starkaf@192.168.0.37 "cd /home/starkaf/TensorDSE && sudo python3 profiler.py -s "$model_summary" -p rpi -c "$COUNT" -u "$USBMON""
+        ssh starkaf@192.168.0.37 "cd /home/starkaf/TensorDSE/utils/splitter && rm -rf models"
+        scp starkaf@192.168.0.37:/home/starkaf/TensorDSE/resources/profiling_results/rpi/* resources/profiling_results/rpi/
+        scp starkaf@192.168.0.37:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
         echo "Profiling for Raspberry Pi successfully completed!"
 
     else
@@ -258,7 +260,7 @@ run_deploy_only() {
         echo "Deployment for Coral Dev Board"
         echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
         source ~/.bash_profile
-        mdt push $MODEL_SUMMARY_W_MAPPINGS starkaf@192.168.0.5:/home/starkaf/TensorDSE/"$model_summary_w_mappings_dir_path"/
+        mdt push $MODEL_SUMMARY_W_MAPPINGS /media/afUSB/TensorDSE/"$model_summary_w_mappings_dir_path"/
         python3 -m utils.splitter.split -s $MODEL_SUMMARY_W_MAPPINGS -q True
         mdt push utils/splitter/models /media/afUSB/TensorDSE/utils/splitter/
         mdt push utils/splitter/model_layer_sequences.json /media/afUSB/TensorDSE/utils/splitter/
@@ -273,18 +275,18 @@ run_deploy_only() {
         echo "Deployment for Raspberry Pi"
         echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bash_profile
         source ~/.bash_profile
-        scp $MODEL_SUMMARY_W_MAPPINGS starkaf@192.168.0.5:/home/starkaf/TensorDSE/$MODEL_SUMMARY_W_MAPPINGS
+        scp $MODEL_SUMMARY_W_MAPPINGS starkaf@192.168.0.37:/home/starkaf/TensorDSE/$MODEL_SUMMARY_W_MAPPINGS
         python3 -m utils.splitter.split -s $MODEL_SUMMARY_W_MAPPINGS -q True
-        scp utils/splitter/model_layer_sequences.json starkaf@192.168.0.5:/home/starkaf/TensorDSE/utils/splitter/
-        scp -r utils/splitter/models starkaf@192.168.0.5:/home/starkaf/TensorDSE/utils/splitter/
+        scp utils/splitter/model_layer_sequences.json starkaf@192.168.0.37:/home/starkaf/TensorDSE/utils/splitter/
+        scp -r utils/splitter/models starkaf@192.168.0.37:/home/starkaf/TensorDSE/utils/splitter/
         rm utils/splitter/model_layer_sequences.json
         rm -rf utils/splitter/models
-        ssh starkaf@192.168.0.5 "sudo modprobe usbmon"
-        ssh starkaf@192.168.0.5 "cd /home/starkaf/TensorDSE && sudo python3 deploy.py -s '$MODEL_SUMMARY_W_MAPPINGS' -p rpi"
-        scp -r starkaf@192.168.0.5:/home/starkaf/TensorDSE/resources/deployment_results/rpi/ resources/deployment_results/rpi/
-        scp starkaf@192.168.0.5:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
-        ssh starkaf@192.168.0.5 "cd /home/starkaf/TensorDSE/utils/splitter && rm -rf models"
-        ssh starkaf@192.168.0.5 "cd /home/starkaf/TensorDSE/utils/splitter && rm model_layer_sequences.json"
+        ssh starkaf@192.168.0.37 "sudo modprobe usbmon"
+        ssh starkaf@192.168.0.37 "cd /home/starkaf/TensorDSE && sudo python3 deploy.py -s '$MODEL_SUMMARY_W_MAPPINGS' -p rpi"
+        scp -r starkaf@192.168.0.37:/home/starkaf/TensorDSE/resources/deployment_results/rpi/ resources/deployment_results/rpi/
+        scp starkaf@192.168.0.37:/home/starkaf/TensorDSE/resources/logs/* resources/logs/
+        ssh starkaf@192.168.0.37 "cd /home/starkaf/TensorDSE/utils/splitter && rm -rf models"
+        ssh starkaf@192.168.0.37 "cd /home/starkaf/TensorDSE/utils/splitter && rm model_layer_sequences.json"
         echo "Deployment for Raspberry Pi successfully completed!"
 
     else
@@ -356,6 +358,8 @@ main() {
         setup_board
     else
         echo "RUNNING FULL FLOW"
+        echo "$mode"
+        echo ZEBIIII369
         run_full_flow
     fi
 }

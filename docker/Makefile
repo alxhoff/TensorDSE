@@ -15,7 +15,7 @@ TEST_MODE 			:= 2
 SHELL_MODE 			:= 3
 DSE_ONLY_MODE		:= 4
 NO_DEPLOY_MODE		:= 5
-PROFILE				:= 6
+PROFILE_MODE		:= 6
 DEPLOY				:= 7
 SETUP               := 8
 
