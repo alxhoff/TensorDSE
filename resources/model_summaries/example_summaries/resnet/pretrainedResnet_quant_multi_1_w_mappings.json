@@ -24,7 +24,7 @@
                             "value": "Relu"
                         }
                     ],
-                    "mapping": "cpu0",
+                    "mapping": "cpu",
                     "inputs": [
                         {
                             "shape": [
@@ -81,7 +81,7 @@
                             "value": "Relu"
                         }
                     ],
-                    "mapping": "gpu0",
+                    "mapping": "gpu",
                     "inputs": [
                         {
                             "shape": [
@@ -138,7 +138,7 @@
                             "value": "None"
                         }
                     ],
-                    "mapping": "tpu0",
+                    "mapping": "tpu",
                     "inputs": [
                         {
                             "shape": [
@@ -187,7 +187,7 @@
                             "value": "Relu"
                         }
                     ],
-                    "mapping": "cpu0",
+                    "mapping": "cpu",
                     "inputs": [
                         {
                             "shape": [
@@ -237,7 +237,7 @@
                             "value": "Relu"
                         }
                     ],
-                    "mapping": "gpu0",
+                    "mapping": "gpu",
                     "inputs": [
                         {
                             "shape": [
@@ -294,7 +294,7 @@
                             "value": "None"
                         }
                     ],
-                    "mapping": "tpu0",
+                    "mapping": "tpu",
                     "inputs": [
                         {
                             "shape": [
@@ -351,7 +351,7 @@
                             "value": "None"
                         }
                     ],
-                    "mapping": "cpu0",
+                    "mapping": "cpu",
                     "inputs": [
                         {
                             "shape": [
@@ -400,7 +400,7 @@
                             "value": "Relu"
                         }
                     ],
-                    "mapping": "gpu0",
+                    "mapping": "gpu",
                     "inputs": [
                         {
                             "shape": [
@@ -450,7 +450,7 @@
                             "value": "Relu"
                         }
                     ],
-                    "mapping": "tpu0",
+                    "mapping": "tpu",
                     "inputs": [
                         {
                             "shape": [
@@ -507,7 +507,7 @@
                             "value": "None"
                         }
                     ],
-                    "mapping": "cpu0",
+                    "mapping": "cpu",
                     "inputs": [
                         {
                             "shape": [
@@ -564,7 +564,7 @@
                             "value": "None"
                         }
                     ],
-                    "mapping": "gpu0",
+                    "mapping": "gpu",
                     "inputs": [
                         {
                             "shape": [
@@ -613,7 +613,7 @@
                             "value": "Relu"
                         }
                     ],
-                    "mapping": "tpu0",
+                    "mapping": "tpu",
                     "inputs": [
                         {
                             "shape": [
@@ -667,7 +667,7 @@
                             "value": "None"
                         }
                     ],
-                    "mapping": "cpu0",
+                    "mapping": "cpu",
                     "inputs": [
                         {
                             "shape": [
@@ -700,7 +700,7 @@
                             "value": "none"
                         }
                     ],
-                    "mapping": "gpu0",
+                    "mapping": "gpu",
                     "inputs": [
                         {
                             "shape": [
@@ -738,7 +738,7 @@
                             "value": "None"
                         }
                     ],
-                    "mapping": "tpu0",
+                    "mapping": "tpu",
                     "inputs": [
                         {
                             "shape": [
@@ -781,7 +781,7 @@
                             "value": "softmaxoptions"
                         }
                     ],
-                    "mapping": "cpu0",
+                    "mapping": "cpu",
                     "inputs": [
                         {
                             "shape": [

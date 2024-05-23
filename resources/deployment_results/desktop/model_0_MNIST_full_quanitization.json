@@ -1,0 +1,332 @@
+{
+    "model_name": "MNIST_full_quanitization",
+    "submodels": [
+        {
+            "name": "submodel_0_ops0_cpu",
+            "layers": [
+                {
+                    "index": "0",
+                    "type": "conv_2d",
+                    "args": [
+                        {
+                            "key": "Padding",
+                            "value": "Valid"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "1x1"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "None"
+                        }
+                    ],
+                    "mapping": "cpu",
+                    "inputs": [
+                        {
+                            "shape": [
+                                "28",
+                                "28",
+                                "1"
+                            ],
+                            "type": "int8",
+                            "tensor": "0"
+                        },
+                        {
+                            "shape": [
+                                "3",
+                                "3",
+                                "1"
+                            ],
+                            "type": "int8",
+                            "tensor": "7"
+                        },
+                        {
+                            "shape": [
+                                "32"
+                            ],
+                            "type": "int32",
+                            "tensor": "6"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                "26",
+                                "26",
+                                "32"
+                            ],
+                            "type": "int8",
+                            "tensor": "8"
+                        }
+                    ]
+                }
+            ],
+            "inference_time (c++)": 0.016634459,
+            "pre_processing_time (c++)": 0.000208058,
+            "post_processing_time (c++)": 0.000208058,
+            "inference_time (python)": 0.033214973,
+            "usb": {}
+        },
+        {
+            "name": "submodel_1_ops1_gpu",
+            "layers": [
+                {
+                    "index": "1",
+                    "type": "max_pool_2d",
+                    "args": [
+                        {
+                            "key": "Padding",
+                            "value": "Valid"
+                        },
+                        {
+                            "key": "stride",
+                            "value": "2x2"
+                        },
+                        {
+                            "key": "filter",
+                            "value": "2x2"
+                        },
+                        {
+                            "key": "activation",
+                            "value": "None"
+                        }
+                    ],
+                    "mapping": "gpu",
+                    "inputs": [
+                        {
+                            "shape": [
+                                "26",
+                                "26",
+                                "32"
+                            ],
+                            "type": "int8",
+                            "tensor": "8"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                "13",
+                                "13",
+                                "32"
+                            ],
+                            "type": "int8",
+                            "tensor": "9"
+                        }
+                    ]
+                }
+            ],
+            "inference_time (c++)": 3.0448e-05,
+            "pre_processing_time (c++)": 9.6536e-05,
+            "post_processing_time (c++)": 9.6536e-05,
+            "inference_time (python)": 0.001597753,
+            "usb": {}
+        },
+        {
+            "name": "submodel_2_ops2_tpu",
+            "layers": [
+                {
+                    "index": "2",
+                    "type": "reshape",
+                    "args": [
+                        {
+                            "key": "Type",
+                            "value": "none"
+                        }
+                    ],
+                    "mapping": "tpu",
+                    "inputs": [
+                        {
+                            "shape": [
+                                "13",
+                                "13",
+                                "32"
+                            ],
+                            "type": "int8",
+                            "tensor": "9"
+                        },
+                        {
+                            "shape": [
+                                "2"
+                            ],
+                            "type": "int32",
+                            "tensor": "1"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                "5408"
+                            ],
+                            "type": "int8",
+                            "tensor": "10"
+                        }
+                    ]
+                }
+            ],
+            "inference_time (c++)": 0.000292464,
+            "pre_processing_time (c++)": 2.731737105,
+            "post_processing_time (c++)": 2.731737105,
+            "inference_time (python)": 2.737031922,
+            "usb": {
+                "communication": {
+                    "mean": 0.0
+                }
+            }
+        },
+        {
+            "name": "submodel_3_ops3_cpu",
+            "layers": [
+                {
+                    "index": "3",
+                    "type": "fully_connected",
+                    "args": [
+                        {
+                            "key": "Activation",
+                            "value": "Relu"
+                        }
+                    ],
+                    "mapping": "cpu",
+                    "inputs": [
+                        {
+                            "shape": [
+                                "5408"
+                            ],
+                            "type": "int8",
+                            "tensor": "10"
+                        },
+                        {
+                            "shape": [
+                                "5408"
+                            ],
+                            "type": "int8",
+                            "tensor": "5"
+                        },
+                        {
+                            "shape": [
+                                "128"
+                            ],
+                            "type": "int32",
+                            "tensor": "4"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                "128"
+                            ],
+                            "type": "int8",
+                            "tensor": "11"
+                        }
+                    ]
+                }
+            ],
+            "inference_time (c++)": 0.001408063,
+            "pre_processing_time (c++)": 0.0001113,
+            "post_processing_time (c++)": 0.0001113,
+            "inference_time (python)": 0.003567957,
+            "usb": {}
+        },
+        {
+            "name": "submodel_4_ops4_gpu",
+            "layers": [
+                {
+                    "index": "4",
+                    "type": "fully_connected",
+                    "args": [
+                        {
+                            "key": "Activation",
+                            "value": "None"
+                        }
+                    ],
+                    "mapping": "gpu",
+                    "inputs": [
+                        {
+                            "shape": [
+                                "128"
+                            ],
+                            "type": "int8",
+                            "tensor": "11"
+                        },
+                        {
+                            "shape": [
+                                "128"
+                            ],
+                            "type": "int8",
+                            "tensor": "3"
+                        },
+                        {
+                            "shape": [
+                                "10"
+                            ],
+                            "type": "int32",
+                            "tensor": "2"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                "10"
+                            ],
+                            "type": "int8",
+                            "tensor": "12"
+                        }
+                    ]
+                }
+            ],
+            "inference_time (c++)": 1.6386e-05,
+            "pre_processing_time (c++)": 0.000136831,
+            "post_processing_time (c++)": 0.000136831,
+            "inference_time (python)": 0.002095649,
+            "usb": {}
+        },
+        {
+            "name": "submodel_5_ops5_tpu",
+            "layers": [
+                {
+                    "index": "5",
+                    "type": "softmax",
+                    "args": [
+                        {
+                            "key": "Type",
+                            "value": "softmaxoptions"
+                        }
+                    ],
+                    "mapping": "tpu",
+                    "inputs": [
+                        {
+                            "shape": [
+                                "10"
+                            ],
+                            "type": "int8",
+                            "tensor": "12"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "shape": [
+                                "10"
+                            ],
+                            "type": "int8",
+                            "tensor": "13"
+                        }
+                    ]
+                }
+            ],
+            "inference_time (c++)": 0.000326097,
+            "pre_processing_time (c++)": 2.646417831,
+            "post_processing_time (c++)": 2.646417831,
+            "inference_time (python)": 2.652538316,
+            "usb": {
+                "communication": {
+                    "mean": 0.0
+                }
+            }
+        }
+    ],
+    "total_inference_time (c++)": 0.018707917,
+    "total_pre_processing_time (c++)": 5.378707661,
+    "total_post_processing_time (c++)": 5.378707661,
+    "total_inference_time (python)": 5.43004657
+}

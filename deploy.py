@@ -2,14 +2,16 @@
 Missing  Docstring: TODO
 """
 
-import multiprocessing.pool
+
 import os
-import sys
 import copy
+import random
 import argparse
 import traceback
 import threading
 import multiprocessing
+import multiprocessing.pool
+from multiprocessing import Manager
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -26,11 +28,6 @@ from utils.analysis import analyse_model_results_deploy
 from utils.inference import Inference
 
 from status_verifier import StatusVerifierSingleton as verifier
-
-
-def softmax(x):
-    e_x = np.exp(x - np.max(x))
-    return e_x / e_x.sum(axis=0)
 
 
 def set_start_method():
@@ -109,27 +106,6 @@ def load_and_preprocess_dataset(dataset_name, image_size, data_type, preprocess_
     return images_np, labels_np
 
 
-def interpret_output(output_data, data_type, labels_np):
-    """
-    Missing  Docstring: TODO
-    """
-
-    result = True
-    output_data = output_data.astype(np.float32)
-    if data_type == np.int8:
-        output_data = (output_data + 128) / 255.0  # Dequantize int8
-    elif data_type == np.uint8:
-        output_data = output_data / 255.0  # Dequantize uint8
-    predicted_label = np.argmax(output_data)
-
-    probabilities = softmax(output_data)
-    predicted_label = np.argmax(probabilities)
-
-    if predicted_label == labels_np[0]:
-        result = True
-    return result
-
-
 class Deployer:
     """
     Missing  Docstring: TODO
@@ -157,9 +133,14 @@ class Deployer:
         self.multi_models_sequences = []
         self.images = None
         self.labels = None
+        self.inference_results = None
 
 
     def debug_active_threads_and_processes(self):
+        """
+        Missing  Docstring: TODO
+        """
+
         log.info("Active threads and processes:")
         log.info(f"Active threads: {[thread.name for thread in threading.enumerate()]}")
         log.info(f"Active children: {multiprocessing.active_children()}")
@@ -206,7 +187,12 @@ class Deployer:
         """
         Missing  Docstring: TODO
         """
-        analyse_model_results_deploy(self.models, self.platform)
+        #if self.labels is None:
+        #    log.error("LABELs IS INDEED NONE")
+        #elif self.images is None:
+        #    log.error("IMAGES IS INDEED NONE")
+        #else:
+        self.inference_results = analyse_model_results_deploy(self.models, self.platform)
 
 
     def set_random_input_data(self, m: Model):
@@ -248,7 +234,11 @@ class Deployer:
         self.images = images_np
         self.labels = labels_np
 
-        m.input_vector = images_np[0]
+        random_number = random.randint(0, len(images_np)-1)
+
+        m.input_vector = images_np[random_number]
+
+        return random_number
 
 
     def layer_deploy(self, m: Model, model_index):
@@ -313,7 +303,8 @@ class Deployer:
                     if self.data_module is None:
                         self.set_random_input_data(m)
                     else:
-                        self.set_input_test_data_module(m)
+                        m.first = True
+                        m.input_image_idx = self.set_input_test_data_module(m)
             else:
                 m.input_vector = copy.deepcopy(submodels[-1].output_vector)
 
@@ -323,13 +314,9 @@ class Deployer:
                 m = self.layer_deploy(m, model_index)
 
             if j == (len(model_sequence) - 1):
-                if interpret_output(m.output_vector,
-                                    m.get_np_dtype(m.output_datatype),
-                                    self.labels) is True:
-                    print("Correct Prediction for Image")
-                else:
-                    print("False Prediction for Image")
-
+                m.final = True
+                m.labels = self.labels
+                m.images = self.images
 
             submodels.append(m)
             log.info("Model %s | Layer %s deployed on %s", model_index, j, m.delegate)
@@ -338,6 +325,10 @@ class Deployer:
 
 
     def multi_model_deploy(self):
+        """
+        Missing  Docstring: TODO
+        """
+
         self.split()
         pool = None
         try:
@@ -347,15 +338,16 @@ class Deployer:
                 for i, model_sequences in enumerate(self.multi_models_sequences)
             ]
             self.models = [async_result.get() for async_result in async_results]
-        except Exception as e:
-            log.error(f"An error occurred during deployment: {e}")
+        except RuntimeError:
+            log.error("An error occurred during Multi-Model Deployment Stage")
         finally:
             if pool is not None:
                 pool.close()
                 pool.join()
             self.debug_active_threads_and_processes()
-        log.info("All models deployed!")
+
         self.analyse_results()
+        log.info("All models successfully deployed and analysed!")
 
 
 def get_arguments():
@@ -403,6 +395,13 @@ def get_arguments():
             help="HW Target for native deployment",
             )
 
+    parser.add_argument(
+            "-pf",
+            "--performance",
+            default=0,
+            help="Test runs for Performance",
+            )
+
 
     return parser.parse_args()
 
@@ -412,18 +411,37 @@ if __name__ == "__main__":
     set_start_method()
     args = get_arguments()
 
-    deployer = None
-    if verifier.verify_args_for_deployer(verifier, args=args) is True:
-        deployer = Deployer(args.native, args.dataset, args.hardware)
+    DEPLOYER = None
+    performance_data = []
+    PERFORMANCE_COUNT = 0
 
-        try:
-            deployer.multi_model_deploy()
-        except RuntimeError:
-            log.error("An error occured in the deployment process.")
-            TRACE_STR = traceback.format_exc()
-            log.info("Traceback to the Excepton: %s", TRACE_STR)
-
-        log.info("[DEPLOY] Finished")
-        sys.exit(0)
+    if int(args.performance) < 1:
+        PERFORMANCE_COUNT = 1
     else:
-        log.fatal("Problem in Deployment!")
+        PERFORMANCE_COUNT = int(args.performance)
+
+    for i in range(PERFORMANCE_COUNT):
+        if verifier.verify_args_for_deployer(verifier, args=args) is True:
+            DEPLOYER = Deployer(args.native, args.dataset, args.hardware)
+
+            try:
+                DEPLOYER.multi_model_deploy()
+                performance_data.append(DEPLOYER.inference_results)
+            except RuntimeError:
+                log.error("[DEPLOY] Process was interrupted before Completion.")
+                TRACE_STR = traceback.format_exc()
+                log.info("Traceback to the Excepton: %s", TRACE_STR)
+
+            log.info("[DEPLOY] Finished")
+
+        else:
+            log.fatal("[DEPLOY] Error verifying Arguments")
+
+    SUM_POS = 0
+    for d in performance_data:
+        for d_k in d.keys():
+            if d[d_k] == 1:
+                SUM_POS += 1
+
+    acc = (SUM_POS / PERFORMANCE_COUNT) * 100
+    log.info("Accuracy Result: " + str(acc) + "%")

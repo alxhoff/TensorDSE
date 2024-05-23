@@ -41,7 +41,6 @@ int distributed_inference_cpu(std::string& tflite_model_path, void* input_data,
     std::unique_ptr<tflite::FlatBufferModel> model;
     model = LoadModelFile(tflite_model_path);
     if (model == nullptr) {
-        std::cout << "Problem loading Model for CPU from: " << tflite_model_path << std::endl;
         spdlog::error("  [1]  Failed to load model from {}", tflite_model_path); 
         return -1;
     }
@@ -166,7 +165,6 @@ int distributed_inference_gpu(std::string& tflite_model_path, void* input_data,
     std::unique_ptr<tflite::FlatBufferModel> model;
     model = LoadModelFile(tflite_model_path);
     if (model == nullptr) {
-        std::cout << "Problem loading Model for GPU from: " << tflite_model_path << std::endl;
         spdlog::error("Failed to load model from: {}", tflite_model_path);
         return -1;
     }
@@ -585,14 +583,6 @@ int distributed_inference_wrapper(std::string& tflite_model_path, void* input_da
                                                                   ) {
    
     int result = 0;
-
-    std::cout << "TFLite Model Path: " << tflite_model_path << std::endl;
-    std::ifstream file(tflite_model_path);
-    if (file.good()) {
-        std::cout << "File exists: " << tflite_model_path << std::endl;
-    } else {
-        std::cerr << "File does not exist: " << tflite_model_path << std::endl;
-    }
 
     setup_logger();
     spdlog::info("Logger initialized!");

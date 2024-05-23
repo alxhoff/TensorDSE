@@ -7,7 +7,11 @@ import sys
 from typing import Dict
 from itertools import groupby
 
+
 import json
+import numpy as np
+
+import matplotlib.pyplot as plt
 
 from utils.logging.logger import log
 from utils.splitter.utils import run_command_and_echo
@@ -22,6 +26,7 @@ def export_results(file:str, data:Dict) -> None:
     with open(file, "w", encoding="utf-8") as json_file:
         json_data = data
         json.dump(json_data, json_file, indent=4)
+
 
 def analyse_model_results_profile(parent_model:str,
                                   models_dict:Dict, hardware_summary:Dict, platform: str):
@@ -106,6 +111,49 @@ def analyse_model_results_profile(parent_model:str,
     export_results(results_path, data)
 
 
+def softmax(x):
+    """
+    Missing  Docstring: TODO
+    """
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=0)
+
+
+def interpret_output(output_data, data_type, labels_np, index):
+    """
+    Missing  Docstring: TODO
+    """
+
+    result = False
+    output_data = output_data.astype(np.float32)
+    if data_type == np.int8:
+        output_data = (output_data + 128) / 255.0  # Dequantize int8
+    elif data_type == np.uint8:
+        output_data = output_data / 255.0  # Dequantize uint8
+
+    probabilities = softmax(output_data)
+    predicted_label = np.argmax(probabilities)
+
+    if predicted_label == labels_np[index]:
+        result = True
+    return result, predicted_label
+
+
+def save_image(image, predicted_label, image_index, platform, prediction):
+    """
+    Missing  Docstring: TODO
+    """
+
+    plt.imshow(image)
+    plt.axis('off')
+
+    res = "right" if prediction else "wrong"
+
+    file_name = f'resources/deployment_results/{platform}/image_{image_index}_predicted_{res}_{predicted_label}.png'
+    plt.savefig(file_name)
+    log.info('Saved Image under: %s', file_name)
+
+
 def analyse_model_results_deploy(models, platform):
     """
     Missing  Docstring: TODO
@@ -120,35 +168,61 @@ def analyse_model_results_deploy(models, platform):
             log.fatal("Unable to create Results Folder to store Deployment results!")
             sys.exit(-1)
 
+    inference_results = dict()
+    input_image_idx = 0
+
     for i, model in enumerate(models):
-        results_path = os.path.join(results_folder, f"{model[0].parent}.json")
+        results_path = os.path.join(results_folder, f"model_{i}_{model[0].parent}.json")
         model_results = {
             "model_name": model[0].parent,
             "submodels": [],
-            "total_inference_time (s)": 0,
             "total_inference_time (c++)": 0,
-            "pre_processing_time (c++)": 0,
-            "post_processing_time (c++)": 0,
-            "total_inference_time (python)": 0
+            "total_pre_processing_time (c++)": 0,
+            "total_post_processing_time (c++)": 0,
+            "total_inference_time (python)": 0,
+            "Prediction Result": "F"
         }
-        
+
         for m in model:
             submodel = {
                 "name": m.model_name,
                 "layers": m.details,
-                "total_inference_time (c++)": m.results[0],
+                "inference_time (c++)": m.results[0],
+                "pre_processing_time (c++)": m.cpp_times[0],
+                "post_processing_time (c++)": m.cpp_times[0],
+                "inference_time (python)": m.total_inf_time,
                 "usb": {}
             }
-            model_results["pre_processing_time (c++)"] = m.cpp_times[0]
-            model_results["post_processing_time (c++)"] = m.cpp_times[0]
-            model_results["total_inference_time (python)"] = m.total_inf_time
+
             if platform != "coral" and "tpu" in m.delegate:
                 submodel["usb"] = process_streams(m.timers, m.results)
+
             model_results["submodels"].append(submodel)
+
             model_results["total_inference_time (c++)"] += m.results[0]
-            model_results["pre_processing_time (c++)"] += m.cpp_times[0]
-            model_results["post_processing_time (c++)"] += m.cpp_times[0]
+            model_results["total_pre_processing_time (c++)"] += m.cpp_times[0]
+            model_results["total_post_processing_time (c++)"] += m.cpp_times[0]
             model_results["total_inference_time (python)"] += m.total_inf_time
 
+            if m.first is True:
+                input_image_idx = m.input_image_idx
+
+            if m.final is True:
+                prediction, predicted_label = interpret_output(m.output_vector,
+                                    m.get_np_dtype(m.output_datatype),
+                                    m.labels, input_image_idx)
+                if prediction is True:
+                    log.info("Image Prediction Result: Positive")
+                    inference_results[f"{i}"] = 1
+                else:
+                    log.info("Image Prediction Result: Negative")
+                    inference_results[f"{i}"] = -1
+
+                save_image(m.images[input_image_idx],
+                            predicted_label, input_image_idx,
+                            platform, prediction)
+
+        model_results["Prediction Result"] = "T" if prediction else "F"
         with open(results_path, 'w', encoding="utf-8") as json_file:
             json.dump(model_results, json_file, indent=4)
+    return inference_results

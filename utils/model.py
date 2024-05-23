@@ -25,6 +25,11 @@ class Model:
         self.total_inf_time = 0
         self.input_vector   = None
         self.output_vector  = None
+        self.final = False
+        self.first = False
+        self.input_image_idx = 0
+        self.images = None
+        self.labels = None
 
         self.set_model_path()
         self.set_input_details()
