@@ -391,7 +391,7 @@ def get_arguments():
     parser.add_argument(
             "-hw",
             "--hardware",
-            default="cpu0",
+            default="cpu",
             help="HW Target for native deployment",
             )
 
