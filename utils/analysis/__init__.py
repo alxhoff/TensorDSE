@@ -228,7 +228,7 @@ def analyse_model_results_deploy(models, platform):
                         log.info("Image Prediction Result: Negative")
                         inference_results[f"{i}"] = -1
 
-                    save_image(folder, m.images[input_image_idx],
+                    save_image(results_folder_multi, m.images[input_image_idx],
                                 predicted_label, input_image_idx,
                                 platform, prediction)
         if platform == "desktop":
