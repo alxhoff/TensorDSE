@@ -139,7 +139,7 @@ def interpret_output(output_data, data_type, labels_np, index):
     return result, predicted_label
 
 
-def save_image(image, predicted_label, image_index, platform, prediction):
+def save_image(folder, image, predicted_label, image_index, platform, prediction):
     """
     Missing  Docstring: TODO
     """
@@ -149,8 +149,9 @@ def save_image(image, predicted_label, image_index, platform, prediction):
 
     res = "right" if prediction else "wrong"
 
-    file_name = f'resources/deployment_results/{platform}/image_{image_index}_predicted_{res}_{predicted_label}.png'
-    plt.savefig(file_name)
+    file_name = f'image_{image_index}_predicted_{res}_{predicted_label}.png'
+    file_path = os.path.join(folder, file_name)
+    plt.savefig(file_path)
     log.info('Saved Image under: %s', file_name)
 
 
@@ -160,19 +161,27 @@ def analyse_model_results_deploy(models, platform):
     """
 
     results_folder = os.path.join(os.getcwd(), "resources/deployment_results", platform)
+    models_len = len(models)
+    results_folder_multi = os.path.join(results_folder, f"multi_{models_len}")
 
     if not os.path.isdir(results_folder):
-        log.error("%s is not a valid folder to store results!", results_folder)
         os.mkdir(results_folder)
         if not os.path.isdir(results_folder):
             log.fatal("Unable to create Results Folder to store Deployment results!")
             sys.exit(-1)
 
+    if not os.path.isdir(results_folder_multi):
+        os.mkdir(results_folder_multi)
+        if not os.path.isdir(results_folder_multi):
+            log.fatal("Unable to create Results Folder to store Deployment results!")
+            sys.exit(-1)
+
+
     inference_results = dict()
     input_image_idx = 0
 
     for i, model in enumerate(models):
-        results_path = os.path.join(results_folder, f"model_{i}_{model[0].parent}.json")
+        results_path = os.path.join(results_folder_multi, f"model_{i}_{model[0].parent}.json")
         model_results = {
             "model_name": model[0].parent,
             "submodels": [],
@@ -219,7 +228,7 @@ def analyse_model_results_deploy(models, platform):
                         log.info("Image Prediction Result: Negative")
                         inference_results[f"{i}"] = -1
 
-                    save_image(m.images[input_image_idx],
+                    save_image(folder, m.images[input_image_idx],
                                 predicted_label, input_image_idx,
                                 platform, prediction)
         if platform == "desktop":

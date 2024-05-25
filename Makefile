@@ -17,7 +17,7 @@ override MULTI_MODEL = false
 $(info Using default MULTI_MODEL: $(MULTI_MODEL))
 endif
 ifndef MODEL
-override MODEL = resources/models/example_models/resnet/pretrainedResnet_quant.tflite
+override MODEL = resources/models/example_models/MNIST/MNIST_full_quanitization.tflite
 $(info Using default MODEL: $(MODEL))
 endif
 ifndef MODEL_NAME
