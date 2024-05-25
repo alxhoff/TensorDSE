@@ -11,10 +11,6 @@ import traceback
 import threading
 import multiprocessing
 import multiprocessing.pool
-from multiprocessing import Manager
-
-import tensorflow as tf
-import tensorflow_datasets as tfds
 
 import numpy as np
 
@@ -29,8 +25,16 @@ from utils.inference import Inference
 
 from status_verifier import StatusVerifierSingleton as verifier
 
+PLATFORM = verifier.get_platform()
+if PLATFORM == 'desktop':
+    import tensorflow as tf
+    import tensorflow_datasets as tfds
+
 
 def set_start_method():
+    """
+    Missing  Docstring: TODO
+    """
     try:
         multiprocessing.set_start_method('spawn', force=True)
     except RuntimeError:
@@ -41,7 +45,7 @@ def preprocess_image_mnist(image, label, image_size, data_type):
     """
     Missing  Docstring: TODO
     """
-
+    import tensorflow as tf
     image = tf.image.resize(image, image_size)  # Resize to the input size required by the model
     image = tf.image.grayscale_to_rgb(image)  # Convert grayscale to RGB
     image = tf.cast(image, tf.float32) / 255.0  # Normalize the image to [0, 1] range
@@ -56,7 +60,7 @@ def preprocess_image_imagenet(image, label, image_size, data_type):
     """
     Missing  Docstring: TODO
     """
-
+    import tensorflow as tf
     image = tf.image.resize(image, image_size)  # Resize to the input size required by the model
     image = tf.cast(image, tf.float32) / 255.0  # Normalize the image to [0, 1] range
     if data_type == np.int8:
@@ -70,7 +74,7 @@ def preprocess_image_cifar10(image, label, image_size, data_type):
     """
     Missing  Docstring: TODO
     """
-
+    import tensorflow as tf
     image = tf.image.resize(image, image_size)  # Resize to the input size required by the model
     image = tf.cast(image, tf.float32) / 255.0  # Normalize the image to [0, 1] range
     if data_type == np.int8:
@@ -80,12 +84,19 @@ def preprocess_image_cifar10(image, label, image_size, data_type):
     return image, label
 
 
-def load_and_preprocess_dataset(dataset_name, image_size, data_type, preprocess_fn):
+def load_dataset(dataset_name):
     """
     Missing  Docstring: TODO
     """
+    import tensorflow_datasets as tfds
+    return tfds.load(dataset_name, with_info=True, as_supervised=True)
 
-    dataset, info = tfds.load(dataset_name, with_info=True, as_supervised=True)
+
+def preprocess_dataset(dataset, image_size, data_type, preprocess_fn):
+    """
+    Missing  Docstring: TODO
+    """
+    import tensorflow_datasets as tfds
     test_dataset = dataset['test']
 
     test_dataset = test_dataset.map(lambda image, label: preprocess_fn(image,
@@ -121,8 +132,11 @@ class Deployer:
     def __init__(self,
                  native_deployment: bool,
                  data_module: str,
-                 hardware: str) -> None:
+                 hardware: str,
+                 performance_count: int,
+                 fulldataset: bool) -> None:
 
+        self.model_summary = dict()
         self.model_summary = verifier.get_model_summary(verifier)
         self.platform = verifier.get_platform()
         self.native_deployment = native_deployment
@@ -131,9 +145,47 @@ class Deployer:
 
         self.models = []
         self.multi_models_sequences = []
+        self.dataset = None
+        self.dataset_name = None
+        self.dataset_size = 0
+        self.image_size = []
+        self.info = None
         self.images = None
         self.labels = None
+        self.preprocess_fn = None
         self.inference_results = None
+        self.performance_count = performance_count
+        self.fulldataset = fulldataset
+
+
+    def initialize_datasets(self):
+        """
+        Missing  Docstring: TODO
+        """
+
+        self.image_size = [224, 224]
+
+        if self.platform == 'desktop':
+            if self.data_module == 'MNIST':
+                self.image_size = [28, 28]
+                self.dataset_name = 'mnist'
+                self.preprocess_fn = preprocess_image_mnist
+
+            elif self.data_module == 'IMAGENET':
+                self.dataset_name = 'imagenet2012'
+                self.preprocess_fn = preprocess_image_imagenet
+
+            elif self.data_module == 'CIFAR10':
+                self.image_size = [32, 32]
+                self.dataset_name = 'cifar10'
+                self.preprocess_fn = preprocess_image_cifar10
+
+            info = load_dataset(self.dataset_name)[1]
+            num_examples = info.splits['test'].num_examples
+            self.dataset_size = num_examples
+
+            if self.fulldataset is True:
+                self.performance_count = num_examples
 
 
     def debug_active_threads_and_processes(self):
@@ -187,11 +239,7 @@ class Deployer:
         """
         Missing  Docstring: TODO
         """
-        #if self.labels is None:
-        #    log.error("LABELs IS INDEED NONE")
-        #elif self.images is None:
-        #    log.error("IMAGES IS INDEED NONE")
-        #else:
+
         self.inference_results = analyse_model_results_deploy(self.models, self.platform)
 
 
@@ -205,40 +253,30 @@ class Deployer:
                 )
 
 
-    def set_input_test_data_module(self, m: Model):
+    def set_input_data(self, m: Model, idx: int):
         """
         Missing  Docstring: TODO
         """
-        if self.data_module == 'MNIST':
-            dataset_name = 'mnist'
-            image_size = [224, 224]
-            preprocess_fn = preprocess_image_mnist
+        index = 0
+        if self.fulldataset is False:
+            index = random.randint(0, self.dataset_size-1)
+        else:
+            index = idx
 
-        elif self.data_module == 'IMAGENET':
-            dataset_name = 'imagenet2012'
-            image_size = [224, 224]
-            preprocess_fn = preprocess_image_imagenet
-
-        elif self.data_module == 'CIFAR10':
-            dataset_name = 'cifar10'
-            image_size = [224, 224]
-            preprocess_fn = preprocess_image_cifar10
+        dataset = load_dataset(self.dataset_name)[0]
 
         data_type = np.int8 if m.input_datatype == 'int8' else np.uint8
 
-        images_np, labels_np = load_and_preprocess_dataset(dataset_name,
-                                                           image_size,
-                                                           data_type,
-                                                           preprocess_fn)
+        images_np, labels_np = preprocess_dataset(dataset, self.image_size,
+                                                                data_type,
+                                                                self.preprocess_fn)
 
         self.images = images_np
         self.labels = labels_np
 
-        random_number = random.randint(0, len(images_np)-1)
+        m.input_vector = images_np[index]
 
-        m.input_vector = images_np[random_number]
-
-        return random_number
+        return index
 
 
     def layer_deploy(self, m: Model, model_index):
@@ -267,12 +305,16 @@ class Deployer:
                     )
 
         inference_instance = Inference(model=m, count=1, platform=self.platform)
-        m = inference_instance.invoke(force_a=True if m.delegate == "tpu" else False)
+        if m.delegate == "tpu":
+            force_a = True
+        else:
+            force_a = False
+        m = inference_instance.invoke(force_a=force_a)
 
         return m
 
 
-    def sequences_deploy(self, model_sequence, model_index):
+    def sequences_deploy(self, model_sequence, model_index, image_index):
         """
         Missing  Docstring: TODO
         """
@@ -297,14 +339,11 @@ class Deployer:
 
             if j == 0:
                 #Foced random input for rpi and dev board due to unsupported dataset installation
-                if not self.platform == "desktop":
-                    self.data_module = None
+                m.first = True
+                if self.platform != "desktop":
+                    self.set_random_input_data(m)
                 else:
-                    if self.data_module is None:
-                        self.set_random_input_data(m)
-                    else:
-                        m.first = True
-                        m.input_image_idx = self.set_input_test_data_module(m)
+                    m.input_image_idx = self.set_input_data(m, image_index)
             else:
                 m.input_vector = copy.deepcopy(submodels[-1].output_vector)
 
@@ -330,24 +369,41 @@ class Deployer:
         """
 
         self.split()
-        pool = None
-        try:
-            pool = multiprocessing.Pool(processes=4)
-            async_results = [
-                pool.apply_async(self.sequences_deploy, (model_sequences, i))
-                for i, model_sequences in enumerate(self.multi_models_sequences)
-            ]
-            self.models = [async_result.get() for async_result in async_results]
-        except RuntimeError:
-            log.error("An error occurred during Multi-Model Deployment Stage")
-        finally:
-            if pool is not None:
-                pool.close()
-                pool.join()
-            self.debug_active_threads_and_processes()
 
-        self.analyse_results()
-        log.info("All models successfully deployed and analysed!")
+        self.initialize_datasets()
+
+        performance_data = []
+
+        log.info("COUNT in MMD: %s", self.performance_count)
+        for img_idx in range(0, self.performance_count):
+            pool = None
+            try:
+                pool = multiprocessing.Pool(processes=4)
+                async_results = [
+                    pool.apply_async(self.sequences_deploy, (model_sequences, i, img_idx))
+                    for i, model_sequences in enumerate(self.multi_models_sequences)
+                ]
+                self.models = [async_result.get() for async_result in async_results]
+            except RuntimeError:
+                log.error("An error occurred during Multi-Model Deployment Stage")
+            finally:
+                if pool is not None:
+                    pool.close()
+                    pool.join()
+                self.debug_active_threads_and_processes()
+
+            self.analyse_results()
+            performance_data.append(self.inference_results)
+            log.info("All models successfully deployed and analysed!")
+
+        sum_pos = 0
+        for d in performance_data:
+            for d_k in d.keys():
+                if d[d_k] == 1:
+                    sum_pos += 1
+
+        acc = (sum_pos / self.performance_count) * 100
+        log.info("Accuracy Result (in perc): %s", acc)
 
 
 def get_arguments():
@@ -402,6 +458,13 @@ def get_arguments():
             help="Test runs for Performance",
             )
 
+    parser.add_argument(
+            "-fd",
+            "--fulldataset",
+            default=False,
+            help="Test model on complete dataset",
+            )
+
 
     return parser.parse_args()
 
@@ -412,7 +475,6 @@ if __name__ == "__main__":
     args = get_arguments()
 
     DEPLOYER = None
-    performance_data = []
     PERFORMANCE_COUNT = 0
 
     if int(args.performance) < 1:
@@ -420,28 +482,19 @@ if __name__ == "__main__":
     else:
         PERFORMANCE_COUNT = int(args.performance)
 
-    for i in range(PERFORMANCE_COUNT):
-        if verifier.verify_args_for_deployer(verifier, args=args) is True:
-            DEPLOYER = Deployer(args.native, args.dataset, args.hardware)
 
-            try:
-                DEPLOYER.multi_model_deploy()
-                performance_data.append(DEPLOYER.inference_results)
-            except RuntimeError:
-                log.error("[DEPLOY] Process was interrupted before Completion.")
-                TRACE_STR = traceback.format_exc()
-                log.info("Traceback to the Excepton: %s", TRACE_STR)
+    if verifier.verify_args_for_deployer(verifier, args=args) is True:
+        DEPLOYER = Deployer(args.native, args.dataset, args.hardware,
+                            PERFORMANCE_COUNT, args.fulldataset)
 
-            log.info("[DEPLOY] Finished")
+        try:
+            DEPLOYER.multi_model_deploy()
+        except RuntimeError:
+            log.error("[DEPLOY] Process was interrupted before Completion.")
+            TRACE_STR = traceback.format_exc()
+            log.info("Traceback to the Excepton: %s", TRACE_STR)
 
-        else:
-            log.fatal("[DEPLOY] Error verifying Arguments")
+        log.info("[DEPLOY] Finished")
 
-    SUM_POS = 0
-    for d in performance_data:
-        for d_k in d.keys():
-            if d[d_k] == 1:
-                SUM_POS += 1
-
-    acc = (SUM_POS / PERFORMANCE_COUNT) * 100
-    log.info("Accuracy Result: " + str(acc) + "%")
+    else:
+        log.fatal("[DEPLOY] Error verifying Arguments")

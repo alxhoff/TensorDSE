@@ -62,10 +62,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 0.014357374,
-            "pre_processing_time (c++)": 0.000204732,
-            "post_processing_time (c++)": 0.000204732,
-            "inference_time (python)": 0.031403366,
+            "inference_time (c++)": 0.01423509,
+            "pre_processing_time (c++)": 0.00018022,
+            "post_processing_time (c++)": 0.00018022,
+            "inference_time (python)": 0.031348043,
             "usb": {}
         },
         {
@@ -129,10 +129,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 0.00012919,
-            "pre_processing_time (c++)": 0.000104819,
-            "post_processing_time (c++)": 0.000104819,
-            "inference_time (python)": 0.001650751,
+            "inference_time (c++)": 0.000127336,
+            "pre_processing_time (c++)": 8.0137e-05,
+            "post_processing_time (c++)": 8.0137e-05,
+            "inference_time (python)": 0.001634278,
             "usb": {}
         },
         {
@@ -196,10 +196,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 0.000491203,
-            "pre_processing_time (c++)": 2.732672028,
-            "post_processing_time (c++)": 2.732672028,
-            "inference_time (python)": 2.738435199,
+            "inference_time (c++)": 0.000445434,
+            "pre_processing_time (c++)": 2.731905749,
+            "post_processing_time (c++)": 2.731905749,
+            "inference_time (python)": 2.737448142,
             "usb": {
                 "communication": {
                     "mean": 0.0
@@ -252,10 +252,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 0.000181064,
-            "pre_processing_time (c++)": 8.4697e-05,
-            "post_processing_time (c++)": 8.4697e-05,
-            "inference_time (python)": 0.001802227,
+            "inference_time (c++)": 0.000262399,
+            "pre_processing_time (c++)": 0.000116655,
+            "post_processing_time (c++)": 0.000116655,
+            "inference_time (python)": 0.002490101,
             "usb": {}
         },
         {
@@ -319,10 +319,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 6.3494e-05,
-            "pre_processing_time (c++)": 9.9127e-05,
-            "post_processing_time (c++)": 9.9127e-05,
-            "inference_time (python)": 0.001472015,
+            "inference_time (c++)": 7.2743e-05,
+            "pre_processing_time (c++)": 8.4506e-05,
+            "post_processing_time (c++)": 8.4506e-05,
+            "inference_time (python)": 0.001747355,
             "usb": {}
         },
         {
@@ -386,10 +386,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 0.000409095,
-            "pre_processing_time (c++)": 2.643629442,
-            "post_processing_time (c++)": 2.643629442,
-            "inference_time (python)": 2.648944169,
+            "inference_time (c++)": 0.00035294,
+            "pre_processing_time (c++)": 2.642138673,
+            "post_processing_time (c++)": 2.642138673,
+            "inference_time (python)": 2.647518344,
             "usb": {
                 "communication": {
                     "mean": 0.0
@@ -457,10 +457,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 3.3944e-05,
-            "pre_processing_time (c++)": 0.000102724,
-            "post_processing_time (c++)": 0.000102724,
-            "inference_time (python)": 0.002791218,
+            "inference_time (c++)": 2.3038e-05,
+            "pre_processing_time (c++)": 8.7339e-05,
+            "post_processing_time (c++)": 8.7339e-05,
+            "inference_time (python)": 0.001789336,
             "usb": {}
         },
         {
@@ -509,10 +509,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 8.4711e-05,
-            "pre_processing_time (c++)": 6.2035e-05,
-            "post_processing_time (c++)": 6.2035e-05,
-            "inference_time (python)": 0.001645612,
+            "inference_time (c++)": 9.2642e-05,
+            "pre_processing_time (c++)": 7.0887e-05,
+            "post_processing_time (c++)": 7.0887e-05,
+            "inference_time (python)": 0.001408984,
             "usb": {}
         },
         {
@@ -576,10 +576,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 0.000296758,
-            "pre_processing_time (c++)": 2.645652182,
-            "post_processing_time (c++)": 2.645652182,
-            "inference_time (python)": 2.651027626,
+            "inference_time (c++)": 0.000286235,
+            "pre_processing_time (c++)": 2.64566069,
+            "post_processing_time (c++)": 2.64566069,
+            "inference_time (python)": 2.65090088,
             "usb": {
                 "communication": {
                     "mean": 0.0
@@ -647,10 +647,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 0.000101214,
-            "pre_processing_time (c++)": 9.278e-05,
-            "post_processing_time (c++)": 9.278e-05,
-            "inference_time (python)": 0.001812665,
+            "inference_time (c++)": 0.000100136,
+            "pre_processing_time (c++)": 9.1164e-05,
+            "post_processing_time (c++)": 9.1164e-05,
+            "inference_time (python)": 0.001874356,
             "usb": {}
         },
         {
@@ -714,10 +714,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 1.3175e-05,
-            "pre_processing_time (c++)": 6.7342e-05,
-            "post_processing_time (c++)": 6.7342e-05,
-            "inference_time (python)": 0.001296309,
+            "inference_time (c++)": 1.451e-05,
+            "pre_processing_time (c++)": 7.5829e-05,
+            "post_processing_time (c++)": 7.5829e-05,
+            "inference_time (python)": 0.001343132,
             "usb": {}
         },
         {
@@ -766,10 +766,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 0.00027705,
-            "pre_processing_time (c++)": 2.645492207,
-            "post_processing_time (c++)": 2.645492207,
-            "inference_time (python)": 2.651197699,
+            "inference_time (c++)": 0.000292951,
+            "pre_processing_time (c++)": 2.644478978,
+            "post_processing_time (c++)": 2.644478978,
+            "inference_time (python)": 2.649753772,
             "usb": {
                 "communication": {
                     "mean": 0.0
@@ -825,10 +825,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 2.085e-06,
-            "pre_processing_time (c++)": 7.2041e-05,
-            "post_processing_time (c++)": 7.2041e-05,
-            "inference_time (python)": 0.001657565,
+            "inference_time (c++)": 1.942e-06,
+            "pre_processing_time (c++)": 9.2606e-05,
+            "post_processing_time (c++)": 9.2606e-05,
+            "inference_time (python)": 0.001668811,
             "usb": {}
         },
         {
@@ -873,10 +873,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 4.47e-07,
-            "pre_processing_time (c++)": 6.1201e-05,
-            "post_processing_time (c++)": 6.1201e-05,
-            "inference_time (python)": 0.00126412,
+            "inference_time (c++)": 3.92e-07,
+            "pre_processing_time (c++)": 7.5627e-05,
+            "post_processing_time (c++)": 7.5627e-05,
+            "inference_time (python)": 0.00131735,
             "usb": {}
         },
         {
@@ -926,10 +926,10 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 0.000201166,
-            "pre_processing_time (c++)": 2.644196675,
-            "post_processing_time (c++)": 2.644196675,
-            "inference_time (python)": 2.649312647,
+            "inference_time (c++)": 0.000258056,
+            "pre_processing_time (c++)": 2.643555829,
+            "post_processing_time (c++)": 2.643555829,
+            "inference_time (python)": 2.648832393,
             "usb": {
                 "communication": {
                     "mean": 0.0
@@ -969,16 +969,16 @@
                     ]
                 }
             ],
-            "inference_time (c++)": 1.269e-06,
-            "pre_processing_time (c++)": 7.1826e-05,
-            "post_processing_time (c++)": 7.1826e-05,
-            "inference_time (python)": 0.001668351,
+            "inference_time (c++)": 1.191e-06,
+            "pre_processing_time (c++)": 7.7729e-05,
+            "post_processing_time (c++)": 7.7729e-05,
+            "inference_time (python)": 0.001564696,
             "usb": {}
         }
     ],
-    "total_inference_time (c++)": 0.016643239000000004,
-    "total_pre_processing_time (c++)": 13.312665857999997,
-    "total_post_processing_time (c++)": 13.312665857999997,
-    "total_inference_time (python)": 13.387381538999998,
+    "total_inference_time (c++)": 0.016567035,
+    "total_pre_processing_time (c++)": 13.308772618,
+    "total_post_processing_time (c++)": 13.308772618,
+    "total_inference_time (python)": 13.382639973000002,
     "Prediction Result": "F"
 }

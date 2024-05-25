@@ -144,7 +144,7 @@ def save_image(image, predicted_label, image_index, platform, prediction):
     Missing  Docstring: TODO
     """
 
-    plt.imshow(image)
+    plt.imshow(image.squeeze(), cmap='gray')
     plt.axis('off')
 
     res = "right" if prediction else "wrong"
@@ -204,25 +204,26 @@ def analyse_model_results_deploy(models, platform):
             model_results["total_post_processing_time (c++)"] += m.cpp_times[0]
             model_results["total_inference_time (python)"] += m.total_inf_time
 
-            if m.first is True:
-                input_image_idx = m.input_image_idx
+            if platform == "desktop":
+                if m.first is True:
+                    input_image_idx = m.input_image_idx
 
-            if m.final is True:
-                prediction, predicted_label = interpret_output(m.output_vector,
-                                    m.get_np_dtype(m.output_datatype),
-                                    m.labels, input_image_idx)
-                if prediction is True:
-                    log.info("Image Prediction Result: Positive")
-                    inference_results[f"{i}"] = 1
-                else:
-                    log.info("Image Prediction Result: Negative")
-                    inference_results[f"{i}"] = -1
+                if m.final is True:
+                    prediction, predicted_label = interpret_output(m.output_vector,
+                                        m.get_np_dtype(m.output_datatype),
+                                        m.labels, input_image_idx)
+                    if prediction is True:
+                        log.info("Image Prediction Result: Positive")
+                        inference_results[f"{i}"] = 1
+                    else:
+                        log.info("Image Prediction Result: Negative")
+                        inference_results[f"{i}"] = -1
 
-                save_image(m.images[input_image_idx],
-                            predicted_label, input_image_idx,
-                            platform, prediction)
-
-        model_results["Prediction Result"] = "T" if prediction else "F"
-        with open(results_path, 'w', encoding="utf-8") as json_file:
-            json.dump(model_results, json_file, indent=4)
+                    save_image(m.images[input_image_idx],
+                                predicted_label, input_image_idx,
+                                platform, prediction)
+        if platform == "desktop":
+            model_results["Prediction Result"] = "T" if prediction else "F"
+            with open(results_path, 'w', encoding="utf-8") as json_file:
+                json.dump(model_results, json_file, indent=4)
     return inference_results

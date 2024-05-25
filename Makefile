@@ -5,7 +5,7 @@ FOLDER := $(shell basename ${CWD})
 REPO := tensorflow/tensorflow
 
 ifndef BRANCH
-override BRANCH = master
+override BRANCH = refactored
 $(info Running branch $(BRANCH))
 endif
 ifndef USBMON
@@ -17,7 +17,7 @@ override MULTI_MODEL = false
 $(info Using default MULTI_MODEL: $(MULTI_MODEL))
 endif
 ifndef MODEL
-override MODEL = resources/models/example_models/MNIST/MNIST_full_quanitization.tflite
+override MODEL = resources/models/example_models/resnet/pretrainedResnet_quant.tflite
 $(info Using default MODEL: $(MODEL))
 endif
 ifndef MODEL_NAME
@@ -131,8 +131,8 @@ nodeploy:
 
 .PHONY: build
 build:
-	git fetch https://git@github.com/alxhoff/TensorDSE.git
-	git reset --hard origin/$(BRANCH)
+	#git fetch https://git@github.com/alxhoff/TensorDSE.git
+	#git reset --hard origin/$(BRANCH)
 	@if ! [ $(shell docker image ls | grep ${REPO} | tr -s ' ' | cut -f2 -d ' ') ]; then\
 		${MAKE} -C docker build BRANCH=$(BRANCH);\
 	fi
