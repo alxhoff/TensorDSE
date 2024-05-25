@@ -224,6 +224,6 @@ def analyse_model_results_deploy(models, platform):
                                 platform, prediction)
         if platform == "desktop":
             model_results["Prediction Result"] = "T" if prediction else "F"
-            with open(results_path, 'w', encoding="utf-8") as json_file:
-                json.dump(model_results, json_file, indent=4)
+        with open(results_path, 'w', encoding="utf-8") as json_file:
+            json.dump(model_results, json_file, indent=4)
     return inference_results
