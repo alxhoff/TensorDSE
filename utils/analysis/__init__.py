@@ -156,6 +156,7 @@ def save_image(folder, image, predicted_label, image_index, platform, prediction
 
 
 def analyse_model_results_deploy(models, platform):
+    
     """
     Missing  Docstring: TODO
     """
@@ -198,7 +199,7 @@ def analyse_model_results_deploy(models, platform):
                 "layers": m.details,
                 "inference_time (c++)": m.results[0],
                 "pre_processing_time (c++)": m.cpp_times[0],
-                "post_processing_time (c++)": m.cpp_times[0],
+                "post_processing_time (c++)": m.cpp_times[1],
                 "inference_time (python)": m.total_inf_time,
                 "usb": {}
             }
@@ -210,7 +211,7 @@ def analyse_model_results_deploy(models, platform):
 
             model_results["total_inference_time (c++)"] += m.results[0]
             model_results["total_pre_processing_time (c++)"] += m.cpp_times[0]
-            model_results["total_post_processing_time (c++)"] += m.cpp_times[0]
+            model_results["total_post_processing_time (c++)"] += m.cpp_times[1]
             model_results["total_inference_time (python)"] += m.total_inf_time
 
             if platform == "desktop":
