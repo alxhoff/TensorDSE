@@ -34,9 +34,9 @@ def test():
         }
     }
     input_size = get_array_size_from_shape([
-                                "28",
-                                "28",
-                                "1"
+                                "32",
+                                "32",
+                                "3"
                             ])
     output_size = get_array_size_from_shape([
                                 "10"
