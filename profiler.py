@@ -10,11 +10,9 @@ from utils.logging.logger import log
 
 from utils.model import Model
 from utils.splitter.split import Splitter
-from utils.splitter.utils import read_json_file
 from utils.analysis import analyse_model_results_profile
 from utils.inference import Inference
 from status_verifier import StatusVerifierSingleton as verifier
-
 
 class Proflier:
     """
@@ -34,8 +32,6 @@ class Proflier:
         self.splitter = Splitter(self.model_summary)
 
         self.hardware_to_benchmark = []
-        self.full_model = False
-        self.model_layer_sequences = None
 
 
     def single_model_profile(self, model_summary: dict, parent_model_id: str) -> Dict:
@@ -46,11 +42,9 @@ class Proflier:
         models = {}
         models["count"] = self.count
 
-        layers = model_summary["layers"] if self.full_model else self.model_layer_sequences
-
         for delegate in self.hardware_to_benchmark:
             models[delegate] = []
-            for layer in (layers):
+            for layer in (model_summary["layers"]):
                 inference_instance = Inference(
                     model=Model(layer, delegate, parent_model_id),
                     count=self.count,
@@ -68,7 +62,7 @@ class Proflier:
         return models
 
 
-    def multi_model_profile(self, full_model: bool):
+    def multi_model_profile(self):
         """
         Missing  Docstring: TODO
         """
@@ -76,18 +70,14 @@ class Proflier:
         if (verifier.verify_hardware_for_profiling(verifier,
                                                    hardware_summary=self.hardware_summary)):
             self.hardware_to_benchmark = verifier.get_requested_hardware(verifier)
-            self.full_model = full_model
         else:
             log.fatal("The list for the Requested Hardware for profiling is empty!")
-            return -1
-
-        model_layer_sequences = []
 
         # Create single operation models/layers from the operations in the provided model
         if self.platform == "desktop":
             try:
                 log.info("Running Model Splitter ...")
-                self.splitter.run(sequences=True if full_model else False)
+                self.splitter.run()
                 log.info("Splitting Process Complete!\n")
             except RuntimeError:
                 self.splitter.clean(True)
@@ -98,14 +88,6 @@ class Proflier:
                 self.splitter.compile_for_edge_tpu()
                 log.info("[PROFILE MODEL] Models successfully compiled \
                          for Benchmarking on the Edge TPU!")
-                model_layer_sequences = splitter.model_layer_sequences
-        else:
-            model_layer_sequences = read_json_file("utils/splitter/model_layer_sequences.json")
-
-        self.model_layer_sequences = model_layer_sequences
-        
-
-            
 
         # Deploy the generated models/layers onto the target test hardware using docker
         for i, single_model_summary in enumerate(self.model_summary.get("models")):
@@ -185,13 +167,6 @@ def get_arguments() -> argparse.Namespace:
                   should be used for packet sniffing"
             )
 
-    parser.add_argument(
-            "-f",
-            "--full",
-            default=False,
-            help="Profile Full Model"
-            )
-
     return parser.parse_args()
 
 
@@ -204,4 +179,4 @@ if __name__ == "__main__":
             count=args.count,
             usbmon=args.usbmon
         )
-        profiler.multi_model_profile(full_model=args.full)
+        profiler.multi_model_profile()
